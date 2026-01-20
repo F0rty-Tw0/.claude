@@ -15,7 +15,7 @@ Dispatch agents:code-reviewer subagent to catch issues before they cascade.
 
 - After each task in subagent-driven development
 - After completing major feature
-- Before merge to main
+- Before merge to master
 
 **Optional but valuable:**
 
@@ -28,7 +28,7 @@ Dispatch agents:code-reviewer subagent to catch issues before they cascade.
 **1. Get git SHAs:**
 
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+BASE_SHA=$(git rev-parse HEAD~1)  # or origin/master
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
