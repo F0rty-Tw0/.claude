@@ -92,6 +92,7 @@ git diff {BASE_SHA}..{HEAD_SHA}
 - What's wrong
 - Why it matters
 - How to fix (if not obvious)
+- **Show the problematic code snippet** (3-5 lines for context)
 
 ### Recommendations
 
@@ -123,7 +124,7 @@ git diff {BASE_SHA}..{HEAD_SHA}
 
 ## Example Output
 
-```
+````
 ### Strengths
 - Clean database schema with proper migrations (db.ts:15-42)
 - Comprehensive test coverage (18 tests, all edge cases)
@@ -136,19 +137,39 @@ git diff {BASE_SHA}..{HEAD_SHA}
    - File: index-conversations:1-31
    - Issue: No --help flag, users won't discover --concurrency
    - Fix: Add --help case with usage examples
+   - Code:
+   ```typescript
+   const args = process.argv.slice(2);
+   if (args.length === 0) {
+     console.error("Usage: index-conversations <repo-path>");
+     process.exit(1);
+   }
+````
 
 2. **Date validation missing**
    - File: search.ts:25-27
    - Issue: Invalid dates silently return no results
    - Fix: Validate ISO format, throw error with example
+   - Code:
+   ```typescript
+   const startDate = args.start ? new Date(args.start) : null;
+   const endDate = args.end ? new Date(args.end) : null;
+   ```
 
 #### Minor
+
 1. **Progress indicators**
    - File: indexer.ts:130
    - Issue: No "X of Y" counter for long operations
    - Impact: Users don't know how long to wait
+   - Code:
+   ```typescript
+   console.log('Processing conversations...');
+   // Missing: console.log(`Processing ${i}/${total}...`);
+   ```
 
 ### Recommendations
+
 - Add progress reporting for user experience
 - Consider config file for excluded projects (portability)
 
@@ -157,4 +178,7 @@ git diff {BASE_SHA}..{HEAD_SHA}
 **Ready to merge: With fixes**
 
 **Reasoning:** Core implementation is solid with good architecture and tests. Important issues (help text, date validation) are easily fixed and don't affect core functionality.
+
+```
+
 ```
