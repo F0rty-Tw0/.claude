@@ -51,7 +51,7 @@ Small, frequent improvements compound into major gains.
 - Third pass: make it efficient
 - Don't try all three at once
 
-#<Good>
+<Good>
 
 ```typescript
 // Iteration 1: Make it work
@@ -83,9 +83,9 @@ const calculateTotal = (items: Item[]): number => {
 };
 ```
 
-Each step is complete, tested, and working #</Good>
+Each step is complete, tested, and working </Good>
 
-#<Bad>
+<Bad>
 
 ```typescript
 // Trying to do everything at once
@@ -102,7 +102,7 @@ const calculateTotal = (items: Item[]): number => {
 };
 ```
 
-Overwhelming, error-prone, hard to verify #</Bad>
+Overwhelming, error-prone, hard to verify </Bad>
 
 #### In Practice
 
@@ -157,7 +157,7 @@ Design systems that prevent errors at compile/design time, not runtime.
 
 #### Type System Error Proofing
 
-#<Good>
+<Good>
 
 ```typescript
 // Error: string status can be any value
@@ -183,9 +183,9 @@ type Order =
 // Now impossible to have shipped without trackingNumber
 ```
 
-Type system prevents entire classes of errors #</Good>
+Type system prevents entire classes of errors </Good>
 
-#<Good>
+<Good>
 
 ```typescript
 // Make invalid states unrepresentable
@@ -202,11 +202,11 @@ if (items.length > 0) {
 }
 ```
 
-Function signature guarantees safety #</Good>
+Function signature guarantees safety </Good>
 
 #### Validation Error Proofing
 
-#<Good>
+<Good>
 
 ```typescript
 // Error: Validation after use
@@ -250,11 +250,11 @@ const handlePaymentRequest = (req: Request) => {
 
 ```
 
-Validate once at boundary, safe everywhere else #</Good>
+Validate once at boundary, safe everywhere else </Good>
 
 #### Guards and Preconditions
 
-#<Good>
+<Good>
 
 ```typescript
 // Early returns prevent deeply nested code
@@ -279,11 +279,11 @@ const processUser = (user: User | null) => {
 };
 ```
 
-Guards make assumptions explicit and enforced #</Good>
+Guards make assumptions explicit and enforced </Good>
 
 #### Configuration Error Proofing
 
-#<Good>
+<Good>
 
 ```typescript
 // Error: Optional config with unsafe defaults
@@ -317,7 +317,7 @@ const config = loadConfig();
 const client = new APIClient(config);
 ```
 
-Fail at startup, not in production #</Good>
+Fail at startup, not in production </Good>
 
 #### In Practice
 
@@ -372,7 +372,7 @@ Follow established patterns. Document what works. Make good practices easy to fo
 
 #### Following Patterns
 
-#<Good>
+<Good>
 
 ```typescript
 // Existing codebase pattern for API clients
@@ -390,9 +390,9 @@ class OrderAPIClient {
 }
 ```
 
-Consistency makes codebase predictable #</Good>
+Consistency makes codebase predictable </Good>
 
-#<Bad>
+<Bad>
 
 ```typescript
 // Existing pattern uses classes
@@ -406,11 +406,11 @@ const getOrder = async (id: string): Promise<Order> => {
 };
 ```
 
-Inconsistency creates confusion #</Bad>
+Inconsistency creates confusion </Bad>
 
 #### Error Handling Patterns
 
-#<Good>
+<Good>
 
 ```typescript
 // Project standard: Result type for recoverable errors
@@ -438,11 +438,11 @@ if (!result.ok) {
 const user = result.value; // Type-safe!
 ```
 
-Standard pattern across codebase #</Good>
+Standard pattern across codebase </Good>
 
 #### Documentation Standards
 
-#<Good>
+<Good>
 
 ```typescript
 /**
@@ -466,7 +466,7 @@ const retry = async <T>(
 };
 ```
 
-Documents why, when, and how #</Good>
+Documents why, when, and how </Good>
 
 #### In Practice
 
@@ -520,7 +520,7 @@ Build what's needed now. No more, no less. Avoid premature optimization and over
 
 #### YAGNI in Action
 
-#<Good>
+<Good>
 
 ```typescript
 // Current requirement: Log errors to console
@@ -529,9 +529,9 @@ const logError = (error: Error) => {
 };
 ```
 
-Simple, meets current need #</Good>
+Simple, meets current need </Good>
 
-#<Bad>
+<Bad>
 
 ```typescript
 // Over-engineered for "future needs"
@@ -558,7 +558,7 @@ const logError = (error: Error) => {
 
 ```
 
-Building for imaginary future requirements #</Bad>
+Building for imaginary future requirements </Bad>
 
 **When to add complexity:**
 
@@ -567,7 +567,7 @@ Building for imaginary future requirements #</Bad>
 - Measured performance issues
 - Multiple use cases emerged
 
-#<Good>
+<Good>
 
 ```typescript
 // Start simple
@@ -590,11 +590,11 @@ const formatCurrency = (amount: number, locale: string): string => {
 
 ```
 
-Complexity added only when needed #</Good>
+Complexity added only when needed </Good>
 
 #### Premature Abstraction
 
-#<Bad>
+<Bad>
 
 ```typescript
 // One use case, but building generic framework
@@ -612,9 +612,9 @@ class QueryBuilder<T> { /_ 200 lines_/ }
 
 ```
 
-Massive abstraction for uncertain future #</Bad>
+Massive abstraction for uncertain future </Bad>
 
-#<Good>
+<Good>
 
 ```typescript
 // Simple functions for current needs
@@ -629,11 +629,11 @@ const getUserById = async (id: string): Promise<User | null> => {
 // When pattern emerges across multiple entities, then abstract
 ```
 
-Abstract only when pattern proven across 3+ cases #</Good>
+Abstract only when pattern proven across 3+ cases </Good>
 
 #### Performance Optimization
 
-#<Good>
+<Good>
 
 ```typescript
 // Current: Simple approach
@@ -648,9 +648,9 @@ const filterActiveUsers = (users: User[]): User[] => {
 // Then optimize with indexed lookup or caching
 ```
 
-Optimize based on measurement, not assumptions #</Good>
+Optimize based on measurement, not assumptions </Good>
 
-#<Bad>
+<Bad>
 
 ```typescript
 // Premature optimization
@@ -664,7 +664,7 @@ const filterActiveUsers = (users: User[]): User[] => {
 };
 ```
 
-Complex solution for unmeasured problem #</Bad>
+Complex solution for unmeasured problem </Bad>
 
 #### In Practice
 
