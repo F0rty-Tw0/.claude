@@ -51,32 +51,36 @@ Use Task tool with agents:code-reviewer type, fill template at `code-reviewer.md
 - Note Minor issues for later
 - Push back if reviewer is wrong (with reasoning)
 
+**5. Highlight issues in code with solutions:**
+
+After subagent review:
+
+- Read the actual files mentioned in the review
+- Show specific code snippets with line numbers
+- Highlight problematic code with comments (❌ for issues)
+- Provide concrete fix with corrected code snippet
+- Show before/after for clarity
+
 ## Example
 
 ```
-[Just completed Task 2: Add verification function]
+[User requests: "Review this pull request"]
 
-You: Let me request code review before proceeding.
+You:
+1. Run: git branch --show-current
+2. Run: git log --oneline -10
+3. Run: git rev-parse HEAD
+4. Determine base branch (master/main/develop)
+5. Dispatch runSubagent with code-reviewer prompt
+6. After review, read files with issues to highlight problematic code
+7. Show code snippets with lwith ❌ markers on problematic lines]
+     [Provide concrete solution with ✅ corrected code]
+     [Use multi_replace_string_in_file if user approves fixes
+[Subagent returns review with issues]
 
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
-HEAD_SHA=$(git rev-parse HEAD)
-
-[Dispatch agent:code-reviewer subagent]
-  WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
-  PLAN_OR_REQUIREMENTS: Task 2 from docs/plans/deployment-plan.md
-  BASE_SHA: a7981ec
-  HEAD_SHA: 3df7661
-  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
-
-[Subagent returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
-
-You: [Fix progress indicators]
-[Continue to Task 3]
+You: [Read files mentioned in review]
+     [Show highlighted code snippets]
+     [Explain specific fixes needed]
 ```
 
 ## Integration with Workflows
