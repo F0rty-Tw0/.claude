@@ -61,9 +61,11 @@ After subagent review:
 - Provide concrete fix with corrected code snippet
 - Show before/after for clarity
 
-**5. Generate PR Title and Description:**
+**All findings and reports MUST be in Markdown format.**
 
-After addressing review feedback, create a comprehensive PR description in markdown format:
+**5. Generate PR Title and Description for Git:**
+
+After addressing review feedback, generate a comprehensive PR description **optimized for pull request creation in git**. **Output the entire PR description (Title, Summary, etc.) inside a single \`\`\`markdown code block** for easy copying:
 
 - **Title**: Use conventional commit format (feat/fix/refactor/etc)
 - **Summary**: Brief overview of what changed and why
@@ -71,7 +73,7 @@ After addressing review feedback, create a comprehensive PR description in markd
 - **Breaking Changes**: Clearly mark and explain any breaking changes
 - **Testing**: Summary of test coverage and verification
 - **Example**: Include request/response examples for API changes
-- **Related**: Link to story/issue number
+- **Related**: Link to story/issue number. **Extract this from the current branch name** (e.g., if branch is `story/12313/xyz` use `Story #12313`, if `bug/129312/xyz` use `Bug #129312`).
 
 Template structure:
 ```markdown
@@ -115,7 +117,7 @@ You:
 7. Show code snippets with ❌ markers on problematic lines
 8. Provide concrete solution with ✅ corrected code
 9. Use multi_replace_string_in_file if user approves fixes
-10. After fixes applied, generate PR title and description in markdown
+10. After fixes applied, generate PR title and description in markdown code block, ready for pull request creation in git
 
 [Subagent returns review with issues]
 

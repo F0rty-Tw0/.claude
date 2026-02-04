@@ -59,6 +59,8 @@ git diff {BASE_SHA}..{HEAD_SHA}
 - No scope creep?
 - Breaking changes documented?
 
+**IMPORTANT: Your output MUST be in Markdown format.**
+
 **Production Readiness:**
 
 - Migration strategy (if schema changes)?
@@ -67,6 +69,8 @@ git diff {BASE_SHA}..{HEAD_SHA}
 - No obvious bugs?
 
 ## Output Format
+
+**Your response MUST follow this Markdown structure:**
 
 ### Strengths
 
