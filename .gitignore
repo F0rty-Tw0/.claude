@@ -1,1 +1,14 @@
+# folders
 transcripts
+cache
+debug
+file-history
+ide
+projects
+shell-snapshots
+todos
+
+# files
+.credentials.json
+.mcp.json
+

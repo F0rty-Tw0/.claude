@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "plugins": {
+    "oh-my-claudecode@omc": [
+      {
+        "scope": "user",
+        "installPath": "C:\\Users\\artio\\.claude\\plugins\\cache\\omc\\oh-my-claudecode\\4.1.10",
+        "version": "4.1.10",
+        "installedAt": "2026-02-10T21:39:05.930Z",
+        "lastUpdated": "2026-02-10T21:39:05.930Z",
+        "gitCommitSha": "e33b6658c5a87e073a1894b086d636ee837f22ef"
+      }
+    ]
+  }
+}
