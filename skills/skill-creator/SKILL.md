@@ -11,7 +11,7 @@ The `skill-creator` is designed to help you build high-quality, actionable skill
 
 - **Creating New Skills**: When you need to package specific workflows or knowledge into a reusable agent skill.
 - **Refining Documentation**: When an existing `SKILL.md` needs better formatting, clearer instructions, or more practical examples.
-- **Enforcing Standards**: When you want to ensure a skill follows the official Antigravity skill structure and conventions.
+- **Enforcing Standards**: When you want to ensure a skill follows the official skill structure and conventions.
 
 ## How to Use This Skill
 
@@ -27,7 +27,7 @@ When this skill is active, you should follow these steps to assist the user:
 A complete skill should follow this directory layout:
 
 ```text
-.agent/skills/your-skill-name/
+~/.claude/skills/your-skill-name/
 ├── SKILL.md            # Main instructions (REQUIRED)
 ├── scripts/            # Helper scripts and utilities
 ├── examples/           # Reference code and implementations

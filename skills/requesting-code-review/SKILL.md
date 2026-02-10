@@ -116,7 +116,7 @@ You:
 6. After review, read files with issues to highlight problematic code
 7. Show code snippets with ❌ markers on problematic lines
 8. Provide concrete solution with ✅ corrected code
-9. Use multi_replace_string_in_file if user approves fixes
+9. Use Edit tool if user approves fixes
 10. After fixes applied, generate PR title and description in markdown code block, ready for pull request creation in git
 
 [Subagent returns review with issues]

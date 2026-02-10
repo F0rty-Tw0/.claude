@@ -89,8 +89,6 @@ git add tests/path/test.py src/path/file.py
 git commit -m "feat: add specific feature"
 ```
 
-```
-
 ## Remember
 - Exact file paths always
 - Complete code in plan (not "add validation")
@@ -118,4 +116,3 @@ After saving the plan, offer execution choice:
 **If Parallel Session chosen:**
 - Guide them to open new session in worktree
 - **REQUIRED SUB-SKILL:** New session uses skill:executing-plans
-```

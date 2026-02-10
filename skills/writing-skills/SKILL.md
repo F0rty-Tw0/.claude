@@ -331,53 +331,11 @@ digraph when_flowchart {
 }
 ```
 
-**Use flowcharts ONLY for:**
-
-- Non-obvious decision points
-- Process loops where you might stop too early
-- "When to use A vs B" decisions
-
-**Never use flowcharts for:**
-
-- Reference material → Tables, lists
-- Code examples → Markdown blocks
-- Linear instructions → Numbered lists
-- Labels without semantic meaning (step1, helper2)
-
-See @graphviz-conventions.dot for graphviz style rules.
-
-**Visualizing for your human partner:** Use `render-graphs.js` in this directory to render a skill's flowcharts to SVG:
-
-```bash
-./render-graphs.js ../some-skill           # Each diagram separately
-./render-graphs.js ../some-skill --combine # All diagrams in one SVG
-```
+Use flowcharts ONLY for non-obvious decisions, process loops, "A vs B" choices. Never for reference (use tables), code (use blocks), or linear steps (use lists). See @graphviz-conventions.dot for style rules.
 
 ## Code Examples
 
-**One excellent example beats many mediocre ones**
-
-Choose most relevant language:
-
-- Testing techniques → TypeScript/JavaScript
-- System debugging → Shell/Python
-- Data processing → Python
-
-**Good example:**
-
-- Complete and runnable
-- Well-commented explaining WHY
-- From real scenario
-- Shows pattern clearly
-- Ready to adapt (not generic template)
-
-**Don't:**
-
-- Implement in 5+ languages
-- Create fill-in-the-blank templates
-- Write contrived examples
-
-You're good at porting - one great example is enough.
+One excellent example beats many mediocre ones. Choose the most relevant language. Make examples complete, well-commented (WHY not what), from real scenarios, and ready to adapt. Don't implement in multiple languages or create fill-in-the-blank templates.
 
 ## File Organization
 
@@ -436,222 +394,43 @@ Edit skill without testing? Same violation.
 
 ## Testing All Skill Types
 
-Different skill types need different test approaches:
+Different skill types need different test approaches. See [testing-skills-with-subagents.md](testing-skills-with-subagents.md) for the complete methodology.
 
-### Discipline-Enforcing Skills (rules/requirements)
+| Skill Type | Test With | Success Criteria |
+|---|---|---|
+| Discipline-enforcing | Pressure scenarios (3+ pressures) | Follows rule under max pressure |
+| Technique | Application + variation scenarios | Successfully applies to new scenario |
+| Pattern | Recognition + counter-examples | Correctly identifies when/how to apply |
+| Reference | Retrieval + application scenarios | Finds and applies info correctly |
 
-**Examples:** TDD, verification-before-completion, designing-before-coding
+## Bulletproofing Against Rationalization
 
-**Test with:**
-
-- Academic questions: Do they understand the rules?
-- Pressure scenarios: Do they comply under stress?
-- Multiple pressures combined: time + sunk cost + exhaustion
-- Identify rationalizations and add explicit counters
-
-**Success criteria:** Agent follows rule under maximum pressure
-
-### Technique Skills (how-to guides)
-
-**Examples:** condition-based-waiting, root-cause-tracing, defensive-programming
-
-**Test with:**
-
-- Application scenarios: Can they apply the technique correctly?
-- Variation scenarios: Do they handle edge cases?
-- Missing information tests: Do instructions have gaps?
-
-**Success criteria:** Agent successfully applies technique to new scenario
-
-### Pattern Skills (mental models)
-
-**Examples:** reducing-complexity, information-hiding concepts
-
-**Test with:**
-
-- Recognition scenarios: Do they recognize when pattern applies?
-- Application scenarios: Can they use the mental model?
-- Counter-examples: Do they know when NOT to apply?
-
-**Success criteria:** Agent correctly identifies when/how to apply pattern
-
-### Reference Skills (documentation/APIs)
-
-**Examples:** API documentation, command references, library guides
-
-**Test with:**
-
-- Retrieval scenarios: Can they find the right information?
-- Application scenarios: Can they use what they found correctly?
-- Gap testing: Are common use cases covered?
-
-**Success criteria:** Agent finds and correctly applies reference information
-
-## Common Rationalizations for Skipping Testing
-
-| Excuse                         | Reality                                                          |
-| ------------------------------ | ---------------------------------------------------------------- |
-| "Skill is obviously clear"     | Clear to you ≠ clear to other agents. Test it.                   |
-| "It's just a reference"        | References can have gaps, unclear sections. Test retrieval.      |
-| "Testing is overkill"          | Untested skills have issues. Always. 15 min testing saves hours. |
-| "I'll test if problems emerge" | Problems = agents can't use skill. Test BEFORE deploying.        |
-| "Too tedious to test"          | Testing is less tedious than debugging bad skill in production.  |
-| "I'm confident it's good"      | Overconfidence guarantees issues. Test anyway.                   |
-| "Academic review is enough"    | Reading ≠ using. Test application scenarios.                     |
-| "No time to test"              | Deploying untested skill wastes more time fixing it later.       |
-
-**All of these mean: Test before deploying. No exceptions.**
-
-## Bulletproofing Skills Against Rationalization
-
-Skills that enforce discipline (like TDD) need to resist rationalization. Agents are smart and will find loopholes when under pressure.
-
-**Psychology note:** Understanding WHY persuasion techniques work helps you apply them systematically. See persuasion-principles.md for research foundation (Cialdini, 2021; Meincke et al., 2025) on authority, commitment, scarcity, social proof, and unity principles.
-
-### Close Every Loophole Explicitly
-
-Don't just state the rule - forbid specific workarounds:
-
-<Bad>
-```markdown
-Write code before test? Delete it.
-```
-</Bad>
-
-<Good>
-```markdown
-Write code before test? Delete it. Start over.
-
-**No exceptions:**
-
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
-
-````
-</Good>
-
-### Address "Spirit vs Letter" Arguments
-
-Add foundational principle early:
-
-```markdown
-**Violating the letter of the rules is violating the spirit of the rules.**
-````
-
-This cuts off entire class of "I'm following the spirit" rationalizations.
-
-### Build Rationalization Table
-
-Capture rationalizations from baseline testing (see Testing section below). Every excuse agents make goes in the table:
-
-```markdown
-| Excuse                           | Reality                                                                 |
-| -------------------------------- | ----------------------------------------------------------------------- |
-| "Too simple to test"             | Simple code breaks. Test takes 30 seconds.                              |
-| "I'll test after"                | Tests passing immediately prove nothing.                                |
-| "Tests after achieve same goals" | Tests-after = "what does this do?" Tests-first = "what should this do?" |
-```
-
-### Create Red Flags List
-
-Make it easy for agents to self-check when rationalizing:
-
-```markdown
-## Red Flags - STOP and Start Over
-
-- Code before test
-- "I already manually tested it"
-- "Tests after achieve the same purpose"
-- "It's about spirit not ritual"
-- "This is different because..."
-
-**All of these mean: Delete code. Start over with TDD.**
-```
-
-### Update CSO for Violation Symptoms
-
-Add to description: symptoms of when you're ABOUT to violate the rule:
-
-```yaml
-description: use when implementing any feature or bugfix, before writing implementation code
-```
+Skills enforcing discipline need to resist rationalization. See [bulletproofing.md](bulletproofing.md) for techniques including: closing loopholes explicitly, addressing "spirit vs letter" arguments, building rationalization tables, and creating red flags lists
 
 ## RED-GREEN-REFACTOR for Skills
 
-Follow the TDD cycle:
+**RED:** Run pressure scenario WITHOUT skill. Document exact rationalizations and violations.
 
-### RED: Write Failing Test (Baseline)
+**GREEN:** Write skill addressing those specific failures. Run scenarios WITH skill - agents should comply.
 
-Run pressure scenario with subagent WITHOUT the skill. Document exact behavior:
+**REFACTOR:** New rationalization found? Add counter. Re-test until bulletproof.
 
-- What choices did they make?
-- What rationalizations did they use (verbatim)?
-- Which pressures triggered violations?
-
-This is "watch the test fail" - you must see what agents naturally do before writing the skill.
-
-### GREEN: Write Minimal Skill
-
-Write skill that addresses those specific rationalizations. Don't add extra content for hypothetical cases.
-
-Run same scenarios WITH skill. Agent should now comply.
-
-### REFACTOR: Close Loopholes
-
-Agent found new rationalization? Add explicit counter. Re-test until bulletproof.
-
-**Testing methodology:** See @testing-skills-with-subagents.md for the complete testing methodology:
-
-- How to write pressure scenarios
-- Pressure types (time, sunk cost, authority, exhaustion)
-- Plugging holes systematically
-- Meta-testing techniques
+See @testing-skills-with-subagents.md for complete methodology (pressure scenarios, pressure types, plugging holes systematically).
 
 ## Anti-Patterns
 
-### ❌ Narrative Example
-
-"In session 2025-10-03, we found empty projectDir caused..."
-**Why bad:** Too specific, not reusable
-
-### ❌ Multi-Language Dilution
-
-example-js.js, example-py.py, example-go.go
-**Why bad:** Mediocre quality, maintenance burden
-
-### ❌ Code in Flowcharts
-
-```dot
-step1 [label="import fs"];
-step2 [label="read file"];
-```
-
-**Why bad:** Can't copy-paste, hard to read
-
-### ❌ Generic Labels
-
-helper1, helper2, step3, pattern4
-**Why bad:** Labels should have semantic meaning
+❌ **Narrative examples** - Too specific, not reusable
+❌ **Multi-language dilution** - Mediocre quality, maintenance burden
+❌ **Code in flowcharts** - Can't copy-paste, hard to read
+❌ **Generic labels** (step1, helper2) - Use semantic names
 
 ## STOP: Before Moving to Next Skill
 
-**After writing ANY skill, you MUST STOP and complete the deployment process.**
-
-**Do NOT:**
-
-- Create multiple skills in batch without testing each
-- Move to next skill before current one is verified
-- Skip testing because "batching is more efficient"
-
-**The deployment checklist below is MANDATORY for EACH skill.**
-
-Deploying untested skills = deploying untested code. It's a violation of quality standards.
+After writing ANY skill, STOP and complete deployment. Don't batch create, don't skip testing. The checklist below is MANDATORY for EACH skill. Deploying untested skills = deploying untested code.
 
 ## Skill Creation Checklist (TDD Adapted)
 
-**IMPORTANT: Use TodoWrite to create todos for EACH checklist item below.**
+**IMPORTANT: Use TaskCreate to create tasks for EACH checklist item below.**
 
 **RED Phase - Write Failing Test:**
 
@@ -695,22 +474,8 @@ Deploying untested skills = deploying untested code. It's a violation of quality
 
 ## Discovery Workflow
 
-How future Claude finds your skill:
-
-1. **Encounters problem** ("tests are flaky")
-2. **Finds SKILL** (description matches)
-3. **Scans overview** (is this relevant?)
-4. **Reads patterns** (quick reference table)
-5. **Loads example** (only when implementing)
-
-**Optimize for this flow** - put searchable terms early and often.
+Future Claude: encounters problem → finds skill (description matches) → scans overview → reads patterns → loads example. Optimize for this flow - searchable terms early and often.
 
 ## The Bottom Line
 
-**Creating skills IS TDD for process documentation.**
-
-Same Iron Law: No skill without failing test first.
-Same cycle: RED (baseline) → GREEN (write skill) → REFACTOR (close loopholes).
-Same benefits: Better quality, fewer surprises, bulletproof results.
-
-If you follow TDD for code, follow it for skills. It's the same discipline applied to documentation.
+Creating skills IS TDD for process documentation. Same Iron Law: no skill without failing test first. Same cycle: RED → GREEN → REFACTOR. Same benefits: better quality, bulletproof results.

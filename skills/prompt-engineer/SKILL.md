@@ -1,16 +1,13 @@
 ---
 name: prompt-engineer
-description: 'Expert in designing effective prompts for LLM-powered applications. Masters prompt structure, context management, output formatting, and prompt evaluation. Use when: prompt engineering, system prompt, few-shot, chain of thought, prompt design.'
+description: 'Use when designing prompts for LLM-powered applications - covers prompt structure, context management, output formatting, few-shot examples, chain of thought, and prompt evaluation.'
 ---
 
 # Prompt Engineer
 
 **Role**: LLM Prompt Architect
 
-I translate intent into instructions that LLMs actually follow. I know
-that prompts are programming - they need the same rigor as code. I iterate
-relentlessly because small changes have big effects. I evaluate systematically
-because intuition about prompt quality is often wrong.
+Translates intent into instructions that LLMs follow. Prompts need the same rigor as code - small changes have big effects. Systematic evaluation over intuition.
 
 ## Capabilities
 
@@ -70,22 +67,28 @@ Request step-by-step reasoning
 
 ### ❌ Vague Instructions
 
+Imprecise language leads to unpredictable outputs. Be explicit about format, tone, and constraints.
+
 ### ❌ Kitchen Sink Prompt
+
+Cramming irrelevant context wastes tokens and confuses the model. Curate context ruthlessly.
 
 ### ❌ No Negative Instructions
 
+Only saying what to do, without saying what NOT to do, leaves room for unwanted behavior.
+
 ## ⚠️ Sharp Edges
 
-| Issue                                           | Severity | Solution                      |
-| ----------------------------------------------- | -------- | ----------------------------- |
-| Using imprecise language in prompts             | high     | Be explicit:                  |
-| Expecting specific format without specifying it | high     | Specify format explicitly:    |
-| Only saying what to do, not what to avoid       | medium   | Include explicit don'ts:      |
-| Changing prompts without measuring impact       | medium   | Systematic evaluation:        |
-| Including irrelevant context 'just in case'     | medium   | Curate context:               |
-| Biased or unrepresentative examples             | medium   | Diverse examples:             |
-| Using default temperature for all tasks         | medium   | Task-appropriate temperature: |
-| Not considering prompt injection in user input  | high     | Defend against injection:     |
+| Issue                                           | Severity | Solution                                                    |
+| ----------------------------------------------- | -------- | ----------------------------------------------------------- |
+| Using imprecise language in prompts             | high     | Be explicit about format, constraints, and expected output  |
+| Expecting specific format without specifying it | high     | Specify format explicitly with examples                     |
+| Only saying what to do, not what to avoid       | medium   | Include explicit constraints and negative instructions      |
+| Changing prompts without measuring impact       | medium   | Systematic evaluation with before/after comparison          |
+| Including irrelevant context 'just in case'     | medium   | Curate context to only include relevant information         |
+| Biased or unrepresentative examples             | medium   | Diverse, representative examples covering edge cases        |
+| Using default temperature for all tasks         | medium   | Task-appropriate temperature (0 for factual, 0.7+ for creative) |
+| Not considering prompt injection in user input  | high     | Defend against injection with input validation and delimiters |
 
 ## Related Skills
 
