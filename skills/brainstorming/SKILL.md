@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: 'You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation.'
+description: 'Use when starting creative work - creating features, building components, adding functionality, or modifying behavior. Explores intent and requirements before implementation.'
 ---
 
 # Brainstorming Ideas Into Designs
@@ -40,7 +40,6 @@ Start by understanding the current project context, then ask questions one at a 
 **Documentation:**
 
 - Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-- Use elements-of-style:writing-clearly-and-concisely skill if available
 - Commit the design document to git
 
 **Implementation (if continuing):**
