@@ -1,6 +1,6 @@
 ---
 name: nextjs-best-practices
-description: Next.js App Router principles. Server Components, data fetching, routing patterns.
+description: Use when developing with Next.js App Router - covers Server Components, data fetching, routing patterns, caching, and server actions.
 allowed-tools: Read, Write, Edit, Glob, Grep
 ---
 
