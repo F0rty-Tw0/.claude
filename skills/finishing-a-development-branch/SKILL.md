@@ -104,7 +104,7 @@ EOF
 )"
 ```
 
-Then: Cleanup worktree (Step 5)
+Then: Keep worktree (branch still needs PR reviews/merges)
 
 #### Option 3: Keep As-Is
 
@@ -138,7 +138,7 @@ Then: Cleanup worktree (Step 5)
 
 ### Step 5: Cleanup Worktree
 
-**For Options 1, 2, 4:**
+**For Options 1 and 4 only:**
 
 Check if in worktree:
 
