@@ -1,4 +1,5 @@
 # folders
+.omc
 transcripts
 cache
 debug
@@ -11,4 +12,4 @@ todos
 # files
 .credentials.json
 .mcp.json
-
+.session-stats.json
