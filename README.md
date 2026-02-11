@@ -15,13 +15,19 @@ Run these commands inside Claude Code:
 /plugin install oh-my-claudecode
 ```
 
-## Step 3: Setup
+## Step 3: Login to your account
+
+```bash
+/login
+```
+
+## Step 4: Setup
 
 ```
 /oh-my-claudecode:omc-setup
 ```
 
-## Step 4: Update settings.json
+## Step 5: Update settings.json
 
 Replace the username in `statusLine.command` to match your machine:
 
