@@ -1,15 +1,11 @@
-# folders
-.omc
-transcripts
-cache
-debug
-file-history
-ide
-projects
-shell-snapshots
-todos
+# Ignore everything
+*
 
-# files
-.credentials.json
-.mcp.json
-.session-stats.json
+# Except agents and skills
+!agents/
+!agents/**
+!skills/
+!skills/**
+
+# Keep gitignore itself
+!.gitignore
