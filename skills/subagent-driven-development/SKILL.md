@@ -241,7 +241,7 @@ Done!
 **Required workflow skills:**
 
 - **skill:writing-plans** - Creates the plan this skill executes
-- **skill:requesting-code-review** - Code review template for reviewer subagents
+- **skill:code-review-requesting** - Code review template for reviewer subagents
 - **skill:finishing-a-development-branch** - Complete development after all tasks
 
 **Subagents should use:**
