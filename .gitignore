@@ -4,6 +4,8 @@
 # Except settings, agents and skills
 !agents/
 !agents/**
+!commands/
+!commands/**
 !skills/
 !skills/**
 !settings.json
