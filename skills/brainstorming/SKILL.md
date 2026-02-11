@@ -46,7 +46,7 @@ Start by understanding the current project context, then ask questions one at a 
 
 - Ask: "Ready to set up for implementation?"
 - Use skill:using-git-worktrees to create isolated workspace
-- Use skill:writing-plans to create detailed implementation plan
+- Use skill:plans-writing to create detailed implementation plan
 
 ## Key Principles
 

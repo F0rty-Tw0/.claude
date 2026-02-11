@@ -1,5 +1,5 @@
 ---
-name: writing-plans
+name: plans-writing
 description: Use when you have a spec or requirements for a multi-step task, before touching code
 ---
 
@@ -11,7 +11,7 @@ Write comprehensive implementation plans assuming the engineer has zero context 
 
 Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
 
-**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+**Announce at start:** "I'm using the plans-writing skill to create the implementation plan."
 
 **Context:** This should be run in a dedicated worktree (created by brainstorming skill).
 
@@ -34,7 +34,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use skill:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use skill:plans-executing to implement this plan task-by-task.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -104,7 +104,7 @@ After saving the plan, offer execution choice:
 
 **1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
 
-**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
+**2. Parallel Session (separate)** - Open new session with plans-executing, batch execution with checkpoints
 
 **Which approach?"**
 
@@ -115,4 +115,4 @@ After saving the plan, offer execution choice:
 
 **If Parallel Session chosen:**
 - Guide them to open new session in worktree
-- **REQUIRED SUB-SKILL:** New session uses skill:executing-plans
+- **REQUIRED SUB-SKILL:** New session uses skill:plans-executing
