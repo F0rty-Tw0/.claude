@@ -1,9 +1,0 @@
-{
-  "team": {
-    "maxAgents": 3,
-    "defaultAgentType": "executor",
-    "defaultModel": "opus",
-    "monitorIntervalMs": 30000,
-    "shutdownTimeoutMs": 15000
-  }
-}

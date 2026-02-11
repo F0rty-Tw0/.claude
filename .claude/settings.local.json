@@ -1,9 +1,0 @@
-{
-  "enabledMcpjsonServers": [
-    "context7",
-    "exa",
-    "github",
-    "codex-cli"
-  ],
-  "enableAllProjectMcpServers": true
-}
