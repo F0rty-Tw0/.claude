@@ -15,5 +15,5 @@
 !README.md
 
 # Ignore Specifics
-skills/orbit/*
-skills/azure-devops/*
+skills/orbit-*/
+skills/azure-devops-*/

@@ -46,5 +46,6 @@
   "enabledPlugins": {
     "oh-my-claudecode@omc": true
   },
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "respectGitignore": false
 }
