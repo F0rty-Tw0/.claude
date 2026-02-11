@@ -1,11 +1,13 @@
 # Ignore everything
 *
 
-# Except agents and skills
+# Except settings, agents and skills
 !agents/
 !agents/**
 !skills/
 !skills/**
+!settings.json
 
-# Keep gitignore itself
+# Keep gitignore and readme
 !.gitignore
+!README.md
