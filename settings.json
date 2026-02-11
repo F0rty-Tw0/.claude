@@ -30,7 +30,13 @@
       "Bash(nx build:*)",
       "Bash(nx documentation:*)"
     ],
-    "deny": []
+    "deny": [
+      "Bash(git push origin main:*)",
+      "Bash(git push origin master:*)",
+      "Bash(rm -rf:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ]
   },
   "enableAllProjectMcpServers": true,
   "statusLine": {
