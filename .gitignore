@@ -9,6 +9,11 @@
 !settings.json
 !settings.local.json
 !.ignore
+
 # Keep gitignore and readme
 !.gitignore
 !README.md
+
+# Ignore Specifics
+skills/orbit/*
+skills/azure-devops/*
