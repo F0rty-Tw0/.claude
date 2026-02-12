@@ -13,6 +13,7 @@
 !settings.json
 !settings.local.json
 !.ignore
+!.mcp.json
 
 # Keep gitignore and readme
 !.gitignore
