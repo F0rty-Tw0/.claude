@@ -42,7 +42,7 @@
   "enableAllProjectMcpServers": true,
   "statusLine": {
     "type": "command",
-    "command": "node C:\\Users\\ArtiomTofan\\.claude\\hud\\omc-hud.mjs"
+    "command": "node C:\\Users\\artio\\.claude\\hud\\omc-hud.mjs"
   },
   "enabledPlugins": {
     "oh-my-claudecode@omc": true
