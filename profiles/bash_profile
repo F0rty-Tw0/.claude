@@ -1,0 +1,24 @@
+# Sync Windows PATH into Git Bash
+# Reads current Machine+User PATH and adds any missing entries
+_sync_win_path() {
+  local win_path
+  win_path=$(powershell.exe -NoProfile -NonInteractive -Command \
+    '([Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [Environment]::GetEnvironmentVariable("PATH","User")).TrimEnd(";")' \
+    2>/dev/null | tr -d '\r')
+  [ -z "$win_path" ] && return
+
+  local IFS=';'
+  for p in $win_path; do
+    [ -z "$p" ] && continue
+    local unix_p
+    unix_p=$(cygpath -u "$p" 2>/dev/null) || continue
+    # Skip if already in PATH
+    case ":$PATH:" in
+      *":$unix_p:"*) ;;
+      *) PATH="$PATH:$unix_p" ;;
+    esac
+  done
+  export PATH
+}
+_sync_win_path
+unset -f _sync_win_path
