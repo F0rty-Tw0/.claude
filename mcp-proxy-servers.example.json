@@ -1,0 +1,53 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "C:\\Users\\artio\\bin\\github-mcp-server.exe",
+      "args": ["stdio"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_TOKEN"
+      }
+    },
+    "codex-cli": {
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "@cexll/codex-mcp-server"]
+    },
+    "gemini-cli": {
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "gemini-mcp-tool"]
+    },
+    "angular-cli": {
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "@angular/cli", "mcp"]
+    },
+    "context7": {
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "@upstash/context7-mcp"],
+      "env": {
+        "CONTEXT7_API_KEY": "YOUR_KEY"
+      }
+    },
+    "exa": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "pnpm",
+        "dlx",
+        "exa-mcp-server",
+        "--tools=web_search_advanced_exa,crawling_exa"
+      ],
+      "env": {
+        "EXA_API_KEY": "YOUR_TOKEN"
+      }
+    },
+    "filesystem": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "pnpm",
+        "dlx",
+        "@modelcontextprotocol/server-filesystem",
+        "D:\\"
+      ]
+    }
+  }
+}

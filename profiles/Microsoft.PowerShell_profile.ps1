@@ -13,8 +13,8 @@
 # Set strict mode to catch common scripting errors.
 Set-StrictMode -Version Latest
 
-# Default working directory (skip in VS Code — it sets its own workspace folder).
-if ($env:TERM_PROGRAM -ne 'vscode') {
+# Default working directory (skip in VS Code and Claude Code — they set their own workspace).
+if ($env:TERM_PROGRAM -ne 'vscode' -and -not $env:CLAUDECODE) {
     Set-Location D:\
 }
 

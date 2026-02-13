@@ -12,10 +12,12 @@
 !skills/**
 !hooks/
 !hooks/**
+!scripts/
+!scripts/**
 !settings.json
 !settings.local.json
 !.ignore
-!.mcp.json
+!mcp-proxy-servers.example.json
 
 # Keep gitignore and readme
 !.gitignore
