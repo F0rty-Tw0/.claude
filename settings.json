@@ -47,5 +47,22 @@
   "enabledPlugins": {
     "oh-my-claudecode@omc": true
   },
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/artio/.claude/hooks/rtk/rtk-rewrite.js"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/artio/.claude/hooks/rtk/rtk-suggest.js"
+          }
+        ]
+      }
+    ]
+  }
 }
