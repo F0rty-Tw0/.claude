@@ -40,19 +40,15 @@
     ]
   },
   "enableAllProjectMcpServers": true,
-  "statusLine": {
-    "type": "command",
-    "command": "node C:\\Users\\artio\\.claude\\hud\\omc-hud.mjs"
-  },
-  "enabledPlugins": {
-    "oh-my-claudecode@omc": true
-  },
-  "autoUpdatesChannel": "latest",
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Bash",
         "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/artio/.claude/hooks/nul-guard.js"
+          },
           {
             "type": "command",
             "command": "node C:/Users/artio/.claude/hooks/rtk/rtk-rewrite.js"
@@ -64,5 +60,14 @@
         ]
       }
     ]
-  }
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node C:\\Users\\artio\\.claude\\hud\\omc-hud.mjs"
+  },
+  "enabledPlugins": {
+    "oh-my-claudecode@omc": true,
+    "typescript-lsp@claude-plugins-official": true
+  },
+  "autoUpdatesChannel": "latest"
 }
