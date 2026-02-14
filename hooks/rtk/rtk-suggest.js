@@ -2,7 +2,7 @@
 // Emits system reminders when rtk-compatible commands are detected.
 // Outputs JSON with systemMessage to inform Claude Code without modifying execution.
 
-const RULES = [
+const SUGGEST_RULES = [
   // Git commands
   [/^git\s+status(\s|$)/, 'git status', 'rtk git status'],
   [/^git\s+diff(\s|$)/, 'git diff', 'rtk git diff'],
@@ -56,30 +56,100 @@ const RULES = [
   [/^golangci-lint(\s|$)/, 'golangci-lint', 'rtk golangci-lint'],
 ];
 
-let input = '';
-process.stdin.on('data', c => { input += c; });
+// Split command on top-level shell operators (&&, ||, ;, |) respecting quotes
+function splitTopLevel(cmd) {
+  const segments = [];
+  let i = 0,
+    start = 0,
+    inSingle = false,
+    inDouble = false;
+
+  while (i < cmd.length) {
+    const ch = cmd[i];
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      i++;
+    } else if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      i++;
+    } else if (ch === '\\' && !inSingle) {
+      i += 2;
+    } else if (!inSingle && !inDouble) {
+      let sep = null;
+      if (cmd[i] === '&' && cmd[i + 1] === '&') sep = '&&';
+      else if (cmd[i] === '|' && cmd[i + 1] === '|') sep = '||';
+      else if (cmd[i] === ';') sep = ';';
+      else if (cmd[i] === '|') sep = '|';
+
+      if (sep) {
+        segments.push(cmd.slice(start, i));
+        segments.push(sep);
+        i += sep.length;
+        start = i;
+      } else {
+        i++;
+      }
+    } else {
+      i++;
+    }
+  }
+  segments.push(cmd.slice(start));
+  return segments;
+}
+
+// Split compound command and suggest rtk for each eligible subcommand
+function suggestCompound(fullCmd) {
+  const segments = splitTopLevel(fullCmd);
+  let changed = false;
+
+  const result = segments.map((seg, i) => {
+    if (i % 2 === 1) return seg;
+
+    const trimmed = seg.trim();
+    if (!trimmed) return seg;
+
+    if (/^rtk\s|\/rtk\s/.test(trimmed)) return seg;
+
+    for (const [match, find, replace] of SUGGEST_RULES) {
+      if (match.test(trimmed)) {
+        const rewritten = trimmed.replace(
+          find instanceof RegExp ? find : find,
+          replace,
+        );
+        changed = true;
+        const leading = seg.match(/^\s*/)[0];
+        const trailing = seg.match(/\s*$/)[0];
+        return leading + rewritten + trailing;
+      }
+    }
+    return seg;
+  });
+
+  return changed ? result.join('') : null;
+}
+
+let suggestInput = '';
+process.stdin.on('data', (c) => {
+  suggestInput += c;
+});
 process.stdin.on('end', () => {
   try {
-    const data = JSON.parse(input);
+    const data = JSON.parse(suggestInput);
     const cmd = (data.tool_input && data.tool_input.command) || '';
     if (!cmd) return;
 
-    // Skip if already using rtk
-    if (/^rtk\s|\/rtk\s/.test(cmd)) return;
-    // Skip heredocs
     if (cmd.includes('<<')) return;
 
-    for (const [match, find, replace] of RULES) {
-      if (match.test(cmd)) {
-        const suggestion = cmd.replace(find instanceof RegExp ? find : find, replace);
-        process.stdout.write(JSON.stringify({
+    const suggestion = suggestCompound(cmd);
+    if (suggestion) {
+      process.stdout.write(
+        JSON.stringify({
           hookSpecificOutput: {
             hookEventName: 'PreToolUse',
-            systemMessage: `\u26A1 RTK available: \`${suggestion}\` (60-90% token savings)`
-          }
-        }));
-        return;
-      }
+            systemMessage: `\u26A1 RTK available: \`${suggestion}\` (60-90% token savings)`,
+          },
+        }),
+      );
     }
   } catch (_) {}
 });
