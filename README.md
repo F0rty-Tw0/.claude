@@ -301,6 +301,8 @@ The proxy config defines these MCP servers:
 | **context7**    | `pnpm dlx @upstash/context7-mcp`                       | `CONTEXT7_API_KEY`             |
 | **exa**         | `pnpm dlx exa-mcp-server`                              | `EXA_API_KEY`                  |
 | **filesystem**  | `pnpm dlx @modelcontextprotocol/server-filesystem D:\` | -                              |
+| **greb-mcp**    | `greb-mcp-js` (from `cheetah-greb`)                    | `GREB_API_KEY`                 |
+| **taigaApi**    | `uv run src/server.py` (from `D:/pytaiga-mcp`)         | -                              |
 
 ### Installing Each MCP Server
 
@@ -418,6 +420,47 @@ pnpm dlx @modelcontextprotocol/server-filesystem D:\
 
 > **Security note**: This grants the MCP server access to the entire D: drive. Adjust the path argument to limit scope if needed.
 
+#### Greb MCP (Code Search)
+
+> Repo: [VaibhavRaina/greb](https://github.com/VaibhavRaina/greb) | npm: [cheetah-greb](https://www.npmjs.com/package/cheetah-greb) | Website: [grebmcp.com](https://grebmcp.com/)
+
+Semantic code search via MCP using natural language queries. Searches your codebase with AI-powered ranking — no indexing required. Works with Claude Code, Cursor, Windsurf, and other MCP clients.
+
+```bash
+pnpm install -g cheetah-greb
+```
+
+This installs the `greb-mcp-js` binary globally.
+
+Get an API key at: https://grebmcp.com/dashboard/api-keys
+
+Add to `mcp-proxy-servers.json`:
+
+```json
+"env": { "GREB_API_KEY": "grb_..." }
+```
+
+#### Taiga API (Project Management)
+
+> Repo: [talhaorak/pytaiga-mcp](https://github.com/talhaorak/pytaiga-mcp)
+
+MCP server for [Taiga](https://taiga.io/) project management. Provides access to projects, user stories, tasks, issues, sprints, and more. Runs locally via `uv`.
+
+```powershell
+# 1. Clone the repo to D:\
+git clone https://github.com/talhaorak/pytaiga-mcp.git D:\pytaiga-mcp
+
+# 2. Install dependencies
+uv --directory D:\pytaiga-mcp sync
+
+# 3. Configure your Taiga instance — create D:\pytaiga-mcp\.env
+#    TAIGA_URL=https://your-taiga-instance.com
+#    TAIGA_USERNAME=your-username
+#    TAIGA_PASSWORD=your-password
+```
+
+The proxy launches the server automatically via `uv --directory D:/pytaiga-mcp run src/server.py`. No API key needed in the proxy config — authentication is handled by the `.env` file in the repo.
+
 ### ~/.claude.json (Client-Side MCP Config)
 
 Claude Code connects to the MCP servers through the proxy. Add this `mcpServers` block to `~/.claude.json`:
@@ -459,6 +502,16 @@ Claude Code connects to the MCP servers through the proxy. Add this `mcpServers`
       "type": "stdio",
       "command": "mcp-proxy",
       "args": ["http://127.0.0.1:8808/servers/filesystem/sse"]
+    },
+    "greb-mcp": {
+      "type": "stdio",
+      "command": "mcp-proxy",
+      "args": ["http://127.0.0.1:8808/servers/greb-mcp/sse"]
+    },
+    "taigaApi": {
+      "type": "stdio",
+      "command": "mcp-proxy",
+      "args": ["http://127.0.0.1:8808/servers/taigaApi/sse"]
     }
   }
 }

@@ -48,6 +48,16 @@
         "@modelcontextprotocol/server-filesystem",
         "D:\\"
       ]
+    },
+    "greb-mcp": {
+      "command": "greb-mcp-js",
+      "env": {
+        "GREB_API_KEY": "YOUR_KEY"
+      }
+    },
+    "taigaApi": {
+      "command": "uv",
+      "args": ["--directory", "D:/pytaiga-mcp", "run", "src/server.py"]
     }
   }
 }
