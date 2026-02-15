@@ -10,8 +10,9 @@
 # CORE SETUP AND CONFIGURATION
 #----------------------------------------------------------------
 
-# Set strict mode to catch common scripting errors.
-Set-StrictMode -Version Latest
+# NOTE: Set-StrictMode -Version Latest was removed from the profile.
+# Strict mode breaks VS Code shell integration and other third-party scripts
+# that don't expect it. Use it inside individual scripts/modules instead.
 
 # Default working directory (skip in VS Code and Claude Code — they set their own workspace).
 if ($env:TERM_PROGRAM -ne 'vscode' -and -not $env:CLAUDECODE) {
@@ -74,6 +75,11 @@ Set-Alias -Name dir -Value Invoke-GetChildItemWithIcons -Option AllScope -Force
 #----------------------------------------------------------------
 function Claude-Continue { claude @args }
 New-Alias -Name cc -Value Claude-Continue -Force -Option AllScope
+#----------------------------------------------------------------
+# OPENCODE
+#----------------------------------------------------------------
+function OpenCode-Continue { opencode @args }
+New-Alias -Name oc -Value OpenCode-Continue -Force -Option AllScope
 
 #----------------------------------------------------------------
 # GIT ALIASES AND FUNCTIONS
