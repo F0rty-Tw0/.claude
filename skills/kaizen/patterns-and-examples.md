@@ -1,6 +1,13 @@
 # Kaizen: Patterns and Examples
 
-Detailed code examples and practical guidance for applying the Four Pillars.
+Detailed code examples for applying the Four Pillars. Examples use TypeScript; apply equivalent patterns in your target language.
+
+## Table of Contents
+
+- [1. Continuous Improvement Examples](#1-continuous-improvement-examples)
+- [2. Poka-Yoke (Error Proofing) Examples](#2-poka-yoke-error-proofing-examples)
+- [3. Standardized Work Examples](#3-standardized-work-examples)
+- [4. Just-In-Time (JIT) Examples](#4-just-in-time-jit-examples)
 
 ## 1. Continuous Improvement Examples
 
@@ -21,7 +28,7 @@ const calculateTotal = (items: Item[]) => {
 // Iteration 2: Make it clear (refactor)
 const calculateTotal = (items: Item[]): number => {
   return items.reduce((total, item) => {
-    return total + (item.price * item.quantity);
+    return total + item.price * item.quantity;
   }, 0);
 };
 
@@ -33,7 +40,7 @@ const calculateTotal = (items: Item[]): number => {
     if (item.price < 0 || item.quantity < 0) {
       throw new Error('Price and quantity must be non-negative');
     }
-    return total + (item.price * item.quantity);
+    return total + item.price * item.quantity;
   }, 0);
 };
 ```
@@ -47,12 +54,11 @@ Each step is complete, tested, and working
 ```typescript
 // Trying to do everything at once
 const calculateTotal = (items: Item[]): number => {
-  // Validate, optimize, add features, handle edge cases all together
   if (!items?.length) return 0;
   const validItems = items.filter(item => {
     if (item.price < 0) throw new Error('Negative price');
     if (item.quantity < 0) throw new Error('Negative quantity');
-    return item.quantity > 0; // Also filtering zero quantities
+    return item.quantity > 0;
   });
   // Plus caching, plus logging, plus currency conversion...
   return validItems.reduce(...); // Too many concerns at once
@@ -63,30 +69,6 @@ Overwhelming, error-prone, hard to verify
 
 </Bad>
 
-### In Practice
-
-**When implementing features:**
-
-1. Start with simplest version that works
-2. Add one improvement (error handling, validation, etc.)
-3. Test and verify
-4. Repeat if time permits
-5. Don't try to make it perfect immediately
-
-**When refactoring:**
-
-- Fix one smell at a time
-- Commit after each improvement
-- Keep tests passing throughout
-- Stop when "good enough" (diminishing returns)
-
-**When reviewing code:**
-
-- Suggest incremental improvements (not rewrites)
-- Prioritize: critical → important → nice-to-have
-- Focus on highest-impact changes first
-- Accept "better than before" even if not perfect
-
 ## 2. Poka-Yoke (Error Proofing) Examples
 
 ### Type System Error Proofing
@@ -94,18 +76,13 @@ Overwhelming, error-prone, hard to verify
 <Good>
 
 ```typescript
-// Error: string status can be any value
+// Bad: string status can be any value
 type OrderBad = {
-  readonly status: string; // Can be "pending", "PENDING", "pnding", anything!
-  readonly total: number;
+  readonly status: string; // "pending", "PENDING", "pnding", anything!
 };
 
 // Good: Only valid states possible
 type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered';
-type Order = {
-  readonly status: OrderStatus;
-  readonly total: number;
-};
 
 // Better: States with associated data
 type Order =
@@ -130,12 +107,6 @@ type NonEmptyArray<T> = [T, ...T[]];
 const firstItem = <T>(items: NonEmptyArray<T>): T => {
   return items[0]; // Always safe, never undefined!
 };
-
-// Caller must prove array is non-empty
-const items: number[] = [1, 2, 3];
-if (items.length > 0) {
-  firstItem(items as NonEmptyArray<number>); // Safe
-}
 ```
 
 Function signature guarantees safety
@@ -147,24 +118,17 @@ Function signature guarantees safety
 <Good>
 
 ```typescript
-// Error: Validation after use
+// Bad: Validation after use
 const processPayment = (amount: number) => {
   const fee = amount * 0.03; // Used before validation!
   if (amount <= 0) throw new Error('Invalid amount');
-  // ...
 };
 
 // Good: Validate immediately
 const processPayment = (amount: number) => {
-  if (amount <= 0) {
-    throw new Error('Payment amount must be positive');
-  }
-  if (amount > 10000) {
-    throw new Error('Payment exceeds maximum allowed');
-  }
-
+  if (amount <= 0) throw new Error('Payment amount must be positive');
+  if (amount > 10000) throw new Error('Payment exceeds maximum allowed');
   const fee = amount * 0.03;
-  // ... now safe to use
 };
 
 // Better: Validation at boundary with branded type
@@ -176,14 +140,13 @@ const validatePositive = (n: number): PositiveNumber => {
 };
 
 const processPayment = (amount: PositiveNumber) => {
-  // amount is guaranteed positive, no need to check
-  const fee = amount * 0.03;
+  const fee = amount * 0.03; // Guaranteed positive, no check needed
 };
 
-// Validate at system boundary
+// Validate once at system boundary, safe everywhere else
 const handlePaymentRequest = (req: Request) => {
-  const amount = validatePositive(req.body.amount); // Validate once
-  processPayment(amount); // Use everywhere safely
+  const amount = validatePositive(req.body.amount);
+  processPayment(amount);
 };
 ```
 
@@ -196,18 +159,15 @@ Validate once at boundary, safe everywhere else
 <Good>
 
 ```typescript
-// Early returns prevent deeply nested code
 const processUser = (user: User | null) => {
   if (!user) {
     logger.error('User not found');
     return;
   }
-
   if (!user.email) {
     logger.error('User email missing');
     return;
   }
-
   if (!user.isActive) {
     logger.info('User inactive, skipping');
     return;
@@ -227,30 +187,17 @@ Guards make assumptions explicit and enforced
 <Good>
 
 ```typescript
-// Error: Optional config with unsafe defaults
-type ConfigBad = {
-  readonly apiKey?: string;
-  readonly timeout?: number;
-};
-
+// Bad: Optional config with unsafe defaults
+type ConfigBad = { readonly apiKey?: string; readonly timeout?: number };
 const client = new APIClient({ timeout: 5000 }); // apiKey missing!
 
 // Good: Required config, fails early
-type Config = {
-  readonly apiKey: string;
-  readonly timeout: number;
-};
+type Config = { readonly apiKey: string; readonly timeout: number };
 
 const loadConfig = (): Config => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error('API_KEY environment variable required');
-  }
-
-  return {
-    apiKey,
-    timeout: 5000,
-  };
+  if (!apiKey) throw new Error('API_KEY environment variable required');
+  return { apiKey, timeout: 5000 };
 };
 
 // App fails at startup if config invalid, not during request
@@ -261,29 +208,6 @@ const client = new APIClient(config);
 Fail at startup, not in production
 
 </Good>
-
-### In Practice
-
-**When designing APIs:**
-
-- Use types to constrain inputs
-- Make invalid states unrepresentable
-- Return Result<T, E> instead of throwing
-- Document preconditions in types
-
-**When handling errors:**
-
-- Validate at system boundaries
-- Use guards for preconditions
-- Fail fast with clear messages
-- Log context for debugging
-
-**When configuring:**
-
-- Required over optional with defaults
-- Validate all config at startup
-- Fail deployment if config invalid
-- Don't allow partial configurations
 
 ## 3. Standardized Work Examples
 
@@ -337,20 +261,16 @@ Inconsistency creates confusion
 // Project standard: Result type for recoverable errors
 type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 
-// All services follow this pattern
 const fetchUser = async (id: string): Promise<Result<User, Error>> => {
   try {
     const user = await db.users.findById(id);
-    if (!user) {
-      return { ok: false, error: new Error('User not found') };
-    }
+    if (!user) return { ok: false, error: new Error('User not found') };
     return { ok: true, value: user };
   } catch (err) {
     return { ok: false, error: err as Error };
   }
 };
 
-// Callers use consistent pattern
 const result = await fetchUser('123');
 if (!result.ok) {
   logger.error('Failed to fetch user', result.error);
@@ -374,12 +294,6 @@ Standard pattern across codebase
  * Why: Network requests fail temporarily; retrying improves reliability
  * When to use: External API calls, database operations
  * When not to use: User input validation, internal function calls
- *
- * @example
- * const result = await retry(
- *   () => fetch('https://api.example.com/data'),
- *   { maxAttempts: 3, baseDelay: 1000 }
- * );
  */
 const retry = async <T>(
   operation: () => Promise<T>,
@@ -392,29 +306,6 @@ const retry = async <T>(
 Documents why, when, and how
 
 </Good>
-
-### In Practice
-
-**Before adding new patterns:**
-
-- Search codebase for similar problems solved
-- Check CLAUDE.md for project conventions
-- Discuss with team if breaking from pattern
-- Update docs when introducing new pattern
-
-**When writing code:**
-
-- Match existing file structure
-- Use same naming conventions
-- Follow same error handling approach
-- Import from same locations
-
-**When reviewing:**
-
-- Check consistency with existing code
-- Point to examples in codebase
-- Suggest aligning with standards
-- Update CLAUDE.md if new standard emerges
 
 ## 4. Just-In-Time (JIT) Examples
 
@@ -441,16 +332,21 @@ interface LogTransport {
   write(level: LogLevel, message: string, meta?: LogMetadata): Promise<void>;
 }
 
-class ConsoleTransport implements LogTransport { /* ... */ }
-class FileTransport implements LogTransport { /* ... */ }
-class RemoteTransport implements LogTransport { /* ... */ }
+class ConsoleTransport implements LogTransport {
+  /* ... */
+}
+class FileTransport implements LogTransport {
+  /* ... */
+}
+class RemoteTransport implements LogTransport {
+  /* ... */
+}
 
 class Logger {
   private transports: LogTransport[] = [];
   private queue: LogEntry[] = [];
   private rateLimiter: RateLimiter;
   private formatter: LogFormatter;
-
   // 200 lines of code for "maybe we'll need it"
 }
 
@@ -463,12 +359,7 @@ Building for imaginary future requirements
 
 </Bad>
 
-**When to add complexity:**
-
-- Current requirement demands it
-- Pain points identified through use
-- Measured performance issues
-- Multiple use cases emerged
+### Evolution Based on Real Requirements
 
 <Good>
 
@@ -511,8 +402,12 @@ abstract class BaseCRUDService<T> {
   abstract delete(id: string): Promise<void>;
 }
 
-class GenericRepository<T> { /* 300 lines */ }
-class QueryBuilder<T> { /* 200 lines */ }
+class GenericRepository<T> {
+  /* 300 lines */
+}
+class QueryBuilder<T> {
+  /* 200 lines */
+}
 // ... building entire ORM for single table
 ```
 
@@ -532,10 +427,8 @@ const getUserById = async (id: string): Promise<User | null> => {
   return db.query('SELECT * FROM users WHERE id = $1', [id]);
 };
 
-// When pattern emerges across multiple entities, then abstract
+// Abstract only when pattern proven across 3+ cases
 ```
-
-Abstract only when pattern proven across 3+ cases
 
 </Good>
 
@@ -544,16 +437,13 @@ Abstract only when pattern proven across 3+ cases
 <Good>
 
 ```typescript
-// Current: Simple approach
 const filterActiveUsers = (users: User[]): User[] => {
   return users.filter((user) => user.isActive);
 };
 
 // Benchmark shows: 50ms for 1000 users (acceptable)
-// ✓ Ship it, no optimization needed
-
-// Later: After profiling shows this is bottleneck
-// Then optimize with indexed lookup or caching
+// Ship it, no optimization needed
+// Later: After profiling shows this is bottleneck, then optimize
 ```
 
 Optimize based on measurement, not assumptions
@@ -563,40 +453,14 @@ Optimize based on measurement, not assumptions
 <Bad>
 
 ```typescript
-// Premature optimization
 const filterActiveUsers = (users: User[]): User[] => {
   // "This might be slow, so let's cache and index"
   const cache = new WeakMap();
   const indexed = buildBTreeIndex(users, 'isActive');
-  // 100 lines of optimization code
-  // Adds complexity, harder to maintain
-  // No evidence it was needed
+  // 100 lines of optimization code for no measured problem
 };
 ```
 
 Complex solution for unmeasured problem
 
 </Bad>
-
-### In Practice
-
-**When implementing:**
-
-- Solve the immediate problem
-- Use straightforward approach
-- Resist "what if" thinking
-- Delete speculative code
-
-**When optimizing:**
-
-- Profile first, optimize second
-- Measure before and after
-- Document why optimization needed
-- Keep simple version in tests
-
-**When abstracting:**
-
-- Wait for 3+ similar cases (Rule of Three)
-- Make abstraction as simple as possible
-- Prefer duplication over wrong abstraction
-- Refactor when pattern clear
