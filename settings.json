@@ -52,10 +52,6 @@
           {
             "type": "command",
             "command": "node C:/Users/artio/.claude/hooks/rtk/rtk-rewrite.js"
-          },
-          {
-            "type": "command",
-            "command": "node C:/Users/artio/.claude/hooks/rtk/rtk-suggest.js"
           }
         ]
       }
