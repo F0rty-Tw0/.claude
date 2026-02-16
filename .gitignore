@@ -6,6 +6,8 @@
 !agents/**
 !commands/
 !commands/**
+!plans/
+!plans/**
 !profiles/
 !profiles/**
 !skills/
