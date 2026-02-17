@@ -2,6 +2,8 @@
 
 Source: `plans/agentic-cli-mcp-server.md` -> `Implementation Phases`
 
+Introduction (no implementation): `plans/agentic-cli-mcp-server.phase-2-introduction.md`
+
 ## Objectives
 
 - In-memory session store (Tier 1: context prepend)

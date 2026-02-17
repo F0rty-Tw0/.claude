@@ -2,6 +2,8 @@
 
 Source: `plans/agentic-cli-mcp-server.md` -> `Implementation Phases`
 
+Introduction (no implementation): `plans/agentic-cli-mcp-server.phase-3-introduction.md`
+
 ## Objectives
 
 - Aider, Goose, Amp providers

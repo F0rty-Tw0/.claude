@@ -2,6 +2,8 @@
 
 Source: `plans/agentic-cli-mcp-server.md` -> `Implementation Phases`
 
+Introduction (no implementation): `plans/agentic-cli-mcp-server.phase-1-introduction.md`
+
 ## Objectives
 
 - TypeScript project setup (`package.json`, `tsconfig.json`)

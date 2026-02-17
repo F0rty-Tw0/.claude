@@ -2,6 +2,8 @@
 
 Source: `plans/agentic-cli-mcp-server.md` -> `Implementation Phases`
 
+Introduction (no implementation): `plans/agentic-cli-mcp-server.phase-4-introduction.md`
+
 ## Objectives
 
 - `review_{provider}` tool (Codex initially, extensible)
