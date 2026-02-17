@@ -142,7 +142,7 @@ agentic-mcp/
 └── dist/                      # Build output (gitignored)
 ```
 
-**Estimated size**: ~800-1000 lines TypeScript (vs ~80 lines .mjs in v1)
+**Estimated size**: ~1000-1200 lines TypeScript (vs ~80 lines .mjs in v1)
 
 ---
 
@@ -152,16 +152,19 @@ agentic-mcp/
 
 ```typescript
 interface ProviderConfig {
+  configVersion: number; // Schema version (currently 1)
   enabled: boolean;
   description: string;
   command: string; // CLI binary name
   defaultModel: string; // Empty string if not applicable
   timeout: number; // ms, default 120000
-  env: Record<string, string>; // Extra env vars (e.g. CLAUDECODE: "")
+  env: Record<string, string | null>; // Extra env vars (null = unset variable, e.g. CLAUDECODE: null)
+  prerequisites?: string[]; // Human-readable requirements (e.g. "Docker running", "AWS credentials configured")
+  versionCheck?: { command: string[]; minVersion?: string }; // Optional CLI version validation
 
   // Capability declarations — gate which tools get registered
   capabilities: {
-    ask: true; // Always required
+    ask: boolean; // Always required — validation enforces `ask: true` when `enabled: true`
     review?: boolean; // Code review tool
     sessions?: boolean; // Session management
     sandbox?: boolean | 'leveled'; // Sandbox control
@@ -191,8 +194,8 @@ interface ProviderConfig {
       modelFlag?: string;
     };
     sessions?: {
-      resumeFlag?: string; // e.g. "--resume", "exec resume"
-      continueFlag?: string; // e.g. "--continue", "-c"
+      resumeFlag?: string[]; // e.g. ["--resume"], ["exec", "resume"]
+      continueFlag?: string[]; // e.g. ["--continue"], ["-c"]
       listCommand?: string[]; // e.g. ["session", "list"]
     };
     sandbox?: {
@@ -242,8 +245,8 @@ interface ProviderConfig {
       "fileFlag": null
     },
     "sessions": {
-      "resumeFlag": "--resume",
-      "continueFlag": "--continue"
+      "resumeFlag": ["--resume"],
+      "continueFlag": ["--continue"]
     }
   },
   "input": { "method": "flag" }
@@ -289,8 +292,8 @@ interface ProviderConfig {
       "modelFlag": "-m"
     },
     "sessions": {
-      "resumeFlag": "exec resume",
-      "continueFlag": "exec resume --last"
+      "resumeFlag": ["exec", "resume"],
+      "continueFlag": ["exec", "resume", "--last"]
     },
     "sandbox": {
       "flag": "--sandbox",
@@ -328,8 +331,8 @@ interface ProviderConfig {
       "autoModeFlags": ["--allow-all", "--no-ask-user"]
     },
     "sessions": {
-      "resumeFlag": "--resume",
-      "continueFlag": "--continue"
+      "resumeFlag": ["--resume"],
+      "continueFlag": ["--continue"]
     }
   },
   "input": { "method": "flag" }
@@ -423,7 +426,7 @@ interface ProviderConfig {
       "modelFlag": "--model"
     },
     "sessions": {
-      "resumeFlag": "--resume",
+      "resumeFlag": ["--resume"],
       "listCommand": ["session", "list"]
     }
   },
@@ -456,7 +459,7 @@ interface ProviderConfig {
       "modelFlag": null
     },
     "sessions": {
-      "resumeFlag": "threads continue -x"
+      "resumeFlag": ["threads", "continue", "-x"]
     }
   },
   "input": { "method": "stdin" }
@@ -520,7 +523,7 @@ interface ProviderConfig {
       "autoModeFlags": ["--force"]
     },
     "sessions": {
-      "resumeFlag": "--resume"
+      "resumeFlag": ["--resume"]
     }
   },
   "input": { "method": "flag" }
@@ -557,7 +560,7 @@ interface ProviderConfig {
       "fileFlag": "--file"
     },
     "sessions": {
-      "resumeFlag": "--session-id"
+      "resumeFlag": ["--session-id"]
     },
     "sandbox": {
       "flag": "--auto",
@@ -593,7 +596,7 @@ interface ProviderConfig {
       "modelFlag": null
     },
     "sessions": {
-      "resumeFlag": "--resume"
+      "resumeFlag": ["--resume"]
     }
   },
   "input": { "method": "positional" }
@@ -627,7 +630,7 @@ interface ProviderConfig {
       "fileFlag": "--file"
     },
     "sessions": {
-      "continueFlag": "--continue"
+      "continueFlag": ["--continue"]
     }
   },
   "input": { "method": "positional" }
@@ -661,7 +664,7 @@ interface ProviderConfig {
       "autoModeFlags": ["--full"]
     },
     "sessions": {
-      "resumeFlag": "continue"
+      "resumeFlag": ["continue"]
     }
   },
   "input": { "method": "positional" }
@@ -693,7 +696,7 @@ interface ProviderConfig {
       "modelFlag": null
     },
     "sessions": {
-      "resumeFlag": "--resume"
+      "resumeFlag": ["--resume"]
     }
   },
   "input": { "method": "flag" }
@@ -876,21 +879,14 @@ When a CLI returns JSON (`capabilities.outputFormat === 'json' | 'stream-json'`)
 
 ```typescript
 interface ToolResponse {
-  content: [{ type: 'text'; text: string }];
-  structuredContent?: {
-    provider: string;
-    model: string;
-    sessionId?: string;
-    nativeSessionId?: string;
-    executionTimeMs: number;
-    truncated: boolean;
-  };
-  _meta?: {
-    provider: string;
-    model: string;
-  };
+  content: [{ type: 'text'; text: string }]; // Always populated — human-readable output
+  isError?: boolean;
+  // Metadata encoded in a second text content block as JSON when structured output is available:
+  // { provider, model, sessionId?, nativeSessionId?, executionTimeMs, truncated, sessionMode?, outputFormatObserved? }
 }
 ```
+
+Metadata is returned as a second `text` content block containing JSON, keeping the response MCP-spec-compliant.
 
 For CLIs returning plain text, stdout is returned as-is in a text content block.
 
@@ -942,7 +938,7 @@ Following the MCP 2025-11-25 specification (as codex-mcp-server does):
 ```json
 {
   "name": "@f0rty-tw0/agentic-mcp",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Universal MCP server wrapping any agentic CLI tool",
   "type": "module",
   "bin": {
@@ -968,6 +964,33 @@ Following the MCP 2025-11-25 specification (as codex-mcp-server does):
     "jest": "^30.0.0",
     "ts-jest": "^29.0.0",
     "eslint": "^9.0.0"
+  }
+}
+```
+
+---
+
+## Configuration Resolution
+
+The server resolves provider configuration using the following precedence chain:
+
+1. `--config <path>` CLI flag (highest priority)
+2. `AGENTIC_MCP_CONFIG` environment variable
+3. User-local config: `~/.config/agentic-mcp/providers.json` (Linux/macOS) or `%APPDATA%/agentic-mcp/providers.json` (Windows)
+4. Bundled default (shipped with package)
+
+User configs are **deep-merged** over the bundled defaults. This means users only need to specify the providers they want to override — all other providers retain their default configuration.
+
+### Config File Format
+
+The config file uses a versioned wrapper:
+
+```json
+{
+  "configVersion": 1,
+  "providers": {
+    "claude": { ... },
+    "codex": { ... }
   }
 }
 ```
@@ -1022,8 +1045,16 @@ claude mcp add agentic -- npx -y @f0rty-tw0/agentic-mcp
 - [ ] Error handling (3 error classes)
 - [ ] Startup CLI availability check
 - [ ] Platform handling (Windows signals, path normalization)
+- [ ] Global spawn semaphore (`maxConcurrentSpawns: 5`)
+- [ ] Output size limits (`maxOutputBytes: 10MB` default)
+- [ ] Input validation (model regex, sessionId regex, path canonicalization)
+- [ ] Child process environment isolation
+- [ ] README.md, LICENSE (MIT), CONTRIBUTING.md, SECURITY.md
+- [ ] GitHub Actions CI (lint + typecheck + unit tests)
 
 ### Phase 2: Sessions + Streaming
+
+> **Note:** Phase 2 and Phase 3 can run in parallel (both depend only on Phase 1).
 
 - [ ] In-memory session store (Tier 1: context prepend)
 - [ ] Native session passthrough (Tier 2: --resume/--continue)
@@ -1043,8 +1074,7 @@ claude mcp add agentic -- npx -y @f0rty-tw0/agentic-mcp
 - [ ] `review_{provider}` tool (Codex initially, extensible)
 - [ ] Sandbox parameter support
 - [ ] File context passing (`files` param → `--file`/`@` syntax)
-- [ ] Concurrency limiting (configurable `maxConcurrency` per provider)
-- [ ] Output size limits (configurable `maxOutputBytes`)
+- [ ] Concurrency limiting (per-provider queues — global limit already in Phase 1)
 - [ ] NPX publish to npm registry
 
 ---
@@ -1070,7 +1100,7 @@ claude mcp add agentic -- npx -y @f0rty-tw0/agentic-mcp
       "modelFlag": "--model"
     },
     "sessions": {
-      "resumeFlag": "--resume"
+      "resumeFlag": ["--resume"]
     }
   },
   "input": { "method": "flag" }
@@ -1078,6 +1108,42 @@ claude mcp add agentic -- npx -y @f0rty-tw0/agentic-mcp
 ```
 
 3. Restart server. Tools `ask_newcli`, `sessions_newcli`, `ping_newcli`, `help_newcli` are now available.
+
+---
+
+## Security Model
+
+### Trust Boundaries
+
+1. **MCP Client** — UNTRUSTED. All inputs (prompt, model, sessionId, workingDirectory, files) are validated.
+2. **providers.json author** — SEMI-TRUSTED. Config is validated by Zod schema but semantic intent is not verified.
+3. **CLI binaries on PATH** — TRUSTED but pinned. Binary paths resolved at startup via `which`/`where` and stored as absolute paths for all subsequent spawns.
+4. **AI provider backends** — UNTRUSTED output. CLI responses may contain adversarial content.
+
+### Input Validation
+
+| Parameter | Validation |
+|---|---|
+| `prompt` | Max 1MB. Stdin delivery for positional-method providers. `--` separator enforced. |
+| `model` | Regex: `^[a-zA-Z0-9][a-zA-Z0-9._:\-/]{0,127}$` |
+| `sessionId` | Regex: `^[a-zA-Z0-9][a-zA-Z0-9._:\-]{0,63}$` |
+| `workingDirectory` | Canonicalized via `path.resolve()`. Must be within configured allowlist. Rejects `..` components. |
+| `files` | Each path resolved relative to `workingDirectory`. Must pass `startsWith(resolvedWorkingDir)` check. Max 20 files. |
+| `context` | Max 512KB. Treated as untrusted user input. |
+
+### Child Process Isolation
+
+- Child environments constructed from minimal base (`PATH`, `HOME`, `TEMP`) plus provider-declared `env` entries only.
+- Full `process.env` is NEVER passed to child processes.
+- Binary paths pinned to absolute paths at startup.
+
+### Auto-Mode Warning
+
+At startup, the server logs a warning for any provider whose config contains known dangerous flags:
+- `--dangerously-skip-permissions`
+- `--allow-all-tools`, `--allow-all`
+- `--trust-all-tools`
+- `--full-auto`, `--yes-always`
 
 ---
 
@@ -1118,15 +1184,15 @@ claude mcp add agentic -- npx -y @f0rty-tw0/agentic-mcp
 | Input handling     | Arg only                   | flag / positional / stdin                     |
 | Tool annotations   | None                       | MCP 2025-11-25 spec                           |
 | Platform support   | Basic                      | Windows signals, path normalization           |
-| Lines of code      | ~80                        | ~800-1000                                     |
+| Lines of code      | ~80                        | ~1000-1200                                    |
 | Build step         | None                       | `tsc` (one-time)                              |
 
 ---
 
-## Open Questions
+## Resolved Design Decisions
 
-- [ ] Should `providers.json` ship with all 16 providers (disabled by default) or just the 5 core?
-- [ ] Should stdin piping be the default prompt delivery for all CLIs that support it?
-- [ ] Should the server parse JSON output from CLIs or pass raw stdout through?
-- [ ] How should model fallback work when user-specified model isn't available?
-- [ ] Maximum concurrent CLI invocations: global limit or per-provider?
+1. **Ship all 16 providers** with `enabled: false` for non-core. Discoverable via `list_providers`.
+2. **Keep `input.method` explicit per provider.** Add auto-stdin fallback for prompts exceeding 32KB as server-side safety.
+3. **Parse JSON when `outputFormat` is json/stream-json**, pass raw text otherwise. `content[0].text` always populated with readable output regardless of parse result.
+4. **Return an error when user-specified model is rejected by CLI.** `defaultModel` only applies when caller omits `model` param.
+5. **Per-provider `maxConcurrency`** (default: 1) as primary control, with optional `globalMaxConcurrency` as safety ceiling. Two distinct timeouts: `queueTimeoutMs` (wait for slot) and `executionTimeoutMs` (command runtime).
