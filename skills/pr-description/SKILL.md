@@ -23,9 +23,10 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 3. Size the change   → small / medium / large (determines output format)
 4. Write title       → short, specific, lowercase
 5. Write description → proportional to change size
-6. Humanize          → run output through humanizer patterns
-7. Self-check        → verify format matches size rules
-8. Present           → show to user, ready for gh pr create
+6. Add ticket link   → extract ticket number from branch name, append "Closes #<number>"
+7. Humanize          → run output through humanizer patterns
+8. Self-check        → verify format matches size rules
+9. Present           → show to user, ready for gh pr create
 ```
 
 ### Step 1: Gather Changes
@@ -55,17 +56,18 @@ Mention impact only when it's real and non-obvious. Don't manufacture significan
 
 ### Step 3: Size the Change
 
-| Size | Criteria | Output length |
-|------|----------|---------------|
-| Small | 1-3 files, <50 lines, single concern | 1-2 sentences |
-| Medium | 4-10 files, one feature or theme | 3-5 bullet points |
-| Large | 10+ files, multiple concerns | Sections with bullets |
+| Size   | Criteria                             | Output length         |
+| ------ | ------------------------------------ | --------------------- |
+| Small  | 1-3 files, <50 lines, single concern | 1-2 sentences         |
+| Medium | 4-10 files, one feature or theme     | 3-5 bullet points     |
+| Large  | 10+ files, multiple concerns         | Sections with bullets |
 
 **This is the most important step.** A 1-line bugfix does NOT get Problem/Solution/Impact sections. A 15-file feature does NOT get a 2-sentence summary. Match output to change size.
 
 ### Step 4: Write the Title
 
 Rules:
+
 - Under 60 characters
 - Lowercase (except proper nouns)
 - Say what changed, not why
@@ -89,6 +91,7 @@ Refactor: Enhance Payment Service Architecture for Better Maintainability
 **Format based on size:**
 
 **Small changes (1-3 files):**
+
 ```
 The user list was running a separate query per row to load profiles.
 Added a JOIN so it's one query. Fixes 30s load times with 500+ users.
@@ -97,6 +100,7 @@ Added a JOIN so it's one query. Fixes 30s load times with 500+ users.
 That's it. No sections. No headers. No test plan for obvious changes.
 
 **Medium changes (4-10 files):**
+
 ```
 ## What changed
 - Extracted PaymentService (800 lines) into PaymentProcessor, RefundHandler, and WebhookReceiver
@@ -136,6 +140,7 @@ Skipping the impact section is the most common mistake. If the change touches 10
 ```
 
 **What to NEVER include:**
+
 - Obvious test steps ("verify the endpoint returns 200")
 - Promotional adjectives ("robust", "scalable", "comprehensive", "seamless")
 - Motivation/justification sections for self-evident changes
@@ -145,19 +150,29 @@ Skipping the impact section is the most common mistake. If the change touches 10
 - "No behavior changes" repeated multiple times
 - Significance inflation ("pivotal", "crucial", "critical improvement")
 
-### Step 6: Humanize
+### Step 6: Add Ticket Link
 
-Before presenting, check output against humanizer patterns:
+Extract the ticket number from the current branch name and append a closing reference at the end of the description.
 
-- Kill promotional adjectives (robust, seamless, comprehensive, scalable)
-- Kill significance inflation (pivotal, crucial, key improvement)
-- Kill rule-of-three lists forced to pad to 3 items
-- Kill defensive language ("no new tests required as this is purely...")
-- Use "is" and "has" instead of "serves as" and "boasts"
-- Vary sentence length — don't make every bullet the same structure
-- Write like you're explaining the PR to a teammate at your desk
+```bash
+# Get current branch name
+git branch --show-current
+# Example: story/28543/add-description-to-tar → ticket is 28543
+```
 
-### Step 7: Self-Check
+Parse the ticket number from the branch name (typically the numeric segment after `story/`, `bug/`, `feature/`, or similar prefixes). Append to the very end of the description:
+
+```
+Closes #<ticket_number>
+```
+
+If the branch has no recognizable ticket number, skip this step silently — don't ask the user.
+
+### Step 7: Humanize
+
+Run the final title and description through `skill:humanizer` to remove AI-sounding language before presenting.
+
+### Step 8: Self-Check
 
 Before presenting, verify:
 
@@ -170,9 +185,23 @@ Before presenting, verify:
 
 If any check fails, rewrite before presenting.
 
-### Step 8: Present
+### Step 9: Present
 
-Output the title and description ready to paste. If the user wants to create the PR directly, use:
+Output the title and description as two separate markdown code blocks so the user can easily copy each one:
+
+**Title:**
+
+```
+<title>
+```
+
+**Description:**
+
+```
+<description>
+```
+
+If the user wants to create the PR directly, use:
 
 ```bash
 gh pr create --title "<title>" --body "$(cat <<'EOF'
