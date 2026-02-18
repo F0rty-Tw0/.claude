@@ -3,7 +3,7 @@
 // Outputs JSON with updatedInput to modify the command before execution.
 
 const REWRITE_RULES = [
-  // Git commands
+  // Git commands (all subcommands pass through rtk git)
   [/^git\s+status(\s|$)/, 'git status', 'rtk git status'],
   [/^git\s+diff(\s|$)/, 'git diff', 'rtk git diff'],
   [/^git\s+log(\s|$)/, 'git log', 'rtk git log'],
@@ -15,16 +15,20 @@ const REWRITE_RULES = [
   [/^git\s+fetch(\s|$)/, 'git fetch', 'rtk git fetch'],
   [/^git\s+stash(\s|$)/, 'git stash', 'rtk git stash'],
   [/^git\s+show(\s|$)/, 'git show', 'rtk git show'],
-  // GitHub CLI
-  [/^gh\s+(pr|issue|run)(\s|$)/, 'gh ', 'rtk gh '],
+  [/^git\s+worktree(\s|$)/, 'git worktree', 'rtk git worktree'],
+  // GitHub CLI (all subcommands pass through rtk gh)
+  [/^gh\s+(pr|issue|run|repo|search|label|release|api|auth)(\s|$)/, 'gh ', 'rtk gh '],
   // Cargo
   [/^cargo\s+test(\s|$)/, 'cargo test', 'rtk cargo test'],
   [/^cargo\s+build(\s|$)/, 'cargo build', 'rtk cargo build'],
+  [/^cargo\s+check(\s|$)/, 'cargo check', 'rtk cargo check'],
   [/^cargo\s+clippy(\s|$)/, 'cargo clippy', 'rtk cargo clippy'],
   // File operations
   [/^cat\s+/, 'cat ', 'rtk read '],
   [/^(rg|grep)\s+/, /^(rg|grep) /, 'rtk grep '],
   [/^ls(\s|$)/, 'ls', 'rtk ls'],
+  [/^find\s+/, 'find ', 'rtk find '],
+  [/^wc\s+/, 'wc ', 'rtk wc '],
   // JS/TS tooling
   [/^(pnpm\s+)?vitest(\s|$)/, /^(pnpm )?vitest/, 'rtk vitest run'],
   [/^pnpm\s+test(\s|$)/, 'pnpm test', 'rtk vitest run'],
@@ -36,17 +40,26 @@ const REWRITE_RULES = [
   [/^(npx\s+)?playwright(\s|$)/, /^(npx )?playwright/, 'rtk playwright'],
   [/^pnpm\s+playwright(\s|$)/, 'pnpm playwright', 'rtk playwright'],
   [/^(npx\s+)?prisma(\s|$)/, /^(npx )?prisma/, 'rtk prisma'],
+  [/^npx\s+/, 'npx ', 'rtk npx '],
+  [/^npm\s+run(\s|$)/, 'npm run', 'rtk npm run'],
+  [/^npm\s+view(\s|$)/, 'npm ', 'rtk npm '],
+  [/^pnpm\s+nx(\s|$)/, 'pnpm nx', 'rtk npx nx'],
+  [/^next\s+(build|dev)(\s|$)/, 'next ', 'rtk next '],
+  [/^pnpm\s+next(\s|$)/, 'pnpm next', 'rtk next'],
   // Containers
   [/^docker\s+(ps|images|logs)(\s|$)/, 'docker ', 'rtk docker '],
   [/^kubectl\s+(get|logs)(\s|$)/, 'kubectl ', 'rtk kubectl '],
   // Network
   [/^curl\s+/, 'curl ', 'rtk curl '],
-  // pnpm package management
-  [/^pnpm\s+(list|ls|outdated)(\s|$)/, 'pnpm ', 'rtk pnpm '],
+  [/^wget\s+/, 'wget ', 'rtk wget '],
+  // pnpm package management (list, install, add, outdated)
+  [/^pnpm\s+(list|ls|outdated|install|add)(\s|$)/, 'pnpm ', 'rtk pnpm '],
+  [/^pnpm\s+run(\s|$)/, 'pnpm run', 'rtk npm run'],
   // Python tooling
   [/^pytest(\s|$)/, 'pytest', 'rtk pytest'],
   [/^python\s+-m\s+pytest(\s|$)/, 'python -m pytest', 'rtk pytest'],
   [/^ruff\s+(check|format)(\s|$)/, 'ruff ', 'rtk ruff '],
+  [/^(black|ruff\s+format)(\s|$)/, /^(black|ruff format)/, 'rtk format'],
   [/^pip\s+(list|outdated|install|show)(\s|$)/, 'pip ', 'rtk pip '],
   [/^uv\s+pip\s+(list|outdated|install|show)(\s|$)/, 'uv pip ', 'rtk pip '],
   // Go tooling

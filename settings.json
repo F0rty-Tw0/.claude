@@ -47,11 +47,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/artio/.claude/hooks/nul-guard.js"
+            "command": "node $HOME/.claude/hooks/nul-guard.js"
           },
           {
             "type": "command",
-            "command": "node C:/Users/artio/.claude/hooks/rtk/rtk-rewrite.js"
+            "command": "node $HOME/.claude/hooks/rtk/rtk-rewrite.js"
           }
         ]
       }
@@ -59,7 +59,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "node C:\\Users\\artio\\.claude\\hud\\omc-hud.mjs"
+    "command": "node $HOME/.claude/hud/omc-hud.mjs"
   },
   "enabledPlugins": {
     "oh-my-claudecode@omc": true,
