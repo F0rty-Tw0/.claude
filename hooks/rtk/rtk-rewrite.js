@@ -31,34 +31,16 @@ const REWRITE_RULES = [
   [/^ls(\s|$)/, 'ls', 'rtk ls'],
   [/^find\s+/, 'find ', 'rtk find '],
   [/^wc\s+/, 'wc ', 'rtk wc '],
-  // JS/TS tooling — Windows workaround: use `rtk err cmd /c` since RTK can't resolve .CMD wrappers
-  [/^(pnpm\s+)?vitest(\s|$)/, /^(pnpm )?vitest/, 'rtk err cmd /c vitest '],
-  [/^pnpm\s+test(\s|$)/, 'pnpm test', 'rtk err cmd /c vitest run --run'],
-  [/^pnpm\s+run\s+test(\s|$)/, 'pnpm run test', 'rtk err cmd /c vitest run --run'],
-  [/^pnpm\s+tsc(\s|$)/, 'pnpm tsc', 'rtk err cmd /c tsc --noEmit'],
-  [/^(npx\s+)?tsc(\s|$)/, /^(npx )?tsc/, 'rtk err cmd /c tsc '],
-  [/^pnpm\s+lint(\s|$)/, 'pnpm lint', 'rtk err cmd /c eslint src/'],
-  [/^(npx\s+)?eslint(\s|$)/, /^(npx )?eslint/, 'rtk err cmd /c eslint '],
-  [/^(npx\s+)?prettier(\s|$)/, /^(npx )?prettier/, 'rtk err cmd /c prettier '],
-  [/^(npx\s+)?playwright(\s|$)/, /^(npx )?playwright/, 'rtk err cmd /c playwright '],
-  [/^pnpm\s+playwright(\s|$)/, 'pnpm playwright', 'rtk err cmd /c playwright '],
-  [/^(npx\s+)?prisma(\s|$)/, /^(npx )?prisma/, 'rtk err cmd /c prisma '],
-  [/^npx\s+/, 'npx ', 'rtk err cmd /c npx '],
-  [/^npm\s+run(\s|$)/, 'npm run', 'rtk err cmd /c npm run '],
-  [/^npm\s+view(\s|$)/, 'npm ', 'rtk err cmd /c npm '],
-  [/^pnpm\s+nx(\s|$)/, 'pnpm nx', 'rtk err cmd /c npx nx '],
-  [/^next\s+(build|dev)(\s|$)/, 'next ', 'rtk err cmd /c next '],
-  [/^pnpm\s+next(\s|$)/, 'pnpm next', 'rtk err cmd /c next '],
+  // JS/TS tooling — all `rtk err cmd /c` rules removed (exit codes swallowed + output lost, see rtk#212)
+  // These tools run natively until rtk resolves .CMD wrappers on Windows
   // Containers
   [/^docker\s+(ps|images|logs)(\s|$)/, 'docker ', 'rtk docker '],
   [/^kubectl\s+(get|logs)(\s|$)/, 'kubectl ', 'rtk kubectl '],
   // Network
   [/^curl\s+/, 'curl ', 'rtk curl '],
   [/^wget\s+/, 'wget ', 'rtk wget '],
-  // pnpm package management — Windows workaround
-  [/^pnpm\s+(list|ls|outdated)(\s|$)/, 'pnpm ', 'rtk err cmd /c pnpm '],
-  [/^pnpm\s+run\s+(typecheck|tsc)(\s|$)/, /pnpm run (typecheck|tsc)/, 'rtk err cmd /c tsc --noEmit'],
-  [/^pnpm\s+run\s+lint(\s|$)/, 'pnpm run lint', 'rtk err cmd /c eslint src/'],
+  // pnpm package management — excluded from rtk err (output lost, see rtk#212)
+  // pnpm run typecheck/lint — excluded from rewrite so package.json scripts run natively
   // Python tooling
   [/^pytest(\s|$)/, 'pytest', 'rtk pytest'],
   [/^python\s+-m\s+pytest(\s|$)/, 'python -m pytest', 'rtk pytest'],
