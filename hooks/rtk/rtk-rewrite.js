@@ -24,6 +24,8 @@ const REWRITE_RULES = [
   [/^cargo\s+check(\s|$)/, 'cargo check', 'rtk cargo check'],
   [/^cargo\s+clippy(\s|$)/, 'cargo clippy', 'rtk cargo clippy'],
   // File operations
+  [/^(env|printenv)(\s|$)/, /^(env|printenv)/, 'rtk env'],
+  [/^diff\s+/, 'diff ', 'rtk diff '],
   [/^cat\s+/, 'cat ', 'rtk read '],
   [/^(rg|grep)\s+/, /^(rg|grep) /, 'rtk grep '],
   [/^ls(\s|$)/, 'ls', 'rtk ls'],
@@ -69,6 +71,8 @@ const REWRITE_RULES = [
   [/^go\s+build(\s|$)/, 'go build', 'rtk go build'],
   [/^go\s+vet(\s|$)/, 'go vet', 'rtk go vet'],
   [/^golangci-lint(\s|$)/, 'golangci-lint', 'rtk golangci-lint'],
+  // .NET tooling (via rtk proxy until native support lands)
+  [/^dotnet\s+(build|test|run|restore|publish|clean)(\s|$)/, 'dotnet ', 'rtk proxy dotnet '],
 ];
 
 // Split command on top-level shell operators (&&, ||, ;, |) respecting quotes
