@@ -113,6 +113,9 @@ function rewriteCompound(fullCmd) {
     // Skip if this subcommand already uses rtk
     if (/^rtk\s|\/rtk\s/.test(trimmed)) return seg;
 
+    // Keep npm/pnpm commands native for now
+    // if (/^(npm|pnpm)(\s|$)/.test(trimmed)) return seg;
+
     for (const [match, find, replace] of REWRITE_RULES) {
       if (match.test(trimmed)) {
         const rewritten = trimmed.replace(
