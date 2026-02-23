@@ -20,6 +20,7 @@
 !settings.local.json
 !.ignore
 !mcp-proxy-servers.example.json
+!AGENTS.md
 
 # Keep gitignore and readme
 !.gitignore
