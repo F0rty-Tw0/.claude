@@ -80,6 +80,7 @@ API docs, syntax guides, tool documentation (office docs)
 skills/
   skill-name/
     SKILL.md              # Main reference (required)
+    README.md             # Human-readable overview (required)
     supporting-file.*     # Only if needed
 ```
 
@@ -417,6 +418,49 @@ Skills enforcing discipline need to resist rationalization. See [bulletproofing.
 
 See @testing-skills-with-subagents.md for complete methodology (pressure scenarios, pressure types, plugging holes systematically).
 
+## README.md Creation
+
+**Every skill MUST include a README.md** alongside SKILL.md. The README is a human-readable overview for browsing skills outside of Claude sessions.
+
+**README format:**
+
+```markdown
+# Skill Name
+
+2-3 sentence description of what the skill does and its core principle.
+
+## What It Does
+
+Key features, patterns, or dimensions the skill covers.
+Use tables for structured information when appropriate.
+
+---
+
+## When to Use
+
+Triggers when you:
+
+- Specific trigger condition 1
+- Specific trigger condition 2
+- Specific trigger condition 3
+
+---
+
+## [Optional Additional Sections]
+
+Philosophy, real-world impact, core principles, etc.
+Only include if genuinely useful for understanding the skill.
+
+---
+```
+
+**Key rules:**
+- Keep it concise - README is an overview, not the full skill
+- Use tables to summarize structured information
+- End with `---`
+- No promotional language, no AI-sounding patterns
+- Match the tone of the skill itself
+
 ## Anti-Patterns
 
 ❌ **Narrative examples** - Too specific, not reusable
@@ -466,6 +510,12 @@ After writing ANY skill, STOP and complete deployment. Don't batch create, don't
 - [ ] Common mistakes section
 - [ ] No narrative storytelling
 - [ ] Supporting files only for tools or heavy reference
+
+**README:**
+
+- [ ] Create README.md following the template (title, description, What It Does, When to Use)
+- [ ] README is concise overview, not a copy of SKILL.md
+- [ ] No promotional language or AI-sounding patterns
 
 **Deployment:**
 
