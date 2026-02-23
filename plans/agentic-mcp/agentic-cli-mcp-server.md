@@ -113,32 +113,55 @@ Sources: [Claude CLI](https://code.claude.com/docs/en/cli-reference), [Copilot C
 ```
 agentic-mcp/
 ├── package.json              # bin, dependencies, scripts
-├── tsconfig.json             # ES2022, strict, NodeNext modules
-├── providers.json            # Provider config (user-editable, ships with all 16)
+├── tsconfig.json             # ES2024, strict, NodeNext modules
+├── build.mjs                 # esbuild bundler script
 ├── src/
-│   ├── index.ts              # Entry point — shebang, start server
-│   ├── server.ts             # MCP server setup, ListTools/CallTool handlers
-│   ├── types.ts              # Zod schemas, interfaces, constants
-│   ├── errors.ts             # ToolExecutionError, CommandError, ValidationError
-│   ├── config/
-│   │   ├── loader.ts         # Load + validate providers.json at startup
-│   │   └── schema.ts         # Zod schema for ProviderConfig
-│   ├── tools/
-│   │   ├── registry.ts       # Dynamic tool registration from capabilities
-│   │   ├── definitions.ts    # Tool definition builders (JSON Schema generation)
-│   │   └── handlers/
-│   │       ├── ask.ts        # Generic ask handler (all providers)
-│   │       ├── review.ts     # Code review handler (capability-gated)
-│   │       ├── sessions.ts   # Session list/management handler
-│   │       ├── ping.ts       # Ping handler (checks CLI availability)
-│   │       ├── help.ts       # Help handler (runs CLI --help)
-│   │       └── meta.ts       # list_providers meta-tool
-│   ├── session/
-│   │   └── storage.ts        # InMemorySessionStore (100 max, 24h TTL, LRU)
-│   └── utils/
-│       ├── command.ts         # spawn wrapper, streaming, buffer limits
-│       └── platform.ts        # Windows/POSIX signal handling, path normalization
-├── tests/                     # Jest unit tests
+│   ├── index.ts              # Entry point — shebang, start server, parse --config flag
+│   ├── server.ts             # MCP server setup, provider resolution, tool registration
+│   │
+│   ├── shared/               # Cross-cutting infrastructure used by multiple features
+│   │   ├── common/           # Types, constants, Zod schemas, error classes
+│   │   │   ├── errors/       # ValidationError, CommandExecutionError, MCP error mapping
+│   │   │   ├── command-executor.types.ts  # ExecuteCommandOptions, ExecutionResult types
+│   │   │   ├── tool-definition.types.ts   # ToolDefinition, ToolAnnotations types
+│   │   │   ├── provider-config.schema.ts  # Zod schemas for providers.json
+│   │   │   ├── provider-config.type.ts    # ResolvedProviderEntry, ResolvedProvider types
+│   │   │   ├── execution-limits.const.ts  # Output size limits
+│   │   │   └── test-utils/   # Shared test helpers (vi-fn.types.ts)
+│   │   ├── utils/            # Pure utility functions
+│   │   │   ├── platform.ts   # Binary resolution (which), process mgmt, env isolation
+│   │   │   └── to-mcp-error.ts # Converts errors to MCP error responses
+│   │   └── domain-logic/     # Orchestration and composition
+│   │       ├── command-executor.ts # Spawn execution with concurrency + output limiting
+│   │       └── semaphore.ts       # Concurrency control (max concurrent spawns)
+│   │
+│   ├── feature/
+│   │   ├── ask/              # Core prompting feature — the main "ask" tool
+│   │   │   ├── common/       # Ask-specific types and constants
+│   │   │   │   ├── command-def.const.ts # FLAG_* constants for ask command flags
+│   │   │   │   └── tool-args.types.ts   # AskToolArgs and BuiltArgs types
+│   │   │   ├── utils/        # Validation and helper functions
+│   │   │   │   ├── validation.ts        # Input validation helpers (regex patterns inline)
+│   │   │   │   └── command-def-utils.ts # Helpers for command definitions and flags
+│   │   │   └── domain-logic/ # Core business logic
+│   │   │       ├── handler.ts      # handleAsk — orchestrates arg building, spawn, response
+│   │   │       ├── arg-builder.ts  # Builds CLI argument arrays from tool args + config
+│   │   │       └── tool-builder.ts # Builds ask MCP tool definition (name, schema, annotations)
+│   │   ├── simple-tools/     # Lightweight tools: ping, help, list_providers
+│   │   │   └── domain-logic/ # Handlers and tool builders
+│   │   │       ├── ping-handler.ts # handlePing — version check via CLI spawn
+│   │   │       ├── help-handler.ts # handleHelp — runs --help on provider CLI
+│   │   │       ├── meta-handler.ts # handleListProviders — lists all configured providers
+│   │   │       └── tool-builder.ts # Builds ping/help/list_providers tool definitions
+│   │   └── tool-registry/    # Tool registration composition root
+│   │       └── tool-registry.ts # Registers all tools on MCP server
+│   │
+│   ├── config/               # Config loading, validation, provider definitions
+│   │   ├── loader.ts         # Multi-source config resolution
+│   │   ├── validate-providers.ts # Standalone validation script
+│   │   ├── providers.json    # 5 core provider configs
+│   │   └── providers.schema.json # JSON Schema for providers.json
+│   └── types/                # Ambient .d.ts declarations + build-env.d.ts
 └── dist/                      # Build output (gitignored)
 ```
 
@@ -1035,22 +1058,24 @@ claude mcp add agentic -- npx -y @f0rty-tw0/agentic-mcp
 
 ### Phase 1: Core (MVP)
 
-- [ ] TypeScript project setup (package.json, tsconfig.json)
-- [ ] Zod schema for `providers.json` + config loader
-- [ ] `ask_{provider}` tool with dynamic param extension
-- [ ] spawn-based command execution (blocking, no streaming yet)
-- [ ] `ping_{provider}` and `help_{provider}` tools
-- [ ] `list_providers` meta-tool
-- [ ] 5 core providers: Claude, Codex, Copilot, Gemini, OpenCode
-- [ ] Error handling (3 error classes)
-- [ ] Startup CLI availability check
-- [ ] Platform handling (Windows signals, path normalization)
-- [ ] Global spawn semaphore (`maxConcurrentSpawns: 5`)
-- [ ] Output size limits (`maxOutputBytes: 10MB` default)
-- [ ] Input validation (model regex, sessionId regex, path canonicalization)
-- [ ] Child process environment isolation
-- [ ] README.md, LICENSE (MIT), CONTRIBUTING.md, SECURITY.md
-- [ ] GitHub Actions CI (lint + typecheck + unit tests)
+- [x] TypeScript project setup (package.json, tsconfig.json)
+- [x] Zod schema for `providers.json` + config loader
+- [x] `ask_{provider}` tool with dynamic param extension
+- [x] spawn-based command execution (blocking, no streaming yet)
+- [x] `ping_{provider}` and `help_{provider}` tools
+- [x] `list_providers` meta-tool
+- [x] 5 core providers: Claude, Codex, Copilot, Gemini, OpenCode
+- [x] Error handling (3 error classes)
+- [x] Startup CLI availability check
+- [x] Platform handling (Windows signals, path normalization)
+- [x] Global spawn semaphore (`maxConcurrentSpawns: 5`)
+- [x] Output size limits (`maxOutputBytes: 10MB` default)
+- [x] Input validation (model regex, sessionId regex, path canonicalization)
+- [x] Child process environment isolation
+- [x] README.md (LICENSE, CONTRIBUTING.md, SECURITY.md still needed)
+- [x] GitHub Actions CI (lint + typecheck + unit tests)
+- [x] Test backfill — 211 tests across 14 files
+- [x] Feature-based architecture with internal layer subfolders
 
 ### Phase 2: Sessions + Streaming
 
