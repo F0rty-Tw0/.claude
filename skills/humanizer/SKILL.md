@@ -264,9 +264,9 @@ After:
 
 ## STYLE PATTERNS
 
-### 13. Em Dash Overuse
+### 13. Em Dashes (Never Use)
 
-Problem: LLMs use em dashes more than humans, mimicking "punchy" sales writing.
+Problem: Em dashes are one of the strongest AI writing tells. LLMs overuse them to mimic "punchy" sales writing. Never use em dashes. Replace every instance with commas, periods, colons, parentheses, or restructured sentences.
 
 Before:
 
@@ -493,7 +493,7 @@ After:
 
 ## CALIBRATION
 
-Not every instance of these patterns is AI-generated. Humans use em dashes, occasionally write in groups of three, and sometimes say "Additionally." A single pattern match means nothing.
+Not every instance of these patterns is AI-generated. Humans occasionally write in groups of three and sometimes say "Additionally." A single pattern match means nothing. (Exception: em dashes are always replaced per Pattern 13.)
 
 What to look for:
 
@@ -503,7 +503,7 @@ What to look for:
 
 What NOT to do:
 
-- Strip every em dash (some are fine)
+- (Em dashes are an exception: always remove them. See Pattern 13.)
 - Remove all structure in pursuit of "naturalness"
 - Flatten text into monotone neutral reporting (see the Personality and Soul section)
 - Invent facts, sources, or quotes to replace vague ones; flag them as "[source needed]" instead
