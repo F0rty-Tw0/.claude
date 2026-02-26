@@ -116,6 +116,12 @@ function Git-Status { git status -sb @args }
 New-Alias -Name gs -Value Git-Status -Force -Option AllScope
 
 #----------------------------------------------------------------
+# MCP PROXY
+#----------------------------------------------------------------
+function Start-McpProxy { Start-Process -NoNewWindow -FilePath 'mcp-proxy' -ArgumentList '--port','8808','--pass-environment','--named-server-config','C:\Users\artio\.claude\mcp-proxy-servers.json' }
+New-Alias -Name start-mcp -Value Start-McpProxy -Force -Option AllScope
+
+#----------------------------------------------------------------
 # CLEANUP UTILITIES
 #----------------------------------------------------------------
 function Remove-NodeModules {
