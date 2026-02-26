@@ -106,8 +106,11 @@ New-Alias -Name gp -Value Git-Pull -Force -Option AllScope
 function Git-PullMaster { git pull origin master @args }
 New-Alias -Name gpm -Value Git-PullMaster -Force -Option AllScope
 
+function Invoke-GitPushOrigin { git push origin @args }
+New-Alias -Name gpo -Value Invoke-GitPushOrigin -Force -Option AllScope
+
 function Git-FetchMaster { git fetch origin --prune @args }
-New-Alias -Name gfm -Value Git-FetchMaster -Force -Option AllScope
+New-Alias -Name gfo -Value Git-FetchMaster -Force -Option AllScope
 
 function Git-Status { git status -sb @args }
 New-Alias -Name gs -Value Git-Status -Force -Option AllScope
