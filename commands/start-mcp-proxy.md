@@ -1,7 +1,7 @@
 Start the mcp-proxy aggregation server on port 8808.
 
 ```
-powershell -Command "Start-Process -NoNewWindow -FilePath 'mcp-proxy' -ArgumentList '--port','8808','--pass-environment','--named-server-config','C:\Users\artio\.claude\mcp-proxy-servers.json'"
+powershell -Command "Start-Process -NoNewWindow -FilePath 'mcp-proxy' -ArgumentList '--port','8808','--pass-environment','--named-server-config','$HOME\.claude\mcp-proxy-servers.json'"
 ```
 
 - If starting the server fails (proxy is stale/unresponsive), kill the process on port 8808 first:
