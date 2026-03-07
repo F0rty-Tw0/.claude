@@ -58,6 +58,11 @@
     "taigaApi": {
       "command": "uv",
       "args": ["--directory", "D:/pytaiga-mcp", "run", "src/server.py"]
+    },
+    "agentic-mcp": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "agentic-mcp"]
     }
   }
 }
