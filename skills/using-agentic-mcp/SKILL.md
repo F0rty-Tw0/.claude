@@ -1,95 +1,101 @@
 ---
 name: using-agentic-mcp
-description: Use when an AI agent needs a repeatable workflow to discover providers and run agentic-mcp through MCP tools or CLI, with setup checks and fallback steps.
+description: Use when querying AI providers through agentic-mcp MCP tools or CLI, setting up agentic-mcp, or needing multi-provider AI comparison. Triggers on list_providers, ask_claude, ask_all, ping_claude, help_claude, agentic-mcp setup, or cross-provider tasks.
 ---
 
 # Using agentic-mcp
 
 ## Overview
 
-Use this skill to run `agentic-mcp` with a discovery-first flow. Start by discovering providers, verify readiness, then execute focused asks.
+agentic-mcp is a multi-model AI gateway that wraps CLI tools (Claude, Copilot, Codex, Gemini, OpenCode) as MCP servers. Always discover before asking — never guess provider availability or capabilities.
 
 ## When to Use
 
-- You need to configure `agentic-mcp` for a customer environment.
-- You need reliable MCP tool invocation order (`list_providers`, `help_<provider>`, `ask_<provider>`).
-- MCP tool calling is unavailable and you need CLI fallback with the same workflow.
+- Setting up agentic-mcp for a new environment
+- Querying one or more AI providers through MCP tools
+- Comparing responses across providers
+- Checking provider availability or capabilities
+- CLI fallback when MCP tool calling is unavailable
 
-Do not use this for general skill authoring. Use `skills-writing` for that.
+Do NOT use for: general skill authoring (`skills-writing`), non-agentic-mcp MCP servers.
 
-## Core Workflow
+## MCP Tools
 
-1. If the environment supports skills, load its "using skills" guidance first.
-2. Run setup:
-   - `npx agentic-mcp setup --client claude-code --yes`
-3. Discover and verify providers:
-   - `list_providers`
-   - `ping_<provider>`
-   - `help_<provider>`
-4. Execute work:
-   - use `ask_<provider>` for focused tasks
-   - use `ask_all` only for comparison tasks
-5. If MCP calls are unavailable, use CLI with the same sequence.
-6. Report configured files, detected providers, readiness, and whether additional providers should be set up.
+| Tool                  | Purpose                                  |
+| --------------------- | ---------------------------------------- |
+| `list_providers`      | Show all configured providers and status |
+| `ping_<provider>`     | Verify provider is ready                 |
+| `help_<provider>`     | Show provider CLI docs and capabilities  |
+| `ask_<provider>`      | Query a specific provider                |
+| `ask_all`             | Query all providers simultaneously       |
+| `provider_metrics`    | Display usage statistics                 |
+| `sessions_<provider>` | Manage multi-turn conversations          |
 
-## Prompt Templates
+Providers: `claude`, `copilot`, `codex`, `gemini`, `opencode`
 
-### Setup Prompt
+## Discovery-First Workflow
 
-```text
-Set up agentic-mcp for me end-to-end and do not stop early.
+```dot
+digraph agentic_flow {
+  "Task received" [shape=doublecircle];
+  "MCP tools available?" [shape=diamond];
+  "ToolSearch agentic-mcp" [shape=box];
+  "list_providers" [shape=box];
+  "ping + help target provider" [shape=box];
+  "Comparison needed?" [shape=diamond];
+  "ask_<provider>" [shape=box];
+  "ask_all" [shape=box];
+  "Report results" [shape=doublecircle];
 
-Execution requirements:
-1) If your environment supports skills, load the equivalent of a "using skills" workflow first.
-2) Configure MCP client integration with: npx agentic-mcp setup --client claude-code --yes
-3) Validate provider discovery and readiness: list_providers, ping_claude, help_claude
-4) If any check fails, fix root cause and rerun checks.
-5) Return a concise report with configured files, detected providers, and final readiness.
-6) Ask if any other providers should be set up too; if yes, configure and verify them the same way.
+  "Task received" -> "MCP tools available?";
+  "MCP tools available?" -> "ToolSearch agentic-mcp" [label="not loaded"];
+  "MCP tools available?" -> "list_providers" [label="yes"];
+  "ToolSearch agentic-mcp" -> "list_providers";
+  "list_providers" -> "ping + help target provider";
+  "ping + help target provider" -> "Comparison needed?";
+  "Comparison needed?" -> "ask_all" [label="yes"];
+  "Comparison needed?" -> "ask_<provider>" [label="no"];
+  "ask_all" -> "Report results";
+  "ask_<provider>" -> "Report results";
+}
 ```
 
-### MCP Execution Prompt
+1. **Load tools**: `ToolSearch("select:mcp__agentic-mcp__list_providers")` (deferred — must load before calling)
+2. **Discover**: `list_providers` — check which providers are available
+3. **Verify**: `ping_<provider>` — confirm target provider is ready
+4. **Understand**: `help_<provider>` — check capabilities before asking
+5. **Execute**: `ask_<provider>` for focused tasks, `ask_all` ONLY for comparison
+6. **Report**: Which tools called, which providers responded, results
 
-```text
-Use agentic-mcp through MCP tools for this task.
+## Setup (New Environment)
 
-Requirements:
-1) Discover providers first with list_providers.
-2) For each selected provider, run help_<provider> before ask_<provider>.
-3) Use ask_<provider> for focused tasks and ask_all only when comparison is needed.
-4) Report which tools were called and why.
+```bash
+npx agentic-mcp setup --client claude-code --yes
 ```
 
-### CLI Fallback Prompt
+Then verify: `list_providers` -> `ping_claude` -> `help_claude`
 
-```text
-Use the agentic-mcp CLI directly for this task.
+If setup writes to wrong config file (e.g. `claude_desktop_config.json` instead of `.claude.json`), check that the MCP server entry exists in your active CLI config.
 
-Requirements:
-1) Start by checking available commands.
-2) Run list_providers first.
-3) Run provider checks (for example ping_claude) before asks.
-4) Use ask_<provider> for single-provider tasks, or ask_all for cross-provider comparison.
-5) Report executed commands and final outcome.
+## CLI Fallback
+
+When MCP tools are unavailable, use CLI directly:
+
+```bash
+npx agentic-mcp list_providers
+npx agentic-mcp ping_claude
+npx agentic-mcp ask_claude "your prompt"
+npx agentic-mcp ask_all "compare this across providers"
 ```
 
-## Validation Checklist
-
-- The agent discovers providers before asking.
-- The agent checks provider readiness before execution.
-- The agent uses `ask_all` only when comparison is requested.
-- The final report includes provider status and setup outcomes.
-- The agent asks whether more providers should be configured.
+Options: `--model <name>`, `--file <path>` (repeatable), `--session-id <id>` (multi-turn).
 
 ## Common Mistakes
 
-- Calling `ask_<provider>` before `list_providers`.
-- Skipping `help_<provider>` and guessing capabilities.
-- Using `ask_all` for normal single-provider work.
-- Reporting success without readiness checks.
-
-## References
-
-- https://github.com/F0rty-Tw0/agentic-mcp/blob/master/README.md
-- https://github.com/F0rty-Tw0/agentic-mcp/blob/master/MCP-SKILLS-DISCOVERABILITY.md
-- https://github.com/F0rty-Tw0/agentic-mcp/blob/master/CLAUDE.md
+| Mistake                                              | Fix                                   |
+| ---------------------------------------------------- | ------------------------------------- |
+| Calling `ask_<provider>` before `list_providers`     | Always discover first                 |
+| Skipping `help_<provider>` and guessing capabilities | Check help before asking              |
+| Using `ask_all` for single-provider work             | Use `ask_<provider>` unless comparing |
+| Calling MCP tools without `ToolSearch` first         | Deferred tools must be loaded         |
+| Reporting success without readiness checks           | Run ping before declaring ready       |
