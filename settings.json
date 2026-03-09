@@ -63,7 +63,8 @@
   },
   "enabledPlugins": {
     "oh-my-claudecode@omc": true,
-    "typescript-lsp@claude-plugins-official": true
+    "typescript-lsp@claude-plugins-official": true,
+    "marksman-lsp": true
   },
   "autoUpdatesChannel": "latest"
 }
