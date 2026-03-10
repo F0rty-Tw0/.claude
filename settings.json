@@ -64,7 +64,16 @@
   "enabledPlugins": {
     "oh-my-claudecode@omc": true,
     "typescript-lsp@claude-plugins-official": true,
-    "marksman-lsp": true
+    "marksman-lsp": true,
+    "eslint-lsp@omp-lsp": true
+  },
+  "extraKnownMarketplaces": {
+    "omp-lsp": {
+      "source": {
+        "source": "directory",
+        "path": "$HOME/.claude/marketplaces/omp-lsp"
+      }
+    }
   },
   "autoUpdatesChannel": "latest"
 }
