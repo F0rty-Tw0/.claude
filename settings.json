@@ -75,5 +75,6 @@
       }
     }
   },
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "effortLevel": "high"
 }
