@@ -622,7 +622,7 @@ Custom agent triggered after major project steps are completed. Reviews implemen
 | `plans-writing`                  | Write implementation plans from specs          |
 | `prompt-engineer`                | LLM prompt design and evaluation               |
 | `skills-using`                   | Skill discovery and invocation                 |
-| `skills-writing`                 | Create and edit skills                         |
+| `skills-creating`                | Create and edit skills                         |
 | `subagent-driven-development`    | Multi-agent implementation with spec review    |
 | `using-git-worktrees`            | Isolated feature work via git worktrees        |
 

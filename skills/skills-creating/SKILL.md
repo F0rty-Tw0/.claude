@@ -1,13 +1,13 @@
 ---
-name: skills-writing
+name: skills-creating
 description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
 ---
 
-# Writing Skills
+# Creating Skills
 
 ## Overview
 
-**Writing skills IS Test-Driven Development applied to process documentation.**
+**Creating skills IS Test-Driven Development applied to process documentation.**
 
 **Personal skills live in agent-specific directories (`~/.claude/skills` for Claude Code, `~/.codex/skills` for Codex)**
 

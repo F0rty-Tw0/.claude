@@ -1,4 +1,4 @@
-# Writing Skills
+# Creating Skills
 
 Test-Driven Development applied to process documentation. Write test cases (pressure scenarios), watch them fail (baseline behavior), write the skill, watch tests pass (agents comply), refactor (close loopholes).
 

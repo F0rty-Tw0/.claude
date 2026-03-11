@@ -21,7 +21,7 @@ agentic-mcp exposes the same workflow through MCP tools and direct CLI commands.
 - Reviewing usage, latency, and success metrics
 - Falling back to CLI commands when MCP tool calling is unavailable
 
-Do NOT use for: general skill authoring (`skills-writing`), non-agentic-mcp MCP servers.
+Do NOT use for: general skill authoring (`skills-creating`), non-agentic-mcp MCP servers.
 
 ## Command Selection
 
