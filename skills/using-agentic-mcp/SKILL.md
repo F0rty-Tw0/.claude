@@ -1,50 +1,48 @@
 ---
 name: using-agentic-mcp
-description: Use when a user needs to ask another model a question or make it perform a task, discovering providers, checking readiness, querying one provider with ask_<provider>, comparing providers with ask_all, resuming sessions_<provider>, reviewing provider_metrics, or falling back to CLI commands.
+description: Use when an AI agent needs a repeatable workflow to get a real answer or compare providers through agentic-mcp, with discovery, proof, and CLI fallback steps.
 ---
 
 # Using agentic-mcp
 
 ## Overview
 
-agentic-mcp exposes the same workflow through MCP tools and direct CLI commands. Prefer MCP tools when tool calling is available. Use CLI fallback when MCP tools are unavailable. The safe order is always: discover providers, verify readiness, inspect capabilities, then ask.
+Use this skill when the goal is a working outcome: get a real answer from the provider already installed on the machine, compare multiple providers on one prompt, or configure one MCP client entry instead of wiring providers separately. Start by discovering providers, prove one provider works with `ask_<provider>`, then use `ask_all` only for deliberate comparison.
 
 ## When to Use
 
-- Setting up agentic-mcp in a new environment
-- Discovering which providers are configured
-- Verifying a provider is ready before sending work
-- Checking provider-specific capabilities before choosing a model or workflow
-- Sending one task to one provider
-- Sending the same task to multiple providers for comparison
+- Getting to a first successful provider answer through `agentic-mcp`
+- Comparing multiple providers on the same prompt without bespoke glue
+- Using one repeatable workflow for MCP tools and CLI fallback
 - Resuming or inspecting multi-turn provider sessions
 - Reviewing usage, latency, and success metrics
-- Falling back to CLI commands when MCP tool calling is unavailable
 
-Do NOT use for: general skill authoring (`skills-creating`), non-agentic-mcp MCP servers.
+Do NOT use for: general skill authoring (`skills-writing`), non-agentic-mcp MCP servers.
+
+Do NOT use for: general skill authoring (`skills-writing`), non-agentic-mcp MCP servers.
 
 ## Command Selection
 
 | Need | MCP tool | CLI command | When to use |
 | --- | --- | --- | --- |
-| Need to discover available providers | `list_providers` | `agentic-mcp list_providers` | Before any provider-specific work |
-| Need to confirm one provider is ready | `ping_<provider>` | `agentic-mcp ping_<provider>` | Before claiming a provider is available |
-| Need to inspect provider-specific capabilities | `help_<provider>` | `agentic-mcp help_<provider>` | Before assuming flags, models, or behavior |
-| Need one provider to answer a task | `ask_<provider>` | `agentic-mcp ask_<provider> "..."` | Default path for normal work |
+| Need to discover detected providers | `list_providers` | `agentic-mcp list_providers` | Before any provider-specific work |
+| Need limited proof for one provider | `ping_<provider>` | `agentic-mcp ping_<provider>` | Before the first real ask, not as final proof |
+| Need to inspect provider-specific capabilities | `help_<provider>` | `agentic-mcp help_<provider>` | Only when you need flags, models, or behavior details |
+| Need one provider to answer a task | `ask_<provider>` | `agentic-mcp ask_<provider> "..."` | Default path for normal work and the first real proof |
 | Need to compare providers on the same prompt | `ask_all` | `agentic-mcp ask_all "..." --providers claude,gemini` | Only when comparison itself is the goal |
 | Need to resume or inspect multi-turn work | `sessions_<provider>` then `ask_<provider>` with `session_id` | `agentic-mcp sessions_<provider>` then `agentic-mcp ask_<provider> "..." --session-id <id>` | Continue existing context instead of starting over |
 | Need usage and reliability metrics | `provider_metrics` | `agentic-mcp provider_metrics` | After runs, debugging, or performance review |
-| Need to install or update the integration | setup CLI | `agentic-mcp init` or `agentic-mcp setup --minimal` | New machine, fresh repo, or before choosing a client config |
+| Need to install or update the integration | setup CLI | `agentic-mcp init` or `agentic-mcp setup --client claude-code --yes` | New machine, fresh repo, or before choosing a client config |
 
 Providers: `claude`, `copilot`, `codex`, `gemini`, `opencode`
 
 ## Discovery-First Workflow
 
 1. **Load tools**: `ToolSearch("select:mcp__agentic-mcp__list_providers")` if the MCP tool surface is deferred.
-2. **Discover**: `list_providers` to see which providers are configured.
-3. **Verify**: `ping_<provider>` for the specific provider you intend to use.
-4. **Understand**: `help_<provider>` before assuming supported models, flags, or behavior.
-5. **Execute**: `ask_<provider>` for focused work, `ask_all` only for side-by-side comparison.
+2. **Discover**: `list_providers` to see which providers are detected.
+3. **Check limited proof**: `ping_<provider>` for the provider you intend to use first.
+4. **Understand**: `help_<provider>` only when you need supported models, flags, or behavior details.
+5. **Prove real usage**: `ask_<provider>` for focused work, `ask_all` only for side-by-side comparison.
 6. **Continue**: `sessions_<provider>` and `--session-id <id>` when you need multi-turn continuity.
 7. **Review**: `provider_metrics` when you need latency, success, or usage data.
 
@@ -56,9 +54,9 @@ npx agentic-mcp setup --minimal
 npx agentic-mcp setup --client claude-code --yes
 ```
 
-Use `init` or `setup --minimal` to install the skill first, then run the full client-specific setup command when you are ready to write MCP config.
+Use `init` to install the skill first, then run the full client-specific setup command when you are ready to write MCP config.
 
-Then verify in order: `list_providers` -> `ping_claude` -> `help_claude`
+Then verify in order: `list_providers` -> `ping_claude` -> `ask_claude "Reply with OK and your provider name."`
 
 ## ask_<provider> Command Guide
 
@@ -91,21 +89,28 @@ Use `ask_all` only when the same prompt should be sent to multiple providers for
 
 Important flags and when to use them:
 
-- `--providers <list>` to limit the comparison set
-- `--model <name>` when all compared providers should use the same model hint
-- `--context <text>` when the comparison needs shared guidance
+- `--provider <list>` is an alias for `--providers`; use either form to choose providers
+- `--providers <list>` limits the comparison set; values may be comma-separated or space-separated
+- `--model <name>` passes one shared model hint to every selected provider
+- `--models <name>` is an alias for `--model`
+- Use `--providers` for provider selection and `--model` for the shared model hint
+- If `--providers` and `--model` are combined, `--providers` chooses the providers and `--model` applies the shared model hint to those providers
+- When a selected provider rejects the shared model as unavailable or unsupported, `ask_all` returns that provider error directly instead of falling back to a different model
+- `--context <text>` adds shared guidance to the comparison prompt
 
 Examples:
 
 ```bash
 npx agentic-mcp ask_all "Explain this architecture" --providers claude,gemini
-npx agentic-mcp ask_all "Compare bugfix approaches" --providers claude,codex --context "Optimize for smallest safe diff"
+npx agentic-mcp ask_all "Compare bugfix approaches" --providers claude codex --context "Optimize for smallest safe diff"
+npx agentic-mcp ask_all "Compare providers" --providers gemini codex
+npx agentic-mcp ask_all "Use one shared model" --providers claude,gemini --model claude-sonnet-4
 ```
 
 ## Sessions and Metrics
 
 - `sessions_<provider>` lists known sessions for a provider.
-- `provider_metrics` shows call counts, latency, and success rates.
+- `provider_metrics` shows which providers you actually used, how often they succeeded, and how long they took.
 - Use sessions before starting a new thread if continuity matters.
 - Use metrics after a batch of runs, during debugging, or when comparing provider behavior.
 
@@ -138,9 +143,9 @@ npx agentic-mcp provider_metrics
 
 | Mistake | Fix |
 | --- | --- |
-| Calling `ask_<provider>` before `list_providers` | Discover available providers first |
-| Skipping `ping_<provider>` and claiming a provider is ready | Verify readiness before reporting availability |
-| Skipping `help_<provider>` and guessing provider capabilities | Read provider help before assuming flags or models |
+| Calling `ask_<provider>` before `list_providers` | Discover detected providers first |
+| Treating `ping_<provider>` as final proof | Use it only for limited proof before a real ask |
+| Skipping `help_<provider>` and guessing provider capabilities | Read provider help only when you need flags or model details |
 | Using `ask_all` for single-provider work | Use `ask_<provider>` unless comparison is the actual goal |
 | Passing `--providers` to `ask_<provider>` or `--async` to `ask_all` | Match flags to the command family that supports them |
 | Starting a new thread when an existing session should continue | Check `sessions_<provider>` and reuse `--session-id <id>` |

@@ -1,25 +1,26 @@
 ---
 name: value-realization
-description: "Analyze whether end users will discover clear value in product ideas. Use when: discussing product concepts, evaluating features, planning marketing strategies, analyzing user adoption problems, or when the user expresses uncertainty about product direction (e.g., 'is this idea good?', 'what do you think of this product?', 'how about my idea?', 'will users want this?', 'why aren't users staying?', 'how should we position this?')."
-allowed-tools: [Read, WebFetch, WebSearch, Grep, Glob]
+description: "Analyze whether end users will discover clear value in product ideas, and when asked, produce a research-backed plan to make weak value dimensions green."
+allowed-tools: [Read, Write, Edit, WebFetch, WebSearch, Grep, Glob]
 ---
 
 # Value Realization Philosophy
 
 **Status**: Production Ready ✅
-**Version**: 1.1.4
-**Last Updated**: 2026-02-21
-**Type**: Analytical Framework
+**Version**: 1.2.0
+**Last Updated**: 2026-03-13
+**Type**: Analytical Framework + Remediation Planning Mode
 
 ## Overview
 
-This skill provides a philosophical framework and analytical methods for evaluating whether end users will "know" what value they can achieve through a product. It guides analysis through the lens of value discovery, rather than providing checklists.
+This skill provides a philosophical framework and analytical methods for evaluating whether end users will "know" what value they can achieve through a product. It guides analysis through the lens of value discovery, and when explicitly asked for improvement, it can convert that analysis into a research-backed remediation plan.
 
 **What this skill provides**:
 - Framework to evaluate product ideas when certainty is lacking
 - Analysis methods for assessing end user value discovery
 - Patterns from real product successes and failures
 - Analysis methods for product design and positioning
+- A remediation-planning mode for taking weak dimensions from 🔴/🟡 to 🟢
 
 **Core question**: Can end users clearly understand what value they'll achieve through the product - even if that value takes time to achieve?
 
@@ -76,7 +77,8 @@ This skill operates through conversational analysis. When the user presents a pr
 3. **Evaluate through four dimensions** - Value clarity, timeline, perception, discovery
 4. **Consider context** - Each product, market, and end user group differs
 
-**This framework guides thinking. It does not prescribe solutions.**
+**Default mode**: analyze and guide thinking.
+**Planning mode**: if the user asks how to make a product stronger, how to make weak dimensions green, or asks for a plan, convert the analysis into a remediation plan.
 
 **Analysis approach:**
 - Must complete analysis of all four dimensions, each dimension as independent section
@@ -87,6 +89,7 @@ This skill operates through conversational analysis. When the user presents a pr
   4. When citing real product cases, base on verifiable information and explain relevance to current product
   5. Pose sharp questions that directly challenge product necessity or require comparison with existing solutions
 - After completing all four dimensions, provide summary
+- If planning mode is active, follow the summary with a phased plan, measurable exit criteria, and the specific moves required to turn each weak dimension green
 - Avoid logical gaps, show complete reasoning chain
 - Guide users to make decisions based on analysis
 
@@ -411,7 +414,14 @@ This skill works best in conversation. When the user discusses a product idea:
 3. **Assess perception**: Can end users see/feel their progress?
 4. **Discover hidden value**: What value might end users not yet recognize?
 
-**This isn't a checklist** - it's a way of thinking. Each product is different. Each market is different. The goal is to think clearly about whether end users will "know" what value they'll get.
+**Repository mode**: When the user says "for this project", "for this repo", or otherwise points at an existing codebase, inspect the repository artifacts first. Read the README, package metadata, onboarding docs, and any positioning copy before asking the user to restate what the product is.
+
+**Planning mode**: When the user asks how to improve the product, how to make the dimensions green, how to fix positioning/adoption, or asks for a plan:
+- Complete the four-dimension analysis first
+- Research comparable products in the same domain using verifiable sources
+- Produce a phased remediation plan that names the target user, the value promise, the product and messaging changes, and the metrics required to declare each dimension green
+- If a `.claude/plans/` directory exists in the repository, write the plan there using a descriptive file name such as `<repo-name>-value-green-plan.md`
+- Do not wait for a second prompt to create the plan once the user has asked for improvement guidance
 
 **Research during analysis**: When the user mentions specific products, technologies, or concepts, this skill may research them via WebFetch or WebSearch to provide context-appropriate analysis based on current information rather than assumptions.
 
@@ -435,4 +445,4 @@ For detailed case studies with real data and metrics:
 
 ## Remember
 
-This skill helps think about value, not prescribe solutions. Every product is unique. Every market is different. The goal is to discover whether end users will clearly understand what they'll achieve - because that understanding is what drives adoption.
+This skill helps think clearly about value. By default it analyzes whether end users will understand what they will achieve. When the user explicitly asks how to improve that outcome, the skill must also prescribe a research-backed plan for making weak dimensions green, grounded in the current project context whenever a repository is available.
