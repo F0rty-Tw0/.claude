@@ -54,7 +54,7 @@ const REWRITE_RULES = [
   [/^go\s+vet(\s|$)/, 'go vet', 'rtk go vet'],
   [/^golangci-lint(\s|$)/, 'golangci-lint', 'rtk golangci-lint'],
   // .NET tooling (via rtk proxy until native support lands)
-  [/^dotnet\s+(build|test|run|restore|publish|clean)(\s|$)/, 'dotnet ', 'rtk proxy dotnet '],
+  [/^dotnet\s+(build|test|run|restore|publish|clean|format)(\s|$)/, 'dotnet ', 'rtk dotnet '],
 ];
 
 // Split command on top-level shell operators (&&, ||, ;, |) respecting quotes
