@@ -1,6 +1,6 @@
 # RTK - Rust Token Killer
 
-**Version**: 0.22.0
+**Version**: 0.31.0
 **Binary**: `~/bin/rtk.exe`
 **Usage**: Token-optimized CLI proxy (60-90% savings on dev operations)
 
@@ -13,40 +13,14 @@ rtk discover          # Analyze Claude Code history for missed opportunities
 rtk cc-economics      # Spending vs savings analysis
 rtk proxy <cmd>       # Execute raw command without filtering (for debugging)
 rtk hook-audit        # Hook rewrite audit metrics (requires RTK_HOOK_AUDIT=1)
+rtk rewrite <cmd>     # Show what rtk would rewrite a command to (exits 1 if no rewrite)
 ```
-
-## Installation Verification
-
-```bash
-rtk --version         # Should show: rtk 0.22.0
-rtk gain              # Should work (not "command not found")
-which rtk             # Verify correct binary (~/bin/rtk.exe)
-```
-
-⚠️ **Name collision**: If `rtk gain` fails, you may have reachingforthejack/rtk (Rust Type Kit) installed instead.
 
 ## Hook-Based Usage
 
-All other commands are automatically rewritten by the Claude Code hook (`~/.claude/hooks/rtk/rtk-rewrite.js`).
+All commands are automatically rewritten by the Claude Code hook (`~/.claude/hooks/rtk/rtk-rewrite.js`).
+The hook delegates to `rtk rewrite` — the Rust binary is the single source of truth for all rewrite rules.
 Example: `git status` → `rtk git status` (transparent, 0 tokens overhead)
-
-### Auto-Rewritten Commands (59 rules)
-
-| Category | Commands |
-|---|---|
-| **Git** (12) | status, diff, log, add, commit, push, pull, branch, fetch, stash, show, worktree |
-| **GitHub CLI** (1) | gh pr/issue/run/repo/search/label/release/api/auth |
-| **File ops** (7) | cat→read, rg/grep→grep, ls, find, wc, env/printenv→env, diff→diff |
-| **JS/TS** (17) | vitest, pnpm test, pnpm run test, tsc/npx tsc, pnpm tsc, eslint/npx eslint, pnpm lint, prettier/npx prettier, playwright/npx playwright, pnpm playwright, prisma/npx prisma, npx, npm run, npm view, pnpm nx→npx nx, next build/dev, pnpm next |
-| **pnpm mgmt** (3) | pnpm list/ls/outdated, pnpm run typecheck/tsc→tsc, pnpm run lint→eslint |
-| **Rust** (4) | cargo test/build/check/clippy |
-| **Python** (6) | pytest, python -m pytest, ruff check/format, black/ruff format→format, pip list/outdated/install/show, uv pip→pip |
-| **Go** (4) | go test/build/vet, golangci-lint |
-| **Containers** (2) | docker ps/images/logs, kubectl get/logs |
-| **Network** (2) | curl, wget |
-| **.NET** (1) | dotnet build/test/run/restore/publish/clean (via proxy) |
-
-Note: JS/TS rules use `rtk err cmd /c` wrapper on Windows since RTK can't resolve .CMD wrappers directly. See [rtk-ai/rtk#212](https://github.com/rtk-ai/rtk/issues/212). Once fixed upstream, these rules can be simplified to use native rtk commands (e.g., `rtk vitest`, `rtk tsc`).
 
 ### Available but NOT auto-rewritten (manual use)
 
@@ -82,10 +56,4 @@ To update RTK to a new version:
    rtk --version
    ```
 
-5. **Check for new commands**:
-   ```bash
-   rtk --help
-   ```
-   Compare against the hook rules in `~/.claude/hooks/rtk/rtk-rewrite.js` and add rewrites for any new commands worth auto-proxying.
-
-6. **Update this file** with the new version number and any new commands.
+No need to update hook rules — `rtk rewrite` handles everything.
