@@ -39,3 +39,5 @@ These workflow recipes are not available in skill files — they exist only here
 - **MCP/HOOKS setup location**: `$HOME\.claude.json`
 
 @AGENTS.md
+
+@RTK.md

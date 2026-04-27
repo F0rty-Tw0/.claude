@@ -22,6 +22,7 @@
 !mcp-proxy-servers.example.json
 !AGENTS.md
 !CLAUDE.md
+!RTK.md
 
 # Keep gitignore and readme
 !.gitignore
