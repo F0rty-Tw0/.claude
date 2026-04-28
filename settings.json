@@ -74,5 +74,6 @@
   },
   "extraKnownMarketplaces": {},
   "effortLevel": "xhigh",
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "defaultMode": "auto"
 }
