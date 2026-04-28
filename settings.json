@@ -48,10 +48,15 @@
           {
             "type": "command",
             "command": "node $HOME/.claude/hooks/nul-guard.js"
-          },
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
           {
             "type": "command",
-            "command": "node $HOME/.claude/hooks/rtk/rtk-rewrite.js"
+            "command": "rtk hook claude"
           }
         ]
       }
@@ -68,7 +73,6 @@
     "lua-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {},
-  "effortLevel": "high",
+  "effortLevel": "xhigh",
   "autoUpdatesChannel": "latest"
 }
-
