@@ -64,7 +64,8 @@
   "enabledPlugins": {
     "oh-my-claudecode@omc": true,
     "typescript-lsp@claude-plugins-official": true,
-    "marksman-lsp": true
+    "marksman-lsp": true,
+    "lua-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {},
   "effortLevel": "high",
