@@ -60,6 +60,29 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/mempalace/mempal_save_hook.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/mempalace/mempal_precompact_hook.sh",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
