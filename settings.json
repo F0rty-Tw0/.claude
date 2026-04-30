@@ -60,6 +60,29 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/mempalace/mempal_save_hook.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/mempalace/mempal_precompact_hook.sh",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
@@ -70,10 +93,12 @@
     "oh-my-claudecode@omc": true,
     "typescript-lsp@claude-plugins-official": true,
     "marksman-lsp": true,
-    "lua-lsp@claude-plugins-official": true
+    "lua-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {},
   "effortLevel": "xhigh",
   "autoUpdatesChannel": "latest",
-  "defaultMode": "auto"
+  "defaultMode": "auto",
+  "model": "opusplan"
 }
