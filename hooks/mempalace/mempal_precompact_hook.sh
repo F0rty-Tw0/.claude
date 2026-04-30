@@ -74,7 +74,7 @@ import sys, json, re
 data = json.load(sys.stdin)
 sid = data.get('session_id', 'unknown')
 tp = data.get('transcript_path', '')
-safe = lambda s: re.sub(r'[^a-zA-Z0-9_/.\-~]', '', str(s))
+safe = lambda s: re.sub(r'[^a-zA-Z0-9_/.\-~:\\\\]', '', str(s))
 print(safe(sid))
 print(safe(tp))
 " 2>/dev/null)

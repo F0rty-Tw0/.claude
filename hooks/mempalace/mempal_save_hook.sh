@@ -94,7 +94,7 @@ sid = data.get('session_id', 'unknown')
 sha_raw = data.get('stop_hook_active', False)
 tp = data.get('transcript_path', '')
 # Shell-safe output — only allow alphanumeric, underscore, hyphen, slash, dot, tilde
-safe = lambda s: re.sub(r'[^a-zA-Z0-9_/.\-~]', '', str(s))
+safe = lambda s: re.sub(r'[^a-zA-Z0-9_/.\-~:\\\\]', '', str(s))
 # Coerce stop_hook_active to strict boolean string
 sha = 'True' if sha_raw is True or str(sha_raw).lower() in ('true', '1', 'yes') else 'False'
 print(safe(sid))
