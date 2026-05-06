@@ -50,7 +50,8 @@
       ]
     },
     "greb-mcp": {
-      "command": "greb-mcp-js",
+      "command": "cmd",
+      "args": ["/c", "greb-mcp-js"],
       "env": {
         "GREB_API_KEY": "YOUR_KEY"
       }
@@ -66,9 +67,12 @@
     },
     "mempalace": {
       "type": "stdio",
-      "command": "mempalace-mcp",
-      "args": [],
-      "env": {}
+      "command": "cmd",
+      "args": ["/c", "python", "-m", "mempalace.mcp_server"],
+      "env": {
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1"
+      }
     }
   }
 }
