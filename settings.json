@@ -99,5 +99,6 @@
   "extraKnownMarketplaces": {},
   "effortLevel": "xhigh",
   "autoUpdatesChannel": "latest",
-  "model": "opusplan"
+  "defaultMode": "auto",
+  "model": "opus"
 }
