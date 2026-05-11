@@ -16,6 +16,8 @@
 !hooks/**
 !scripts/
 !scripts/**
+!backup/
+!backup/**
 !settings.json
 !settings.local.json
 !.ignore
@@ -23,7 +25,6 @@
 !AGENTS.md
 !CLAUDE.md
 !RTK.md
-
 # Keep gitignore and readme
 !.gitignore
 !README.md

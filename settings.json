@@ -37,7 +37,8 @@
       "Bash(rm -rf:*)",
       "Bash(curl:*)",
       "Bash(wget:*)"
-    ]
+    ],
+    "defaultMode": "auto"
   },
   "enableAllProjectMcpServers": true,
   "hooks": {
@@ -100,5 +101,7 @@
   "effortLevel": "xhigh",
   "autoUpdatesChannel": "latest",
   "defaultMode": "auto",
+  "skipAutoPermissionPrompt": true,
   "model": "opus"
 }
+
