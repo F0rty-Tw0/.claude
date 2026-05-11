@@ -41,3 +41,7 @@ These workflow recipes are not available in skill files — they exist only here
 @AGENTS.md
 
 @RTK.md
+
+# Always Use Caveman skill
+
+@skills/skills/caveman/SKILL.md
