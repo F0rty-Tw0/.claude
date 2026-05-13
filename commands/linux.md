@@ -56,26 +56,6 @@ Install from https://www.dropbox.com/install-linux.
 
 1.  It'll say that your device is not compliant at first, it takes some time to download the policies and configurations
 
-### AdminByRequest
-
-Obtain the installer image from IT, I got mine from ALSI via email (according to https://docs.adminbyrequest.com/endpoints/Linux/install.htm it needs to be fetched via an admin console, and is tenant-specific).
-
-1.  Unpack (I got a `.7z`, my Gnome DE or Chrome knew how to unpack, if it didn't, I would've needed to install `p7zip-full`).
-
-1.  `chmod +x abr-installer`
-
-1.  `sudo ./abr-installer`
-
-### HexNodeMdm
-
-1.  `curl -L "https://queue-it.hexnodemdm.com/enroll/" --output ~/Downloads/hexNodeConfig`
-
-1.  If you want to test the integrity of the installer SHA-256: `c0d26f90ae1e8ce7373dd93f529fba216da70a606472a46d880410dadd0660f5`
-
-1.  `chmod +x hexNodeConfig`
-
-1.  `sudo ./hexNodeConfig` (enjoy ABR 😜)
-
 ### Microsoft Defender
 
 1.  Run the script IT gives you: `sudo python3 MicrosoftDefenderATPOnboardingLinuxServer.py`
@@ -148,7 +128,7 @@ One can install Dotnet from multiple sources, Microsoft has a lengthy [document]
 1. Add Azure Devops plugin: https://learn.microsoft.com/en-us/azure/devops/cli/?view=azure-devops
 
 1. `az devops login`
-   > 👆 You'll need to create a Personal Access Token for this on https://dev.azure.com/queue-it/_usersSettings/tokens, chose the scopes wisely!
+   > 👆 You'll need to create a Personal Access Token for this
 
 ### Node
 
@@ -173,43 +153,6 @@ One can install Dotnet from multiple sources, Microsoft has a lengthy [document]
 1. Install the AWS VPN Client from https://docs.aws.amazon.com/vpn/latest/clientvpn-user/client-vpn-connect-linux.html#client-vpn-connect-linux-install.
 
    > 👆 You might be tempted to _not_ install a separate client, but use OVPN via NetworkManager, however that won't work, as our `.ovpn` configurations contain some non-standard settings enabling SSO auth.
-
-1. Set up your necessary configurations following https://dev.azure.com/queue-it/Queue-it/_wiki/wikis/Queue-it.wiki/381/Connecting-To-VPN.
-
-### AWS CLI
-
-1. Install from `snap` (or using App Center).
-
-1. Follow https://dev.azure.com/queue-it/Queue-it/_wiki/wikis/Queue-it.wiki/321/AWS-SSO (losely) to figure out the necessary config.
-
-   > Mine is like:
-   >
-   > ```
-   > cat ~/.aws/config
-   > [profile test]
-   > sso_session = Queue-It
-   > sso_account_id = 700582653194
-   > sso_role_name = PowerUserAccess-Dev
-   > region = eu-west-1
-   > [sso-session Queue-It]
-   > sso_start_url = https://d-92670b4b2a.awsapps.com/start
-   > sso_region = us-west-2
-   > sso_registration_scopes = sso:account:access
-   > ```
-
-1. Configure shell autocomplete:
-   1. `sudo ln -sf /snap/aws-cli/current/bin/aws_completer /usr/local/bin/aws_completer`
-
-   1. `echo "complete -C '/usr/local/bin/aws_completer' aws" >> ~/.bashrc`
-
-### Kubectl
-
-1. Install from `snap` (or using App Center).
-1. Get your `~/.kube/config` from https://cloud.linode.com/kubernetes/clusters.
-
-### K9S
-
-Install `.deb` from https://github.com/derailed/k9s/releases, both `snap` and `apt` are super outdated.
 
 ### Docker
 
