@@ -74,10 +74,10 @@
         "PYTHONUTF8": "1"
       }
     },
-    "selenium": {
+    "playwright": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@angiejones/mcp-selenium@latest"],
+      "args": ["@playwright/mcp@latest"],
       "env": {}
     }
   }
