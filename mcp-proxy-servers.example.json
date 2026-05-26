@@ -73,6 +73,12 @@
         "PYTHONIOENCODING": "utf-8",
         "PYTHONUTF8": "1"
       }
+    },
+    "selenium": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@angiejones/mcp-selenium@latest"],
+      "env": {}
     }
   }
 }
