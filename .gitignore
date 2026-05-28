@@ -18,6 +18,8 @@
 !scripts/**
 !backup/
 !backup/**
+!copilot/
+!copilot/**
 !settings.json
 !settings.local.json
 !.ignore
