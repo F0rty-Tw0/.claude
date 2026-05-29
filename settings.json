@@ -41,6 +41,7 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "opus",
   "enableAllProjectMcpServers": true,
   "hooks": {
     "PreToolUse": [
@@ -89,20 +90,26 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "node $HOME/.claude/hud/omc-hud.mjs"
+    "command": "bash -c 'cols=$(stty size </dev/tty 2>/dev/null | awk '\"'\"'{print $2}'\"'\"'); export COLUMNS=$(( ${cols:-120} > 4 ? ${cols:-120} - 4 : 1 )); plugin_dir=$(ls -d \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}\"/plugins/cache/*/claude-hud/*/ 2>/dev/null | awk -F/ '\"'\"'{ print $(NF-1) \"\\t\" $(0) }'\"'\"' | grep -E '\"'\"'^[0-9]+\\.[0-9]+\\.[0-9]+[[:space:]]'\"'\"' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -1 | cut -f2-); exec \"/home/fortytwo/.nvm/versions/node/v24.16.0/bin/node\" \"${plugin_dir}dist/index.js\"'"
   },
   "enabledPlugins": {
     "oh-my-claudecode@omc": true,
     "typescript-lsp@claude-plugins-official": true,
     "marksman-lsp": true,
     "lua-lsp@claude-plugins-official": true,
-    "rust-analyzer-lsp@claude-plugins-official": true
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "claude-hud@claude-hud": true
   },
-  "extraKnownMarketplaces": {},
+  "extraKnownMarketplaces": {
+    "claude-hud": {
+      "source": {
+        "source": "github",
+        "repo": "jarrodwatts/claude-hud"
+      }
+    }
+  },
   "effortLevel": "xhigh",
   "autoUpdatesChannel": "latest",
-  "defaultMode": "auto",
   "skipAutoPermissionPrompt": true,
-  "model": "opus"
+  "defaultMode": "auto"
 }
-
