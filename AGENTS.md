@@ -63,3 +63,36 @@ Before every non-trivial action, write one line (5–15 words): **what** you're 
 - After user correction: save a feedback memory (see memory protocol in CLAUDE.md).
 - Before presenting work, self-check: "Would a staff engineer approve this?"
 - Unambiguous bug fixes: act autonomously. Multiple reasonable fixes or unclear root cause: present options.
+
+## MemPalace (persistent memory via MCP)
+
+Use the mempalace MCP tools for long-term memory. For exact usage of any
+operation, run: mempalace instructions <command>
+
+### WRITE — proactively, do not wait to be asked
+
+Save to MemPalace as the conversation unfolds whenever any of these come up:
+
+- a decision made or the rationale behind it
+- a tool/command/config or an important file path
+- project or client context, or a stated preference/constraint
+- a non-obvious bug and how it was solved
+  Pick the right wing and room (list them first if unsure). Save incrementally,
+  not only at the end.
+
+### READ — search when context would change your answer
+
+Call mempalace_search when:
+
+- the user says "do you remember", "last time", "what did we decide", "recall"
+- OR you're starting a non-trivial, multi-step task where prior decisions on
+  this project would change your approach
+  Scope the search to the current project's room when known. Do NOT dump lookups
+  at the start of every trivial message.
+
+### Tools
+
+- mempalace_search(query) — semantic recall
+- mempalace_status — palace overview
+- mempalace_list_wings — list wings/rooms before writing
+- (save tool: add_drawer / mempalace_add_drawer — confirm exact name from list)
