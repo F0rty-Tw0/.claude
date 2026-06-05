@@ -36,7 +36,7 @@ test('renders sidebar', () => {
 - Test passes when mock is present, fails when it's not
 - Tells you nothing about real behavior
 
-**your human partner's correction:** "Are we testing the behavior of a mock?"
+**Rule:** Ask: "Are we testing the behavior of a mock?"
 
 **The fix:**
 
@@ -273,7 +273,7 @@ TDD cycle:
 - Mocks missing methods real components have
 - Test breaks when mock changes
 
-**your human partner's question:** "Do we need to be using a mock here?"
+**Rule:** Ask: "Do we need to be using a mock here?"
 
 **Consider:** Integration tests with real components often simpler than complex mocks
 

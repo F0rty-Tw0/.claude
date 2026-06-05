@@ -1,78 +1,61 @@
-# Implementer Subagent Prompt Template
+# Spec Compliance Reviewer Prompt Template
 
-Use this template when dispatching an implementer subagent.
+Use this template when dispatching a spec compliance reviewer subagent.
+
+**Purpose:** Verify implementer built what was requested (nothing more, nothing less)
 
 ```
 Task tool (general-purpose):
-  description: "Implement Task N: [task name]"
+  description: "Review spec compliance for Task N"
   prompt: |
-    You are implementing Task N: [task name]
+    You are reviewing whether an implementation matches its specification.
 
-    ## Task Description
+    ## What Was Requested
 
-    [FULL TEXT of task from plan - paste it here, don't make subagent read file]
+    [FULL TEXT of task requirements]
 
-    ## Context
+    ## What Implementer Claims They Built
 
-    [Scene-setting: where this fits, dependencies, architectural context]
+    [From implementer's report]
 
-    ## Before You Begin
+    ## CRITICAL: Do Not Trust the Report
 
-    If you have questions about:
-    - The requirements or acceptance criteria
-    - The approach or implementation strategy
-    - Dependencies or assumptions
-    - Anything unclear in the task description
+    The implementer finished suspiciously quickly. Their report may be incomplete,
+    inaccurate, or optimistic. You MUST verify everything independently.
 
-    **Ask them now.** Raise any concerns before starting work.
+    **DO NOT:**
+    - Take their word for what they implemented
+    - Trust their claims about completeness
+    - Accept their interpretation of requirements
+
+    **DO:**
+    - Read the actual code they wrote
+    - Compare actual implementation to requirements line by line
+    - Check for missing pieces they claimed to implement
+    - Look for extra features they didn't mention
 
     ## Your Job
 
-    Once you're clear on requirements:
-    1. Implement exactly what the task specifies
-    2. Write tests (following TDD if task says to)
-    3. Verify implementation works
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+    Read the implementation code and verify:
 
-    Work from: [directory]
+    **Missing requirements:**
+    - Did they implement everything that was requested?
+    - Are there requirements they skipped or missed?
+    - Did they claim something works but didn't actually implement it?
 
-    **While you work:** If you encounter something unexpected or unclear, **ask questions**.
-    It's always OK to pause and clarify. Don't guess or make assumptions.
+    **Extra/unneeded work:**
+    - Did they build things that weren't requested?
+    - Did they over-engineer or add unnecessary features?
+    - Did they add "nice to haves" that weren't in spec?
 
-    ## Before Reporting Back: Self-Review
+    **Misunderstandings:**
+    - Did they interpret requirements differently than intended?
+    - Did they solve the wrong problem?
+    - Did they implement the right feature but wrong way?
 
-    Review your work with fresh eyes. Ask yourself:
+    **Verify by reading code, not by trusting report.**
 
-    **Completeness:**
-    - Did I fully implement everything in the spec?
-    - Did I miss any requirements?
-    - Are there edge cases I didn't handle?
-
-    **Quality:**
-    - Is this my best work?
-    - Are names clear and accurate (match what things do, not how they work)?
-    - Is the code clean and maintainable?
-
-    **Discipline:**
-    - Did I avoid overbuilding (YAGNI)?
-    - Did I only build what was requested?
-    - Did I follow existing patterns in the codebase?
-
-    **Testing:**
-    - Do tests actually verify behavior (not just mock behavior)?
-    - Did I follow TDD if required?
-    - Are tests comprehensive?
-
-    If you find issues during self-review, fix them now before reporting.
-
-    ## Report Format
-
-    When done, report:
-    - What you implemented
-    - What you tested and test results
-    - Files changed
-    - Self-review findings (if any)
-    - Any issues or concerns
+    Report:
+    - ✅ Spec compliant (if everything matches after code inspection)
+    - ❌ Issues found: [list specifically what's missing or extra, with file:line references]
 ```

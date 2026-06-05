@@ -7,61 +7,43 @@ description: Use when you have a written implementation plan to execute in a sep
 
 ## Overview
 
-Load plan, review critically, execute tasks in batches, report for review between batches.
-
-**Core principle:** Batch execution with checkpoints for architect review.
+Load plan, review critically, execute all tasks, report when complete.
 
 **Announce at start:** "I'm using the plans-executing skill to implement this plan."
+
+**Note:** This skill works significantly better with subagent support. If subagents are available, use `subagent-driven-development` instead of this skill.
 
 ## The Process
 
 ### Step 1: Load and Review Plan
 
 1. Read plan file
-2. Review critically - identify any questions or concerns about the plan
+2. Review critically — identify any questions or concerns about the plan
 3. If concerns: Raise them with your human partner before starting
-4. If no concerns: Create task list and proceed
+4. If no concerns: Create TodoWrite and proceed
 
-### Step 2: Execute Batch
-
-**Default: First 3 tasks**
+### Step 2: Execute Tasks
 
 For each task:
 
 1. Mark as in_progress
 2. Follow each step exactly (plan has bite-sized steps)
-3. Run verifications as specified
+3. Run verifications as specified (e.g. `pnpm test`, `pnpm run e2e`)
 4. Mark as completed
 
-### Step 3: Report
-
-When batch complete:
-
-- Show what was implemented
-- Show verification output
-- Say: "Ready for feedback."
-
-### Step 4: Continue
-
-Based on feedback:
-
-- Apply changes if needed
-- Execute next batch
-- Repeat until complete
-
-### Step 5: Complete Development
+### Step 3: Complete Development
 
 After all tasks complete and verified:
 
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
-- **REQUIRED SUB-SKILL:** Use skill:finishing-a-development-branch
+- **REQUIRED SUB-SKILL:** Use `finishing-a-development-branch`
 - Follow that skill to verify tests, present options, execute choice
 
 ## When to Stop and Ask for Help
 
 **STOP executing immediately when:**
 
-- Hit a blocker mid-batch (missing dependency, test fails, instruction unclear)
+- Hit a blocker (missing dependency, test fails, instruction unclear)
 - Plan has critical gaps preventing starting
 - You don't understand an instruction
 - Verification fails repeatedly
@@ -75,7 +57,7 @@ After all tasks complete and verified:
 - Partner updates the plan based on your feedback
 - Fundamental approach needs rethinking
 
-**Don't force through blockers** - stop and ask.
+**Don't force through blockers** — stop and ask.
 
 ## Remember
 
@@ -83,5 +65,13 @@ After all tasks complete and verified:
 - Follow plan steps exactly
 - Don't skip verifications
 - Reference skills when plan says to
-- Between batches: just report and wait
 - Stop when blocked, don't guess
+- Never start implementation on main/master branch without explicit user consent
+
+## Integration
+
+**Related skills:**
+
+- **`using-git-worktrees`** — Ensures isolated workspace (creates one or verifies existing)
+- **`plans-writing`** — Creates the plan this skill executes
+- **`finishing-a-development-branch`** — Complete development after all tasks

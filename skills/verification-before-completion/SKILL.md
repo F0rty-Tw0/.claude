@@ -78,22 +78,43 @@ Skip any step = lying, not verifying
 **Tests:**
 
 ```
-✅ [Run test command] [See: 34/34 pass] "All tests pass"
+✅ pnpm test → See: 34/34 pass → "All tests pass"
 ❌ "Should pass now" / "Looks correct"
+```
+
+**Type checking:**
+
+```
+✅ tsc --noEmit → exit 0 → "No type errors"
+❌ "Looks correct" / "Types seem fine"
+```
+
+**Linting:**
+
+```
+✅ pnpm lint → 0 errors → "Linter clean"
+❌ "I fixed the obvious issues" (without running the linter)
 ```
 
 **Regression tests (TDD Red-Green):**
 
 ```
-✅ Write → Run (pass) → Revert fix → Run (MUST FAIL) → Restore → Run (pass)
+✅ Write → pnpm test (pass) → Revert fix → pnpm test (MUST FAIL) → Restore → pnpm test (pass)
 ❌ "I've written a regression test" (without red-green verification)
 ```
 
 **Build:**
 
 ```
-✅ [Run build] [See: exit 0] "Build passes"
+✅ pnpm build → exit 0 → "Build passes"
 ❌ "Linter passed" (linter doesn't check compilation)
+```
+
+**E2E / integration:**
+
+```
+✅ pnpm exec playwright test → all scenarios green → "E2E passes"
+❌ "Unit tests pass so it should work end-to-end"
 ```
 
 **Requirements:**
@@ -112,13 +133,13 @@ Skip any step = lying, not verifying
 
 ## Why This Matters
 
-From 24 failure memories:
+Unverified completion claims cause real harm:
 
-- your human partner said "I don't believe you" - trust broken
-- Undefined functions shipped - would crash
-- Missing requirements shipped - incomplete features
-- Time wasted on false completion → redirect → rework
-- Violates: "Honesty is a core value. If you lie, you'll be replaced."
+- Trust breaks when claims don't match reality
+- Undefined functions get shipped and crash
+- Missing requirements ship as incomplete features
+- False completion wastes time on redirect and rework
+- Rule: honesty is a core value — claims without evidence are lies
 
 ## When To Apply
 

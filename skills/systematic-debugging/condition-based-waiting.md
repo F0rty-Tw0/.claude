@@ -86,6 +86,46 @@ async function waitFor<T>(
 
 See `condition-based-waiting-example.ts` in this directory for complete implementation with domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`) from actual debugging session.
 
+## vitest / jest Built-in Waiting
+
+vitest and jest both provide `waitFor` out of the box — prefer these over rolling your own in unit tests:
+
+```typescript
+import { waitFor } from '@testing-library/react'; // or @testing-library/angular
+// or from vitest-browser-react, depending on setup
+
+await waitFor(() => expect(screen.getByText('Loaded')).toBeInTheDocument());
+```
+
+For non-DOM assertions in vitest, use the generic pattern above or `vi.waitFor`:
+
+```typescript
+await vi.waitFor(
+  () => {
+    expect(store.status).toBe('ready');
+  },
+  { timeout: 5000, interval: 10 },
+);
+```
+
+## Playwright (e2e) Flakiness
+
+Playwright's built-in auto-waiting handles most DOM assertions automatically — `page.getByText('Submit').click()` already waits for the element to be visible and actionable. Only reach for manual `waitFor` when crossing async non-DOM boundaries (e.g., waiting for a WebSocket message, a background job, or a signal update that hasn't been reflected in the DOM yet):
+
+```typescript
+// ❌ Unnecessary manual wait — Playwright auto-waits for visibility
+await page.waitForTimeout(500);
+await page.getByRole('button', { name: 'Submit' }).click();
+
+// ✅ Let Playwright's auto-waiting do its job
+await page.getByRole('button', { name: 'Submit' }).click();
+
+// ✅ Manual wait only for non-DOM async boundaries
+await page.waitForResponse((resp) => resp.url().includes('/api/payment'));
+```
+
+For persistently flaky e2e tests, apply the same root-cause discipline: is it a timing guess, a missing condition wait, or a genuine environment problem?
+
 ## Common Mistakes
 
 **❌ Polling too fast:** `setTimeout(check, 1)` - wastes CPU

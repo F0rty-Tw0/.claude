@@ -89,13 +89,67 @@ async function gitInit(directory: string) {
 }
 ```
 
+## TypeScript: Layer 0 — Encode Invariants in the Type System
+
+Before runtime validation, TypeScript lets you make invalid states *unrepresentable*. This is the strongest defense because the compiler enforces it.
+
+**Branded / opaque types for validated values:**
+
+```typescript
+// Unbranded string — anyone can pass anything
+function processDir(dir: string) { /* ... */ }
+
+// Branded type — only values that passed validation are accepted
+type ValidatedDir = string & { readonly __brand: 'ValidatedDir' };
+
+function validateDir(dir: string): ValidatedDir {
+  if (!dir || !existsSync(dir)) {
+    throw new Error(`Invalid directory: ${dir}`);
+  }
+  return dir as ValidatedDir; // The cast is here, not at the call site
+}
+
+function processDir(dir: ValidatedDir) { /* dir is guaranteed valid */ }
+```
+
+**Discriminated unions instead of nullable returns:**
+
+```typescript
+// ❌ Caller can forget to check for null
+function findUser(id: string): User | null { ... }
+
+// ✅ Type forces the caller to handle both branches
+type FindResult<T> =
+  | { found: true; value: T }
+  | { found: false; reason: string };
+
+function findUser(id: string): FindResult<User> { ... }
+```
+
+**`unknown` at external boundaries:**
+
+```typescript
+// ❌ any bypasses all type checks — bugs hide here
+function parseApiResponse(raw: unknown): any {
+  return raw; // No validation — type errors suppressed downstream
+}
+
+// ✅ unknown forces narrowing at the boundary (Layer 1)
+function parseApiResponse(raw: unknown): ApiResponse {
+  if (!isApiResponse(raw)) {
+    throw new Error(`Unexpected API shape: ${JSON.stringify(raw)}`);
+  }
+  return raw; // TypeScript now knows the type
+}
+```
+
 ## Applying the Pattern
 
 When you find a bug:
 
 1. **Trace the data flow** - Where does bad value originate? Where used?
 2. **Map all checkpoints** - List every point data passes through
-3. **Add validation at each layer** - Entry, business, environment, debug
+3. **Add validation at each layer** - Type system (Layer 0), entry, business, environment, debug
 4. **Test each layer** - Try to bypass layer 1, verify layer 2 catches it
 
 ## Example from Session

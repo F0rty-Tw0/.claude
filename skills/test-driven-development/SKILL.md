@@ -85,13 +85,12 @@ test('retries failed operations 3 times', async () => {
     return 'success';
   };
 
-const result = await retryOperation(operation);
+  const result = await retryOperation(operation);
 
-expect(result).toBe('success');
-expect(attempts).toBe(3);
+  expect(result).toBe('success');
+  expect(attempts).toBe(3);
 });
-
-````
+```
 Clear name, tests real behavior, one thing
 </Good>
 
@@ -105,8 +104,7 @@ test('retry works', async () => {
   await retryOperation(mock);
   expect(mock).toHaveBeenCalledTimes(3);
 });
-````
-
+```
 Vague name, tests mock not code
 </Bad>
 
@@ -121,7 +119,7 @@ Vague name, tests mock not code
 **MANDATORY. Never skip.**
 
 ```bash
-npm test path/to/test.test.ts
+pnpm test path/to/test.spec.ts
 ```
 
 Confirm:
@@ -177,7 +175,7 @@ Don't add features, refactor other code, or "improve" beyond the test.
 **MANDATORY.**
 
 ```bash
-npm test path/to/test.test.ts
+pnpm test path/to/test.spec.ts
 ```
 
 Confirm:
@@ -211,6 +209,42 @@ Next failing test for next feature.
 | **Minimal**      | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
 | **Clear**        | Name describes behavior             | `test('test1')`                                     |
 | **Shows intent** | Demonstrates desired API            | Obscures what code should do                        |
+
+## Angular / Component Testing
+
+For Angular components, use TestBed and component harnesses. The same TDD rules apply — write the failing test first.
+
+<Good>
+```typescript
+// RED: failing test for an Angular component
+it('displays error message when email is empty', async () => {
+  const fixture = TestBed.createComponent(LoginComponent);
+  const harness = await TestbedHarnessEnvironment.harnessForFixture(
+    fixture,
+    LoginComponentHarness
+  );
+
+  await harness.submitForm({ email: '', password: 'secret' });
+
+  expect(await harness.getErrorText()).toBe('Email required');
+});
+```
+Uses harness, tests real component behavior, one assertion
+</Good>
+
+<Bad>
+```typescript
+it('shows error', () => {
+  const fixture = TestBed.createComponent(LoginComponent);
+  fixture.detectChanges();
+  // Testing internal state instead of rendered behavior
+  expect(fixture.componentInstance.hasError).toBe(true);
+});
+```
+Tests implementation detail, not user-visible behavior
+</Bad>
+
+For e2e tests use Playwright: `pnpm exec playwright test`.
 
 ## Why Order Matters
 
@@ -316,7 +350,7 @@ test('rejects empty email', async () => {
 **Verify RED**
 
 ```bash
-$ npm test
+$ pnpm test
 FAIL: expected 'Email required', got undefined
 ```
 
@@ -334,7 +368,7 @@ function submitForm(data: FormData) {
 **Verify GREEN**
 
 ```bash
-$ npm test
+$ pnpm test
 PASS
 ```
 

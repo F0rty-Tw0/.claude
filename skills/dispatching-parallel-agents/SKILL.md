@@ -7,6 +7,8 @@ description: Use when facing 2+ independent tasks that can be worked on without 
 
 ## Overview
 
+You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
+
 When you have multiple unrelated failures (different test files, different subsystems, different bugs), investigating them sequentially wastes time. Each investigation is independent and can happen in parallel.
 
 **Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
@@ -81,7 +83,7 @@ When agents return:
 
 - Read each summary
 - Verify fixes don't conflict
-- Run full test suite
+- Run full test suite (`pnpm test`)
 - Integrate all changes
 
 ## Agent Prompt Structure
@@ -177,12 +179,10 @@ After agents return:
 
 1. **Review each summary** - Understand what changed
 2. **Check for conflicts** - Did agents edit same code?
-3. **Run full suite** - Verify all fixes work together
+3. **Run full suite** - Verify all fixes work together (`pnpm test`)
 4. **Spot check** - Agents can make systematic errors
 
 ## Real-World Impact
-
-From debugging session:
 
 - 6 failures across 3 files
 - 3 agents dispatched in parallel

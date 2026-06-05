@@ -35,7 +35,7 @@ digraph when_to_use {
 ### 1. Observe the Symptom
 
 ```
-Error: git init failed in /Users/jesse/project/packages/core
+Error: git init failed in ~/project/packages/core
 ```
 
 ### 2. Find Immediate Cause
@@ -96,7 +96,7 @@ async function gitInit(directory: string) {
 **Run and capture:**
 
 ```bash
-npm test 2>&1 | grep 'DEBUG git init'
+pnpm test 2>&1 | grep 'DEBUG git init'
 ```
 
 **Analyze stack traces:**
@@ -105,6 +105,30 @@ npm test 2>&1 | grep 'DEBUG git init'
 - Find the line number triggering the call
 - Identify the pattern (same test? same parameter?)
 
+### TypeScript: Lost Stacks Across `await`
+
+Node's async stack traces can lose context across `await` boundaries in older runtimes. Enable source maps and async context for full traces:
+
+```bash
+node --enable-source-maps --async-context dist/server.js
+```
+
+If stack traces still truncate at async boundaries, capture context manually before awaiting:
+
+```typescript
+async function processPayment(orderId: string) {
+  const callerStack = new Error('processPayment context').stack;
+  try {
+    await chargeService.charge(orderId);
+  } catch (err) {
+    console.error('processPayment failed', { orderId, callerStack, err });
+    throw err;
+  }
+}
+```
+
+This gives you the *calling* context even when the async chain drops it.
+
 ## Finding Which Test Causes Pollution
 
 If something appears during tests but you don't know which test:
@@ -112,7 +136,7 @@ If something appears during tests but you don't know which test:
 Use the bisection script `find-polluter.sh` in this directory:
 
 ```bash
-./find-polluter.sh '.git' 'src/**/*.test.ts'
+./find-polluter.sh '.git' 'src/**/*.spec.ts'
 ```
 
 Runs tests one-by-one, stops at first polluter. See script for usage.
@@ -172,6 +196,7 @@ digraph principle {
 **Before operation:** Log before the dangerous operation, not after it fails
 **Include context:** Directory, cwd, environment variables, timestamps
 **Capture stack:** `new Error().stack` shows complete call chain
+**Compiled output:** Run with `node --enable-source-maps` so stack traces reference `.ts` source lines, not compiled `.js`
 
 ## Real-World Impact
 
