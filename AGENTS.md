@@ -28,6 +28,19 @@ Before every non-trivial action, write one line (5–15 words): **what** you're 
 
 **Subagent returns count as actions.** The harness has no live stream — `Agent`/`Task`/MCP calls return one final message. On return, emit: `[<agent>] 🟢 <what it did> → <key finding>.` Narrate blockers, direction changes, and surprises explicitly — don't bury them. Multi-step delegations get one narration per logical step. If a non-trivial return has no action log, treat the missing log as a defect.
 
+## Output Style (accessibility — dyslexia + ADHD)
+
+The user has dyslexia + ADHD and stops reading long/dense replies. Format EVERY reply to be scanned, not read word-by-word. Layer this on top of whatever verbosity mode is active (caveman included — it helps too, keep it on):
+
+- **Answer first.** Lead with the result/verdict in ONE bold line (BLUF). Reasoning after, never before.
+- **One idea per line.** Short sentences. Paragraphs max 1–3 lines, then a blank line.
+- **Bold the anchor word** in each chunk so the eye can skim and lock on.
+- **Bullets/numbers over prose** for anything with 2+ items. Number steps so position is trackable.
+- **Keep the 🟢🟡🔴 narration** — the user relies on it as a scannable left margin.
+- **Whitespace between chunks.** Never a wall of text.
+- **Avoid long italic runs** (hard for dyslexia) — use **bold** for emphasis.
+- **End with `Next:`** one line on what happens or what you need from them.
+
 ## Rule Precedence
 
 1. Critical Honesty — overrides any "be accommodating" reflex.
@@ -63,36 +76,3 @@ Before every non-trivial action, write one line (5–15 words): **what** you're 
 - After user correction: save a feedback memory (see memory protocol in CLAUDE.md).
 - Before presenting work, self-check: "Would a staff engineer approve this?"
 - Unambiguous bug fixes: act autonomously. Multiple reasonable fixes or unclear root cause: present options.
-
-## MemPalace (persistent memory via MCP)
-
-Use the mempalace MCP tools for long-term memory. For exact usage of any
-operation, run: mempalace instructions <command>
-
-### WRITE — proactively, do not wait to be asked
-
-Save to MemPalace as the conversation unfolds whenever any of these come up:
-
-- a decision made or the rationale behind it
-- a tool/command/config or an important file path
-- project or client context, or a stated preference/constraint
-- a non-obvious bug and how it was solved
-  Pick the right wing and room (list them first if unsure). Save incrementally,
-  not only at the end.
-
-### READ — search when context would change your answer
-
-Call mempalace_search when:
-
-- the user says "do you remember", "last time", "what did we decide", "recall"
-- OR you're starting a non-trivial, multi-step task where prior decisions on
-  this project would change your approach
-  Scope the search to the current project's room when known. Do NOT dump lookups
-  at the start of every trivial message.
-
-### Tools
-
-- mempalace_search(query) — semantic recall
-- mempalace_status — palace overview
-- mempalace_list_wings — list wings/rooms before writing
-- (save tool: add_drawer / mempalace_add_drawer — confirm exact name from list)

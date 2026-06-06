@@ -58,15 +58,6 @@
       "command": "cmd",
       "args": ["/c", "pnpm", "dlx", "agentic-mcp"]
     },
-    "mempalace": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": ["/c", "python", "-m", "mempalace.mcp_server"],
-      "env": {
-        "PYTHONIOENCODING": "utf-8",
-        "PYTHONUTF8": "1"
-      }
-    },
     "playwright": {
       "type": "stdio",
       "command": "npx",
