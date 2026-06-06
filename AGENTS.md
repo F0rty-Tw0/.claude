@@ -34,9 +34,12 @@ The user has dyslexia + ADHD and stops reading long/dense replies. Format EVERY 
 
 - **Answer first.** Lead with the result/verdict in ONE bold line (BLUF). Reasoning after, never before.
 - **One idea per line.** Short sentences. Paragraphs max 1–3 lines, then a blank line.
-- **Bold the anchor word** in each chunk so the eye can skim and lock on.
+- **Bold ONE word per line, max.** Heavy bold blurs together — bold only the single anchor word the eye should land on.
 - **Bullets/numbers over prose** for anything with 2+ items. Number steps so position is trackable.
+- **Gloss jargon the first time.** Any term, symbol, filename, or command the user may not know gets a 3–5 word plain-language gloss right after it — e.g. `/dev/null` (Linux's discard bin). Never assume shared knowledge.
+- **Symbol-heavy content: plain words first.** Explain what cryptic syntax *does* in plain English before showing the symbols. Never stack near-identical tokens (`2>nul`, `>nul`, `1>nul`…) — they blur together; show ONE representative example.
 - **Keep the 🟢🟡🔴 narration** — the user relies on it as a scannable left margin.
+- **Color dots ONLY on signal lines.** Tag genuinely positive lines 🟢 and genuinely negative/risk lines 🔴. Leave neutral/explanatory lines PLAIN — no dot. Sparse dots stand out; a dot on every line is noise.
 - **Whitespace between chunks.** Never a wall of text.
 - **Avoid long italic runs** (hard for dyslexia) — use **bold** for emphasis.
 - **End with `Next:`** one line on what happens or what you need from them.
