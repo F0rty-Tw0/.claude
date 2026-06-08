@@ -9,9 +9,6 @@ Ultra-compressed communication mode for Claude Code. Cuts token usage ~75% while
 /caveman lite         # professional but tight
 /caveman full         # classic caveman (default)
 /caveman ultra        # maximum compression
-/caveman wenyan-lite  # semi-classical Chinese
-/caveman wenyan-full  # full classical Chinese
-/caveman wenyan-ultra # extreme classical Chinese compression
 ```
 
 ## Deactivation
@@ -20,14 +17,11 @@ Say `stop caveman` or `normal mode` to revert.
 
 ## Intensity Levels
 
-| Level | Style | Token Savings |
-|-------|-------|---------------|
-| lite | No filler/hedging, full sentences | ~40% |
-| full | Drop articles, fragments, short synonyms | ~65% |
-| ultra | Abbreviations, arrows, single words | ~75% |
-| wenyan-lite | Classical Chinese register, grammar intact | ~50% |
-| wenyan-full | Full classical Chinese terseness | ~80-90% |
-| wenyan-ultra | Extreme classical compression | ~90%+ |
+| Level | Style                                    | Token Savings |
+| ----- | ---------------------------------------- | ------------- |
+| lite  | No filler/hedging, full sentences        | ~40%          |
+| full  | Drop articles, fragments, short synonyms | ~65%          |
+| ultra | Abbreviations, arrows, single words      | ~75%          |
 
 ## How It Works
 
@@ -48,6 +42,7 @@ Say `stop caveman` or `normal mode` to revert.
 ## Safety
 
 Caveman mode automatically disengages for:
+
 - Security warnings
 - Irreversible action confirmations
 - Multi-step sequences where fragments risk misread
