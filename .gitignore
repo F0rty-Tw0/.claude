@@ -20,6 +20,8 @@
 !backup/**
 !copilot/
 !copilot/**
+!linux/
+!linux/**
 !settings.json
 !settings.local.json
 !.ignore
