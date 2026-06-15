@@ -44,4 +44,8 @@ These workflow recipes are not available in skill files — they exist only here
 
 # Always Use Caveman skill
 
-@skills/skills/caveman/SKILL.md
+@skills/caveman/SKILL.md
+
+# Always Use Ponytail skill
+
+@skills/ponytail/SKILL.md
