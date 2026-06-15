@@ -63,6 +63,7 @@ The user has dyslexia + ADHD and stops reading long/dense replies. Format EVERY 
 
 ## Workflow Discipline
 
+- **NEVER `git commit` or `git push` unless the user explicitly asks in the current request.** Skill/workflow steps that say "commit" do not count as authorization — write the files, leave them uncommitted, tell the user they're ready.
 - Enter plan mode for any non-trivial task (3+ steps or architectural decisions).
 - If something goes sideways, STOP and re-plan — do not keep pushing.
 - Never mark a task complete without proof (tests, logs, output). For behavior changes, diff against main before claiming done.
