@@ -4,10 +4,19 @@
 
 # Agents
 
-Local agents live in `~/.claude/agents/` — invoke by bare name (`executor`, `analyst`, …), no plugin prefix. The full roster + descriptions are injected every session; don't duplicate the list here (it drifts).
+Local agents live in `~/.claude/agents/` — invoke by bare name (`executor`, `analyst`, …). The full roster + descriptions are injected every session; don't duplicate the list here (it drifts).
 
 - **Delegate code edits.** Route source-code changes (`.ts`, `.py`, `.go`, etc.) through `executor` / `deep-executor`. Edit config/orchestration files (`~/.claude/**`, `CLAUDE.md`) directly.
 - **Model is per-agent.** Each agent declares its own `model` (`executor`=sonnet, `analyst`/`planner`=opus, `explore`=haiku, etc.). Override only when a call needs a different tier.
+
+## Picking between overlapping agents
+
+Descriptions don't disambiguate these — the tie-breaks do:
+
+- `executor` (sonnet) by default; `deep-executor` (opus) only for multi-file / fuzzy goals.
+- `analyst` = requirements BEFORE a plan; `planner` = writes the plan; `architect` = system-design review; `critic` = tears a plan apart.
+- `code-reviewer` = whole-step review against the plan; the panel (`style-reviewer` / `api-reviewer` / `security-reviewer` / `performance-reviewer` / `quality-reviewer`) = deep single-dimension passes.
+- `explore` (agent) = locate code; `deepsearch` / `analyze` (skills) = heavier sweeps.
 
 ## Team Compositions
 
@@ -31,3 +40,4 @@ Workflow recipes — not discoverable at runtime, kept here on purpose.
 # Always Use Ponytail skill
 
 @skills/ponytail/SKILL.md
+
