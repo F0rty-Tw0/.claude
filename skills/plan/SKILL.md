@@ -91,9 +91,7 @@ starts from a solid foundation. The consensus mode adds multi-perspective valida
    - **Reject** — discard the plan entirely
 8. User chooses via the structured `AskUserQuestion` UI (never ask for approval in plain text)
 9. On user approval:
-   - **Approve and execute**: **MUST** invoke `Skill("ralph")` with the approved plan path from `.claude/local/plans/`
-     as context. Do NOT implement directly. Do NOT edit source code files in the planning agent. The ralph skill handles
-     execution via ultrawork parallel agents.
+   - **Approve and execute**: invoke `Skill("ralph")` (autonomous — parallel execution via ultrawork) **or** `Skill("subagent-driven-development")` (supervised — review-gated per task) with the approved plan path from `.claude/local/plans/`. Pick supervised for high-stakes or ambiguous work. Do NOT implement directly or edit source code files in the planning agent.
    - **Clear context and implement**: First invoke `Skill("compact")` to compress the context window (reduces token
      usage accumulated during planning), then invoke `Skill("ralph")` with the approved plan path from
      `.claude/local/plans/`. This path is recommended when the context window is 50%+ full after the planning session.
@@ -129,8 +127,7 @@ Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
   external tools
 - In consensus mode, **MUST** use `AskUserQuestion` for the user feedback step (step 2) and the final approval step
   (step 7) -- never ask for approval in plain text
-- In consensus mode, on user approval **MUST** invoke `Skill("ralph")` for execution (step 9) -- never implement
-  directly in the planning agent
+- In consensus mode, on user approval invoke `Skill("ralph")` (autonomous) or `Skill("subagent-driven-development")` (supervised) for execution (step 9) -- never implement directly in the planning agent
 - When user selects "Clear context and implement" in step 7: invoke `Skill("compact")` first to compress the accumulated
   planning context, then immediately invoke `Skill("ralph")` with the plan path -- the compact step is critical to free
   up context before the implementation loop begins </Tool_Usage>

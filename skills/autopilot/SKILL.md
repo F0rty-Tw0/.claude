@@ -65,7 +65,8 @@ automatically so the user can describe what they want and receive working code w
    - Code-reviewer: Quality review
    - All must approve; fix and re-validate on rejection
 
-6. **Phase 5 - Cleanup**: Delete all state files on successful completion
+6. **Phase 5 - Finish & Cleanup**: Integrate the work, then delete all state files on successful completion
+   - If the work was done on a dedicated branch or worktree, invoke `Skill("finishing-a-development-branch")` to integrate and clean up the branch
    - Remove `.claude/local/state/autopilot-state.json`, `ralph-state.json`, `ultrawork-state.json`, `ultraqa-state.json`
    - Run `cancel` for clean exit </Steps>
 
@@ -115,6 +116,7 @@ Why bad: This is an exploration/brainstorming request. Respond conversationally 
 - [ ] All validators approved in Phase 4
 - [ ] Tests pass (verified with fresh test run output)
 - [ ] Build succeeds (verified with fresh build output)
+- [ ] Branch integrated via finishing-a-development-branch (if on a dedicated branch)
 - [ ] State files cleaned up
 - [ ] User informed of completion with summary of what was built </Final_Checklist>
 

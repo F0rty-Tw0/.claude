@@ -49,7 +49,7 @@ This structure informs the task decomposition. Each task should produce self-con
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use skill:subagent-driven-development (recommended) or skill:plans-executing to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use skill:subagent-driven-development (supervised, recommended), skill:plans-executing (checkpointed), or skill:ralph (autonomous) to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -142,6 +142,7 @@ After saving the plan, offer execution choice:
 **1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
 
 **2. Inline Execution** - Execute tasks in this session using plans-executing, batch execution with checkpoints
+**3. Autonomous** - Hand the plan to `ralph` for parallel, persistence-looped execution with architect verification (fire-and-forget; best for well-scoped, low-risk work)
 
 **Which approach?"**
 
@@ -152,3 +153,7 @@ After saving the plan, offer execution choice:
 **If Inline Execution chosen:**
 - **REQUIRED SUB-SKILL:** Use skill:plans-executing
 - Batch execution with checkpoints for review
+
+**If Autonomous chosen:**
+- **REQUIRED SUB-SKILL:** Use skill:ralph with the plan path
+- ralph drives ultrawork parallel agents and verifies completion before exit

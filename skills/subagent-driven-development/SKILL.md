@@ -280,7 +280,7 @@ Done!
 
 - **skill:using-git-worktrees** - Ensures isolated workspace (creates one or verifies existing)
 - **skill:plans-writing** - Creates the plan this skill executes
-- **skill:code-review-requesting** - Code review template for reviewer subagents
+- **skill:code-review-requesting** - dispatches the `code-reviewer` agent with scoped diff context
 - **skill:finishing-a-development-branch** - Complete development after all tasks
 
 **Subagents should use:**

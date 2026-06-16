@@ -57,7 +57,7 @@ evidence before allowing completion, and using tiered architect review to confir
    - Standard changes: STANDARD tier (architect-medium / Sonnet)
    - >20 files or security/architectural changes: THOROUGH tier (architect / Opus)
    - Ralph floor: always at least STANDARD, even for small changes
-7. **On approval**: Run `cancel` to cleanly exit and clean up all state files
+7. **On approval**: If the work was done on a dedicated branch or worktree, invoke `Skill("finishing-a-development-branch")` to integrate and clean up. Then run `cancel` to cleanly exit and clean up all state files
 8. **On rejection**: Fix the issues raised, then re-verify at the same tier
 </Steps>
 
