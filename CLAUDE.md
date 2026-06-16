@@ -1,29 +1,17 @@
-<!-- OMC:START -->
-<!-- OMC:VERSION:4.2.13 -->
+# User Notes
 
-# oh-my-claudecode
+- **MCP/HOOKS setup location**: `$HOME\.claude.json`
 
-Multi-agent orchestration layer. Agent types, skills, and tools are discoverable at runtime via Task tool descriptions, system-reminder skill lists, and ToolSearch — do not duplicate them here.
+# Agents
 
-## Band-Aids
+Local agents live in `~/.claude/agents/` — invoke by bare name (`executor`, `analyst`, …), no plugin prefix. The full roster + descriptions are injected every session; don't duplicate the list here (it drifts).
 
-- **Delegate code edits.** Route source-code changes (`.ts`, `.py`, `.go`, etc.) through `executor`/`deep-executor` agents. Write directly only to config/orchestration files (`~/.claude/**`, `.omc/**`, `CLAUDE.md`). Use `oh-my-claudecode:` prefix for OMC agent subagent types.
-- **Model routing.** Pass `model` on Task calls: `haiku` for quick lookups, `sonnet` for standard work, `opus` for architecture/complex refactors.
-- **MCP tools are deferred.** Call `ToolSearch("mcp")` before first use — they are NOT in your tool list at session start. No results means not configured; fall back to Claude agents. Always attach `context_files`/`files` when calling MCP tools.
-- **Uncertain API/SDK usage.** Delegate to `dependency-expert` or use Context7 (`resolve-library-id` then `query-docs`) before guessing field names or API contracts.
-- **Cancellation.** Hooks can't read your responses. Use `/oh-my-claudecode:cancel` to end execution modes (`--force` clears all state).
-- **OMC state path.** All state lives at `{worktree}/.omc/` — not `~/.claude/`.
-- **Context persistence.** Use `<remember>info</remember>` (7 days) or `<remember priority>info</remember>` (permanent).
-- **MCP provider strengths.** Codex (`ask_codex`): architecture, planning, critical analysis, code/security review. Gemini (`ask_gemini`): UI/UX design, documentation, visual analysis, large-context (1M tokens). Pass any OMC agent role as `agent_role` parameter.
-- **Hook patterns** in `<system-reminder>` tags:
-  - `hook success: Success` — proceed normally
-  - `hook additional context: ...` — read it, it's relevant
-  - `[MAGIC KEYWORD: ...]` — invoke that skill immediately
-  - `The boulder never stops` — ralph/ultrawork active, keep going
+- **Delegate code edits.** Route source-code changes (`.ts`, `.py`, `.go`, etc.) through `executor` / `deep-executor`. Edit config/orchestration files (`~/.claude/**`, `CLAUDE.md`) directly.
+- **Model is per-agent.** Each agent declares its own `model` (`executor`=sonnet, `analyst`/`planner`=opus, `explore`=haiku, etc.). Override only when a call needs a different tier.
 
 ## Team Compositions
 
-These workflow recipes are not available in skill files — they exist only here.
+Workflow recipes — not discoverable at runtime, kept here on purpose.
 
 - **Feature Development:** `analyst` -> `planner` -> `executor` -> `test-engineer` -> `quality-reviewer` -> `verifier`
 - **Bug Investigation:** `explore` + `debugger` + `executor` + `test-engineer` + `verifier`
@@ -31,12 +19,6 @@ These workflow recipes are not available in skill files — they exist only here
 - **Product Discovery:** `product-manager` + `ux-researcher` + `product-analyst` + `designer`
 - **Feature Specification:** `product-manager` -> `analyst` -> `information-architect` -> `planner` -> `executor`
 - **UX Audit:** `ux-researcher` + `information-architect` + `designer` + `product-analyst`
-
-<!-- OMC:END -->
-
-# User Notes
-
-- **MCP/HOOKS setup location**: `$HOME\.claude.json`
 
 @AGENTS.md
 
