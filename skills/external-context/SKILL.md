@@ -1,21 +1,21 @@
 ---
 name: external-context
-description: Invoke parallel document-specialist agents for external web searches and documentation lookup
+description: Invoke parallel external-researcher agents for external web searches and documentation lookup
 argument-hint: <search query or topic>
 version: 1.0.0
 ---
 
 # External Context Skill
 
-Invoke parallel document-specialist agents to search the web for external documentation, references, and context.
+Invoke parallel external-researcher agents to search the web for external documentation, references, and context.
 
 ## Overview
 
-External Context decomposes a query into parallel web search facets, each handled by an independent document-specialist
+External Context decomposes a query into parallel web search facets, each handled by an independent external-researcher
 agent:
 
 1. **Decomposition** - Break query into 2-5 independent search facets
-2. **Parallel Search** - Spawn document-specialist agents for each facet
+2. **Parallel Search** - Spawn external-researcher agents for each facet
 3. **Synthesis** - Aggregate findings into structured context
 
 ## Usage
@@ -58,9 +58,9 @@ Given a query, decompose into 2-5 independent search facets:
 Fire independent facets in parallel via Task tool:
 
 ```
-Task(subagent_type="document-specialist", model="sonnet", prompt="Search for: <facet 1 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
+Task(subagent_type="external-researcher", model="sonnet", prompt="Search for: <facet 1 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
 
-Task(subagent_type="document-specialist", model="sonnet", prompt="Search for: <facet 2 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
+Task(subagent_type="external-researcher", model="sonnet", prompt="Search for: <facet 2 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
 ```
 
 ### Synthesis
@@ -93,6 +93,6 @@ After all agents complete, synthesize findings:
 
 ## Configuration
 
-- Maximum 5 parallel document-specialist agents
+- Maximum 5 parallel external-researcher agents
 - Each agent uses WebSearch and WebFetch tools
 - No magic keyword trigger - explicit invocation only

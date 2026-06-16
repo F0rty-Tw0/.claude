@@ -57,7 +57,7 @@ During exploration, trace the data flow through the relevant paths and identify 
 </Plan_Structure>
 
 <Tool_Usage> - Use AskUserQuestion for all preference/priority questions (provides clickable options). - Spawn explore
-agent (model=haiku) for codebase context questions. - Spawn document-specialist agent for external documentation
+agent (model=haiku) for codebase context questions. - Spawn external-researcher agent for external documentation
 needs. - Use Write to save plans to `.claude/plans/{name}.md`. </Tool_Usage>
 
 <Execution_Policy> - Default effort: medium (focused interview, concise plan). - Stop when the plan is actionable and
