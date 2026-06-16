@@ -43,6 +43,19 @@ Guardrails (Must Have / Must NOT Have), Task Flow, Detailed TODOs with acceptanc
 confirmation summary and wait for explicit user approval. 7) On approval, hand off to `implementation {plan-name}`.
 </Investigation_Protocol>
 
+<Plan_Structure> The plan file (`.claude/plans/{name}.md`) MUST contain, in order:
+- Context: what to build and why (one paragraph).
+- Work Objectives: the concrete deliverables.
+- Guardrails: Must Have / Must NOT Have.
+- Task Flow: 3-6 steps, with ordering and dependencies between them.
+- Detailed TODOs: each with clear acceptance criteria an executor can verify.
+- Edge Cases: edge cases and error conditions the implementer must handle.
+- Critical Files: the exact files (with paths) the implementer must read FIRST to understand the codebase, so they can execute without re-exploring.
+- Success Criteria: how to know the work is done.
+
+During exploration, trace the data flow through the relevant paths and identify the types/interfaces/contracts involved. When more than one approach is viable, name the alternatives and justify the chosen one. Flag known pitfalls or tricky parts so the executor isn't surprised.
+</Plan_Structure>
+
 <Tool_Usage> - Use AskUserQuestion for all preference/priority questions (provides clickable options). - Spawn explore
 agent (model=haiku) for codebase context questions. - Spawn document-specialist agent for external documentation
 needs. - Use Write to save plans to `.claude/plans/{name}.md`. </Tool_Usage>

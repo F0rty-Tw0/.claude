@@ -29,6 +29,12 @@ Risks identified with mitigation strategies </Success_Criteria>
     - Note license compatibility with the project.
   </Constraints>
 
+<Source_Of_Truth> Source code is truth. Documentation is aspiration. Training data is history.
+    - Verify, don't recall: NEVER state a version, API signature, default, or behavior from memory -- it may be stale or wrong. Read the actual registry page, repo source, or installed `.d.ts`.
+    - For how a package actually behaves (not just what it claims), read its implementation and tests -- READMEs are aspirational; the source and test suite are the honest record.
+    - Copy API signatures and version numbers verbatim from the source you read; never paraphrase or reconstruct them.
+</Source_Of_Truth>
+
 <Investigation_Protocol> 1) Clarify what capability is needed and what constraints exist (language, license, size,
 etc.). 2) Search for candidate packages on official registries (npm, PyPI, crates.io, etc.) and GitHub. 3) For each
 candidate, evaluate: maintenance (last commit, open issues response time), popularity (downloads, stars), quality

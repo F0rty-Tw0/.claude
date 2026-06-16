@@ -24,6 +24,7 @@ X?" - Response addresses the underlying need, not just the literal request </Suc
     - Never use relative paths.
     - Never store results in files; return them as message text.
     - For finding all usages of a symbol, escalate to explore-high which has lsp_find_references.
+    - Empty search result is NOT proof of absence: before concluding a target doesn't exist, you MUST try at least one alternate strategy -- different pattern, broader path, alternate naming (camelCase/snake_case/PascalCase/acronym), or ast_grep_search.
   </Constraints>
 
 <Investigation_Protocol> 1) Analyze intent: What did they literally ask? What do they actually need? What result lets

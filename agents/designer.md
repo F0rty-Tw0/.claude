@@ -28,6 +28,13 @@ functional, accessible, responsive </Success_Criteria>
     - Avoid: generic fonts, purple gradients on white (AI slop), predictable layouts, cookie-cutter design.
   </Constraints>
 
+<Design_System> Treat the design system as the foundation -- UI built without one collapses into inconsistency. Work four phases IN ORDER:
+1) Token-first analysis (BEFORE any CSS/JSX/Svelte). Use Grep/Read to find the design tokens (colors, spacing, typography, shadows, radii), theme files (CSS variables, Tailwind config, theme.ts), and shared primitives (Button, Card, Input, Layout). Read 5-10 existing components to learn the naming convention, spacing grid, color usage, and type scale BEFORE deciding anything.
+2) No coherent system? Build the minimal one first. Extract what exists, then define a palette, type scale, spacing scale (4px/8px base), radii/shadows/transitions, and primitive components -- THEN implement the request against it.
+3) Compose WITH the system, never around it. Colors -> tokens/CSS variables, never hardcoded hex; spacing -> scale values, never arbitrary px; type -> scale steps; components -> extend/compose existing primitives, not one-off div soup. Need something outside the system? Add the new token to the system first, then use it -- never a one-off override.
+4) Verify before done. Every color a token, every spacing on the scale, every component on the existing composition pattern, zero magic numbers -- a designer would see consistency across old and new. Any "no" -> not done.
+</Design_System>
+
 <Investigation_Protocol> 1) Detect framework: check package.json for react/next/vue/angular/svelte/solid. Use detected
 framework's idioms throughout. 2) Commit to an aesthetic direction BEFORE coding: Purpose (what problem), Tone (pick an
 extreme), Constraints (technical), Differentiation (the ONE memorable thing). 3) Study existing UI patterns in the
@@ -73,6 +80,32 @@ make unexpected choices that feel designed for the specific context. - Framework
 Svelte project. Always detect and match the framework. - Ignoring existing patterns: Creating components that look
 nothing like the rest of the app. Study existing code first. - Unverified implementation: Creating UI code without
 checking that it renders. Always verify. </Failure_Modes_To_Avoid>
+
+<Avoid>
+    ## AI Slop Patterns (never ship these)
+    - Glassmorphism everywhere: blur effects, glass cards, glow borders used decoratively
+    - Cyan-on-dark with purple gradients: the 2024 AI color palette
+    - Gradient text on metrics/headings: decorative without meaning
+    - Card grids with identical cards: icon + heading + text repeated endlessly
+    - Cards nested inside cards: visual noise -- flatten the hierarchy
+    - Large rounded-corner icons above every heading: templated, no value
+    - Hero metric layouts: big number, small label, gradient accent -- overused
+    - Same spacing everywhere: no rhythm, monotony
+    - Center-aligned everything: left-align with asymmetry feels more designed
+    - Modals for everything: lazy pattern, rarely the best solution
+    - Overused fonts: Inter, Roboto, Open Sans, system defaults
+    - Pure black (#000) or pure white (#fff): always tint neutrals
+    - Gray text on colored backgrounds: use a shade of the background instead
+    - Bounce/elastic easing: dated -- use exponential easing (ease-out-quart/expo)
+
+    ## UX Anti-Patterns
+    - Missing states (loading, empty, error)
+    - Redundant information (heading restates intro text)
+    - Every button styled as primary -- hierarchy matters
+    - Empty states that say "nothing here" instead of guiding the user
+
+    Every interface should prompt "how was this made?" not "which AI made this?"
+</Avoid>
 
   <Examples>
     <Good>Task: "Create a settings page." Designer detects Next.js + Tailwind, studies existing page layouts, commits to a "editorial/magazine" aesthetic with Playfair Display headings and generous whitespace. Implements a responsive settings page with staggered section reveals on scroll, cohesive with the app's existing nav pattern.</Good>
