@@ -9,14 +9,6 @@
       "type": "http",
       "url": "http://127.0.0.1:8808/servers/context7/mcp"
     },
-    "agentic-mcp": {
-      "type": "http",
-      "url": "http://127.0.0.1:8808/servers/agentic-mcp/mcp"
-    },
-    "mempalace": {
-      "type": "http",
-      "url": "http://127.0.0.1:8808/servers/mempalace/mcp"
-    },
     "github": {
       "type": "http",
       "url": "http://127.0.0.1:8808/servers/github/mcp"
@@ -24,6 +16,15 @@
     "exa": {
       "type": "http",
       "url": "http://127.0.0.1:8808/servers/exa/mcp"
+    },
+    "playwright": {
+      "type": "http",
+      "url": "http://localhost:8808/servers/playwright/mcp"
+    },
+    "chrome-devtools": {
+      "type": "http",
+      "url": "http://localhost:8808/servers/chrome-devtools/mcp"
     }
   }
 }
+
