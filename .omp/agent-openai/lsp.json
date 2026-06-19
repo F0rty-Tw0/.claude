@@ -1,0 +1,20 @@
+{
+  "servers": {
+    "rust-analyzer": {
+      "command": "rustup",
+      "args": ["run", "stable", "rust-analyzer"]
+    },
+    "angular": {
+      "command": "ngserver",
+      "args": [
+        "--stdio",
+        "--tsProbeLocations",
+        "node_modules",
+        "--ngProbeLocations",
+        "node_modules"
+      ],
+      "fileTypes": [".ts", ".html"],
+      "rootMarkers": ["angular.json", "nx.json"]
+    }
+  }
+}
