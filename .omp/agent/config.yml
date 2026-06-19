@@ -1,9 +1,9 @@
 modelRoles:
-  default: anthropic/claude-opus-4-8:xhigh
-  smol: anthropic/claude-haiku-4-5
+  default: openai-codex/gpt-5.5:xhigh
+  smol: openai-codex/gpt-5.4-mini
   slow: openai-codex/gpt-5.5:xhigh
-  plan: anthropic/claude-opus-4-8:high
-  designer: anthropic/claude-sonnet-4-6
+  plan: openai-codex/gpt-5.5:high
+  designer: openai-codex/gpt-5.5
   task: openai-codex/gpt-5.5:medium
 symbolPreset: unicode
 theme:
@@ -11,11 +11,11 @@ theme:
 setupVersion: 1
 task:
   agentModelOverrides:
-    explore: anthropic/claude-haiku-4-5
-    librarian: anthropic/claude-haiku-4-5
+    explore: openai-codex/gpt-5.4-mini
+    librarian: openai-codex/gpt-5.4-mini
     quick_task: openai-codex/gpt-5.4-mini
     task: openai-codex/gpt-5.5
-    designer: anthropic/claude-sonnet-4-6
-    reviewer: anthropic/claude-opus-4-8
-    plan: anthropic/claude-opus-4-8
-    oracle: anthropic/claude-opus-4-8
+    designer: openai-codex/gpt-5.5
+    reviewer: openai-codex/gpt-5.5
+    plan: openai-codex/gpt-5.5
+    oracle: openai-codex/gpt-5.5
