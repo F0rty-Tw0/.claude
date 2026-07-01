@@ -1,6 +1,28 @@
-# Linux keyboard setup (GNOME + keyd)
+# Linux setup
 
-Fixes from 2026-06-11. Two problems, one machine (Ubuntu GNOME, Wayland).
+Backups + notes for this machine (Ubuntu GNOME, Wayland).
+
+## Shell configs (backup)
+
+Snapshots of the live dotfiles in `~`. Restore by copying back with the dot:
+
+```bash
+cp zshrc        ~/.zshrc
+cp bashrc       ~/.bashrc
+cp bash_aliases ~/.bash_aliases
+cp profile      ~/.profile
+```
+
+- [zshrc](zshrc) — main zsh: history, plugins, fzf, eza, keybinds, starship
+- [bashrc](bashrc) — bash defaults + nvm
+- [bash_aliases](bash_aliases) — shared git/mcp aliases + functions (sourced by both)
+- [profile](profile) — login PATH + `DISABLE_TELEMETRY`
+
+Not backed up: `.zsh/` (plugin git repos), `.omp/` (oh-my-posh binary) — reinstall instead.
+
+# Keyboard setup (GNOME + keyd)
+
+Fixes from 2026-06-11. Two problems, one machine.
 
 ## 1. VS Code multi-cursor (Ctrl+Alt+Up/Down)
 
