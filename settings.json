@@ -84,9 +84,10 @@
       }
     }
   },
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "autoUpdatesChannel": "latest",
+  "skipWorkflowUsageWarning": true,
   "skipAutoPermissionPrompt": true,
-  "defaultMode": "auto",
-  "skipWorkflowUsageWarning": true
+  "defaultMode": "auto"
 }
+
