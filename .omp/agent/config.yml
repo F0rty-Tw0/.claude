@@ -1,10 +1,10 @@
 modelRoles:
   default: anthropic/claude-opus-4-8:xhigh
   smol: anthropic/claude-haiku-4-5
-  slow: openai-codex/gpt-5.5:xhigh
+  slow: openai-codex/sol:xhigh
   plan: anthropic/claude-opus-4-8:high
   designer: anthropic/claude-sonnet-4-6
-  task: openai-codex/gpt-5.5:medium
+  task: openai-codex/terra:medium
 symbolPreset: unicode
 theme:
   dark: titanium
@@ -13,8 +13,8 @@ task:
   agentModelOverrides:
     explore: anthropic/claude-haiku-4-5
     librarian: anthropic/claude-haiku-4-5
-    quick_task: openai-codex/gpt-5.4-mini
-    task: openai-codex/gpt-5.5
+    quick_task: openai-codex/luna
+    task: openai-codex/terra
     designer: anthropic/claude-sonnet-4-6
     reviewer: anthropic/claude-opus-4-8
     plan: anthropic/claude-opus-4-8

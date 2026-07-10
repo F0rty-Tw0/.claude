@@ -1,21 +1,21 @@
 modelRoles:
-  default: openai-codex/gpt-5.5:xhigh
-  smol: openai-codex/gpt-5.4-mini
-  slow: openai-codex/gpt-5.5:xhigh
-  plan: openai-codex/gpt-5.5:high
-  designer: openai-codex/gpt-5.5
-  task: openai-codex/gpt-5.5:medium
+  default: openai-codex/sol:xhigh
+  smol: openai-codex/luna
+  slow: openai-codex/sol:xhigh
+  plan: openai-codex/sol:high
+  designer: openai-codex/terra
+  task: openai-codex/terra:medium
 symbolPreset: unicode
 theme:
   dark: titanium
 setupVersion: 1
 task:
   agentModelOverrides:
-    explore: openai-codex/gpt-5.4-mini
-    librarian: openai-codex/gpt-5.4-mini
-    quick_task: openai-codex/gpt-5.4-mini
-    task: openai-codex/gpt-5.5
-    designer: openai-codex/gpt-5.5
-    reviewer: openai-codex/gpt-5.5
-    plan: openai-codex/gpt-5.5
-    oracle: openai-codex/gpt-5.5
+    explore: openai-codex/luna
+    librarian: openai-codex/luna
+    quick_task: openai-codex/luna
+    task: openai-codex/terra
+    designer: openai-codex/terra
+    reviewer: openai-codex/sol
+    plan: openai-codex/sol
+    oracle: openai-codex/sol
