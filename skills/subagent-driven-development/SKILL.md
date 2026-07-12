@@ -98,7 +98,7 @@ When a spec reviewer finds issues (e.g. "missing progress reporting; extra --jso
 - Start implementation on main/master without explicit user consent.
 - Skip either review, or start code quality review before spec compliance is ✅ (wrong order).
 - Proceed to the next task with open review issues, or accept "close enough" on spec.
-- Dispatch multiple implementer subagents in parallel (conflicts).
+- Dispatch multiple implementer subagents in parallel (conflicts). If tasks are truly independent and you want parallelism, that is a different skill: use **ultrapilot** or **team** with per-worker `isolation: "worktree"`, not this sequential-review loop.
 - Make a subagent read the plan file — provide full text instead.
 - Skip scene-setting context, or ignore subagent questions.
 - Let self-review replace actual review — both are needed.

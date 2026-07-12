@@ -107,3 +107,11 @@ No action needed:
 
 4. Knowledge: Discovered X works this way
    Already documented in CLAUDE.md
+
+## Failure Modes
+
+- Saying "Nothing to improve" without actually scanning for friction or repeated corrections → re-check before defaulting to it
+- Listing findings in Phase 3 but not applying any of them → apply approved ones before the summary, don't just enumerate
+- Saving the same fact to both CLAUDE.md and auto memory → pick one location, cross-reference instead of duplicating
+- Elevating a one-off mistake to a permanent CLAUDE.md rule → confirm it would recur before codifying it
+- Skipping Phase 1 because no new files "felt" created → check the task list and diff anyway

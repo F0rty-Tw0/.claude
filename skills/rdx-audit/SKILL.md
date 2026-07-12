@@ -1,16 +1,7 @@
 ---
 name: rdx-audit
-description: >
-  One-shot efficiency audit of a file, diff, or whole repo across BOTH axes at
-  once: over-engineered code (reinvented stdlib, needless abstractions,
-  speculative config) AND bloated prose (verbose comments, padded docstrings,
-  redundant doc sections). Neither a pure code-minimizer nor a pure prose
-  compressor does both in one pass — that's the point. Ranked report, biggest
-  saving first; changes nothing. Use when the user says "rdx audit", "/rdx-audit",
-  "audit this for bloat", "what can I cut", "review this PR for over-engineering
-  and verbosity".
+description: Use when auditing a codebase, diff, or file to locate over-engineered code and verbose prose without introducing speculative claims.
 ---
-
 # RDX Audit
 
 Scan the target (a diff, a file, or the repo tree) and report what to cut, on

@@ -105,6 +105,12 @@ The `synopsis` command generates an emotion-focused summary from 5 elements:
 4. **장르 vs 실제감정 대비** (genre vs real-emotion contrast) - e.g. "로맨스지만 본질은 자기수용 서사"
 5. **엔딩 정서 잔상** (ending emotional aftertaste) - the lingering feeling after the story ends
 
+**Self-check before presenting a synopsis** (revise if any fail):
+- Relationship structure names the actual power dynamic, not "two people connect"
+- Emotional theme names a feeling, not a plot recap
+- Genre-vs-real-emotion line says something the genre label alone wouldn't tell you
+- Every claim traces to a tracked character/relationship/scene entry, not invented detail
+
 ## Character Validation (캐릭터 검증)
 
 The `validate` command checks whether dialogue matches a character's established voice, checking speech level (반말/존댓말/해체 match), tone match, keyword usage, taboo violations, emotional range vs baseline, and fit with the current relationship/scene. Results are **PASS**, **WARN** (minor, may be intentional), or **FAIL** (significant deviation).

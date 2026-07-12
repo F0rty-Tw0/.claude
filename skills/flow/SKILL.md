@@ -46,6 +46,19 @@ Default to **autonomous** for well-scoped, low-blast work. Switch to **supervise
 
 `--auto` / `--supervised` override the heuristic.
 
+## Stage Gates
+
+Do not advance a stage until its gate holds; if a gate can't be met, stop and report rather than proceed on a weak artifact.
+
+| Stage    | Gate before moving on                                                      |
+| -------- | -------------------------------------------------------------------------- |
+| IDEATE   | A written spec/approach exists (or task was already concrete -> skip)      |
+| PLAN     | Plan file under `.claude/local/plans/` with testable acceptance criteria   |
+| EXECUTE  | All plan tasks done; `build` exit 0 and affected tests pass (real output)  |
+| REVIEW   | `code-review` findings triaged -- each fixed or explicitly dismissed       |
+| VERIFY   | Every acceptance criterion mapped to fresh passing evidence                |
+| FINISH   | Branch merged/PR opened and workspace/worktree cleaned up                  |
+
 ## Cross-cutting
 
 - **Isolation:** before EXECUTE on non-trivial work, ensure an isolated workspace via `project-session-manager` (tmux + worktree) or `using-git-worktrees` (lightweight).

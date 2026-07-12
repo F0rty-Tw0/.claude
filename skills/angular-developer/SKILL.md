@@ -9,6 +9,8 @@ metadata:
 
 # Angular Developer Guidelines
 
+> Current as of **Angular 22** (stable, released June 2026). Angular 22 ships Signal Forms, the Resource API, and Angular Aria as **stable** (no longer experimental), makes `OnPush` the default change-detection strategy for components that don't set one explicitly, and introduces selectorless components (import a component directly into a template without a string selector). `ng update` from v21 sets change detection to the pre-22 "eager" behavior explicitly on existing components, so upgrades don't silently change runtime behavior — only new components pick up the `OnPush` default.
+
 1. Always analyze the project's Angular version before providing guidance, as best practices and available features can vary significantly between versions. If creating a new project with Angular CLI, do not specify a version unless prompted by the user.
 
 2. When generating code, follow Angular's style guide and best practices for maintainability and performance. Use the Angular CLI for scaffolding components, services, directives, pipes, and routes to ensure consistency.
@@ -20,7 +22,7 @@ metadata:
 If no guidelines are provided by the user, here are same default rules to follow when creating a new Angular project:
 
 1. Use the latest stable version of Angular unless the user specifies otherwise.
-2. Use Signals Forms for form management in new projects (available in Angular v21 and newer) [Find out more](references/signal-forms.md).
+2. Use Signal Forms for form management in new projects — **stable as of Angular 22** (experimental in v21; unavailable before v21) [Find out more](references/signal-forms.md).
 
 **Execution Rules for `ng new`:**
 When asked to create a new Angular project, you must determine the correct execution command by following these strict steps:
@@ -65,8 +67,9 @@ When managing state and data reactivity, use Angular Signals and consult the fol
 
 In most cases for new apps, **prefer signal forms**. When making a forms decision, analyze the project and consider the following guidelines:
 
-- if the application is using v21 or newer and this is a new form, **prefer signal forms**.
-  -For older applications or when working with existing forms, use the appropriate form type that matches the applications current form strategy.
+- **v22+**: signal forms are stable — prefer them for any new form.
+- **v21**: signal forms are experimental — usable, but flag the experimental status to the user before committing to them for production forms.
+- **Pre-v21, or existing forms in any version**: use the form type that matches the application's current form strategy; don't migrate a working form just to adopt signal forms.
 
 - **Signal Forms**: Use signals for form state management. Read [signal-forms.md](references/signal-forms.md)
 - **Template-driven forms**: Use for simple forms. Read [template-driven-forms.md](references/template-driven-forms.md)
@@ -128,3 +131,14 @@ When working with Angular tooling, consult the following references:
 - **Angular CLI**: Creating applications, generating code (components, routes, services), serving, and building. Read [cli.md](references/cli.md)
 - **Code Modernization**: Automatically refactoring to modern standards using migrations. Read [migrations.md](references/migrations.md)
 - **Angular MCP Server**: Available tools, configuration, and experimental features. Read [mcp.md](references/mcp.md)
+
+## Common Mistakes
+
+| Mistake | Fix |
+|---|---|
+| Assuming `OnPush` needs to be set explicitly on new v22 components | It's the default now — only set `ChangeDetectionStrategy.Default` if a component genuinely needs check-always behavior |
+| Treating signal forms as experimental/unstable when scaffolding a v22 app | They're stable in v22 — no feature flag or opt-in needed |
+| Scaffolding new components/services with `NgModule` | Angular has been standalone-by-default since v19; only use `NgModule` when working inside an existing module-based app |
+| Calling `inject()` outside an injection context (e.g. in a `setTimeout` callback) | Wrap with `runInInjectionContext()`, or capture the dependency before leaving the context — see [injection-context.md](references/injection-context.md) |
+| Using `effect()` to derive state from other signals | Use `computed()` — `effect()` is for side effects (logging, DOM, third-party sync), not state derivation. See [effects.md](references/effects.md) |
+| Skipping `ng build` after generating code | Build errors from version-specific API changes surface here, not in the editor |

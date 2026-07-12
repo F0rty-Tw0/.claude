@@ -29,6 +29,8 @@ If no structured goal provided, interpret the argument as a custom goal.
 
 ## Cycle Workflow
 
+**Baseline first:** before cycle 1, run the goal command once and record the exact failures (names + count). Every cycle reports the delta against this baseline ("5 failing -> 2 failing"), so you can tell real progress from churn and detect a fix that introduces a NEW failure.
+
 ### Cycle N (Max 5)
 
 1. **RUN QA**: Execute verification based on goal type
@@ -115,9 +117,9 @@ User can cancel with `cancel` which clears the state file.
 
 ## Important Rules
 
-1. **PARALLEL when possible** - Run diagnosis while preparing potential fixes
-2. **TRACK failures** - Record each failure to detect patterns
-3. **EARLY EXIT on pattern** - 3x same failure = stop and surface
+1. **PARALLEL independent checks** - when the goal spans multiple suites/dirs, run those checks concurrently in one message; diagnosis still precedes its fix
+2. **TRACK failures** - Record each failure (name + count) against baseline to detect patterns and new regressions
+3. **EARLY EXIT on pattern** - 3x same failure, OR a cycle that fixes 0 and breaks 0 (no progress) = stop and surface the root cause
 4. **CLEAR OUTPUT** - User should always know current cycle and status
 5. **CLEAN UP** - Clear state file on completion or cancellation
 

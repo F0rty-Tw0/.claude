@@ -47,6 +47,16 @@ Example shape:
 
 Length: as long as the gaps demand. Don't truncate to seem efficient. (More fully-worked examples across domains in `examples.md`.)
 
+**Rank each gap by severity, then order the list and the Step 4 recovery plan by it:**
+
+| Signal | Severity |
+| --- | --- |
+| Nothing works without this — the stated goal is unmet without it | P0 |
+| User-facing or reviewer-visible; would be noticed on first use | P1 |
+| Internal-only, cosmetic, or genuinely deferrable without breaking the goal | P2 |
+
+Close P0s first in the recovery plan. Don't let an easy P2 crowd out a hard P0 just because it's quicker to knock out.
+
 ### Step 3 — Name the failure mode that caused it
 
 One short paragraph. What went wrong in the model's own reasoning — declared completion via the lowest-bar interpretation, deferred to an advisor's "skip for now", treated the blueprint as the deliverable. This metacognitive piece is what lets the user trust the recovery plan.

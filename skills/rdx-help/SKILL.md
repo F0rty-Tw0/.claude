@@ -1,45 +1,27 @@
 ---
 name: rdx-help
-description: >
-  Quick-reference card for RDXmin modes, levels, and commands. One-shot
-  display, not a persistent mode. Use when the user says "rdx help", "how do I
-  use rdx", "what rdx commands", or invokes /rdx-help.
+description: Use when the user requests help, options, commands, or quick reference information for RDX efficiency mode.
 ---
 
-# RDXmin — quick reference
+# RDX Help
 
-**What it is:** maximum-efficiency dev mode. Zero-fluff prose + YAGNI-first code, always on together.
+Quick-reference card for RDX modes, levels, and commands.
 
 ## Commands
 
 | Command | Effect |
-|---------|--------|
-| `/rdx` | Activate at default level (full) |
-| `/rdx lite` | Tighter prose, flags the minimal alternative |
-| `/rdx full` | Full compression + YAGNI ladder |
-| `/rdx ultra` | Extremist: abbreviate prose, delete before add |
-| `/rdx-audit [path]` | Audit a diff/file/repo for both code bloat AND prose verbosity |
-| `/rdx-review` | Review the current diff for over-engineering |
-| `stop rdx` / `normal mode` | Deactivate |
+| --- | --- |
+| `/rdx` | Use rdx mode at default level (full) |
+| `/rdx lite` | Tighter prose; name smaller alternative |
+| `/rdx full` | Tight prose; enforce YAGNI decision ladder |
+| `/rdx ultra` | Shortest unambiguous wording; challenge requirement |
+| `/rdx-audit [path]` | Audit a diff/file/repo for code and prose bloat |
+| `/rdx-review` | Review a diff/file for over-engineering and abstractions |
 
-Natural language works: "activate rdx", "rdx mode", "rdxify this".
+## Decision ladder
 
-## Levels at a glance
-
-- **lite** — keeps full sentences; names the lazier code option, you pick.
-- **full** — drops articles, fragments OK, ladder enforced. Default.
-- **ultra** — abbreviates prose words, challenges the requirement itself.
-
-## The code ladder
-
-YAGNI → reuse → stdlib → native → installed dep → one line → minimum code.
-
-## Statusline
-
-`[RDX]` / `[RDX:ULTRA]` — shows the active level. Configure via
-`hooks/rdx-statusline.sh` (or `.ps1` on Windows).
+YAGNI → Reuse → Stdlib → Native → Installed dep → Direct code.
 
 ## Never minimal about
 
-Input validation, error handling that prevents data loss, security,
-accessibility, anything you explicitly asked for.
+Trust boundaries: input validation, error handling, security, accessibility, and requested behavior.

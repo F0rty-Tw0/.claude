@@ -60,3 +60,16 @@ When creating a new Angular application for a user, always follow the following 
 5. To add tailwind, run `npx ng add tailwindcss`. After that, you do not have to do anything else, you can start using tailwind classes in your Angular application. Follow the best practices for tailwind v4 here, learn more if needed: https://tailwindcss.com/docs/upgrade-guide.
 
 _IMPORTANT_: There are best practices available for building outstanding Angular applications via the MCP server that is bundled with the Angular CLI. Available through `npx ng mcp` and the `get_best_practices`.
+
+## When Not to Use
+
+This skill covers `ng new` scaffolding only. Once the app exists, switch to **angular-developer** for component/service generation, signals, forms, DI, routing, and testing guidance — don't keep re-reading this skill for day-2 work.
+
+## Common Mistakes
+
+| Mistake | Fix |
+|---|---|
+| Passing `--interactive=false` without also passing the flags it would have prompted for (style, routing, ssr) | Decide those flags up front from the user's requirements — non-interactive mode skips the prompts, it doesn't pick sane defaults for them |
+| Specifying a version in `ng new` when the user didn't ask for one | Omit the version flag; let the CLI use whatever is installed or latest via `npx` |
+| Starting the dev server before any feature exists | Ask the user first — an app with only the CLI scaffold has nothing to preview |
+| Hand-writing component/service/pipe files instead of `ng generate` | Always scaffold via the CLI first, then edit — keeps file naming and structure consistent with Angular conventions |

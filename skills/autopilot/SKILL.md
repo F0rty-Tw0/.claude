@@ -50,7 +50,8 @@ automatically so the user can describe what they want and receive working code w
 3. **Phase 2 - Execution**: Implement the plan using Ralph + Ultrawork
    - `executor` (Sonnet, or `model: "haiku"` override for simple tasks): Standard tasks
    - `deep-executor` (Opus): Complex tasks
-   - Run independent tasks in parallel
+   - Fire independent tasks in ONE message (concurrent). When two tasks touch overlapping files, give each `isolation: "worktree"` and merge in Phase 4; use `run_in_background: true` for long builds/installs.
+   - Track subtasks with `TaskCreate` and flip each to completed via `TaskUpdate` so progress survives compaction.
 
 4. **Phase 3 - QA**: Cycle until all tests pass (UltraQA mode)
    - Build, lint, test, fix failures
@@ -67,6 +68,18 @@ automatically so the user can describe what they want and receive working code w
    - If the work was done on a dedicated branch or worktree, invoke `Skill("finishing-a-development-branch")` to integrate and clean up the branch
    - Remove `.claude/local/state/autopilot-state.json`, `ralph-state.json`, `ultrawork-state.json`, `ultraqa-state.json`
    - Run `cancel` for clean exit </Steps>
+
+<Phase_Gates>
+Do not advance until the gate's observation holds. If a gate cannot be met, stop and report -- never fake it.
+
+| Transition        | Gate (observe, don't assume)                                              |
+| ----------------- | ------------------------------------------------------------------------- |
+| Expansion -> Plan | `spec.md` exists and lists concrete, testable requirements                |
+| Plan -> Execution | Critic returns OKAY on the plan file                                      |
+| Execution -> QA   | All Phase-2 subtasks `completed` in `TaskList`; worktree branches merged  |
+| QA -> Validation  | Fresh `build` exit 0 AND `test` shows 0 failures (capture the numbers)    |
+| Validation -> Finish | All reviewers APPROVED; each rejection fixed and re-run                 |
+</Phase_Gates>
 
 <Tool_Usage>
 

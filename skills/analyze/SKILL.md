@@ -51,6 +51,18 @@ Deep investigation requires a different approach than quick lookups or code chan
 - Use `Agent(subagent_type="architect", model="opus", ...)` as fallback when agentic-mcp is unavailable
 - For broad analysis, use the `explore` agent first to identify relevant files before routing to architect
 
+## Parallel Investigation
+
+- **Multiple plausible root causes**: when a bug has 2-3 independently testable hypotheses (e.g. race condition vs
+  stale cache vs bad config), spawn one `architect`/`explore` agent per hypothesis in a single message rather than
+  testing them serially -- each returns evidence for or against its hypothesis, and you rank by what the evidence
+  actually shows, not by which was checked first.
+- **Architecture questions spanning unrelated subsystems**: fan out one agent per subsystem (e.g. auth, DB layer,
+  frontend state) in one message, then synthesize -- don't walk subsystems one at a time when they don't depend on
+  each other.
+- **Single-hypothesis or single-file bugs**: stay serial (`explore` -> `architect`) -- fan-out adds coordination
+  overhead without a payoff when there's only one thread to pull.
+
 ## Examples
 
 **Good** -- User: "analyze why the WebSocket connections drop after 30 seconds"

@@ -56,6 +56,7 @@ Skip any step = lying, not verifying
 - About to commit/push/PR without verification
 - Trusting agent success reports
 - Relying on partial verification
+- Reading a grep narrowed to your own files instead of the suite's real exit code
 - Thinking "just this once"
 - Tired and wanting work over
 - **ANY wording implying success without having run verification**
@@ -71,6 +72,7 @@ Skip any step = lying, not verifying
 | "Agent said success"                    | Verify independently   |
 | "I'm tired"                             | Exhaustion ≠ excuse    |
 | "Partial check is enough"               | Partial proves nothing |
+| "Grep of my files was clean"            | Grep ≠ exit code. Run the whole suite, read its real exit status. |
 | "Different words so rule doesn't apply" | Spirit over letter     |
 
 ## Key Patterns

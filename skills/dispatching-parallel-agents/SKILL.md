@@ -69,16 +69,18 @@ Each agent gets:
 
 ### 3. Dispatch in Parallel
 
-Send all three in one message so they run concurrently:
+Send all three in one message so they run concurrently. Add `run_in_background: true` for any agent expected to run long so you are not blocked while the others work:
 
 ```
-Agent(subagent_type="general-purpose", description="Fix abort test failures",
+Agent(subagent_type="debugger", description="Fix abort test failures",
       prompt="Fix agent-tool-abort.test.ts failures")
-Agent(subagent_type="general-purpose", description="Fix batch completion failures",
+Agent(subagent_type="debugger", description="Fix batch completion failures",
       prompt="Fix batch-completion-behavior.test.ts failures")
-Agent(subagent_type="general-purpose", description="Fix race condition failures",
+Agent(subagent_type="debugger", description="Fix race condition failures",
       prompt="Fix tool-approval-race-conditions.test.ts failures")
 ```
+
+Pick the specific agent for the domain (`debugger`/`executor`/`test-engineer`) over `general-purpose` when one fits.
 
 ### 4. Review and Integrate
 
@@ -137,7 +139,7 @@ Return: Summary of what you found and what you fixed.
 **Related failures:** Fixing one might fix others - investigate together first
 **Need full context:** Understanding requires seeing entire system
 **Exploratory debugging:** You don't know what's broken yet
-**Shared state:** Agents would interfere (editing same files, using same resources)
+**Shared state:** Agents would interfere (editing same files, using same resources) -- unless you give each agent `isolation: "worktree"`. An isolated git worktree per agent turns many "can't parallelize, same files" cases INTO parallelizable ones: each works on its own copy, and you merge the branches after (resolving any real overlap once, at merge time).
 
 ## Real Example from Session
 
@@ -178,9 +180,11 @@ Agent 3 → Fix tool-approval-race-conditions.test.ts
 
 ## Verification
 
+Capture a baseline BEFORE dispatching: run the suite and record the exact failing test names and count. That is the number the merged result must beat.
+
 After agents return:
 
-1. **Review each summary** - Understand what changed
+1. **Review each summary** - Understand what changed; if one contradicts another or reports nonsense, re-dispatch that one, don't merge it
 2. **Check for conflicts** - Did agents edit same code?
-3. **Run full suite** - Verify all fixes work together (`pnpm test`)
+3. **Run full suite** - Verify all fixes work together (`pnpm test`); compare to baseline (e.g. "6 failing {a,b,c,d,e,f} -> 0 failing")
 4. **Spot check** - Agents can make systematic errors

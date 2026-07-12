@@ -7,6 +7,8 @@ description: Use when the user requests frontend UI/UX work -- designing or impl
 
 Routes to the designer agent or agentic-mcp for frontend work.
 
+**Use frontend-design instead when** the task needs a distinctive, memorable visual identity from scratch (no existing design system, or the point is to stand out aesthetically). Use this skill (frontend-ui-ux) for implementation work inside an established design system — matching existing tokens, extending components, responsive/accessibility fixes.
+
 ## Usage
 
 ```

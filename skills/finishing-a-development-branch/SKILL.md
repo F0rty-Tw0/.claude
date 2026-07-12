@@ -101,6 +101,9 @@ Which option?
 MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
 cd "$MAIN_ROOT"
 
+# Working tree must be clean before switching branches — uncommitted changes block or leak across the checkout
+git status --porcelain   # must be empty; if not, commit the pair or `git stash` first
+
 # Merge first — verify success before removing anything
 git checkout <base-branch>
 git pull
@@ -234,6 +237,7 @@ git worktree prune  # Self-healing: clean up any stale registrations
 
 **Never:**
 - Proceed with failing tests
+- Switch branches or merge with a dirty working tree (uncommitted changes leak or block the checkout — commit or stash first)
 - Merge without verifying tests on result
 - Delete work without confirmation
 - Force-push without explicit request

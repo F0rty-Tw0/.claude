@@ -17,7 +17,7 @@ assigns non-overlapping file sets to each worker, and runs them simultaneously.
 1. **Decomposes** task into parallel-safe components
 2. **Partitions** files with exclusive ownership (no conflicts)
 3. **Spawns** up to 5 parallel workers
-4. **Coordinates** progress via TaskOutput
+4. **Coordinates** progress via background-agent returns (optionally tracked with `TaskCreate`/`TaskList`)
 5. **Integrates** changes with sequential handling of shared files
 6. **Validates** full system integrity
 
@@ -166,6 +166,8 @@ Ultrapilot dispatches the Architect agent to analyze the task and produce a stru
 
 **Goal:** Assign exclusive file sets to workers
 
+**Preferred mechanism: git worktrees.** Spawn each worker with `isolation: "worktree"` (Phase 3) instead of trusting workers to honor a lock. Physical isolation beats an honor system: two workers cannot touch the same working copy, so "ownership" becomes a Phase-4 merge plan. Keep the ownership map below only as that merge plan and to route shared files.
+
 **Rules:**
 
 1. **Exclusive ownership** - No file in multiple worker sets
@@ -198,43 +200,18 @@ Ultrapilot dispatches the Architect agent to analyze the task and produce a stru
 
 **Goal:** Run all workers simultaneously
 
-**Spawn Workers:**
+**Spawn Workers:** fire ALL workers in ONE message so they run concurrently. Give each `isolation: "worktree"` -- each gets its own git worktree, so two workers physically cannot corrupt each other's files and the manual ownership map (Phase 2) becomes a merge plan rather than a lock. Use `run_in_background: true` for workers expected to run long.
 
-```javascript
-// Pseudocode
-workers = [];
-for (subtask in decomposition.subtasks) {
-  workers.push(
-    Task(
-      subagent_type: "executor",
-      model: "sonnet",
-      prompt: `ULTRAPILOT WORKER ${subtask.id}
-
-Your exclusive file ownership: ${subtask.files}
-
-Task: ${subtask.description}
-
-CRITICAL RULES:
-1. ONLY modify files in your ownership set
-2. If you need to modify a shared file, document the change in your output
-3. Do NOT create new files outside your ownership
-4. Track all imports from boundary files
-
-Deliver: Code changes + list of boundary dependencies`,
-      run_in_background: true
-    )
-  );
-}
+```
+Agent(subagent_type="executor", model="sonnet", isolation="worktree", run_in_background=true,
+      prompt="ULTRAPILOT WORKER 1\nScope: src/api/** (your worktree is isolated)\nTask: Backend API routes\nDeliver: code changes + list of boundary imports you relied on (e.g. src/types.ts)")
+Agent(subagent_type="executor", model="sonnet", isolation="worktree", run_in_background=true,
+      prompt="ULTRAPILOT WORKER 2\nScope: src/ui/**\nTask: Frontend components\nDeliver: code changes + boundary imports")
 ```
 
-**Monitoring:**
+**Monitoring:** background agents notify you on completion (no polling API). To track tracked progress, create one task per worker with `TaskCreate` and have the flow update status; to wait on a specific condition use `Monitor`. As each worker returns, read its summary and accumulate the boundary-import list for Phase 4.
 
-- Poll TaskOutput for each worker
-- Track completion status
-- Detect conflicts early
-- Accumulate boundary dependencies
-
-**Max Workers:** 5 (Claude Code limit)
+**Max Workers:** 5 concurrent. If a worker returns garbage or contradicts another's boundary assumptions, do NOT merge it -- re-dispatch that one worker with the corrected boundary contract.
 
 ### Phase 4: Integration
 
@@ -243,7 +220,7 @@ Deliver: Code changes + list of boundary dependencies`,
 **Process:**
 
 1. **Collect outputs** - Gather all worker deliverables
-2. **Detect conflicts** - Check for unexpected overlaps
+2. **Merge worktree branches** - If workers ran in worktrees, merge each branch back with `--no-ff`, checking for conflicts before each merge; a conflict here means two workers touched the same file (a decomposition miss to record)
 3. **Handle shared files** - Sequential updates to package.json, etc.
 4. **Integrate boundary files** - Merge type definitions, shared utilities
 5. **Resolve imports** - Ensure cross-boundary imports are valid

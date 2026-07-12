@@ -75,7 +75,7 @@ Agent(subagent_type="scientist", model="haiku", prompt="[RESEARCH_STAGE:1] Inves
 Agent(subagent_type="scientist", model="sonnet", prompt="[RESEARCH_STAGE:2] Analyze...")
 
 // Stage 3 - Complex reasoning
-Agent(subagent_type="scientist-high", model="opus", prompt="[RESEARCH_STAGE:3] Deep analysis of...")
+Agent(subagent_type="scientist", model="opus", prompt="[RESEARCH_STAGE:3] Deep analysis of...")
 ```
 
 ### Smart Model Routing
@@ -86,7 +86,7 @@ Agent(subagent_type="scientist-high", model="opus", prompt="[RESEARCH_STAGE:3] D
 | ----------------- | ------------------------- | ------ | --------------------------------------------------------------------- |
 | Data gathering    | `scientist` (model=haiku) | haiku  | File enumeration, pattern counting, simple lookups                   |
 | Standard analysis | `scientist`               | sonnet | Code analysis, pattern detection, documentation review               |
-| Complex reasoning | `scientist-high`          | opus   | Architecture analysis, cross-cutting concerns, hypothesis validation |
+| Complex reasoning | `scientist` (model=opus)  | opus   | Architecture analysis, cross-cutting concerns, hypothesis validation |
 
 ### Routing Decision Guide
 
@@ -123,6 +123,8 @@ Output: [VERIFIED] or [CONFLICTS:<list>]
 ")
 ```
 
+**On `[CONFLICTS]`:** re-run only the conflicting stages once with sharper scope. If they still disagree, report both findings with their evidence and let the user adjudicate -- never silently pick one or loop.
+
 ## AUTO Mode
 
 AUTO mode runs the complete research workflow autonomously with loop control.
@@ -151,7 +153,8 @@ Pending stages: {{PENDING_STAGES}}
 1. **Max Iterations:** 10 (configurable)
 2. **Continue until:** Promise tag emitted OR max iterations
 3. **State tracking:** Persist after each stage completion
-4. **Cancellation:** `cancel` or "stop", "cancel"
+4. **No-progress stop:** if two consecutive iterations complete zero new stages, emit `[PROMISE:RESEARCH_BLOCKED]` naming the stuck stage -- do not burn the remaining iterations.
+5. **Cancellation:** `cancel` or "stop", "cancel"
 
 ### AUTO Mode Example
 
@@ -211,7 +214,7 @@ When verification depends on all findings:
 [stages complete]
 
 // Then sequential verification
-Agent(subagent_type="scientist-high", model="opus", prompt="
+Agent(subagent_type="scientist", model="opus", prompt="
 [CROSS_VALIDATION]
 Validate consistency across all findings:
 - Finding 1: ...
@@ -222,9 +225,9 @@ Validate consistency across all findings:
 
 ### Concurrency Limit
 
-**Maximum 20 concurrent scientist agents** to prevent resource exhaustion.
+**Cap concurrent scientists at `maxConcurrentScientists`** (default 5; hard ceiling 20) to prevent resource exhaustion.
 
-If more than 20 stages, batch them:
+If stages exceed the cap, batch them:
 
 ```
 Batch 1: Stages 1-5 (parallel)

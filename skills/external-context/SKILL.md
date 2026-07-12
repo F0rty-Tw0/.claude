@@ -95,3 +95,14 @@ After all agents complete, synthesize findings:
 - Maximum 5 parallel external-researcher agents
 - Each agent uses WebSearch and WebFetch tools
 - No magic keyword trigger - explicit invocation only
+
+## Common Failure Modes
+
+- **Overlapping facets** -- two agents searching near-identical terms waste calls and produce duplicate findings.
+  Keep facets mutually exclusive (different sub-questions, not rephrasings of the same one).
+- **Uncited claims slip into synthesis** -- every finding in the output must carry a source URL; drop findings an
+  agent returned without one rather than presenting them as fact.
+- **Treating recall as current** -- if an agent's answer reads like training-data recall rather than a fetched
+  page, it didn't do the research; re-run it with an explicit instruction to fetch and quote the source.
+- **Too many facets, thin synthesis** -- more than 5 facets dilutes each agent's search budget and the final
+  synthesis becomes a list instead of an answer. Prefer fewer, sharper facets.

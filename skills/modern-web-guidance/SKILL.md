@@ -94,6 +94,16 @@ npx -y modern-web-guidance@latest retrieve "<id>"
 -   These guides are usually framework-agnostic; adapt them correctly to your setup.
 -   Do not hallucinate guides or ignore them; they represent the preferred local standard for the user's project.
 
+## Common Mistakes
+
+| Mistake | Fix |
+|---|---|
+| Writing the feature from training-data recall, then searching afterward "to check" | Search first — the whole point is that trained patterns may already be obsolete |
+| Treating a low-similarity search result as authoritative | Fall back to `list` and scan categories instead of forcing a weak match |
+| Applying a guide's pattern verbatim in a framework it wasn't written for | Guides are framework-agnostic in intent, not in syntax — adapt selectors/lifecycle hooks to the actual framework |
+| Ignoring a fallback requirement because the feature "mostly works" without one | Baseline-non-widely-available features need the guide's fallback unless the user has stated an explicit browser policy that covers it |
+| Assuming `npx` succeeds silently | On Windows it can fail without `npx.cmd`; a hang usually means offline — retry with `--offline` |
+
 
 ## Interpreting Browser Support & Fallbacks
 

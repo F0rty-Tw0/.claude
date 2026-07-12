@@ -19,6 +19,12 @@ git-master <git task>
 Agent(subagent_type="git-master", model="sonnet", prompt="<git task>")
 ```
 
+## When to Route Here
+
+Route for multi-concern changes (3+ files spanning different concerns), interactive rebases, history archaeology,
+or branch cleanup. Skip it and just `git commit` yourself for a single trivial one-file change -- the agent's value
+is atomic-split judgment and style detection, which a one-file commit doesn't need.
+
 ## Capabilities
 
 - Atomic commits with conventional format

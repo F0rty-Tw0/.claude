@@ -116,6 +116,16 @@ Then write the three docs files using the seed templates in this skill folder as
 
 For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
 
-### 5. Done
+### 5. Verify, then done
+
+Before declaring done, read back the `## Agent skills` block and the three `docs/agents/*.md` files as written to disk and confirm they match what was shown to the user in step 3. Don't claim completion off the draft alone.
 
 Tell the user the setup is complete and which engineering skills will now read from these files. Mention they can edit `docs/agents/*.md` directly later — re-running this skill is only necessary if they want to switch issue trackers or restart from scratch.
+
+## Common Mistakes
+
+- **Creating `AGENTS.md` when `CLAUDE.md` already exists** (or vice versa) instead of editing the one already there.
+- **Appending a duplicate `## Agent skills` block** instead of updating an existing one in place.
+- **Guessing triage label strings** instead of asking when the repo already has labels that don't match the canonical names.
+- **Dumping all three decision sections at once** instead of walking them one at a time.
+- **Overwriting user edits** to content surrounding the `## Agent skills` block.

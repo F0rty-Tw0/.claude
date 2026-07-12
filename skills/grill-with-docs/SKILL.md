@@ -85,4 +85,13 @@ Only offer to create an ADR when all three are true:
 
 If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md).
 
+**Example:** "We'll use Redis for the write-behind cache" — reversible, not surprising (standard choice), no real trade-off discussion → skip. "We chose event sourcing over CRUD for Orders because audit trail is a hard compliance requirement" — hard to reverse, surprising to a future reader, a real trade-off → write the ADR.
+
+### Failure modes
+
+- Batching glossary updates until the session ends → context drifts meanwhile; capture inline, the moment a term resolves
+- Treating `CONTEXT.md` as a spec or scratchpad → strip implementation details back out; it's a glossary only
+- Accepting a vague term without proposing the precise alternative → always name the canonical term, don't just flag the ambiguity
+- Writing an ADR for every decision → run the three-part test first; most decisions don't need one
+
 </supporting-info>

@@ -7,6 +7,8 @@ version: 1.0.0
 
 # Project Session Manager (PSM) Skill
 
+> **Windows compatibility:** This skill's `review`/`fix`/`feature`/`attach`/`kill` commands shell out to `tmux`, which does not exist on native Windows. They only work inside WSL (Windows Subsystem for Linux) or a Linux/macOS host. On native Windows, skip tmux session management entirely — use `teleport` (below) for tmux-free worktree creation, and manage the agent process itself as a background process (e.g. Claude Code's own background execution) instead of a tmux session. `git worktree` and the file-based registry work natively either way.
+
 > **Quick Start:** For simple worktree creation without tmux sessions, use `teleport`:
 >
 > ```bash

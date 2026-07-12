@@ -28,7 +28,8 @@ costs. It is designed as a composable component that ralph and autopilot layer o
 
 <Execution_Policy>
 
-- Fire all independent agent calls simultaneously -- never serialize independent work
+- Fire all independent agent calls simultaneously in ONE message -- never serialize independent work
+- When two parallel agents would edit the same files, give each `isolation: "worktree"` and merge after -- don't serialize them
 - Always pass the `model` parameter explicitly when delegating
 - Match agent tier to task complexity: haiku for simple lookups/definitions, sonnet for standard implementation, opus for complex analysis/refactoring
 - Use `run_in_background: true` for operations over ~30 seconds (installs, builds, tests)

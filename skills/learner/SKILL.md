@@ -68,6 +68,13 @@ The system REJECTS skills that are:
 - Vague solutions (no code snippets or precise instructions)
 - Poor triggers (generic words that match everything)
 
+**Final self-check before saving** (all five must hold, or don't save):
+1. Includes a file path, line number, or exact error message — not a paraphrase
+2. Could NOT be found by a 5-minute web search
+3. Specific to this codebase, not a general language/library pattern
+4. Took real debugging effort to discover, not a first-guess fix
+5. Triggers are specific fragments (error text, filename), not generic words
+
 **Step 3: Save Location**
 
 - **User-level**: ~/.claude/skills/learned/ - Rare. Only for truly portable insights.

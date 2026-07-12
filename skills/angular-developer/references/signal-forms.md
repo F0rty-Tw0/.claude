@@ -1,6 +1,6 @@
 # Signal Forms
 
-Signal Forms are the recommended approach for handling forms in modern Angular applications (v21+). They provide a reactive, type-safe, and model-driven way to manage form state using Angular Signals.
+Signal Forms are the recommended approach for handling forms in modern Angular applications. Stable as of Angular 22. They provide a reactive, type-safe, and model-driven way to manage form state using Angular Signals.
 
 **CRITICAL**: You MUST use Angular's new Signal Forms API for all form-related functionality. Do NOT use null as a value or type of any fields.
 

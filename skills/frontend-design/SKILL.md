@@ -5,6 +5,8 @@ description: Use when building web components, pages, or applications that need 
 
 This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
 
+**Use frontend-ui-ux instead when** the task is component-implementation work inside an existing design system (matching established tokens, extending a component library, routine responsive/accessibility fixes) rather than establishing a new visual identity. Use this skill (frontend-design) when there's no design system to match yet, or the explicit goal is a distinctive/memorable look.
+
 The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
 
 ## Design Thinking

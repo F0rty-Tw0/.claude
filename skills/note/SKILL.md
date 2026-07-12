@@ -37,6 +37,21 @@ Save important context to `.claude/local/notepad.md` so it survives conversation
 - User-controlled permanent notes
 - Good for: team contacts, deployment info
 
+### Which section?
+
+| If the fact is...                                | Use            |
+| -------------------------------------------------- | --------------- |
+| Short, needed every session (stack, entry point)  | `--priority`    |
+| Temporary — a debugging trail, a finding to revisit | plain (Working) |
+| Permanent and non-critical (contacts, deploy URLs) | `--manual`      |
+
+## Failure Modes
+
+- Priority Context silently exceeds 500 chars → trim it, don't let old entries push out new ones
+- Nothing reads the notepad back → it isn't auto-loaded; say `/note --show` explicitly, don't assume it's in context
+- A permanent fact lands in Working Memory → gets pruned after 7 days; move it to `--manual`
+- Same fact re-added every session → check `--show` before appending duplicates
+
 ## Examples
 
 ```

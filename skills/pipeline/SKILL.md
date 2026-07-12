@@ -93,12 +93,12 @@ Match model to complexity: don't spend opus on a simple stage, and reach for `de
 
 ## Error Handling
 
-When a stage fails:
+When a stage fails (bounded -- at most 2 retries per stage, then escalate; never loop a stage indefinitely):
 
-- **Retry** the same agent with a clarified prompt
-- **Fallback to a higher tier**: `executor` -> `deep-executor`
-- **Consult architect**: on repeated `executor` failure, run `architect` to diagnose before retrying
-- **Ask the user**: if a stage is blocked on a decision only they can make, stop and ask
+1. **Retry** the same agent once with a clarified prompt
+2. **Fallback to a higher tier**: `executor` -> `deep-executor`
+3. **Consult architect**: on a second `executor` failure, run `architect` to diagnose before any further retry
+4. **Ask the user / report blocked**: if still failing after step 3, or a stage is blocked on a decision only they can make, stop and report honestly -- do not pass a broken stage's output downstream as if it succeeded
 
 ## Verification Rules
 

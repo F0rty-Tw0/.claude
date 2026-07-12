@@ -31,7 +31,9 @@ evidence before allowing completion, and using tiered architect review to confir
 
 <Execution_Policy>
 
-- Fire independent agent calls simultaneously -- never wait sequentially for independent work
+- Fire independent agent calls simultaneously in ONE message -- never wait sequentially for independent work
+- When parallel agents mutate overlapping files, give each `isolation: "worktree"` and merge the branches after
+- Track outstanding work with `TaskCreate`/`TaskUpdate`/`TaskList` so progress survives compaction and resume
 - Use `run_in_background: true` for long operations (installs, builds, test suites)
 - Always pass the `model` parameter explicitly when delegating to agents
 - Read `docs/shared/agent-tiers.md` before first delegation to select correct agent tiers

@@ -20,11 +20,13 @@ Thin wrapper around the `build-fixer` agent -- delegates the whole task instead 
 Agent(
   subagent_type="build-fixer",
   model="sonnet",
-  prompt="Fix all build and TypeScript errors with minimal changes. Run the project's type check / build command to collect errors, fix them one at a time, verify each fix doesn't introduce new errors, and stop when the build passes. No refactoring, no architectural changes."
+  prompt="Fix all build and TypeScript errors with minimal changes. Run the project's type check / build command to collect errors, fix them one at a time, verify each fix doesn't introduce new errors, and stop when the build passes. Fix import/export and config errors before type errors -- a single bad import or missing dependency often cascades into dozens of downstream type errors that disappear once the root import is fixed, so front-loading them shrinks the real error count before round two. No refactoring, no architectural changes."
 )
 ```
 
-The `build-fixer` agent owns error collection, fix strategy, minimal-diff discipline, and verification -- see its agent definition for details. Report back the errors fixed, files touched, and final build status.
+The `build-fixer` agent owns error collection, categorization, minimal-diff discipline, and verification -- see its
+agent definition for details; this wrapper only adds the fix-order hint above, which the agent's own protocol
+doesn't specify. Report back the errors fixed, files touched, and final build status.
 
 ## Use with Other Skills
 

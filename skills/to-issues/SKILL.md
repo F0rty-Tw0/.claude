@@ -31,6 +31,13 @@ Slices may be 'HITL' or 'AFK'. HITL slices require human interaction, such as an
 - Prefer many thin slices over few thick ones
 </vertical-slice-rules>
 
+<good-issue-rules>
+A good issue's acceptance criteria are:
+- **Self-contained** — readable and actionable without the parent plan or sibling issues open
+- **Testable** — each criterion is an observable pass/fail check ("running X returns Y"), not an implementation step
+- **Sized** — 3-6 criteria; more signals the slice is too thick and should split
+</good-issue-rules>
+
 ### 4. Quiz the user
 
 Present the proposed breakdown as a numbered list. For each slice, show:
@@ -50,6 +57,8 @@ Ask the user:
 Iterate until the user approves the breakdown.
 
 ### 5. Publish the issues to the issue tracker
+
+Self-check each slice against `<good-issue-rules>` before publishing — reject/fix any issue that isn't self-contained, testable, or sized right.
 
 For each approved slice, publish a new issue to the issue tracker. Use the issue body template below. These issues are considered ready for AFK agents, so publish them with the correct triage label unless instructed otherwise.
 

@@ -168,11 +168,9 @@ The code-reviewer agent checks:
 
 **With Pipeline:**
 
-```
-/pipeline review "implement user authentication"
-```
-
-Includes code review as part of implementation workflow.
+`pipeline` has no argument parser -- there's no `/pipeline review "..."` shortcut. Drive its Review Pipeline preset
+manually: `explore` -> `architect` -> `critic` -> `executor`, folding each stage's findings into the next prompt,
+with this skill's `code-reviewer` delegation standing in for the `critic` stage.
 
 **With Ralph:**
 

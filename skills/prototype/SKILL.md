@@ -25,6 +25,14 @@ The two branches produce very different artifacts — getting this wrong wastes 
 5. **Surface the state.** After every action (logic) or on every variant switch (UI), print or render the full relevant state so the user can see what changed.
 6. **Delete or absorb when done.** When the prototype has answered its question, either delete it or fold the validated decision into the real code — don't leave it rotting in the repo.
 
+## Self-check before handing it over
+
+- Runs with one command, no setup the user has to remember
+- State (logic) or the current variant (UI) is fully visible after every action, not partially
+- Named/located so a casual reader sees "prototype," not production code
+- No tests, error handling, or abstraction beyond what makes it runnable
+- The question it's answering is written down somewhere in the prototype, not just in your head
+
 ## When done
 
 The _answer_ is the only thing worth keeping from a prototype. Capture it somewhere durable (commit message, ADR, issue, or a `NOTES.md` next to the prototype) along with the question it was answering. If the user is around, that capture is a quick conversation; if not, leave the placeholder so they (or you, on the next pass) can fill in the verdict before deleting the prototype.

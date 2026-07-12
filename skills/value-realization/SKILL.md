@@ -71,6 +71,12 @@ This skill operates through conversational analysis. When the user presents a pr
 - If a `.claude/plans/` directory exists in the repository, write the plan there as `<repo-name>-value-green-plan.md`
 - Do not wait for a second prompt to create the plan once improvement guidance has been requested
 
+**Self-check before presenting a remediation plan** (all must hold, or revise):
+- Every prescribed change traces back to a specific 🔴/🟡 dimension from the analysis, not a generic improvement
+- Each phase has a measurable exit criterion ("40% of new users mention X in support tickets"), not a vague goal ("improve messaging")
+- Comparable-product claims are grounded in the research step, not invented from memory
+- States what "green" looks like for each dimension, not just what to change
+
 ## Analysis Framework
 
 When the user discusses a product idea, analyze these four dimensions to evaluate whether end users will discover value:
@@ -129,7 +135,7 @@ When the user discusses a product idea, analyze these four dimensions to evaluat
 
 ## Patterns from Real Products
 
-These aren't rules to follow - they're patterns to consider when analyzing specific situations. For detailed case studies with real data, see `references/real-cases.md` (English) or `references/real-cases-zh.md` (中文).
+These aren't rules to follow - they're patterns to consider when analyzing specific situations. For detailed case studies with real data, see `references/real-cases.md`.
 
 **Concrete outcome descriptions** (work well): Dropbox ("access files from any device"), Instagram ("become a photographer" - identity transformation).
 
@@ -178,7 +184,6 @@ When cases don't apply (e.g., a B2B infrastructure tool vs a C2C social app), se
 
 For detailed case studies with real data and metrics:
 - **`references/real-cases.md`** - Complete analysis of Dropbox, Instagram, Duolingo, WeChat, Google Wave, and Quibi with real numbers and data sources
-- **`references/real-cases-zh.md`** - 中文版真实案例分析
 
 ## Remember
 

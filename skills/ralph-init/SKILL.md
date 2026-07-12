@@ -25,6 +25,15 @@ ralph-init "project or feature description"
    - Implementation phases
 3. **Link to Ralph** so that `ralph` can use the PRD as its completion criteria
 
+## Quality Gate (before handing to Ralph)
+
+Every acceptance criterion must be verifiable by a command or a concrete observation -- not a judgment call. Rewrite any criterion you cannot pair with a check:
+
+- Bad: "auth works well" -> Good: "`npm test auth` exits 0" / "POST /login with valid creds returns 200 + a JWT"
+- Each criterion names HOW it is checked. If you can't name the check, the criterion is not done being written.
+
+A PRD whose criteria are all command-verifiable is Ralph-ready; one with vague criteria will loop forever because "done" is undecidable.
+
 ## Output
 
 A structured PRD file saved to `.claude/local/plans/` that serves as the definition of done for Ralph execution.

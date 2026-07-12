@@ -36,15 +36,15 @@ Then move to the next production file and test pair.
 1. Choose the next production file to complete.
 2. Add or update its corresponding test.
 3. Run focused verification for that pair.
-4. Stage only the pair files.
+4. Stage only the pair files by path (`git add <prod-file> <test-file>`) — never `git add -A` or `git add .`, which sweep in unrelated work.
 5. Commit with a clear why-focused message.
 6. Repeat for the next pair.
 
 ## Verification Before Each Commit
 
-- Run the relevant unit test file(s)
+- Run the relevant unit test file(s) — commit only when the pair is green, never a failing pair
 - Run typecheck/lint if the change requires it
-- Ensure the commit contains only intended files
+- Ensure the commit contains only intended files (`git status` before committing)
 
 ## Common Mistakes
 

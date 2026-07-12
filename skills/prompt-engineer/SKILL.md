@@ -53,15 +53,34 @@ Include examples of desired behavior
 
 ### Chain-of-Thought
 
-Request step-by-step reasoning
+Request step-by-step reasoning -- but check whether the target model already reasons internally first.
 
 ```javascript
-- Ask model to think step by step
-- Provide reasoning structure
-- Request explicit intermediate steps
-- Parse reasoning separately from answer
-- Use for debugging model failures
+- Non-reasoning models: ask explicitly to think step by step, provide reasoning structure
+- Reasoning models (Claude Fable 5 / Opus 4.x / o-series with extended thinking): do NOT force a visible
+  "think step by step" preamble -- the model already reasons in a separate thinking block. Forcing prose CoT
+  on top of it wastes tokens and can shorten the model's own reasoning.
+- For reasoning models, instead: state the goal and constraints clearly, give it room (don't cap output
+  tokens tight), and let extended thinking do the step-by-step work. Set an explicit thinking token budget
+  when the API/SDK exposes one, and raise it for harder problems.
+- Parse reasoning separately from answer either way -- thinking blocks are structurally separate from the
+  final response, prose CoT is not.
+- Use for debugging model failures: read the thinking block/CoT trace, not just the final answer.
 ```
+
+### Claude-Specific Patterns (4.5/5-era)
+
+- **Structured output via tool-forcing**: for machine-parsed output, define a tool with the exact JSON schema
+  and force it (`tool_choice: {"type": "tool", "name": "..."}` or the SDK's forced-tool-use option) instead of
+  asking for JSON in prose. Forced tool-use is schema-validated and doesn't drift under paraphrase; prose "return
+  JSON" instructions do.
+- **Prefilling**: seed the start of the assistant turn (e.g. `{` for JSON, or a fixed opening line) to skip
+  preamble and lock the output format. Not compatible with extended thinking turned on for that turn -- prefill
+  only on non-thinking calls, or prefill after the thinking block completes.
+- **Extended thinking**: when thinking is enabled, `temperature` is fixed by the API (not freely tunable) and
+  prefill of the final text is restricted -- budget thinking tokens instead of fighting temperature for
+  determinism. Use interleaved thinking (reasoning between tool calls, not just before the first one) for
+  multi-step agentic prompts.
 
 ## Anti-Patterns
 
@@ -87,8 +106,10 @@ Only saying what to do, without saying what NOT to do, leaves room for unwanted 
 | Changing prompts without measuring impact       | medium   | Systematic evaluation with before/after comparison          |
 | Including irrelevant context 'just in case'     | medium   | Curate context to only include relevant information         |
 | Biased or unrepresentative examples             | medium   | Diverse, representative examples covering edge cases        |
-| Using default temperature for all tasks         | medium   | Task-appropriate temperature (0 for factual, 0.7+ for creative) |
+| Using default temperature for all tasks         | medium   | Task-appropriate temperature (0 for factual, 0.7+ for creative); fixed when extended thinking is on |
 | Not considering prompt injection in user input  | high     | Defend against injection with input validation and delimiters |
+| Prompting for JSON in prose instead of forcing a tool | medium | Use tool-forcing with a JSON-schema tool for structured output |
+| Forcing "think step by step" on a reasoning model | medium | Let extended thinking reason internally; don't stack prose CoT on top |
 
 ## Related Skills
 

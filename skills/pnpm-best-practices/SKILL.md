@@ -5,6 +5,8 @@ description: Use when setting up a new pnpm project, migrating a repo from npm/y
 
 # pnpm best practices
 
+> Current as of **pnpm 11** (stable, latest patch 11.9+ as of July 2026). pnpm 11 requires Node.js 22+, blocks lifecycle scripts by default (`strictDepBuilds`), and adds a SQLite-backed store index — the defaults below assume it. If the project is pinned to pnpm 10 or earlier, `allowBuilds`/`minimumReleaseAge` gating still applies but lifecycle scripts are allowed by default, so audit `.npmrc`/`pnpm-workspace.yaml` explicitly instead of assuming v11 defaults are in effect.
+
 ## Overview
 
 Proactive defaults for pnpm projects: corepack pinning, workspace catalogs, supply-chain gates, CI pipeline shape, and strict-isolation import hygiene. A fresh agent can usually diagnose pnpm/corepack errors from first principles — but rarely produces these specific hardened defaults without prompting. This skill is for setup time.
@@ -154,6 +156,15 @@ Before bulk-updating: `pnpm outdated`. Categorize the output.
 - **Patch / minor across `@nx/*`:** safe to bump together; align minors per the rule above.
 - **Major bumps of `eslint`, `typescript`, `prettier`:** defer when an internal lint preset or shared config peers on the old major. Bump the preset first (or in the same change), not in isolation.
 - **Releases newer than 48h:** blocked by `minimumReleaseAge` — let them age, don't lower the gate.
+
+## pnpm 11 CLI additions worth reaching for
+
+| Command | Use |
+|---|---|
+| `pnpm ci` | CI-optimized install — stricter than `--frozen-lockfile`; prefer over hand-tuned install flags in pipeline steps |
+| `pnpm sbom` | Generate a software bill of materials — reach for this if the org needs supply-chain attestation |
+| `pnpm clean` | Prune the store/cache in one step instead of manually clearing `node_modules/.pnpm` |
+| `pnpm peers check` | Surface peer-dependency mismatches before they cause a runtime error |
 
 ## Common mistakes
 

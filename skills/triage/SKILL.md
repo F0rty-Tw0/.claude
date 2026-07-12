@@ -69,7 +69,7 @@ Show counts and a one-line summary per issue. Let the maintainer pick.
 4. **Grill (if needed).** If the issue needs fleshing out, run a `/grill-with-docs` session.
 
 5. **Apply the outcome:**
-   - `ready-for-agent` — post an agent brief comment ([AGENT-BRIEF.md](AGENT-BRIEF.md)).
+   - `ready-for-agent` — self-check the brief's acceptance criteria are self-contained, testable, and sized (see "Complete acceptance criteria" in [AGENT-BRIEF.md](AGENT-BRIEF.md)), then post the agent brief comment.
    - `ready-for-human` — same structure as an agent brief, but note why it can't be delegated (judgment calls, external access, design decisions, manual testing).
    - `needs-info` — post triage notes (template below).
    - `wontfix` (bug) — polite explanation, then close.
@@ -101,3 +101,12 @@ Capture everything resolved during grilling under "established so far" so the wo
 ## Resuming a previous session
 
 If prior triage notes exist on the issue, read them, check whether the reporter has answered any outstanding questions, and present an updated picture before continuing. Don't re-ask resolved questions.
+
+## Common Mistakes
+
+- **Skipping reproduction on a bug** and moving straight to `ready-for-agent` — an unreproduced bug makes a weak brief.
+- **Re-asking questions already answered** in prior triage notes or comments.
+- **Missing the `.out-of-scope/` check** on an enhancement — re-litigates a rejection that already happened.
+- **Vague acceptance criteria** in an agent brief ("should work correctly") instead of a testable check.
+- **Applying a state role without the disclaimer** on the accompanying comment.
+- **Overriding the maintainer's explicit instruction** with your own recommendation instead of just applying it.

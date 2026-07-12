@@ -25,7 +25,11 @@ Describe **what** the system should do, not **how** to implement it. The agent w
 
 ### Complete acceptance criteria
 
-The agent needs to know when it's done. Every agent brief must have concrete, testable acceptance criteria. Each criterion should be independently verifiable.
+The agent needs to know when it's done. A good brief's acceptance criteria are:
+
+- **Testable** — each criterion is independently verifiable, not aspirational
+- **Self-contained** — verifiable from the brief alone, without re-reading the original issue thread
+- **Sized** — 3-6 criteria; more usually means the brief covers more than one slice and should split
 
 - **Good:** "Running `gh issue list --label needs-triage` returns issues that have been through initial classification"
 - **Bad:** "Triage should work correctly"
@@ -33,6 +37,10 @@ The agent needs to know when it's done. Every agent brief must have concrete, te
 ### Explicit scope boundaries
 
 State what is out of scope. This prevents the agent from gold-plating or making assumptions about adjacent features.
+
+### Self-check before posting
+
+Before posting a brief, confirm: category is set, criteria pass the three checks above, "Out of scope" is non-empty, and no file paths or line numbers appear anywhere in the brief.
 
 ## Template
 

@@ -5,7 +5,7 @@ description: Use when developing with Next.js App Router - covers Server Compone
 
 # Next.js Best Practices
 
-> Principles for Next.js App Router development. Caching semantics below reflect Next.js 15+ (fetch is uncached by default; earlier versions cached by default).
+> Principles for Next.js App Router development. Current as of **Next.js 16.2** (July 2026; Next 15 remains in support until Oct 2026 and shares the same uncached-by-default model). Next 16 removes the Next-15 transitional shims — synchronous `params`/`cookies()`/`headers()` access and `middleware.ts` — see §2 and §3.
 
 ---
 
@@ -66,6 +66,22 @@ Route Handler `GET` functions are also uncached by default in Next.js 15+ (previ
 | API        | fetch with caching           |
 | User input | Client state + server action |
 
+### Async Request APIs (breaking in Next.js 16)
+
+`cookies()`, `headers()`, `draftMode()`, and route `params`/`searchParams` are **async-only** — the Next 15 synchronous fallback is removed in Next 16, not just deprecated.
+
+```ts
+// ❌ Next 15 transitional shim — throws in Next 16
+export default function Page({ params }: { params: { id: string } }) {
+  const { id } = params;
+}
+
+// ✅ Next 16
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+}
+```
+
 ---
 
 ## 3. Routing Principles
@@ -79,6 +95,7 @@ Route Handler `GET` functions are also uncached by default in Next.js 15+ (previ
 | `loading.tsx`   | Loading state  |
 | `error.tsx`     | Error boundary |
 | `not-found.tsx` | 404 page       |
+| `proxy.ts` (project root) | Network-boundary logic (redirects, rewrites, header edits) — replaces `middleware.ts` (deprecated, still works). Migrate: `npx @next/codemod@canary middleware-to-proxy` |
 
 ### Route Organization
 
@@ -147,7 +164,19 @@ Route Handler `GET` functions are also uncached by default in Next.js 15+ (previ
 
 ## 7. Caching Strategy
 
-**As of Next.js 15**, `fetch` requests, GET Route Handlers, and the client-side Router Cache are all **uncached by default** (Router Cache `staleTime: 0`). Caching is opt-in, not opt-out.
+**Since Next.js 15**, `fetch` requests, GET Route Handlers, and the client-side Router Cache are all **uncached by default** (Router Cache `staleTime: 0`). Caching is opt-in, not opt-out.
+
+**Next.js 16.2+ (stable):** set `cacheComponents: true` in `next.config.ts` to opt into the Cache Components model — it subsumes and replaces the old `experimental.dynamicIO` and `experimental.ppr` flags in one setting. With it on, use the `'use cache'` directive (plus `cacheLife()` / `cacheTag()` / `updateTag()`, all stable as of 16.2) to mark cacheable functions, components, or pages explicitly, instead of relying on `fetch` options alone:
+
+```ts
+// app/products/[id]/page.tsx
+async function getProduct(id: string) {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(`product-${id}`);
+  return db.product.find(id);
+}
+```
 
 ### Cache Layers
 
@@ -155,6 +184,7 @@ Route Handler `GET` functions are also uncached by default in Next.js 15+ (previ
 | ----------------------- | -------------------- | -------------------------------------------- |
 | Request (`fetch`)       | Uncached              | `{ cache: 'force-cache' }`                   |
 | Data                    | Uncached              | `{ next: { revalidate: N, tags: [...] } }`   |
+| Function/component      | Uncached              | `'use cache'` directive (16.2+, stable)      |
 | Route Handler (GET)     | Uncached              | `export const dynamic = 'force-static'`      |
 | Router Cache (client)   | `staleTime: 0`        | `staleTimes` config in `next.config.js`      |
 | Full route              | Dynamic               | `export const dynamic = 'force-static'`      |
@@ -165,7 +195,8 @@ Route Handler `GET` functions are also uncached by default in Next.js 15+ (previ
 | ------------ | ------------------------------------ |
 | Opt-in cache | `{ cache: 'force-cache' }`           |
 | Time-based   | `{ next: { revalidate: 60 } }`       |
-| On-demand    | `revalidatePath/Tag`                 |
+| Directive-based (16.2+) | `'use cache'` + `cacheLife()`/`cacheTag()` |
+| On-demand    | `revalidatePath/Tag` or `updateTag()` (16.2+) |
 | No cache     | Default behavior — no options needed |
 
 ---
@@ -187,15 +218,18 @@ Route Handler `GET` functions are also uncached by default in Next.js 15+ (previ
 
 ---
 
-## 9. Anti-Patterns
+## 9. Anti-Patterns / Common Mistakes
 
-| ❌ Don't                   | ✅ Do             |
-| -------------------------- | ----------------- |
-| 'use client' everywhere    | Server by default |
-| Fetch in client components | Fetch in server   |
-| Skip loading states        | Use loading.tsx   |
-| Ignore error boundaries    | Use error.tsx     |
-| Large client bundles       | Dynamic imports   |
+| ❌ Don't                        | ✅ Do                                                    |
+| -------------------------------- | --------------------------------------------------------- |
+| 'use client' everywhere          | Server by default                                          |
+| Fetch in client components       | Fetch in server                                             |
+| Skip loading states              | Use loading.tsx                                             |
+| Ignore error boundaries          | Use error.tsx                                               |
+| Large client bundles             | Dynamic imports                                             |
+| Sync `params`/`cookies()`/`headers()` access | `await` them — sync fallback removed in Next 16 (throws, not warns) |
+| New network logic in `middleware.ts`  | Use `proxy.ts` — `middleware.ts` is deprecated (codemod available) |
+| Hand-rolling `experimental.dynamicIO`/`experimental.ppr` | `cacheComponents: true` (Next 16.2+ stable, supersedes both) |
 
 ---
 
