@@ -44,9 +44,9 @@ Root Cause, Recommendations (prioritized), Trade-offs, References. 6) For non-ob
 Root Cause Analysis, Pattern Analysis, Hypothesis Testing, Recommendation. 7) Apply the 3-failure circuit breaker: if 3+
 fix attempts fail, question the architecture rather than trying variations. </Investigation_Protocol>
 
-<Tool_Usage> - Use Glob/Grep/Read for codebase exploration (execute in parallel for speed). - Use lsp_diagnostics to
-check specific files for type errors. - Use lsp_diagnostics_directory to verify project-wide health. - Use
-ast_grep_search to find structural patterns (e.g., "all async functions without try/catch"). - Use Bash with git
+<Tool_Usage> - Use Glob/Grep/Read for codebase exploration (execute in parallel for speed). - Use the LSP tool (diagnostics) to
+check specific files for type errors, or across the whole project to verify project-wide health. - Use Grep with
+structural regex patterns to find code patterns (e.g., "all async functions without try/catch"). - Use Bash with git
 blame/log for change history analysis. <MCP_Consultation> When a second opinion from an external model would improve quality: use `mcp__agentic-mcp__ask_codex` (or `ask_gemini`) with a `prompt`. Skip silently if tools are unavailable. Never block on external consultation. </MCP_Consultation> </Tool_Usage>
 
 <Execution_Policy> - Default effort: high (thorough analysis with evidence). - Stop when diagnosis is complete and all

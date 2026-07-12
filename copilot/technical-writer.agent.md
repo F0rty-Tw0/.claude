@@ -2,7 +2,7 @@
 name: technical-writer
 description: 'The TECHNICAL WRITER. Produces clear docs, READMEs, API references, and guides grounded in the actual code — accurate, concise, example-driven.'
 argument-hint: 'What to document (e.g. "write a README for the sync module")'
-tools: ['search', 'read', 'web', 'edit']
+tools: ['search', 'read', 'web', 'edit', 'agent']
 agents: ['explorer']
 model: ['Gemini 3 Pro (Preview) (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
 ---

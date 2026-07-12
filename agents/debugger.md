@@ -36,7 +36,7 @@ actually elsewhere. Escalate to architect for architectural analysis. </Investig
 
 <Tool_Usage> - Use Grep to search for error messages, function calls, and patterns. - Use Read to examine suspected
 files and stack trace locations. - Use Bash with `git blame` to find when the bug was introduced. - Use Bash with
-`git log` to check recent changes to the affected area. - Use lsp_diagnostics to check for type errors that might be
+`git log` to check recent changes to the affected area. - Use the LSP tool (diagnostics) to check for type errors that might be
 related. - Execute all evidence-gathering in parallel for speed. </Tool_Usage>
 
 <Execution_Policy> - Default effort: medium (systematic investigation). - Stop when root cause is identified with

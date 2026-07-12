@@ -12,7 +12,7 @@ A multi-agent orchestration system for **VS Code GitHub Copilot** (custom `.agen
 - **Expanded roster:** 7 → 18 agents, adding the roles the original lacked (analyst, architect, critic, debugger, refactorer, test-engineer, security-reviewer, git-master, tracer, technical-writer, scientist).
 - **OMC prompt structure** in every agent: a memorable **Core Principle**, **Task Classification**, **Success Criteria**, **Failure Prevention** anti-patterns, explicit **Handoffs**, and evidence-based output.
 - **Operating Laws** (this repo's standards) baked into every agent: Critical Honesty + 🟢🟡🔴 Narrate-Intent + right-sized/DRY-after-2 + evidence-over-assertion.
-- **Latest models** via ordered fallback lists (`Claude Opus 4.5` → `Sonnet 4.6` → `Auto`), so an agent always resolves to the best available model.
+- **Latest models** via ordered fallback lists (`Claude Opus 4.8` → `Claude Opus 4.5` → `Sonnet 4.6` → `Auto`), so an agent always resolves to the best available model.
 - **Correct VS Code frontmatter:** `name`, `tools` (namespaced groups), `model` (array), `agents` (delegation whitelist), `handoffs` with `send`.
 
 ---
@@ -40,7 +40,7 @@ A multi-agent orchestration system for **VS Code GitHub Copilot** (custom `.agen
 | **technical-writer** | Docs/READMEs/API refs grounded in real code | Gemini Pro | docs only |
 | **scientist** | Data/ML, hypothesis-driven reproducible experiments | Opus | ✅ |
 
-Models are **fallback lists** — e.g. `['Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']`. VS Code tries each in order, so the agent works regardless of which models your Copilot plan exposes.
+Models are **fallback lists** — e.g. `['Claude Opus 4.8 (copilot)', 'Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']`. VS Code tries each in order, so the agent works regardless of which models your Copilot plan exposes.
 
 ---
 
@@ -62,7 +62,7 @@ These are **VS Code custom agents** (`.agent.md`). Install at the **user level**
 **User level:** point VS Code at this folder via `settings.json`:
 ```json
 {
-  "chat.agentFilesLocations": ["/home/fortytwo/.claude/copilot"],
+  "chat.agentFilesLocations": ["C:\\Users\\artio\\.claude\\copilot"],
   "chat.customAgentInSubagent.enabled": true
 }
 ```
@@ -116,7 +116,7 @@ description: 'One line — what it does and when to use it.'
 argument-hint: 'What to pass it'
 tools: ['search', 'read', 'web', 'edit', 'agent']   # namespaced groups; 'agent' enables delegation
 agents: ['explorer']                                  # delegation whitelist (requires 'agent' tool); omit for none
-model: ['Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
+model: ['Claude Opus 4.8 (copilot)', 'Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
 ---
 You are the YOUR-AGENT — …
 

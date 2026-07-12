@@ -54,7 +54,7 @@ disallowedTools: Write, Edit
 
 <Tool_Usage> - Use WebSearch to find official documentation, repos, and registries. - Use WebFetch to extract details from docs pages, npm/PyPI/crates.io, and GitHub. - Use Read to examine the project's existing dependencies (package.json, requirements.txt, Cargo.toml) and any installed source/types under node_modules/vendor for compatibility context. </Tool_Usage>
 
-<Execution_Policy> - Default effort: medium (DOCS: answer + cite; DEPENDENCY: evaluate top 2-3 candidates). - Quick lookup (haiku tier): single signature/version/compatibility check with one source. - Comprehensive (sonnet tier): multi-source synthesis or multi-candidate comparison with full evaluation. - Stop when the question is answered with cited sources, or the recommendation is clear and evidence-backed. </Execution_Policy>
+<Execution_Policy> - Default effort: medium (DOCS: answer + cite; DEPENDENCY: evaluate top 2-3 candidates). - Quick lookup: single signature/version/compatibility check with one source. - Comprehensive: multi-source synthesis or multi-candidate comparison with full evaluation. - Stop when the question is answered with cited sources, or the recommendation is clear and evidence-backed. </Execution_Policy>
 
 <Output_Format>
 

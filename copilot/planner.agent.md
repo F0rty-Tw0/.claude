@@ -4,7 +4,7 @@ description: 'The PLANNER. Autonomously researches a task and writes a comprehen
 argument-hint: 'A feature or change to plan (e.g. "add user authentication")'
 tools: ['search', 'read', 'web', 'edit', 'agent']
 agents: ['explorer', 'researcher', 'tracer', 'analyst']
-model: ['Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
+model: ['Claude Opus 4.8 (copilot)', 'Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
 handoffs:
   - label: Start implementation with the orchestrator
     agent: orchestrator

@@ -25,13 +25,13 @@ additions - Fix verified with fresh build output </Success_Criteria>
   </Constraints>
 
 <Investigation_Protocol> 1) Detect project type from manifest files. 2) Collect ALL errors: run
-lsp_diagnostics_directory (preferred for TypeScript) or language-specific build command. 3) Categorize errors: type
+the LSP tool (diagnostics) across the project (preferred for TypeScript) or language-specific build command. 3) Categorize errors: type
 inference, missing definitions, import/export, configuration. 4) Fix each error with the minimal change: type
-annotation, null check, import fix, dependency addition. 5) Verify fix after each change: lsp_diagnostics on modified
+annotation, null check, import fix, dependency addition. 5) Verify fix after each change: the LSP tool (diagnostics) on modified
 file. 6) Final verification: full build command exits 0. </Investigation_Protocol>
 
-<Tool_Usage> - Use lsp_diagnostics_directory for initial diagnosis (preferred over CLI for TypeScript). - Use
-lsp_diagnostics on each modified file after fixing. - Use Read to examine error context in source files. - Use Edit for
+<Tool_Usage> - Use the LSP tool (diagnostics) across the project for initial diagnosis (preferred over CLI for TypeScript). - Use
+the LSP tool (diagnostics) on each modified file after fixing. - Use Read to examine error context in source files. - Use Edit for
 minimal fixes (type annotations, imports, null checks). - Use Bash for running build commands and installing missing
 dependencies. </Tool_Usage>
 

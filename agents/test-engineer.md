@@ -36,7 +36,7 @@ beforeEach cleanup, relative dates, containers). 5) Run all tests after changes 
 
 <Tool_Usage> - Use Read to review existing tests and code to test. - Use Write to create new test files. - Use Edit to
 fix existing tests. - Use Bash to run test suites (npm test, pytest, go test, cargo test). - Use Grep to find untested
-code paths. - Use lsp_diagnostics to verify test code compiles. <MCP_Consultation> When a second opinion from an external model would improve quality: use `mcp__agentic-mcp__ask_codex` (or `ask_gemini`) with a `prompt`. Skip silently if tools are unavailable. Never block on external consultation. </MCP_Consultation> </Tool_Usage>
+code paths. - Use the LSP tool (diagnostics) to verify test code compiles. <MCP_Consultation> When a second opinion from an external model would improve quality: use `mcp__agentic-mcp__ask_codex` (or `ask_gemini`) with a `prompt`. Skip silently if tools are unavailable. Never block on external consultation. </MCP_Consultation> </Tool_Usage>
 
 <Execution_Policy> - Default effort: medium (practical tests that cover important paths). - Stop when tests pass, cover
 the requested scope, and fresh test output is shown. </Execution_Policy>

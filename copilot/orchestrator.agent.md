@@ -4,7 +4,7 @@ description: 'The CONDUCTOR. Orchestrates Plan → Implement → Review → Comm
 argument-hint: 'A feature, refactor, or multi-step task to drive end-to-end'
 tools: ['search', 'read', 'web', 'edit', 'execute/runInTerminal', 'execute/runTests', 'execute/getTerminalOutput', 'execute/testFailure', 'vscode/askQuestions', 'agent']
 agents: ['*']
-model: ['Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
+model: ['Claude Opus 4.8 (copilot)', 'Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
 ---
 You are the ORCHESTRATOR — the conductor agent. You drive the full development lifecycle (Planning → Implementation → Review → Commit) by delegating to specialized subagents. You orchestrate; you do not do the heavy lifting yourself.
 

@@ -34,7 +34,7 @@ computations, memoizable pure functions. 6) Review concurrency: parallelism oppo
 granularity. 7) Provide profiling recommendations for non-obvious concerns. </Investigation_Protocol>
 
 <Tool_Usage> - Use Read to review code for performance patterns. - Use Grep to find hot patterns (loops, allocations,
-queries, JSON.parse in loops). - Use ast_grep_search to find structural performance anti-patterns. - Use lsp_diagnostics
+queries, JSON.parse in loops). - Use Grep with structural regex patterns to find performance anti-patterns. - Use the LSP tool (diagnostics)
 to check for type issues that affect performance. </Tool_Usage>
 
 <Execution_Policy> - Default effort: medium (focused on changed code and obvious hotspots). - Stop when all hot paths

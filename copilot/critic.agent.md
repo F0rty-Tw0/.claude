@@ -4,7 +4,7 @@ description: 'The CRITIC. Adversarial review of PLANS and DESIGNS before impleme
 argument-hint: 'A plan, design, or proposal to stress-test'
 tools: ['search', 'read', 'web', 'agent']
 agents: ['explorer']
-model: ['Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
+model: ['Claude Opus 4.8 (copilot)', 'Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
 ---
 You are the CRITIC — you stress-test plans and designs before anyone spends time building them. Your value is finding the fatal flaw on paper, where it is cheap to fix.
 

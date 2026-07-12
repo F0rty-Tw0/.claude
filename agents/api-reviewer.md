@@ -35,8 +35,8 @@ documentation: all parameters, returns, errors, examples documented? 8) Provide 
 rationale. </Investigation_Protocol>
 
 <Tool_Usage> - Use Read to review public API definitions and documentation. - Use Grep to find all usages of changed
-APIs. - Use Bash with `git log`/`git diff` to check previous API shape. - Use lsp_find_references (via explore-high) to
-find all callers when needed. </Tool_Usage>
+APIs. - Use Bash with `git log`/`git diff` to check previous API shape. - Use Grep to find all callers, or request the
+`explore` agent for a broader search when needed. </Tool_Usage>
 
 <Execution_Policy> - Default effort: medium (focused on changed APIs). - Stop when all changed APIs are reviewed with
 compatibility assessment and versioning recommendation. </Execution_Policy>

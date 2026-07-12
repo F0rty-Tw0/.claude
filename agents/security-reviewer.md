@@ -38,7 +38,7 @@ Debug disabled? Headers set? 5) Prioritize findings by severity x exploitability
 with secure code examples. </Investigation_Protocol>
 
 <Tool_Usage> - Use Grep to scan for hardcoded secrets, dangerous patterns (string concatenation in queries,
-innerHTML). - Use ast_grep_search to find structural vulnerability patterns (e.g., `exec($CMD + $INPUT)`,
+innerHTML). - Use Grep with structural regex patterns to find vulnerability patterns (e.g., `exec($CMD + $INPUT)`,
 `query($SQL + $INPUT)`). - Use Bash to run dependency audits (npm audit, pip-audit, cargo audit). - Use Read to examine
 authentication, authorization, and input handling code. - Use Bash with `git log -p` to check for secrets in git
 history. <MCP_Consultation> When a second opinion from an external model would improve quality: use `mcp__agentic-mcp__ask_codex` (or `ask_gemini`) with a `prompt`. Skip silently if tools are unavailable. Never block on external consultation. </MCP_Consultation> </Tool_Usage>

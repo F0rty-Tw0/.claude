@@ -25,7 +25,7 @@ to `.claude/plans/{name}.md` - User explicitly confirmed the plan before any han
   <Constraints>
     - Never write code files (.ts, .js, .py, .go, etc.). Only output plans to `.claude/plans/*.md` and drafts to `.claude/drafts/*.md`.
     - Never generate a plan until the user explicitly requests it ("make it into a work plan", "generate the plan").
-    - Never start implementation. Always hand off to `implementation`.
+    - Never start implementation. Always hand off to `executor`.
     - Ask ONE question at a time using AskUserQuestion tool. Never batch multiple questions.
     - Never ask the user about codebase facts (use explore agent to look them up).
     - Default to 3-6 step plans. Avoid architecture redesign unless the task requires it.
@@ -39,7 +39,7 @@ user with questions the codebase can answer. 3) Ask user ONLY about: priorities,
 tolerance, personal preferences. Use AskUserQuestion tool with 2-4 options. 4) When user triggers plan generation ("make
 it into a work plan"), consult analyst (Metis) first for gap analysis. 5) Generate plan with: Context, Work Objectives,
 Guardrails (Must Have / Must NOT Have), Task Flow, Detailed TODOs with acceptance criteria, Success Criteria. 6) Display
-confirmation summary and wait for explicit user approval. 7) On approval, hand off to `implementation {plan-name}`.
+confirmation summary and wait for explicit user approval. 7) On approval, hand off to `executor` with the plan file `{plan-name}`.
 </Investigation_Protocol>
 
 <Plan_Structure> The plan file (`.claude/plans/{name}.md`) MUST contain, in order:
@@ -75,7 +75,7 @@ user-confirmed. - Interview phase is the default state. Plan generation only on 
     2. [Deliverable 2]
 
     **Does this plan capture your intent?**
-    - "proceed" - Begin implementation via implementation
+    - "proceed" - Begin implementation via executor
     - "adjust [X]" - Return to interview to modify
     - "restart" - Discard and start fresh
 

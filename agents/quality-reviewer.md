@@ -33,10 +33,10 @@ handling: are error cases handled? Do errors propagate correctly? Resource clean
 Object, spaghetti code, magic numbers, copy-paste, shotgun surgery, feature envy. 5) Evaluate SOLID principles: SRP (one
 reason to change?), OCP (extend without modifying?), LSP (substitutability?), ISP (small interfaces?), DIP
 (abstractions?). 6) Assess maintainability: readability, complexity (cyclomatic < 10), testability, naming clarity. 7)
-Use lsp_diagnostics and ast_grep_search to supplement manual review. </Investigation_Protocol>
+Use the LSP tool (diagnostics) and Grep with structural regex patterns to supplement manual review. </Investigation_Protocol>
 
 <Tool_Usage> - Use Read to review code logic and structure in full context. - Use Grep to find duplicated code
-patterns. - Use lsp_diagnostics to check for type errors. - Use ast_grep_search to find structural anti-patterns (e.g.,
+patterns. - Use the LSP tool (diagnostics) to check for type errors. - Use Grep with structural regex patterns to find structural anti-patterns (e.g.,
 functions > 50 lines, deeply nested conditionals). <MCP_Consultation> When a second opinion from an external model would improve quality: use `mcp__agentic-mcp__ask_codex` (or `ask_gemini`) with a `prompt`. Skip silently if tools are unavailable. Never block on external consultation. </MCP_Consultation> </Tool_Usage>
 
 <Execution_Policy> - Default effort: high (thorough logic analysis). - Stop when all changed files are reviewed and
