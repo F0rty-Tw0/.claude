@@ -1,12 +1,11 @@
 # Ultrapilot
 
-Parallel autopilot that decomposes a task into independent subtasks, assigns each an exclusive set of files, and runs up to 5 workers simultaneously. Falls back to sequential autopilot when a task isn't cleanly parallelizable.
+Thin router. Coordinated parallel implementation with per-worker git worktrees, decomposition, and a merge phase is what the `team` skill provides — this skill routes there and keeps only its file-ownership partitioning heuristic (3+ independent components with clear file boundaries → one worker per component).
 
 ## When to Use
 
-- Multi-component systems (frontend + backend + database) that can be split along clear file boundaries
-- Large refactorings spanning independent modules
-- Parallel test or docs generation across unrelated files
-- Multi-service architectures where each service can be worked on independently
+- A task splits into 3+ independent components with clear file boundaries (multi-service refactors, parallel feature additions, full-stack builds)
+
+Not for: single-component tasks (use `executor`/`flow`) or tasks needing shared-file coordination (use `team` directly).
 
 ---

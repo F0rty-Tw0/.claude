@@ -82,6 +82,8 @@ Agent(subagent_type="debugger", description="Fix race condition failures",
 
 Pick the specific agent for the domain (`debugger`/`executor`/`test-engineer`) over `general-purpose` when one fits.
 
+**Match the model tier to each task's complexity** (don't run one tier for the whole batch): `executor` with `model="haiku"` for lookups/trivial edits, `executor` with `model="sonnet"` for standard implementation, `deep-executor` with `model="opus"` for complex analysis or multi-file refactors. Opus on a one-line fix is wasted cost; haiku on a hard refactor stalls.
+
 ### 4. Review and Integrate
 
 When agents return:

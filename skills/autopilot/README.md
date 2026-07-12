@@ -1,6 +1,6 @@
 # autopilot
 
-Takes a brief product idea and autonomously handles the full lifecycle: requirements analysis, technical design, planning, parallel implementation, QA cycling, and multi-perspective validation. Produces working, verified code from a 2-3 line description.
+Thin router / alias. Autopilot no longer hand-rolls its own lifecycle -- it routes end-to-end autonomous requests to `flow` in autonomous mode (`flow --auto`), which drives idea -> plan -> execute -> QA -> review -> verify -> finish via the native Workflow tool. Its old phase gates are already covered 1:1 by flow's Stage Gates, so nothing is duplicated.
 
 ## When to Use
 
