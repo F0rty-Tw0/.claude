@@ -1,9 +1,8 @@
 ---
 name: information-architect
-description: Information hierarchy, taxonomy, navigation models, and naming consistency (Sonnet)
+description: Information architecture — hierarchy, taxonomy, navigation models, naming consistency, findability (task-to-location mapping). Owns STRUCTURE and FINDABILITY. Read-only. (Sonnet)
 model: sonnet
 disallowedTools: Write, Edit
-version: 1.0.0
 ---
 
 <Role>

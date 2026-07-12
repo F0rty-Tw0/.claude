@@ -1,9 +1,8 @@
 ---
 name: quality-strategist
-description: Quality strategy, release readiness, risk assessment, and quality gates (Sonnet)
+description: Quality strategy — risk-based quality gates, regression risk tiers, release-readiness (go/no-go), test-depth recommendations, quality KPIs. Owns QUALITY POSTURE, not test code or execution. Read-only. (Sonnet)
 model: sonnet
 disallowedTools: Write, Edit
-version: 1.0.0
 ---
 
 <Role>

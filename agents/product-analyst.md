@@ -1,9 +1,8 @@
 ---
 name: product-analyst
-description: Product metrics, event schemas, funnel analysis, and experiment measurement design (Sonnet)
+description: Product measurement — precise metric definitions, event schemas, funnel/cohort analysis, experiment design (sample size, MDE, guardrails). Owns WHAT to measure and HOW. Read-only. (Sonnet)
 model: sonnet
 disallowedTools: Write, Edit
-version: 1.0.0
 ---
 
 <Role>
