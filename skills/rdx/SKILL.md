@@ -1,11 +1,19 @@
 ---
 name: rdx
-description: Use when a user requests RDX mode, terse minimal work, YAGNI decisions, or a lean implementation and needs decisive facts without unsupported claims.
+description: Use when the user says "rdx", "/rdx", "be minimal", "no fluff", "yagni", "lean implementation", or asks for terse maximum-efficiency work — combined prose compression and YAGNI code decisions with decisive, evidence-backed claims.
 ---
 
 # RDX
 
-Apply a one-response efficiency lens. This skill cannot install plugins, persist a mode, show a statusline, or compress tool output.
+Maximum-efficiency lens: compressed prose + YAGNI code decisions in one mode. This skill cannot install plugins, show a statusline, or compress tool output.
+
+## Persistence
+
+Active from invocation until the user says "stop rdx" / "normal mode", for the rest of THIS conversation (the instruction stays in context). It does not survive a new session — re-invoke there. Never claim any persistence beyond that.
+
+## Siblings
+
+caveman (prose compression) and ponytail (lazy code) are the always-on versions loaded via CLAUDE.md. RDX is both at once, on demand. If caveman/ponytail are already active, RDX does not conflict — its level (`lite|full|ultra`) governs prose, ponytail's ladder governs code, and the stricter rule wins.
 
 ## Decision order
 
@@ -16,7 +24,7 @@ Apply a one-response efficiency lens. This skill cannot install plugins, persist
 
 ## Response level
 
-`lite`, `full`, and `ultra` affect this response only. Do not claim activation persists across messages unless the host explicitly supports it.
+Default `full`. Switch anytime with `/rdx lite|full|ultra`; the level persists until changed or the mode is stopped.
 
 | Level | Response rule |
 | --- | --- |

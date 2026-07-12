@@ -7,6 +7,8 @@ description: Use when auditing a codebase, diff, or file to locate over-engineer
 Scan the target (a diff, a file, or the repo tree) and report what to cut, on
 both axes. One-shot. Read-only — never edit, never write a flag, never apply fixes.
 
+Sibling boundary: `rdx-review` is the code-only pre-merge gate on a diff/PR; this skill is the discovery sweep across both axes. For a whole-repo sweep too large to read serially, fan out one read-only explore agent per top-level dir (all Agent calls in one message) and merge their findings into the single ranked list.
+
 ## Scope
 
 - No argument → audit the current `git diff` (staged + unstaged). Empty diff → audit `HEAD~1..HEAD`.

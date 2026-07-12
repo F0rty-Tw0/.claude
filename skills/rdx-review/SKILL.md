@@ -5,7 +5,9 @@ description: Use when reviewing a diff, pull request, or file to identify over-e
 
 # RDX Review
 
-Review the diff or file for what could be deleted or simplified.
+Review the diff or file for what could be deleted or simplified. Code axis only, pre-merge gate.
+
+Sibling boundary: `rdx-audit` is the two-axis discovery sweep (code + prose, file/dir/repo-wide, ranked cut list). `rdx-review` is the focused code-lens pass on a diff or PR before it merges. Reviewing prose bloat too? Use `rdx-audit`.
 
 ## What to flag
 
@@ -25,10 +27,10 @@ Review the diff or file for what could be deleted or simplified.
 
 ## Output format
 
-One finding per line. No preamble, no praise.
+One finding per line, ranked biggest deletion first. No preamble, no praise.
 
 ```
-path:line: [code|prose] <what's over-built>. <the lazier replacement>.
+path:line: <what's over-built>. <the lazier replacement>. (~N lines)
 ```
 
 End with a one-line verdict:
