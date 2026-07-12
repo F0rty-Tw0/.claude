@@ -1,7 +1,6 @@
 ---
 name: ultrapilot
-description: Parallel autopilot with file ownership partitioning
-version: 1.0.0
+description: Use when a task has 3+ independent components with clear file boundaries (multi-service refactors, parallel feature additions, full-stack builds) and you want them implemented simultaneously by multiple workers instead of sequentially.
 ---
 
 # Ultrapilot Skill
@@ -17,7 +16,7 @@ assigns non-overlapping file sets to each worker, and runs them simultaneously.
 
 1. **Decomposes** task into parallel-safe components
 2. **Partitions** files with exclusive ownership (no conflicts)
-3. **Spawns** up to 20 parallel workers
+3. **Spawns** up to 5 parallel workers
 4. **Coordinates** progress via TaskOutput
 5. **Integrates** changes with sequential handling of shared files
 6. **Validates** full system integrity
@@ -109,44 +108,13 @@ backend frontend database api-docs tests
 
 **Method:** AI-Powered Task Decomposition
 
-Ultrapilot uses the `decomposer` module to generate intelligent task breakdowns:
-
-```typescript
-import {
-  generateDecompositionPrompt,
-  parseDecompositionResult,
-  validateFileOwnership,
-  extractSharedFiles,
-} from "src/hooks/ultrapilot/decomposer";
-
-// 1. Generate prompt for Architect
-const prompt = generateDecompositionPrompt(task, codebaseContext, {
-  maxSubtasks: 5,
-  preferredModel: "sonnet",
-});
-
-// 2. Call Architect agent
-const response = await Task({
-  subagent_type: "architect",
-  model: "opus",
-  prompt,
-});
-
-// 3. Parse structured result
-const result = parseDecompositionResult(response);
-
-// 4. Validate no file conflicts
-const { isValid, conflicts } = validateFileOwnership(result.subtasks);
-
-// 5. Extract shared files from subtasks
-const finalResult = extractSharedFiles(result);
-```
+Ultrapilot dispatches the Architect agent to analyze the task and produce a structured decomposition.
 
 **Process:**
 
 1. Analyze task requirements via Architect agent
 2. Identify independent components with file boundaries
-3. Assign agent type (executor-low/executor/executor-high) per complexity
+3. Assign agent type (executor/deep-executor) per complexity
 4. Map dependencies between subtasks (blockedBy)
 5. Generate parallel execution groups
 6. Identify shared files (handled by coordinator)
@@ -177,7 +145,7 @@ const finalResult = extractSharedFiles(result);
       "description": "Wire frontend to backend",
       "files": ["src/client/api.ts"],
       "blockedBy": ["1", "2"],
-      "agentType": "executor-low",
+      "agentType": "executor",
       "model": "haiku"
     }
   ],
@@ -648,19 +616,3 @@ rm -f .claude/local/state/ultrapilot-state.json
 rm -f .claude/local/state/ultrapilot-ownership.json
 ```
 
-## Future Enhancements
-
-**Planned for v4.1:**
-
-- Dynamic worker scaling (start with 2, spawn more if needed)
-- Predictive conflict detection (pre-integration analysis)
-- Worker-to-worker communication (for rare dependencies)
-- Speculative execution (optimistic parallelism)
-- Resume from integration phase (if validation fails)
-
-**Planned for v4.2:**
-
-- Multi-machine distribution (if Claude Code supports)
-- Real-time progress dashboard
-- Worker performance analytics
-- Auto-tuning of decomposition strategy

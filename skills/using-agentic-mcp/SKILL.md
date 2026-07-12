@@ -1,6 +1,6 @@
 ---
 name: using-agentic-mcp
-description: Use when an AI agent needs a repeatable workflow to get a real answer or compare providers through agentic-mcp, with discovery, proof, and CLI fallback steps.
+description: Use when getting a real answer from an external model via agentic-mcp, comparing multiple providers on the same prompt, resuming a multi-turn provider session, or reviewing agentic-mcp usage/latency/success metrics.
 ---
 
 # Using agentic-mcp
@@ -16,8 +16,6 @@ Use this skill when the goal is a working outcome: get a real answer from the pr
 - Using one repeatable workflow for MCP tools and CLI fallback
 - Resuming or inspecting multi-turn provider sessions
 - Reviewing usage, latency, and success metrics
-
-Do NOT use for: general skill authoring (`skills-writing`), non-agentic-mcp MCP servers.
 
 Do NOT use for: general skill authoring (`skills-writing`), non-agentic-mcp MCP servers.
 
@@ -123,21 +121,7 @@ npx agentic-mcp provider_metrics
 
 ## CLI Fallback
 
-When MCP tools are unavailable, use the CLI directly:
-
-```bash
-npx agentic-mcp list_providers
-npx agentic-mcp ping_claude
-npx agentic-mcp help_claude
-npx agentic-mcp ask_claude "Review this file" --file src/setup/common/skill-content.ts
-npx agentic-mcp ask_claude "Summarize the risks" --context "Focus on edge cases"
-npx agentic-mcp ask_claude "Show progress while reasoning" --stream-live
-npx agentic-mcp ask_claude "Fix this bug" --async
-npx agentic-mcp ask_claude --job-id job-123
-npx agentic-mcp sessions_claude
-npx agentic-mcp ask_all "Compare TypeScript validation libraries" --providers claude,gemini
-npx agentic-mcp provider_metrics
-```
+When MCP tools are unavailable, prefix any command above with `npx agentic-mcp` and run it directly in the shell (e.g. `npx agentic-mcp ask_claude "..."`).
 
 ## Common Mistakes
 

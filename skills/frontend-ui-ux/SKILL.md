@@ -1,12 +1,11 @@
 ---
 name: frontend-ui-ux
-description: Designer-developer for UI/UX work
-version: 1.0.0
+description: Use when the user requests frontend UI/UX work -- designing or implementing components, responsive layouts, design-system consistency, or accessibility compliance.
 ---
 
 # Frontend UI/UX Command
 
-Routes to the designer agent or Copilot MCP for frontend work.
+Routes to the designer agent or agentic-mcp for frontend work.
 
 ## Usage
 
@@ -18,13 +17,12 @@ frontend-ui-ux <design task>
 
 ### Preferred: MCP Direct
 
-Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools. Use `mcp__copilot__ask-copilot` with
-`agent_role: "designer"` for design tasks. If ToolSearch finds no MCP tools, use the Claude agent fallback below.
+Before first MCP tool use, call `ToolSearch("select:mcp__agentic-mcp__ask_codex")` to load the deferred tool. Use `mcp__agentic-mcp__ask_codex` (or `ask_claude`) with the design task, passing relevant component/style files via `--file`. If agentic-mcp is unavailable, use the Claude agent fallback below.
 
 ### Fallback: Claude Agent
 
 ```
-Task(subagent_type="designer", model="sonnet", prompt="{{ARGUMENTS}}")
+Agent(subagent_type="designer", model="sonnet", prompt="<design task>")
 ```
 
 ## Capabilities
@@ -33,5 +31,3 @@ Task(subagent_type="designer", model="sonnet", prompt="{{ARGUMENTS}}")
 - Responsive layouts
 - Design system consistency
 - Accessibility compliance
-
-Task: {{ARGUMENTS}}

@@ -1,8 +1,7 @@
 ---
 name: skill
-description: Manage local skills - list, add, remove, search, edit, setup wizard
+description: Use when managing local skills - add, remove, search, edit, or scaffold a new skill.
 argument-hint: "<command> [args]"
-version: 1.0.0
 ---
 
 # Skill Management CLI
@@ -504,183 +503,60 @@ Quick command to scan both skill directories (subset of `/skill setup`).
 
 ## Skill Templates
 
-When creating skills via `/skill add` or `/skill setup`, offer quick templates for common skill types:
+When creating skills via `/skill add` or `/skill setup`, offer one parametric template. Ask which type applies (error / workflow / pattern / integration), then fill placeholders using the row below:
 
-### Error Solution Template
+| Type       | `id` prefix   | `description` phrasing                             | `triggers` example                              | Extra section    |
+| ---------- | ------------- | ---------------------------------------------------- | ------------------------------------------------ | ----------------- |
+| Error      | `error-`      | Solution for [specific error in specific context]    | error message fragment, file path, symptom       | `## Example`      |
+| Workflow   | `workflow-`   | Process for [specific task in this codebase]         | task description, file pattern, goal keyword     | `## Gotchas`      |
+| Pattern    | `pattern-`    | Pattern for [specific use case in this codebase]     | code pattern, file type, problem domain          | `## Example` + `## Anti-Pattern` |
+| Integration| `integration-`| How [system A] integrates with [system B] in this codebase | system name, integration point, config file | `## Gotchas`      |
 
 ```markdown
 ---
-id: error-[unique-id]
-name: [Error Name]
-description: Solution for [specific error in specific context]
+id: [type-prefix][unique-id]
+name: [Name]
+description: [description phrasing from table above]
 source: conversation
-triggers: ["error message fragment", "file path", "symptom"]
+triggers: ["trigger1", "trigger2", "trigger3"]
 quality: high
 ---
 
-# [Error Name]
+# [Name]
 
 ## The Insight
 
-What is the underlying cause of this error? What principle did you discover?
+What's the key principle, cause, or non-obvious fact you discovered?
 
 ## Why This Matters
 
-What goes wrong if you don't know this? What symptom led here?
+What goes wrong, fails, or breaks if you don't know this?
 
 ## Recognition Pattern
 
-How do you know when this applies? What are the signs?
+How do you know this applies? What are the signs?
 
-- Error message: "[exact error]"
-- File: [specific file path]
-- Context: [when does this occur]
+- [Specific symptom, file, or context]
+- [Specific symptom, file, or context]
 
 ## The Approach
 
-Step-by-step solution:
-
-1. [Specific action with file/line reference]
-2. [Specific action with file/line reference]
+1. [Specific, actionable step with file/line reference]
+2. [Specific, actionable step with file/line reference]
 3. [Verification step]
+
+[Extra section from table above, e.g.:]
 
 ## Example
 
-\`\`\`typescript // Before (broken) [problematic code]
-
-// After (fixed) [corrected code] \`\`\`
-```
-
-### Workflow Skill Template
-
-```markdown
----
-id: workflow-[unique-id]
-name: [Workflow Name]
-description: Process for [specific task in this codebase]
-source: conversation
-triggers: ["task description", "file pattern", "goal keyword"]
-quality: high
----
-
-# [Workflow Name]
-
-## The Insight
-
-What makes this workflow different from the obvious approach?
-
-## Why This Matters
-
-What fails if you don't follow this process?
-
-## Recognition Pattern
-
-When should you use this workflow?
-
-- Task type: [specific task]
-- Files involved: [specific patterns]
-- Indicators: [how to recognize]
-
-## The Approach
-
-1. [Step with specific commands/files]
-2. [Step with specific commands/files]
-3. [Verification]
+\`\`\`typescript
+// Before (broken) [problematic code]
+// After (fixed) [corrected code]
+\`\`\`
 
 ## Gotchas
 
 - [Common mistake and how to avoid it]
-- [Edge case and how to handle it]
-```
-
-### Code Pattern Template
-
-```markdown
----
-id: pattern-[unique-id]
-name: [Pattern Name]
-description: Pattern for [specific use case in this codebase]
-source: conversation
-triggers: ["code pattern", "file type", "problem domain"]
-quality: high
----
-
-# [Pattern Name]
-
-## The Insight
-
-What's the key principle behind this pattern?
-
-## Why This Matters
-
-What problems does this pattern solve in THIS codebase?
-
-## Recognition Pattern
-
-When do you apply this pattern?
-
-- File types: [specific files]
-- Problem: [specific problem]
-- Context: [codebase-specific context]
-
-## The Approach
-
-Decision-making heuristic, not just code:
-
-1. [Principle-based step]
-2. [Principle-based step]
-
-## Example
-
-\`\`\`typescript [Illustrative example showing the principle] \`\`\`
-
-## Anti-Pattern
-
-What NOT to do and why: \`\`\`typescript [Common mistake to avoid] \`\`\`
-```
-
-### Integration Skill Template
-
-```markdown
----
-id: integration-[unique-id]
-name: [Integration Name]
-description: How [system A] integrates with [system B] in this codebase
-source: conversation
-triggers: ["system name", "integration point", "config file"]
-quality: high
----
-
-# [Integration Name]
-
-## The Insight
-
-What's non-obvious about how these systems connect?
-
-## Why This Matters
-
-What breaks if you don't understand this integration?
-
-## Recognition Pattern
-
-When are you working with this integration?
-
-- Files: [specific integration files]
-- Config: [specific config locations]
-- Symptoms: [what indicates integration issues]
-
-## The Approach
-
-How to work with this integration correctly:
-
-1. [Configuration step with file paths]
-2. [Setup step with specific details]
-3. [Verification step]
-
-## Gotchas
-
-- [Integration-specific pitfall #1]
-- [Integration-specific pitfall #2]
 ```
 
 ---
@@ -859,14 +735,6 @@ What would you like to do?
 4. **Clear Feedback:** Use checkmarks (✓), crosses (✗), arrows (→) for clarity
 5. **Scope Resolution:** Always check both user and project scopes
 6. **Validation:** Enforce naming conventions (lowercase, hyphens only)
-
----
-
-## Related Skills
-
-- `learner` - Extract a skill from current conversation
-- `note` - Save quick notes (less formal than skills)
-- `deepinit` - Generate AGENTS.md codebase hierarchy
 
 ---
 

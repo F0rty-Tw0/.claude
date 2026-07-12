@@ -1,7 +1,6 @@
 ---
 name: deepinit
-description: Deep codebase initialization with hierarchical AGENTS.md documentation
-version: 1.0.0
+description: Use when the user wants to generate or refresh hierarchical AGENTS.md documentation across a codebase, or asks to document directory purpose, structure, and conventions for AI agents.
 ---
 
 # Deep Init Skill
@@ -95,7 +94,7 @@ This creates a navigable hierarchy:
 ### Step 1: Map Directory Structure
 
 ```
-Task(subagent_type="explore", model="haiku",
+Agent(subagent_type="explore", model="haiku",
   prompt="List all directories recursively. Exclude: node_modules, .git, dist, build, __pycache__, .venv, coverage, .next, .nuxt")
 ```
 
@@ -161,12 +160,12 @@ grep -r "<!-- Parent:" --include="AGENTS.md" .
 
 ## Smart Delegation
 
-| Task               | Agent           |
-| ------------------ | --------------- |
-| Directory mapping  | `explore`       |
-| File analysis      | `architect-low` |
-| Content generation | `writer`        |
-| AGENTS.md writes   | `writer`        |
+| Task               | Agent       |
+| ------------------ | ----------- |
+| Directory mapping  | `explore`   |
+| File analysis      | `architect` |
+| Content generation | `writer`    |
+| AGENTS.md writes   | `writer`    |
 
 ## Empty Directory Handling
 
@@ -222,67 +221,11 @@ Container directory for organizing related modules.
 
 ## Example Output
 
-### Root AGENTS.md
-
-```markdown
-<!-- Generated: 2024-01-15 | Updated: 2024-01-15 -->
-
-# my-project
-
-## Purpose
-
-A web application for managing user tasks with real-time collaboration features.
-
-## Key Files
-
-| File            | Description                      |
-| --------------- | -------------------------------- |
-| `package.json`  | Project dependencies and scripts |
-| `tsconfig.json` | TypeScript configuration         |
-| `.env.example`  | Environment variable template    |
-
-## Subdirectories
-
-| Directory | Purpose                                       |
-| --------- | --------------------------------------------- |
-| `src/`    | Application source code (see `src/AGENTS.md`) |
-| `docs/`   | Documentation (see `docs/AGENTS.md`)          |
-| `tests/`  | Test suites (see `tests/AGENTS.md`)           |
-
-## For AI Agents
-
-### Working In This Directory
-
-- Always install dependencies after modifying the project manifest
-- Use TypeScript strict mode
-- Follow ESLint rules
-
-### Testing Requirements
-
-- Run tests before committing
-- Ensure >80% coverage
-
-### Common Patterns
-
-- Use barrel exports (index.ts)
-- Prefer functional components
-
-## Dependencies
-
-### External
-
-- React 18.x - UI framework
-- TypeScript 5.x - Type safety
-- Vite - Build tool
-
-<!-- MANUAL: Custom project notes can be added below -->
-```
-
-### Nested AGENTS.md
+Root AGENTS.md omits the `<!-- Parent: -->` line; every nested AGENTS.md includes it. One representative nested example:
 
 ```markdown
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2024-01-15 | Updated: 2024-01-15 -->
+<!-- Generated: 2026-07-12 | Updated: 2026-07-12 -->
 
 # components
 

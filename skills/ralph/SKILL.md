@@ -1,7 +1,6 @@
 ---
 name: ralph
-description: Self-referential loop until task completion with architect verification
-version: 1.0.0
+description: Use when a task requires guaranteed, verified completion rather than best-effort -- the user says "ralph", "don't stop", "must complete", "finish this", or "keep going until done"; work may span multiple iterations needing persistence across retries; or the task benefits from parallel execution with architect sign-off at the end.
 ---
 
 [RALPH + ULTRAWORK - ITERATION {{ITERATION}}/{{MAX}}]
@@ -43,20 +42,17 @@ evidence before allowing completion, and using tiered architect review to confir
 1. **Review progress**: Check TODO list and any prior iteration state
 2. **Continue from where you left off**: Pick up incomplete tasks
 3. **Delegate in parallel**: Route tasks to specialist agents at appropriate tiers
-   - Simple lookups: LOW tier (Haiku) -- "What does this function return?"
-   - Standard work: MEDIUM tier (Sonnet) -- "Add error handling to this module"
-   - Complex analysis: HIGH tier (Opus) -- "Debug this race condition"
+   - Simple lookups: `executor` with `model: "haiku"` override -- "What does this function return?"
+   - Standard work: `executor` (Sonnet, default) -- "Add error handling to this module"
+   - Complex analysis: `deep-executor` (Opus) -- "Debug this race condition"
 4. **Run long operations in background**: Builds, installs, test suites use `run_in_background: true`
 5. **Verify completion with fresh evidence**:
    a. Identify what command proves the task is complete
    b. Run verification (test, build, lint)
    c. Read the output -- confirm it actually passed
    d. Check: zero pending/in_progress TODO items
-6. **Architect verification** (tiered):
-   - <5 files, <100 lines with full tests: STANDARD tier minimum (architect-medium / Sonnet)
-   - Standard changes: STANDARD tier (architect-medium / Sonnet)
-   - >20 files or security/architectural changes: THOROUGH tier (architect / Opus)
-   - Ralph floor: always at least STANDARD, even for small changes
+6. **Architect verification**: Spawn `architect` (Opus) to verify the implementation against requirements. This is a
+   hard floor -- always run at least one architect verification pass, even for small changes.
 7. **On approval**: If the work was done on a dedicated branch or worktree, invoke `Skill("finishing-a-development-branch")` to integrate and clean up. Then run `cancel` to cleanly exit and clean up all state files
 8. **On rejection**: Fix the issues raised, then re-verify at the same tier
 </Steps>
@@ -64,20 +60,20 @@ evidence before allowing completion, and using tiered architect review to confir
 <Tool_Usage>
 
 - Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools
-- Use `ask-copilot` with `agent_role: "architect"` for verification cross-checks when changes are security-sensitive,
-  architectural, or involve complex multi-system integration
-- Skip Copilot consultation for simple feature additions, well-tested changes, or time-critical verification
-- If ToolSearch finds no MCP tools or Copilot is unavailable, proceed with architect agent verification alone -- never
-  block on external tools
+- Use `mcp__agentic-mcp__ask_codex` for verification cross-checks when changes are security-sensitive, architectural, or
+  involve complex multi-system integration
+- Skip external consultation for simple feature additions, well-tested changes, or time-critical verification
+- If ToolSearch finds no MCP tools or agentic-mcp is unavailable, proceed with architect agent verification alone --
+  never block on external tools
 - Use `state_write` / `state_read` for ralph mode state persistence between iterations </Tool_Usage>
 
 <Examples>
 <Good>
 Correct parallel delegation:
 ```
-Task(subagent_type="executor-low", model="haiku", prompt="Add type export for UserConfig")
-Task(subagent_type="executor", model="sonnet", prompt="Implement the caching layer for API responses")
-Task(subagent_type="executor-high", model="opus", prompt="Refactor auth module to support OAuth2 flow")
+Agent(subagent_type="executor", model="haiku", prompt="Add type export for UserConfig")
+Agent(subagent_type="executor", prompt="Implement the caching layer for API responses")
+Agent(subagent_type="deep-executor", prompt="Refactor auth module to support OAuth2 flow")
 ```
 Why good: Three independent tasks fired simultaneously at appropriate tiers.
 </Good>
@@ -88,7 +84,7 @@ Correct verification before completion:
 1. Run: npm test           → Output: "42 passed, 0 failed"
 2. Run: npm run build      → Output: "Build succeeded"
 3. Run: lsp_diagnostics    → Output: 0 errors
-4. Spawn architect-medium  → Verdict: "APPROVED"
+4. Spawn architect          → Verdict: "APPROVED"
 5. Run cancel
 ```
 Why good: Fresh evidence at each step, architect verification, then clean exit.
@@ -103,9 +99,9 @@ Why bad: Uses "should" and "look good" -- no fresh test/build output, no archite
 <Bad>
 Sequential execution of independent tasks:
 ```
-Task(executor-low, "Add type export") → wait →
-Task(executor, "Implement caching") → wait →
-Task(executor-high, "Refactor auth")
+Agent(subagent_type="executor", prompt="Add type export") → wait →
+Agent(subagent_type="executor", prompt="Implement caching") → wait →
+Agent(subagent_type="deep-executor", prompt="Refactor auth")
 ```
 Why bad: These are independent tasks that should run in parallel, not sequentially.
 </Bad>
@@ -128,7 +124,7 @@ Why bad: These are independent tasks that should run in parallel, not sequential
 - [ ] Fresh test run output shows all tests pass
 - [ ] Fresh build output shows success
 - [ ] lsp_diagnostics shows 0 errors on affected files
-- [ ] Architect verification passed (STANDARD tier minimum)
+- [ ] Architect verification passed
 - [ ] `cancel` run for clean state cleanup </Final_Checklist>
 
 <Advanced>

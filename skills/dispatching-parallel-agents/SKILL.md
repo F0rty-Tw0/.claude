@@ -1,6 +1,6 @@
 ---
 name: dispatching-parallel-agents
-description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+description: Use when facing 2+ independent failures or tasks that can be worked on without shared state or sequential dependencies - multiple unrelated test failures, parallel investigation across different subsystems, or independent bugs in different files.
 ---
 
 # Dispatching Parallel Agents
@@ -69,12 +69,15 @@ Each agent gets:
 
 ### 3. Dispatch in Parallel
 
-```typescript
-// In Claude Code / AI environment
-Task('Fix agent-tool-abort.test.ts failures');
-Task('Fix batch-completion-behavior.test.ts failures');
-Task('Fix tool-approval-race-conditions.test.ts failures');
-// All three run concurrently
+Send all three in one message so they run concurrently:
+
+```
+Agent(subagent_type="general-purpose", description="Fix abort test failures",
+      prompt="Fix agent-tool-abort.test.ts failures")
+Agent(subagent_type="general-purpose", description="Fix batch completion failures",
+      prompt="Fix batch-completion-behavior.test.ts failures")
+Agent(subagent_type="general-purpose", description="Fix race condition failures",
+      prompt="Fix tool-approval-race-conditions.test.ts failures")
 ```
 
 ### 4. Review and Integrate
@@ -164,7 +167,7 @@ Agent 3 → Fix tool-approval-race-conditions.test.ts
 
 **Integration:** All fixes independent, no conflicts, full suite green
 
-**Time saved:** 3 problems solved in parallel vs sequentially
+**Impact:** 6 failures across 3 files, 3 agents dispatched in parallel, all investigations completed concurrently, all fixes integrated with zero conflicts between agent changes.
 
 ## Key Benefits
 
@@ -181,11 +184,3 @@ After agents return:
 2. **Check for conflicts** - Did agents edit same code?
 3. **Run full suite** - Verify all fixes work together (`pnpm test`)
 4. **Spot check** - Agents can make systematic errors
-
-## Real-World Impact
-
-- 6 failures across 3 files
-- 3 agents dispatched in parallel
-- All investigations completed concurrently
-- All fixes integrated successfully
-- Zero conflicts between agent changes

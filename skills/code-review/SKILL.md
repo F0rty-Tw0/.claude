@@ -1,7 +1,6 @@
 ---
 name: code-review
-description: Run a comprehensive code review
-version: 1.0.0
+description: Use when the user requests "review this code" or "code review", before merging a pull request, after implementing a major feature, or when a quality assessment of code changes is wanted.
 ---
 
 # Code Review Skill
@@ -25,12 +24,8 @@ Delegates to the `code-reviewer` agent (Opus model) for deep analysis:
    - Run `git diff` to find changed files
    - Determine scope of review (specific files or entire PR)
 
-2. **Review Categories**
-   - **Security** - Hardcoded secrets, injection risks, XSS, CSRF
-   - **Code Quality** - Function size, complexity, nesting depth
-   - **Performance** - Algorithm efficiency, N+1 queries, caching
-   - **Best Practices** - Naming, documentation, error handling
-   - **Maintainability** - Duplication, coupling, testability
+2. **Review Categories**: Security, Code Quality, Performance, Best Practices, Maintainability -- see the full
+   `## Review Checklist` below for the concrete items in each
 
 3. **Severity Rating**
    - **CRITICAL** - Security vulnerability (must fix before merge)
@@ -46,7 +41,7 @@ Delegates to the `code-reviewer` agent (Opus model) for deep analysis:
 ## Agent Delegation
 
 ```
-Task(
+Agent(
   subagent_type="code-reviewer",
   model="opus",
   prompt="CODE REVIEW TASK
@@ -55,14 +50,7 @@ Review code changes for quality, security, and maintainability.
 
 Scope: [git diff or specific files]
 
-Review Checklist:
-- Security vulnerabilities (OWASP Top 10)
-- Code quality (complexity, duplication)
-- Performance issues (N+1, inefficient algorithms)
-- Best practices (naming, documentation, error handling)
-- Maintainability (coupling, testability)
-
-Output: Code review report with:
+Apply the Review Checklist below. Output a code review report with:
 - Files reviewed count
 - Issues by severity (CRITICAL, HIGH, MEDIUM, LOW)
 - Specific file:line locations
@@ -73,12 +61,12 @@ Output: Code review report with:
 
 ## External Model Consultation (Preferred)
 
-The code-reviewer agent SHOULD consult Copilot for cross-validation.
+The code-reviewer agent SHOULD consult `mcp__agentic-mcp__review_codex` for cross-validation.
 
 ### Protocol
 
 1. **Form your OWN review FIRST** - Complete the review independently
-2. **Consult for validation** - Cross-check findings with Copilot
+2. **Consult for validation** - Cross-check findings with `review_codex`
 3. **Critically evaluate** - Never blindly adopt external findings
 4. **Graceful fallback** - Never block if tools unavailable
 
@@ -98,10 +86,9 @@ The code-reviewer agent SHOULD consult Copilot for cross-validation.
 
 ### Tool Usage
 
-Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools. Use `mcp__copilot__ask-copilot` with
-`agent_role: "code-reviewer"`. If ToolSearch finds no MCP tools, fall back to the `code-reviewer` Claude agent.
-
-**Note:** Copilot calls can take up to 1 hour. Consider the review timeline before consulting.
+Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools. Use `mcp__agentic-mcp__review_codex`
+for the cross-check. If ToolSearch finds no MCP tools or agentic-mcp is unavailable, fall back to the `code-reviewer`
+Claude agent alone -- never block on external tools.
 
 ## Output Format
 
@@ -122,16 +109,6 @@ HIGH (3)
    Issue: User input not sanitized before SQL query
    Risk: SQL injection vulnerability
    Fix: Use parameterized queries or ORM
-
-2. src/components/UserProfile.tsx:89
-   Issue: Password displayed in plain text in logs
-   Risk: Credential exposure
-   Fix: Remove password from log statements
-
-3. src/utils/validation.ts:15
-   Issue: Email regex allows invalid formats
-   Risk: Accepts malformed emails
-   Fix: Use proven email validation library
 
 MEDIUM (7)
 ----------

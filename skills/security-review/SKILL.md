@@ -1,7 +1,6 @@
 ---
 name: security-review
-description: Run a comprehensive security review on code
-version: 1.0.0
+description: Use when the user requests "security review" or "security audit", after writing code that handles user input, after adding new API endpoints, after modifying authentication/authorization logic, before deploying to production, or after adding external dependencies.
 ---
 
 # Security Review Skill
@@ -63,7 +62,7 @@ Delegates to the `security-reviewer` agent (Opus model) for deep security analys
 ## Agent Delegation
 
 ```
-Task(
+Agent(
   subagent_type="security-reviewer",
   model="opus",
   prompt="SECURITY REVIEW TASK
@@ -90,12 +89,12 @@ Output: Security review report with:
 
 ## External Model Consultation (Preferred)
 
-The security-reviewer agent SHOULD consult Copilot for cross-validation.
+The security-reviewer agent SHOULD consult `mcp__agentic-mcp__ask_codex` for cross-validation.
 
 ### Protocol
 
 1. **Form your OWN security analysis FIRST** - Complete the review independently
-2. **Consult for validation** - Cross-check findings with Copilot
+2. **Consult for validation** - Cross-check findings with `ask_codex`
 3. **Critically evaluate** - Never blindly adopt external findings
 4. **Graceful fallback** - Never block if tools unavailable
 
@@ -116,8 +115,9 @@ The security-reviewer agent SHOULD consult Copilot for cross-validation.
 
 ### Tool Usage
 
-Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools. Use `mcp__copilot__ask-copilot` with
-`agent_role: "security-reviewer"`. If ToolSearch finds no MCP tools, fall back to the `security-reviewer` Claude agent.
+Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools. Use `mcp__agentic-mcp__ask_codex` for
+the cross-check. If ToolSearch finds no MCP tools or agentic-mcp is unavailable, fall back to the `security-reviewer`
+Claude agent alone -- never block on external tools.
 
 **Note:** Security second opinions are high-value. Consider consulting for CRITICAL/HIGH findings.
 
@@ -272,7 +272,7 @@ difficult exploitation **LOW** - Best practice violation or minor security conce
 /pipeline security "review authentication module"
 ```
 
-Uses: explore → security-reviewer → executor → security-reviewer-low (re-verify)
+Uses: explore → security-reviewer → executor → security-reviewer (re-verify)
 
 **With Team:**
 

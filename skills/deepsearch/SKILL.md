@@ -1,7 +1,6 @@
 ---
 name: deepsearch
-description: Thorough codebase search
-version: 1.0.0
+description: Use when locating code, usages, or patterns across many files and a single grep isn't enough -- thorough codebase search across components, utils, services, and hooks with a synthesized map of primary and related locations.
 ---
 
 # Deep Search Mode

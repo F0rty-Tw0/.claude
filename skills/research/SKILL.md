@@ -1,8 +1,7 @@
 ---
 name: research
-description: Orchestrate parallel scientist agents for comprehensive analysis with AUTO mode
+description: Use when a research goal or question needs to be decomposed into parallel investigations run by multiple agents, when comprehensive multi-angle analysis of a codebase or topic requires cross-validated findings, or when the user wants fully autonomous multi-stage investigation (AUTO mode) that ends in a synthesized report.
 argument-hint: <research goal>
-version: 1.0.0
 ---
 
 # Research Skill
@@ -18,6 +17,9 @@ Research is a multi-stage workflow that decomposes complex research goals into p
 2. **Execution** - Run parallel scientist agents on each stage
 3. **Verification** - Cross-validate findings, check consistency
 4. **Synthesis** - Aggregate results into comprehensive report
+
+Heavy reference material (tag-extraction regex patterns, the full report template, figure protocol) lives in
+`references/extraction-and-templates.md` and is loaded only when actually extracting findings or generating a report.
 
 ## Usage Examples
 
@@ -63,17 +65,17 @@ When given a research goal, decompose into 3-7 independent stages:
 
 ### Parallel Scientist Invocation
 
-Fire independent stages in parallel via Task tool:
+Fire independent stages in parallel via the Agent tool:
 
 ```
 // Stage 1 - Simple data gathering
-Task(subagent_type="scientist", model="haiku", prompt="[RESEARCH_STAGE:1] Investigate...")
+Agent(subagent_type="scientist", model="haiku", prompt="[RESEARCH_STAGE:1] Investigate...")
 
 // Stage 2 - Standard analysis
-Task(subagent_type="scientist", model="sonnet", prompt="[RESEARCH_STAGE:2] Analyze...")
+Agent(subagent_type="scientist", model="sonnet", prompt="[RESEARCH_STAGE:2] Analyze...")
 
 // Stage 3 - Complex reasoning
-Task(subagent_type="scientist-high", model="opus", prompt="[RESEARCH_STAGE:3] Deep analysis of...")
+Agent(subagent_type="scientist-high", model="opus", prompt="[RESEARCH_STAGE:3] Deep analysis of...")
 ```
 
 ### Smart Model Routing
@@ -81,7 +83,7 @@ Task(subagent_type="scientist-high", model="opus", prompt="[RESEARCH_STAGE:3] De
 **CRITICAL: Always pass `model` parameter explicitly!**
 
 | Task Complexity   | Agent                     | Model  | Use For                                                              |
-| ----------------- | ------------------------- | ------ | -------------------------------------------------------------------- |
+| ----------------- | ------------------------- | ------ | --------------------------------------------------------------------- |
 | Data gathering    | `scientist` (model=haiku) | haiku  | File enumeration, pattern counting, simple lookups                   |
 | Standard analysis | `scientist`               | sonnet | Code analysis, pattern detection, documentation review               |
 | Complex reasoning | `scientist-high`          | opus   | Architecture analysis, cross-cutting concerns, hypothesis validation |
@@ -89,7 +91,7 @@ Task(subagent_type="scientist-high", model="opus", prompt="[RESEARCH_STAGE:3] De
 ### Routing Decision Guide
 
 | Research Task               | Tier   | Example Prompt                                         |
-| --------------------------- | ------ | ------------------------------------------------------ |
+| ---------------------------- | ------ | -------------------------------------------------------- |
 | "Count occurrences of X"    | LOW    | "Count all usages of useState hook"                    |
 | "Find all files matching Y" | LOW    | "List all test files in the project"                   |
 | "Analyze pattern Z"         | MEDIUM | "Analyze error handling patterns in API routes"        |
@@ -103,7 +105,7 @@ After parallel execution completes, verify findings:
 
 ```
 // Cross-validation stage
-Task(subagent_type="scientist", model="sonnet", prompt="
+Agent(subagent_type="scientist", model="sonnet", prompt="
 [RESEARCH_VERIFICATION]
 Cross-validate these findings for consistency:
 
@@ -140,7 +142,7 @@ Pending stages: {{PENDING_STAGES}}
 ### Promise Tags
 
 | Tag                           | Meaning                        | When to Use                                      |
-| ----------------------------- | ------------------------------ | ------------------------------------------------ |
+| ------------------------------ | ------------------------------- | -------------------------------------------------- |
 | `[PROMISE:RESEARCH_COMPLETE]` | Research finished successfully | All stages done, verified, report generated      |
 | `[PROMISE:RESEARCH_BLOCKED]`  | Cannot proceed                 | Missing data, access issues, circular dependency |
 
@@ -184,9 +186,9 @@ When stages analyze different data sources:
 
 ```
 // All fire simultaneously
-Task(subagent_type="scientist", model="haiku", prompt="[STAGE:1] Analyze src/api/...")
-Task(subagent_type="scientist", model="haiku", prompt="[STAGE:2] Analyze src/utils/...")
-Task(subagent_type="scientist", model="haiku", prompt="[STAGE:3] Analyze src/components/...")
+Agent(subagent_type="scientist", model="haiku", prompt="[STAGE:1] Analyze src/api/...")
+Agent(subagent_type="scientist", model="haiku", prompt="[STAGE:2] Analyze src/utils/...")
+Agent(subagent_type="scientist", model="haiku", prompt="[STAGE:3] Analyze src/components/...")
 ```
 
 ### Hypothesis Battery (Parallel)
@@ -195,9 +197,9 @@ When testing multiple hypotheses:
 
 ```
 // Test hypotheses simultaneously
-Task(subagent_type="scientist", model="sonnet", prompt="[HYPOTHESIS:A] Test if caching improves...")
-Task(subagent_type="scientist", model="sonnet", prompt="[HYPOTHESIS:B] Test if batching reduces...")
-Task(subagent_type="scientist", model="sonnet", prompt="[HYPOTHESIS:C] Test if lazy loading helps...")
+Agent(subagent_type="scientist", model="sonnet", prompt="[HYPOTHESIS:A] Test if caching improves...")
+Agent(subagent_type="scientist", model="sonnet", prompt="[HYPOTHESIS:B] Test if batching reduces...")
+Agent(subagent_type="scientist", model="sonnet", prompt="[HYPOTHESIS:C] Test if lazy loading helps...")
 ```
 
 ### Cross-Validation (Sequential)
@@ -209,7 +211,7 @@ When verification depends on all findings:
 [stages complete]
 
 // Then sequential verification
-Task(subagent_type="scientist-high", model="opus", prompt="
+Agent(subagent_type="scientist-high", model="opus", prompt="
 [CROSS_VALIDATION]
 Validate consistency across all findings:
 - Finding 1: ...
@@ -284,7 +286,7 @@ Batch 2: Stages 6-7 (parallel)
 ### Session Commands
 
 | Command                        | Action                                   |
-| ------------------------------ | ---------------------------------------- |
+| -------------------------------- | ------------------------------------------ |
 | `research status`              | Show current session progress            |
 | `research resume`              | Resume most recent interrupted session   |
 | `research resume <session-id>` | Resume specific session                  |
@@ -292,176 +294,12 @@ Batch 2: Stages 6-7 (parallel)
 | `research report <session-id>` | Generate/regenerate report               |
 | `research cancel`              | Cancel current session (preserves state) |
 
-## Tag Extraction
+## Tag Extraction and Report Generation
 
-Scientists use structured tags for findings. Extract them with these patterns:
-
-### Finding Tags
-
-```
-[FINDING:<id>] <title>
-<evidence and analysis>
-[/FINDING]
-
-[EVIDENCE:<finding-id>]
-- File: <path>
-- Lines: <range>
-- Content: <relevant code/text>
-[/EVIDENCE]
-
-[CONFIDENCE:<level>] # HIGH | MEDIUM | LOW
-<reasoning for confidence level>
-```
-
-### Extraction Regex Patterns
-
-```javascript
-// Finding extraction
-const findingPattern = /\[FINDING:(\w+)\]\s*(.*?)\n([\s\S]*?)\[\/FINDING\]/g;
-
-// Evidence extraction
-const evidencePattern = /\[EVIDENCE:(\w+)\]([\s\S]*?)\[\/EVIDENCE\]/g;
-
-// Confidence extraction
-const confidencePattern = /\[CONFIDENCE:(HIGH|MEDIUM|LOW)\]\s*(.*)/g;
-
-// Stage completion
-const stageCompletePattern = /\[STAGE_COMPLETE:(\d+)\]/;
-
-// Verification result
-const verificationPattern = /\[(VERIFIED|CONFLICTS):?(.*?)\]/;
-```
-
-### Evidence Window
-
-When extracting evidence, include context window:
-
-````
-[EVIDENCE:F1]
-- File: /src/auth/login.ts
-- Lines: 45-52 (context: 40-57)
-- Content:
-  ```typescript
-  // Lines 45-52 with 5 lines context above/below
-````
-
-[/EVIDENCE]
-
-````
-
-### Quality Validation
-
-Findings must meet quality threshold:
-
-| Quality Check | Requirement |
-|---------------|-------------|
-| Evidence present | At least 1 [EVIDENCE] per [FINDING] |
-| Confidence stated | Each finding has [CONFIDENCE] |
-| Source cited | File paths are absolute and valid |
-| Reproducible | Another agent could verify |
-
-## Report Generation
-
-### Report Template
-
-```markdown
-# Research Report: {{GOAL}}
-
-**Session ID:** {{SESSION_ID}}
-**Date:** {{DATE}}
-**Status:** {{STATUS}}
-
-## Executive Summary
-
-{{2-3 paragraph summary of key findings}}
-
-## Methodology
-
-### Research Stages
-
-| Stage | Focus | Tier | Status |
-|-------|-------|------|--------|
-{{STAGES_TABLE}}
-
-### Approach
-
-{{Description of decomposition rationale and execution strategy}}
-
-## Key Findings
-
-### Finding 1: {{TITLE}}
-
-**Confidence:** {{HIGH|MEDIUM|LOW}}
-
-{{Detailed finding with evidence}}
-
-#### Evidence
-
-{{Embedded evidence blocks}}
-
-### Finding 2: {{TITLE}}
-...
-
-## Visualizations
-
-{{FIGURES}}
-
-## Cross-Validation Results
-
-{{Verification summary, any conflicts resolved}}
-
-## Limitations
-
-- {{Limitation 1}}
-- {{Limitation 2}}
-- {{Areas not covered and why}}
-
-## Recommendations
-
-1. {{Actionable recommendation}}
-2. {{Actionable recommendation}}
-
-## Appendix
-
-### Raw Data
-
-{{Links to raw findings files}}
-
-### Session State
-
-{{Link to state.json}}
-````
-
-### Figure Embedding Protocol
-
-Scientists generate visualizations using this marker:
-
-```
-[FIGURE:path/to/figure.png]
-Caption: Description of what the figure shows
-Alt: Accessibility description
-[/FIGURE]
-```
-
-Report generator embeds figures:
-
-```markdown
-## Visualizations
-
-![Figure 1: Description](figures/figure-1.png) _Caption: Description of what the figure shows_
-
-![Figure 2: Description](figures/figure-2.png) _Caption: Description of what the figure shows_
-```
-
-### Figure Types
-
-| Type                 | Use For              | Generated By   |
-| -------------------- | -------------------- | -------------- |
-| Architecture diagram | System structure     | scientist-high |
-| Flow chart           | Process flows        | scientist      |
-| Dependency graph     | Module relationships | scientist      |
-| Timeline             | Sequence of events   | scientist      |
-| Comparison table     | A vs B analysis      | scientist      |
+Scientists report findings via `[FINDING]`/`[EVIDENCE]`/`[CONFIDENCE]` tags, and the final report follows a fixed
+template with a figure-embedding protocol. The full tag grammar, extraction regexes, quality-validation checklist,
+and report/figure templates are in `references/extraction-and-templates.md` - load that file when parsing scientist
+output or assembling `report.md`.
 
 ## Configuration
 

@@ -1,8 +1,7 @@
 ---
 name: external-context
-description: Invoke parallel external-researcher agents for external web searches and documentation lookup
+description: Use when a task needs external documentation, API references, library or framework research, or web information beyond what's in the codebase, or when comparing external libraries, tools, or approaches requires current, sourced information from the web rather than training-data recall.
 argument-hint: <search query or topic>
-version: 1.0.0
 ---
 
 # External Context Skill
@@ -55,12 +54,12 @@ Given a query, decompose into 2-5 independent search facets:
 
 ### Parallel Agent Invocation
 
-Fire independent facets in parallel via Task tool:
+Fire independent facets in parallel via the Agent tool (send all calls in one message so they run concurrently):
 
 ```
-Task(subagent_type="external-researcher", model="sonnet", prompt="Search for: <facet 1 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
+Agent(subagent_type="external-researcher", model="sonnet", prompt="Search for: <facet 1 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
 
-Task(subagent_type="external-researcher", model="sonnet", prompt="Search for: <facet 2 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
+Agent(subagent_type="external-researcher", model="sonnet", prompt="Search for: <facet 2 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
 ```
 
 ### Synthesis

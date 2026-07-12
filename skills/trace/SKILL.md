@@ -1,7 +1,6 @@
 ---
 name: trace
-description: Show agent flow trace timeline and summary
-version: 1.0.0
+description: Use when the user wants to see what hooks, skills, agents, or tools fired this session, or asks for a session timeline
 ---
 
 # Agent Flow Trace

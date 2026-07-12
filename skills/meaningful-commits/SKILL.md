@@ -1,6 +1,6 @@
 ---
 name: meaningful-commits
-description: Use when a user explicitly asks for incremental commits during multi-file work and each production file should be committed together with its matching test before moving to the next file pair.
+description: Use when the user asks for incremental commits during multi-file work
 ---
 
 # Meaningful Commits

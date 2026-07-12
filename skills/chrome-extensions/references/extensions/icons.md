@@ -79,6 +79,42 @@ done
 
 Note: For Chrome Web Store submission, PNG is required. SVG works for development.
 
+## Runtime icon as a data URL (no file needed)
+
+For `chrome.notifications.create()` or `chrome.action.setIcon()` when you have no packaged
+image file, draw one with `OffscreenCanvas` and hand over a data URL / `ImageData`. Works in the
+service worker (no DOM required).
+
+```js
+// Reusable: returns a data URL for a solid-color badge icon
+async function getIconDataUrl(size = 128, bg = '#4688F1', letter = 'E') {
+  const canvas = new OffscreenCanvas(size, size);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, size / 4);
+  ctx.fill();
+  ctx.fillStyle = 'white';
+  ctx.font = `bold ${size / 2}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(letter, size / 2, size / 2);
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
+  return await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Notification with a generated icon — no file required:
+const iconUrl = await getIconDataUrl();
+chrome.notifications.create('reminder', { type: 'basic', iconUrl, title: 'Reminder', message: 'Time is up!' });
+
+// chrome.action.setIcon wants ImageData, not a data URL:
+// const ctx = new OffscreenCanvas(16,16).getContext('2d'); ... ; chrome.action.setIcon({ imageData: ctx.getImageData(0,0,16,16) });
+```
+
 ## Manifest reference
 
 ```json

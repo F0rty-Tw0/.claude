@@ -1,7 +1,6 @@
 ---
 name: plan
-description: Strategic planning with optional interview workflow
-version: 1.0.0
+description: Use when the user wants to plan before implementing ("plan this", "let's plan"), needs structured requirements gathering for a vague idea, wants an existing plan reviewed ("review this plan", --review), wants multi-perspective consensus on a plan (--consensus, "ralplan"), or when a task is broad/vague and needs scoping before any code is written.
 ---
 
 <Purpose>
@@ -70,8 +69,8 @@ starts from a solid foundation. The consensus mode adds multi-perspective valida
    - **Proceed to review** — send to Architect and Critic for evaluation
    - **Request changes** — return to step 1 with user feedback incorporated
    - **Skip review** — go directly to final approval (step 7)
-3. **Architect** reviews for architectural soundness (prefer `ask-copilot` with `architect` role)
-4. **Critic** evaluates against quality criteria (prefer `ask-copilot` with `critic` role)
+3. **Architect** reviews for architectural soundness (prefer `mcp__agentic-mcp__ask_codex` for a second opinion)
+4. **Critic** evaluates against quality criteria (prefer `mcp__agentic-mcp__ask_codex` for a second opinion)
 5. **Re-review loop** (max 5 iterations): If Critic rejects, execute this closed loop: a. Collect all rejection feedback
    from Architect + Critic b. Pass feedback to Planner to produce a revised plan c. **Return to Step 3** — Architect
    reviews the revised plan d. **Return to Step 4** — Critic evaluates the revised plan e. Repeat until Critic approves
@@ -99,7 +98,7 @@ starts from a solid foundation. The consensus mode adds multi-perspective valida
 ### Review Mode (`--review`)
 
 1. Read plan file from `.claude/local/plans/`
-2. Evaluate via Critic (prefer `ask-copilot` with `critic` role)
+2. Evaluate via Critic (prefer `mcp__agentic-mcp__ask_codex` for a second opinion)
 3. Return verdict: APPROVED, REVISE (with specific feedback), or REJECT (replanning required)
 
 ### Plan Output Format
@@ -120,10 +119,10 @@ Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
 - Use `AskUserQuestion` for preference questions (scope, priority, timeline, risk tolerance) -- provides clickable UI
 - Use plain text for questions needing specific values (port numbers, names, follow-up clarifications)
 - Use `explore` agent (Haiku, 30s timeout) to gather codebase facts before asking the user
-- Use `ask-copilot` with `agent_role: "planner"` for planning validation on large-scope plans
-- Use `ask-copilot` with `agent_role: "analyst"` for requirements analysis
-- Use `ask-copilot` with `agent_role: "critic"` for plan review in consensus and review modes
-- If ToolSearch finds no MCP tools or Copilot is unavailable, fall back to equivalent Claude agents -- never block on
+- Use `mcp__agentic-mcp__ask_codex` for planning validation on large-scope plans
+- Use `mcp__agentic-mcp__ask_codex` for requirements analysis cross-checks
+- Use `mcp__agentic-mcp__ask_codex` for plan review in consensus and review modes
+- If ToolSearch finds no MCP tools or agentic-mcp is unavailable, fall back to equivalent Claude agents -- never block on
   external tools
 - In consensus mode, **MUST** use `AskUserQuestion` for the user feedback step (step 2) and the final approval step
   (step 7) -- never ask for approval in plain text

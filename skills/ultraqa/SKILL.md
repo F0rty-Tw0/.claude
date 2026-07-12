@@ -1,7 +1,6 @@
 ---
 name: ultraqa
-description: QA cycling workflow - test, verify, fix, repeat until goal met
-version: 1.0.0
+description: Use when you need a test→fix→retest loop until build/tests pass, lint is clean, or a custom success pattern is met, without manually re-running verification after each fix.
 ---
 
 # UltraQA Skill
@@ -40,7 +39,7 @@ If no structured goal provided, interpret the argument as a custom goal.
    - `--custom`: Run appropriate command and check for pattern
    - `--interactive`: Use qa-tester for interactive CLI/service testing:
      ```
-     Task(subagent_type="qa-tester", model="sonnet", prompt="TEST:
+     Agent(subagent_type="qa-tester", model="sonnet", prompt="TEST:
      Goal: [describe what to verify]
      Service: [how to start]
      Test cases: [specific scenarios to verify]")
@@ -53,7 +52,7 @@ If no structured goal provided, interpret the argument as a custom goal.
 3. **ARCHITECT DIAGNOSIS**: Spawn architect to analyze failure
 
    ```
-   Task(subagent_type="architect", model="opus", prompt="DIAGNOSE FAILURE:
+   Agent(subagent_type="architect", model="opus", prompt="DIAGNOSE FAILURE:
    Goal: [goal type]
    Output: [test/build output]
    Provide root cause and specific fix recommendations.")
@@ -62,7 +61,7 @@ If no structured goal provided, interpret the argument as a custom goal.
 4. **FIX ISSUES**: Apply architect's recommendations
 
    ```
-   Task(subagent_type="executor", model="sonnet", prompt="FIX:
+   Agent(subagent_type="executor", model="sonnet", prompt="FIX:
    Issue: [architect diagnosis]
    Files: [affected files]
    Apply the fix precisely as recommended.")
@@ -95,7 +94,7 @@ Output progress each cycle:
 
 ## State Tracking
 
-Track state in `.claude/local/ultraqa-state.json`:
+Track state in `.claude/local/state/ultraqa-state.json`:
 
 ```json
 {

@@ -1,7 +1,6 @@
 ---
 name: git-master
-description: Git expert for atomic commits, rebasing, and history management
-version: 1.0.0
+description: Use when the user needs git operations handled -- atomic commits, interactive rebasing, branch management, or history cleanup matching the repo's existing commit style.
 ---
 
 # Git Master Command
@@ -17,7 +16,7 @@ git-master <git task>
 ## Routing
 
 ```
-Task(subagent_type="git-master", model="sonnet", prompt="{{ARGUMENTS}}")
+Agent(subagent_type="git-master", model="sonnet", prompt="<git task>")
 ```
 
 ## Capabilities
@@ -27,5 +26,3 @@ Task(subagent_type="git-master", model="sonnet", prompt="{{ARGUMENTS}}")
 - Branch management
 - History cleanup
 - Style detection from repo history
-
-Task: {{ARGUMENTS}}

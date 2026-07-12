@@ -1,6 +1,6 @@
 ---
 name: kaizen
-description: Use when implementing features, refactoring code, reviewing changes, making architecture decisions, or addressing technical debt, code smells, over-engineering, or YAGNI violations
+description: Use when code shows over-engineering, YAGNI violations, speculative abstraction, or tech-debt/code-smell discussions
 ---
 
 # Kaizen: Continuous Improvement
@@ -145,10 +145,3 @@ See [patterns-and-examples.md](patterns-and-examples.md) for YAGNI examples, pre
 - Building frameworks before using them -> Wait for Rule of Three
 - Optimizing without measuring -> Profile first, optimize second
 
-## Remember
-
-**Kaizen is:** Small improvements continuously, preventing errors by design, following proven patterns, building only what's needed.
-
-**Not:** Perfection on first try, massive refactoring, clever abstractions, premature optimization.
-
-**Mindset:** Good enough today, better tomorrow. Repeat.

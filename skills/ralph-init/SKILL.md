@@ -1,7 +1,6 @@
 ---
 name: ralph-init
-description: Initialize a PRD (Product Requirements Document) for structured ralph-loop execution
-version: 1.0.0
+description: Use when the user wants to start autonomous goal-driven iteration (a ralph loop) but no PRD or requirements document exists yet, or when acceptance criteria need to be defined and written down before implementation begins.
 ---
 
 # Ralph Init

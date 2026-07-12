@@ -168,13 +168,3 @@ describe('FEATURE: <slice/behavior>')
 | Provider/token in `common` | Providers + services live in `domain-logic` (`common` can't import `utils`/DI) |
 | Barrel exports everything | Export only the consumed surface; keep wire types + internal mappers private |
 | `export *` from leaf files | Curate named exports per layer barrel |
-
-## Quick Reference
-
-- Slice first, layer second.
-- 4 layers: `common` (data) · `utils` (pure logic) · `data-access` (I/O + state) · `domain-logic` (services + DI).
-- Dependencies point down only.
-- `data-access` = external APIs **or** internal state.
-- `domain-logic` = injectable services **and** providers/tokens; keep them thin, push pure logic to `utils`.
-- Barrel exports only what a consumer uses; internal symbols stay private.
-- Name by role; default variant drops the infix; rename types when you rename concepts.

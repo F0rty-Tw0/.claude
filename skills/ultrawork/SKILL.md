@@ -1,7 +1,6 @@
 ---
 name: ultrawork
-description: Parallel execution engine for high-throughput task completion
-version: 1.0.0
+description: Use when multiple independent tasks can run simultaneously, the user says "ulw" or "ultrawork", or work needs to be delegated to several agents at once and the user will manage completion themselves. Not for tasks needing guaranteed completion with verification (use ralph), a full autonomous pipeline (use autopilot), or a single sequential task with no parallelism.
 ---
 
 <Purpose>
@@ -31,21 +30,20 @@ costs. It is designed as a composable component that ralph and autopilot layer o
 
 - Fire all independent agent calls simultaneously -- never serialize independent work
 - Always pass the `model` parameter explicitly when delegating
-- Read `docs/shared/agent-tiers.md` before first delegation for agent selection guidance
+- Match agent tier to task complexity: haiku for simple lookups/definitions, sonnet for standard implementation, opus for complex analysis/refactoring
 - Use `run_in_background: true` for operations over ~30 seconds (installs, builds, tests)
 - Run quick commands (git status, file reads, simple checks) in the foreground </Execution_Policy>
 
 <Steps>
-1. **Read agent reference**: Load `docs/shared/agent-tiers.md` for tier selection
-2. **Classify tasks by independence**: Identify which tasks can run in parallel vs which have dependencies
-3. **Route to correct tiers**:
-   - Simple lookups/definitions: LOW tier (Haiku)
-   - Standard implementation: MEDIUM tier (Sonnet)
-   - Complex analysis/refactoring: HIGH tier (Opus)
-4. **Fire independent tasks simultaneously**: Launch all parallel-safe tasks at once
-5. **Run dependent tasks sequentially**: Wait for prerequisites before launching dependent work
-6. **Background long operations**: Builds, installs, and test suites use `run_in_background: true`
-7. **Verify when all tasks complete** (lightweight):
+1. **Classify tasks by independence**: Identify which tasks can run in parallel vs which have dependencies
+2. **Route to correct tiers**:
+   - Simple lookups/definitions: `executor` with `model="haiku"`
+   - Standard implementation: `executor` with `model="sonnet"`
+   - Complex analysis/refactoring: `deep-executor` with `model="opus"`
+3. **Fire independent tasks simultaneously**: Launch all parallel-safe tasks at once
+4. **Run dependent tasks sequentially**: Wait for prerequisites before launching dependent work
+5. **Background long operations**: Builds, installs, and test suites use `run_in_background: true`
+6. **Verify when all tasks complete** (lightweight):
    - Build/typecheck passes
    - Affected tests pass
    - No new errors introduced
@@ -53,9 +51,9 @@ costs. It is designed as a composable component that ralph and autopilot layer o
 
 <Tool_Usage>
 
-- Use `Task(subagent_type="executor-low", model="haiku", ...)` for simple changes
-- Use `Task(subagent_type="executor", model="sonnet", ...)` for standard work
-- Use `Task(subagent_type="executor-high", model="opus", ...)` for complex work
+- Use `Agent(subagent_type="executor", model="haiku", ...)` for simple changes
+- Use `Agent(subagent_type="executor", model="sonnet", ...)` for standard work
+- Use `Agent(subagent_type="deep-executor", model="opus", ...)` for complex work
 - Use `run_in_background: true` for package installs, builds, and test suites
 - Use foreground execution for quick status checks and file operations </Tool_Usage>
 
@@ -63,9 +61,9 @@ costs. It is designed as a composable component that ralph and autopilot layer o
 <Good>
 Three independent tasks fired simultaneously:
 ```
-Task(subagent_type="executor-low", model="haiku", prompt="Add missing type export for Config interface")
-Task(subagent_type="executor", model="sonnet", prompt="Implement the /api/users endpoint with validation")
-Task(subagent_type="executor", model="sonnet", prompt="Add integration tests for the auth middleware")
+Agent(subagent_type="executor", model="haiku", prompt="Add missing type export for Config interface")
+Agent(subagent_type="executor", model="sonnet", prompt="Implement the /api/users endpoint with validation")
+Agent(subagent_type="executor", model="sonnet", prompt="Add integration tests for the auth middleware")
 ```
 Why good: Independent tasks at appropriate tiers, all fired at once.
 </Good>
@@ -73,8 +71,8 @@ Why good: Independent tasks at appropriate tiers, all fired at once.
 <Good>
 Correct use of background execution:
 ```
-Task(subagent_type="executor", model="sonnet", prompt="npm install && npm run build", run_in_background=true)
-Task(subagent_type="executor-low", model="haiku", prompt="Update the README with new API endpoints")
+Agent(subagent_type="executor", model="sonnet", prompt="npm install && npm run build", run_in_background=true)
+Agent(subagent_type="executor", model="haiku", prompt="Update the README with new API endpoints")
 ```
 Why good: Long build runs in background while short task runs in foreground.
 </Good>
@@ -82,9 +80,9 @@ Why good: Long build runs in background while short task runs in foreground.
 <Bad>
 Sequential execution of independent work:
 ```
-result1 = Task(executor-low, "Add type export")  # wait...
-result2 = Task(executor, "Implement endpoint")     # wait...
-result3 = Task(executor, "Add tests")              # wait...
+result1 = Agent(subagent_type="executor", model="haiku", prompt="Add type export")  # wait...
+result2 = Agent(subagent_type="executor", model="sonnet", prompt="Implement endpoint")  # wait...
+result3 = Agent(subagent_type="executor", model="sonnet", prompt="Add tests")  # wait...
 ```
 Why bad: These tasks are independent. Running them sequentially wastes time.
 </Bad>
@@ -92,9 +90,9 @@ Why bad: These tasks are independent. Running them sequentially wastes time.
 <Bad>
 Wrong tier selection:
 ```
-Task(subagent_type="executor-high", model="opus", prompt="Add a missing semicolon")
+Agent(subagent_type="deep-executor", model="opus", prompt="Add a missing semicolon")
 ```
-Why bad: Opus is expensive overkill for a trivial fix. Use executor-low with Haiku instead.
+Why bad: Opus is expensive overkill for a trivial fix. Use executor with haiku instead.
 </Bad>
 </Examples>
 

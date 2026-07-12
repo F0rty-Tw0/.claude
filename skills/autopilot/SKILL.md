@@ -1,7 +1,6 @@
 ---
 name: autopilot
-description: Full autonomous execution from idea to working code
-version: 1.0.0
+description: Use when the user wants end-to-end autonomous execution from an idea to working code -- says "autopilot", "auto pilot", "autonomous", "build me", "create me", "make me", "full auto", "handle it all", or "I want a/an..."; the task spans multiple phases (planning, coding, testing, validation); or the user wants hands-off execution and is willing to let the system run to completion.
 ---
 
 <Purpose>
@@ -49,9 +48,8 @@ automatically so the user can describe what they want and receive working code w
    - Output: `.claude/local/plans/autopilot-impl.md`
 
 3. **Phase 2 - Execution**: Implement the plan using Ralph + Ultrawork
-   - Executor-low (Haiku): Simple tasks
-   - Executor (Sonnet): Standard tasks
-   - Executor-high (Opus): Complex tasks
+   - `executor` (Sonnet, or `model: "haiku"` override for simple tasks): Standard tasks
+   - `deep-executor` (Opus): Complex tasks
    - Run independent tasks in parallel
 
 4. **Phase 3 - QA**: Cycle until all tests pass (UltraQA mode)
@@ -73,11 +71,11 @@ automatically so the user can describe what they want and receive working code w
 <Tool_Usage>
 
 - Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools
-- Use `ask-copilot` with `agent_role: "architect"` for Phase 4 architecture validation
-- Use `ask-copilot` with `agent_role: "security-reviewer"` for Phase 4 security review
-- Use `ask-copilot` with `agent_role: "code-reviewer"` for Phase 4 quality review
-- Agents form their own analysis first, then consult Copilot for cross-validation
-- If ToolSearch finds no MCP tools or Copilot is unavailable, proceed without it -- never block on external tools
+- Use `mcp__agentic-mcp__ask_codex` for Phase 4 architecture validation (second-opinion cross-check)
+- Use `mcp__agentic-mcp__ask_codex` for Phase 4 security review cross-validation
+- Use `mcp__agentic-mcp__review_codex` for Phase 4 quality/code review
+- Agents form their own analysis first, then consult agentic-mcp for cross-validation
+- If ToolSearch finds no MCP tools or agentic-mcp is unavailable, proceed without it -- never block on external tools
   </Tool_Usage>
 
 <Examples>

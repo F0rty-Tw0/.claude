@@ -332,7 +332,7 @@ digraph when_flowchart {
 }
 ```
 
-Use flowcharts ONLY for non-obvious decisions, process loops, "A vs B" choices. Never for reference (use tables), code (use blocks), or linear steps (use lists). See @graphviz-conventions.dot for style rules.
+Use flowcharts ONLY for non-obvious decisions, process loops, "A vs B" choices. Never for reference (use tables), code (use blocks), or linear steps (use lists). See graphviz-conventions.dot for style rules.
 
 ## Code Examples
 
@@ -416,7 +416,7 @@ Skills enforcing discipline need to resist rationalization. See [bulletproofing.
 
 **REFACTOR:** New rationalization found? Add counter. Re-test until bulletproof.
 
-See @testing-skills-with-subagents.md for complete methodology (pressure scenarios, pressure types, plugging holes systematically).
+See testing-skills-with-subagents.md for complete methodology (pressure scenarios, pressure types, plugging holes systematically).
 
 ## README.md Creation
 
