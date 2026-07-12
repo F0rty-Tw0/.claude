@@ -41,3 +41,10 @@ Workflow recipes — not discoverable at runtime, kept here on purpose.
 
 @skills/ponytail/SKILL.md
 
+# RDX — supplement to Caveman + Ponytail
+
+Keep both always-on; layer rdx on demand (stricter rule wins on overlap):
+
+- `/rdx` — adds evidence-before-minimalism + risk-matched brevity on top of caveman/ponytail.
+- Automatic: before presenting any diff >150 lines, run `/rdx-audit` on it and cut what it flags.
+- `/rdx-review` — code-only over-engineering gate before a merge.

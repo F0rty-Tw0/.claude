@@ -62,7 +62,7 @@ These are **VS Code custom agents** (`.agent.md`). Install at the **user level**
 **User level:** point VS Code at this folder via `settings.json`:
 ```json
 {
-  "chat.agentFilesLocations": ["C:\\Users\\artio\\.claude\\copilot"],
+  "chat.agentFilesLocations": ["<absolute path to this folder — e.g. ~/.claude/copilot or C:\\Users\\<user>\\.claude\\copilot>"],
   "chat.customAgentInSubagent.enabled": true
 }
 ```
