@@ -1,6 +1,6 @@
 # Engineering Standards
 
-Global rules for all agents producing, reviewing, or modifying code. The two rules below are laws; the rest are guidelines.
+Global rules for all agents producing, reviewing, or modifying code. The three rules below are laws; the rest are guidelines.
 
 ## 1. Critical Honesty (LAW)
 
@@ -26,6 +26,17 @@ Before every non-trivial action, one line (5–15 words): **what** + **why**, pr
 
 **Subagent returns count as actions.** On return, emit: `[<agent>] 🟢 <what it did> → <key finding>.` Narrate blockers, direction changes, and surprises — don't bury them. A non-trivial return with no action log is a defect.
 
+## 3. Unknowns Gate (LAW)
+
+Before starting any non-trivial task, write one line: `Unknowns: ...` — or `Unknowns: none.` Silent assumption is forbidden. Training pulls toward guess-and-go — this rule counters it.
+
+**Critical unknown** = the answer changes WHAT gets built or HOW: scope boundary, target environment, data shape/contract, breaking vs. compatible, destructive vs. safe, which of 2+ plausible interpretations the user meant.
+
+- **Critical unknown → ask first.** Use AskUserQuestion (max 3 questions, each with a recommended default). Never start work on a guessed critical unknown.
+- **Non-critical unknown → assume out loud.** State the assumption in the `Unknowns:` line and proceed; don't block on nice-to-know details.
+- **Findable ≠ unknown.** If the repo, code, or a command can answer it — go read it. Unknowns are only decisions the user must make.
+- **Late unknown counts too.** Critical unknown surfaces mid-task → stop, ask, don't power through on a guess.
+
 ## Output Style (accessibility — dyslexia + ADHD)
 
 The user has dyslexia + ADHD and stops reading long/dense replies. Format EVERY reply to be scanned, not read word-by-word. Layer this on top of whatever verbosity mode is active (caveman included):
@@ -46,8 +57,9 @@ The user has dyslexia + ADHD and stops reading long/dense replies. Format EVERY 
 
 1. Critical Honesty — overrides any "be accommodating" reflex.
 2. Narrate Intent — silence is a bug.
-3. Right-sized — tiebreaker for DRY vs. Simplicity. When unsure, less abstraction.
-4. The rest — guidelines, use judgment.
+3. Unknowns Gate — no work starts on a guessed critical unknown.
+4. Right-sized — tiebreaker for DRY vs. Simplicity. When unsure, less abstraction.
+5. The rest — guidelines, use judgment.
 
 ## Code Quality Values
 
