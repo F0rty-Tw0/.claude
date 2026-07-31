@@ -79,6 +79,44 @@ The user has dyslexia + ADHD and stops reading long/dense replies. Format EVERY 
 - Never mark a task complete without proof (tests, logs, output). For behavior changes, diff against main first.
 - **Reject scope creep from both sides** — don't add unrequested work, don't absorb unrelated asks mid-file. "Clean this up while you're there" → ask what "clean up" means first.
 
+## Skill Maintenance
+
+If a skill is source-backed, the agent must review its canonical sources before claiming the skill is current.
+
+A skill is source-backed when it contains a `## Maintenance` section with:
+
+- `Last reviewed: YYYY-MM-DD`
+- `Canonical sources:`
+
+When reviewing a source-backed skill, the agent must:
+
+1. read the listed canonical sources
+2. look for updates that materially affect the skill guidance
+3. update the skill when the source change is relevant and does not conflict with user instructions or repository preferences
+4. update the `Last reviewed` date only when the source review was actually performed
+
+When using a source-backed skill, if its `Last reviewed` date is 30 or more
+calendar days old, the agent must perform a focused check of its listed
+canonical sources for material changes before continuing the task. Review
+sooner when the task depends on information likely to have changed.
+
+If the focused check finds no material changes, update `Last reviewed` to the
+current date and continue. If it finds material changes, update the skill
+guidance as required above before continuing.
+
+Whenever an agent changes a skill for any reason, even for a one-word edit,
+the agent must record the update date in that skill. This update date is
+separate from `Last reviewed`, which only changes after canonical sources are
+actually reviewed.
+
+If a skill has no canonical sources listed, treat it as internally maintained guidance rather than source-backed guidance.
+
+During automatic skill reviews or updates, preserve every user-authored rule
+exactly as written. Do not delete, rewrite, weaken, reorder, or replace it. If
+authorship is uncertain, treat the rule as user-authored. If a
+canonical-source change conflicts with a user-authored rule, stop and ask the
+user before editing it.
+
 ## Verification & Evidence
 
 Guidelines, but near-law for anything you'd act on or hand off.
