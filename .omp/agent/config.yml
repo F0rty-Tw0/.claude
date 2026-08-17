@@ -1,9 +1,9 @@
 modelRoles:
-  default: anthropic/claude-opus-4-8:xhigh
+  default: anthropic/claude-opus-5:xhigh
   smol: anthropic/claude-haiku-4-5
   slow: openai-codex/sol:xhigh
-  plan: anthropic/claude-opus-4-8:high
-  designer: anthropic/claude-sonnet-4-6
+  plan: anthropic/claude-opus-5:high
+  designer: anthropic/claude-sonnet-5
   task: openai-codex/terra:medium
 symbolPreset: unicode
 theme:
@@ -15,7 +15,7 @@ task:
     librarian: anthropic/claude-haiku-4-5
     quick_task: openai-codex/luna
     task: openai-codex/terra
-    designer: anthropic/claude-sonnet-4-6
-    reviewer: anthropic/claude-opus-4-8
-    plan: anthropic/claude-opus-4-8
-    oracle: anthropic/claude-opus-4-8
+    designer: anthropic/claude-sonnet-5
+    reviewer: anthropic/claude-opus-5
+    plan: anthropic/claude-opus-5
+    oracle: anthropic/claude-opus-5

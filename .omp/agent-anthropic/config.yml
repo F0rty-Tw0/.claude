@@ -1,10 +1,10 @@
 modelRoles:
-  default: anthropic/claude-opus-4-8:xhigh
+  default: anthropic/claude-opus-5:xhigh
   smol: anthropic/claude-haiku-4-5
-  slow: anthropic/claude-opus-4-8:xhigh
-  plan: anthropic/claude-opus-4-8:high
-  designer: anthropic/claude-sonnet-4-6
-  task: anthropic/claude-sonnet-4-6:medium
+  slow: anthropic/claude-opus-5:xhigh
+  plan: anthropic/claude-opus-5:high
+  designer: anthropic/claude-sonnet-5
+  task: anthropic/claude-sonnet-5:medium
 symbolPreset: unicode
 theme:
   dark: titanium
@@ -14,8 +14,9 @@ task:
     explore: anthropic/claude-haiku-4-5
     librarian: anthropic/claude-haiku-4-5
     quick_task: anthropic/claude-haiku-4-5
-    task: anthropic/claude-sonnet-4-6
-    designer: anthropic/claude-sonnet-4-6
-    reviewer: anthropic/claude-opus-4-8
-    plan: anthropic/claude-opus-4-8
-    oracle: anthropic/claude-opus-4-8
+    task: anthropic/claude-sonnet-5
+    designer: anthropic/claude-sonnet-5
+    reviewer: anthropic/claude-opus-5
+    plan: anthropic/claude-opus-5
+    oracle: anthropic/claude-opus-5
+
