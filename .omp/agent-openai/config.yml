@@ -1,21 +1,21 @@
 modelRoles:
-  default: openai-codex/sol:xhigh
-  smol: openai-codex/luna
-  slow: openai-codex/sol:xhigh
+  default: openai-codex/sol:high
+  smol: openai-codex/luna:high
+  slow: openai-codex/sol:high
   plan: openai-codex/sol:high
-  designer: openai-codex/terra
-  task: openai-codex/terra:medium
+  designer: openai-codex/luna:high
+  task: openai-codex/luna:high
 symbolPreset: unicode
 theme:
   dark: titanium
 setupVersion: 1
 task:
   agentModelOverrides:
-    explore: openai-codex/luna
-    librarian: openai-codex/luna
-    quick_task: openai-codex/luna
-    task: openai-codex/terra
-    designer: openai-codex/terra
-    reviewer: openai-codex/sol
-    plan: openai-codex/sol
-    oracle: openai-codex/sol
+    explore: openai-codex/luna:high
+    librarian: openai-codex/luna:high
+    quick_task: openai-codex/luna:high
+    task: openai-codex/luna:high
+    designer: openai-codex/luna:high
+    reviewer: openai-codex/sol:high
+    plan: openai-codex/sol:high
+    oracle: openai-codex/sol:high
