@@ -1,3 +1,4 @@
 {
-  "respectGitignore": true
+  "respectGitignore": true,
+  "outputStyle": "Explanatory"
 }

@@ -40,7 +40,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "claude-fable-5[1m]",
+  "model": "claude-fable-5-1[1m]",
   "enableAllProjectMcpServers": true,
   "hooks": {
     "PreToolUse": [
@@ -93,9 +93,10 @@
     }
   },
   "effortLevel": "high",
+  "dialogExpiry": "never",
   "autoUpdatesChannel": "latest",
   "skipWorkflowUsageWarning": true,
+  "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true,
   "defaultMode": "auto"
 }
-
