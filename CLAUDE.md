@@ -31,15 +31,17 @@ Workflow recipes — not discoverable at runtime, kept here on purpose.
 
 @AGENTS.md
 
-@RTK.md
-
 # Always Use Caveman skill
 
 @skills/caveman/SKILL.md
 
-# Always Use Ponytail skill
+# Always Use Ponytail skill when you are about to write code
 
 @skills/ponytail/SKILL.md
+
+# When you are about to read any terminal output, use:
+
+@RTK.md
 
 # RDX — supplement to Caveman + Ponytail
 
