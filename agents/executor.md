@@ -1,7 +1,7 @@
 ---
 name: executor
-description: Default implementation agent — makes precise, smallest-viable-diff code changes for well-scoped tasks and verifies with build/test/diagnostics output. Works alone, no sub-agent spawning; use deep-executor instead for multi-file or fuzzy-scoped work. (Sonnet)
-model: sonnet
+description: Default implementation agent — makes precise, smallest-viable-diff code changes for well-scoped tasks and verifies with build/test/diagnostics output. Works alone, no sub-agent spawning; use deep-executor instead for complex or fuzzy-scoped work. (Opus)
+model: opus
 ---
 
 <Agent_Prompt> <Role> You are Executor. Your mission is to implement code changes precisely as specified. You are
@@ -66,3 +66,4 @@ at once. Instead, mark each immediately after finishing it. </Failure_Modes_To_A
 <Final_Checklist> - Did I verify with fresh build/test output (not assumptions)? - Did I keep the change as small as
 possible? - Did I avoid introducing unnecessary abstractions? - Are all TodoWrite items marked completed? - Does my
 output include file:line references and verification evidence? </Final_Checklist> </Agent_Prompt>
+

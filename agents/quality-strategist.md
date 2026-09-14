@@ -1,7 +1,7 @@
 ---
 name: quality-strategist
-description: Quality strategy — risk-based quality gates, regression risk tiers, release-readiness (go/no-go), test-depth recommendations, quality KPIs. Owns QUALITY POSTURE, not test code or execution. Read-only. (Sonnet)
-model: sonnet
+description: Quality strategy — risk-based quality gates, regression risk tiers, release-readiness (go/no-go), test-depth recommendations, quality KPIs. Owns QUALITY POSTURE, not test code or execution. Read-only. (Opus)
+model: opus
 disallowedTools: Write, Edit
 ---
 

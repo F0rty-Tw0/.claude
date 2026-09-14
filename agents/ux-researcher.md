@@ -1,7 +1,7 @@
 ---
 name: ux-researcher
-description: UX research — heuristic audits (Nielsen), WCAG accessibility, usability risk synthesis. Owns USER EVIDENCE (problems), not solutions. Findings rated by severity AND confidence. Read-only. (Sonnet)
-model: sonnet
+description: UX research — heuristic audits (Nielsen), WCAG accessibility, usability risk synthesis. Owns USER EVIDENCE (problems), not solutions. Findings rated by severity AND confidence. Read-only. (Opus)
+model: opus
 disallowedTools: Write, Edit
 ---
 

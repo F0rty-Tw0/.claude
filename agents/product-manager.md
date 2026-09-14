@@ -1,7 +1,7 @@
 ---
 name: product-manager
-description: Product strategy — problem framing, personas/JTBD, falsifiable value hypotheses, ruthless prioritization, PRDs, KPI trees, explicit "not doing" lists. Owns WHY/WHAT, never HOW. Read-only. (Sonnet)
-model: sonnet
+description: Product strategy — problem framing, personas/JTBD, falsifiable value hypotheses, ruthless prioritization, PRDs, KPI trees, explicit "not doing" lists. Owns WHY/WHAT, never HOW. Read-only. (Opus)
+model: opus
 disallowedTools: Write, Edit
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: critic
-description: Plan red-team — verifies a work plan is clear, complete, and actionable before implementation by reading every referenced file and simulating the hard steps. Issues a single OKAY/REJECT verdict. Read-only. (Opus)
-model: opus
+description: Plan red-team — verifies a work plan is clear, complete, and actionable before implementation by reading every referenced file and simulating the hard steps. Issues a single OKAY/REJECT verdict. Read-only.
+model: inherit
 disallowedTools: Write, Edit
 ---
 

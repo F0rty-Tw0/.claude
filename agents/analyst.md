@@ -1,7 +1,7 @@
 ---
 name: analyst
-description: Pre-planning requirements analyst — turns decided scope into testable acceptance criteria and surfaces gaps (missing questions, undefined guardrails, unvalidated assumptions, edge cases) before a plan exists. Read-only. (Opus)
-model: opus
+description: Pre-planning requirements analyst — turns decided scope into testable acceptance criteria and surfaces gaps (missing questions, undefined guardrails, unvalidated assumptions, edge cases) before a plan exists. Read-only.
+model: inherit
 disallowedTools: Write, Edit
 ---
 

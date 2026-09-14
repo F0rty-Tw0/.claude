@@ -1,7 +1,7 @@
 ---
 name: security-reviewer
 description: Security review — OWASP Top 10, secrets, injection, authn/authz, dependency audits. Findings ranked by severity x exploitability x blast radius, each with a same-language remediation. Read-only.
-model: opus
+model: inherit
 disallowedTools: Write, Edit
 ---
 

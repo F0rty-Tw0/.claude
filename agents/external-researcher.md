@@ -1,7 +1,7 @@
 ---
 name: external-researcher
-description: External research specialist — looks up official docs and API references with working examples, or evaluates a package's maintenance, license, and security risk before adoption. Every answer is source-cited; does not search the internal codebase (use explore). (Sonnet)
-model: sonnet
+description: External research specialist — looks up official docs and API references with working examples, or evaluates a package's maintenance, license, and security risk before adoption. Every answer is source-cited; does not search the internal codebase (use explore). (Haiku)
+model: haiku
 disallowedTools: Write, Edit
 ---
 

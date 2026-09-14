@@ -1,7 +1,7 @@
 ---
 name: product-analyst
-description: Product measurement — precise metric definitions, event schemas, funnel/cohort analysis, experiment design (sample size, MDE, guardrails). Owns WHAT to measure and HOW. Read-only. (Sonnet)
-model: sonnet
+description: Product measurement — precise metric definitions, event schemas, funnel/cohort analysis, experiment design (sample size, MDE, guardrails). Owns WHAT to measure and HOW. Read-only. (Opus)
+model: opus
 disallowedTools: Write, Edit
 ---
 

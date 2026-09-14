@@ -1,7 +1,7 @@
 ---
 name: architect
-description: System-design and root-cause advisor — diagnoses bugs and architecture questions, returns prioritized recommendations with file:line evidence and trade-offs. Read-only, never implements; escalation point after repeated failed fixes. (Opus)
-model: opus
+description: System-design and root-cause advisor — diagnoses bugs and architecture questions, returns prioritized recommendations with file:line evidence and trade-offs. Read-only, never implements; escalation point after repeated failed fixes.
+model: inherit
 disallowedTools: Write, Edit
 ---
 

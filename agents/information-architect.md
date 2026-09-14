@@ -1,7 +1,7 @@
 ---
 name: information-architect
-description: Information architecture — hierarchy, taxonomy, navigation models, naming consistency, findability (task-to-location mapping). Owns STRUCTURE and FINDABILITY. Read-only. (Sonnet)
-model: sonnet
+description: Information architecture — hierarchy, taxonomy, navigation models, naming consistency, findability (task-to-location mapping). Owns STRUCTURE and FINDABILITY. Read-only. (Opus)
+model: opus
 disallowedTools: Write, Edit
 ---
 

@@ -7,13 +7,13 @@
 Local agents live in `~/.claude/agents/` — invoke by bare name (`executor`, `analyst`, …). The full roster + descriptions are injected every session; don't duplicate the list here (it drifts).
 
 - **Delegate code edits.** Route source-code changes (`.ts`, `.py`, `.go`, etc.) through `executor` / `deep-executor`. Edit config/orchestration files (`~/.claude/**`, `CLAUDE.md`) directly.
-- **Model is per-agent.** Each agent declares its own `model` (`executor`=sonnet, `analyst`/`planner`=opus, `explore`=haiku, etc.). Override only when a call needs a different tier.
+- **Model is per-agent.** Use `haiku` for lookup/extraction, `opus` for routine implementation and bounded specialist work, and `inherit` for complex implementation and high-risk analysis/review. `inherit` follows the parent model, not a fixed Fable version; select the stronger parent model before using those agents. Model selection does not set reasoning effort. Override a specialist's model for exceptionally difficult tasks instead of promoting its default.
 
 ## Picking between overlapping agents
 
 Descriptions don't disambiguate these — the tie-breaks do:
 
-- `executor` (sonnet) by default; `deep-executor` (opus) only for multi-file / fuzzy goals.
+- `executor` (`opus`) by default for well-scoped changes; `deep-executor` (`inherit`) for complex, cross-system, or fuzzy goals. File count alone is not an escalation trigger: mechanical multi-file edits stay with `executor`. `build-fixer` and `test-engineer` default to `opus`; `designer` inherits for open-ended UI design and implementation.
 - `analyst` = requirements BEFORE a plan; `planner` = writes the plan; `architect` = system-design review; `critic` = tears a plan apart.
 - `code-reviewer` = whole-step review against the plan; the panel (`style-reviewer` / `api-reviewer` / `security-reviewer` / `performance-reviewer` / `quality-reviewer`) = deep single-dimension passes.
 - `explore` (agent) = locate code; `deepsearch` / `analyze` (skills) = heavier sweeps.
