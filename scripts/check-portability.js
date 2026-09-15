@@ -30,8 +30,10 @@ for (const rel of files) {
   const lines = fs.readFileSync(abs, 'utf8').split('\n');
   lines.forEach((line, i) => {
     if (ALLOW.test(line)) return;
+    // Ignore web URLs without hiding local paths elsewhere on the line.
+    const content = line.replace(/\bhttps?:\/\/[^\s"'`<>()]+/gi, '');
     for (const [re, why] of PATTERNS) {
-      if (re.test(line)) { console.log(`${rel}:${i + 1}  ${why}: ${line.trim().slice(0, 100)}`); hits++; }
+      if (re.test(content)) { console.log(`${rel}:${i + 1}  ${why}: ${line.trim().slice(0, 100)}`); hits++; }
     }
   });
 }

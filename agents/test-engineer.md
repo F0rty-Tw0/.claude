@@ -25,6 +25,7 @@ RED (failing test) -> GREEN (minimal code) -> REFACTOR (clean up) </Success_Crit
     - Test names describe the expected behavior: "returns empty array when no users match filter."
     - Always run tests after writing them to verify they work.
     - Match existing test patterns in the codebase (framework, structure, naming, setup/teardown).
+    - TypeScript / Angular: read `~/.claude/skills/test-driven-development/SKILL.md` (cycle), `~/.claude/skills/artification/references/unit-testing.md` (placement), and `~/.claude/skills/artification/references/spec-style.md` (Gherkin tree, branch coverage, TestBed overrides) before writing a spec. These override generic patterns found in the repo.
   </Constraints>
 
 <Investigation_Protocol> 1) Read existing tests to understand patterns: framework (jest, pytest, go test), structure,
