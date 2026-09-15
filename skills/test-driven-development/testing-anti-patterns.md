@@ -24,7 +24,7 @@ Tests must verify real behavior, not mock behavior. Mocks are a means to isolate
 
 ```typescript
 // ❌ BAD: Testing that the mock exists
-test('renders sidebar', () => {
+it('GIVEN a page WHEN it renders THEN the sidebar navigation is present', () => {
   render(<Page />);
   expect(screen.getByTestId('sidebar-mock')).toBeInTheDocument();
 });
@@ -42,7 +42,7 @@ test('renders sidebar', () => {
 
 ```typescript
 // ✅ GOOD: Test real component or don't mock it
-test('renders sidebar', () => {
+it('GIVEN a page WHEN it renders THEN the sidebar navigation is present', () => {
   render(<Page />);  // Don't mock sidebar
   expect(screen.getByRole('navigation')).toBeInTheDocument();
 });
@@ -128,7 +128,7 @@ BEFORE adding any method to production class:
 
 ```typescript
 // ❌ BAD: Mock breaks test logic
-test('detects duplicate server', () => {
+it('GIVEN a registered server WHEN the same server is added again THEN it throws', async () => {
   // Mock prevents config write that test depends on!
   vi.mock('ToolCatalog', () => ({
     discoverAndCacheTools: vi.fn().mockResolvedValue(undefined),
@@ -149,7 +149,7 @@ test('detects duplicate server', () => {
 
 ```typescript
 // ✅ GOOD: Mock at correct level
-test('detects duplicate server', () => {
+it('GIVEN a registered server WHEN the same server is added again THEN it throws', async () => {
   // Mock the slow part, preserve behavior test needs
   vi.mock('MCPServerManager'); // Just mock slow server startup
 

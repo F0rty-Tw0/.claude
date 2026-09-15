@@ -1,0 +1,3 @@
+interface:
+  display_name: "Nx Workspace Scaffold"
+  short_description: "Scaffold compatible pnpm/Nx TypeScript workspaces"

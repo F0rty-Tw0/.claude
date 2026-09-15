@@ -27,6 +27,7 @@ Types expose architecture. Make ownership, mutability, and nested concepts expli
 | Shared placement | Put any project-authored type exported from its declaring module or imported by another project file in the nearest owning domain or package's `common/` folder. Never use a global dumping ground. |
 | Feature type file | Group every type meeting the placement rule in one `<feature>.type.ts` file. |
 | Runtime constants | Add at most one `<feature>.const.ts` only when the feature has shared runtime constants. Omit it otherwise. |
+| Const file contents | A `.const.ts` file, and a shared `common/` folder or lib, export only constants and types. A function, even a one-line predicate over a constant (`isProTier`), goes to `utils/<behavior>.util.ts` or the shared `utils` lib and imports the type from `common/`. |
 | Object syntax | Use `type`, never `interface`, for authored shapes. Do not rewrite dependency declarations. |
 | Properties | Mark every object property `readonly`. |
 | Arrays | Keep arrays mutable as `T[]`; never use `readonly T[]` or `ReadonlyArray<T>`. |

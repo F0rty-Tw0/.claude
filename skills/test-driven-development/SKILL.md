@@ -77,21 +77,25 @@ Write one minimal test showing what should happen.
 
 <Good>
 ```typescript
-test('retries failed operations 3 times', async () => {
-  let attempts = 0;
-  const operation = () => {
-    attempts++;
-    if (attempts < 3) throw new Error('fail');
-    return 'success';
-  };
+describe('FEATURE: retry operation', () => {
+  describe('GIVEN an operation that fails twice then succeeds', () => {
+    it('WHEN it is retried THEN the third attempt result is returned', async () => {
+      let attempts = 0;
+      const operation = () => {
+        attempts++;
+        if (attempts < 3) throw new Error('fail');
+        return 'success';
+      };
 
-  const result = await retryOperation(operation);
+      const result = await retryOperation(operation);
 
-  expect(result).toBe('success');
-  expect(attempts).toBe(3);
+      expect(result).toBe('success');
+      expect(attempts).toBe(3);
+    });
+  });
 });
 ```
-Clear name, tests real behavior, one thing
+Gherkin tree, tests real behavior, one outcome
 </Good>
 
 <Bad>
@@ -111,7 +115,7 @@ Vague name, tests mock not code
 **Requirements:**
 
 - One behavior
-- Clear name
+- `FEATURE` / `GIVEN` / `WHEN` / `THEN` names (shape rules in `skills/artification/references/spec-style.md`)
 - Real code (no mocks unless unavoidable)
 
 ### Verify RED - Watch It Fail
@@ -207,7 +211,7 @@ Next failing test for next feature.
 | Quality          | Good                                | Bad                                                 |
 | ---------------- | ----------------------------------- | --------------------------------------------------- |
 | **Minimal**      | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
-| **Clear**        | Name describes behavior             | `test('test1')`                                     |
+| **Clear**        | `THEN` names the outcome            | `test('test1')`                                     |
 | **Shows intent** | Demonstrates desired API            | Obscures what code should do                        |
 
 ## Angular / Component Testing
@@ -217,19 +221,29 @@ For Angular components, use TestBed and component harnesses. The same TDD rules 
 <Good>
 ```typescript
 // RED: failing test for an Angular component
-it('displays error message when email is empty', async () => {
-  const fixture = TestBed.createComponent(LoginComponent);
-  const harness = await TestbedHarnessEnvironment.harnessForFixture(
-    fixture,
-    LoginComponentHarness
-  );
+describe('FEATURE: LoginComponent', () => {
+  describe('GIVEN the auth service is stubbed', () => {
+    let fixture: ComponentFixture<LoginComponent>;
 
-  await harness.submitForm({ email: '', password: 'secret' });
+    beforeEach(async () => {
+      TestBed.configureTestingModule({ imports: [LoginComponent] });
+      TestBed.overrideProvider(AuthService, { useValue: authServiceMock() });
+      await TestBed.compileComponents();
 
-  expect(await harness.getErrorText()).toBe('Email required');
+      fixture = TestBed.createComponent(LoginComponent);
+    });
+
+    it('WHEN the form is submitted with an empty email THEN an error message is displayed', async () => {
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, LoginComponentHarness);
+
+      await harness.submitForm({ email: '', password: 'secret' });
+
+      expect(await harness.getErrorText()).toBe('Email required');
+    });
+  });
 });
 ```
-Uses harness, tests real component behavior, one assertion
+Gherkin tree, one `overrideProvider` per line, harness, one outcome
 </Good>
 
 <Bad>
@@ -341,9 +355,16 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 **RED**
 
 ```typescript
-test('rejects empty email', async () => {
-  const result = await submitForm({ email: '' });
-  expect(result.error).toBe('Email required');
+describe('FEATURE: submit form', () => {
+  describe('GIVEN an empty email', () => {
+    it('WHEN the form is submitted THEN an "Email required" error is returned', async () => {
+      const form: FormData = { ...FORM_DATA_STUB, email: '' };
+
+      const result = await submitForm(form);
+
+      expect(result.error).toBe('Email required');
+    });
+  });
 });
 ```
 
@@ -404,6 +425,17 @@ Can't check all boxes? You skipped TDD. Start over.
 Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
 
 Never fix bugs without a test.
+
+## Project Conventions (TypeScript / Angular)
+
+This file owns the cycle. Shape and placement of the spec are owned by the `artification` skill:
+
+| Concern | Reference |
+|---|---|
+| Where the spec, stubs, mocks, fixtures, spec utils live | `skills/artification/references/unit-testing.md` |
+| `describe` / `it` tree (`FEATURE` / `GIVEN` / `WHEN` / `THEN`), branch coverage, `TestBed` overrides | `skills/artification/references/spec-style.md` |
+
+Examples in this file show the cycle only. Test names and nesting follow `spec-style.md`, not the examples here.
 
 ## Testing Anti-Patterns
 

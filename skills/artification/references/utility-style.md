@@ -9,7 +9,7 @@ A utility is a pure behavior boundary, not helper storage. Extract only when pur
 | Concern | Rule |
 |---|---|
 | Eligibility | Extract non-trivial pure behavior when reused across files or worth focused tests. |
-| Placement | Use the nearest owner's `utils/`; never a global dumping ground. |
+| Placement | Use the nearest owner's `utils/`; never a global dumping ground. Never a `.const.ts` file or a `common/` folder: those hold constants and types only. In a monorepo the cross-package home is the shared `utils` lib, which imports its types from the shared `common` lib. |
 | Filename | Use `utils/<behavior>.util.ts`, never generic `utils.ts`. |
 | Grouping | Group only cohesive behavior. |
 | Imports | Import the `.util.ts` file directly; no barrel. |
