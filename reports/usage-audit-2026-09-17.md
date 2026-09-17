@@ -43,7 +43,7 @@ Left as-is: `skills/plan/SKILL.md` deprecation notice naming `/planner`, `/ralpl
 
 Post-archive grep for `` `name` `` / `/name` of every archived item over CLAUDE.md, AGENTS.md, settings.json, skills, agents, hooks, commands: 0 live references.
 
-Stale copies in `~/.omp/agent/agents` and `~/.claude/.omp/*/agents` still contain the archived agents. omp reads from `~/.omp/agent/agents`, so **omp can still spawn them** until that dir is linked to `~/.claude/agents` (see Fix drift).
+**omp profiles (same day):** the 10 archived agents that existed in omp format (`external-researcher`, `vision` never did) moved from `.omp/agent-openai/agents` (source), `.omp/agent/agents`, `.omp/agent-anthropic/agents` (generated) into `archive/omp/<profile>/agents/`, and from the deployed `~/.omp/agent/agents` on Forty-Two into `~/.omp/archive/agents/` (machine-local, not in repo). `sync-omp-profiles.js` never deletes orphans, so machine-a must do the deployed move by hand. One prose mention of `style-reviewer` in `quality-reviewer.md` removed in all four copies.
 
 ## TL;DR
 
@@ -53,7 +53,7 @@ Stale copies in `~/.omp/agent/agents` and `~/.claude/.omp/*/agents` still contai
 - Claude spawns only `executor` / `deep-executor` (92% of Claude spawns). omp uses the whole roster. **Codex uses none** — its `~/.codex/agents` is empty on Windows, out of date on machine-a.
 - Skills with real pull (excluding auto-loaded `skills-using`): `test-driven-development`, `artification`, `systematic-debugging`, `code-review`, `verification-before-completion`, `analyze`, `external-context`, `caveman`, `brainstorming`.
 - **MCP:** `ide` does 99% of calls (21 240). `playwright` 242. Everything else ≤20 calls across ~570 Claude sessions. `agentic-mcp`, `chrome-devtools`, `filesystem`, 4 claude.ai connectors: 0 calls.
-- Agent copies drift: 4 stale copies of `agents/` (3 inside this repo under `.omp/`), all 27 files differ from source.
+- omp agent profiles are a separate, generated set (`scripts/sync-omp-profiles.js`: source `.omp/agent-openai/agents`, mapped copies in `.omp/agent`, `.omp/agent-anthropic`, `~/.omp/agent`). Not drift from `~/.claude/agents` — different format. But `sync --check` reports 29 of the 17×2 generated files out of date with the source.
 
 ## Data sources and limits
 
@@ -139,18 +139,20 @@ None left after archive.
 - First report claimed skills win over their agent mirrors (`build-fix` skill vs `build-fixer` agent). Windows omp data reverses it: `build-fixer` 20 spawns, `git-master` agent 19. Both shapes are used. No action.
 - `planner` / `critic`: `critic` 8, `planner` 0. `/plan` skill (40) + built-in `Plan` do planning.
 
-### Agent copy drift (Forty-Two, 2026-09-17)
+### Agent copies (Forty-Two, corrected 2026-09-18)
 
-| Path | Files | Differ from `~/.claude/agents` |
-|---|---:|---|
-| `~/.claude/agents` (source of truth) | 29 | – |
-| `~/.codex/agents` | **0** | dir exists, empty |
-| `~/.omp/agent/agents` | 27 | all 27; missing `external-researcher`, `vision` |
-| `~/.claude/.omp/agent/agents` | 27 | all 27 (in repo) |
-| `~/.claude/.omp/agent-anthropic/agents` | 27 | all 27 (in repo) |
-| `~/.claude/.omp/agent-openai/agents` | 27 | all 27 (in repo) |
+The first two versions of this report called the `.omp/*/agents` dirs "stale copies of `~/.claude/agents`". Wrong. They are a second agent set in omp's own format, managed by `scripts/sync-omp-profiles.js`:
 
-machine-a (first report): `~/.codex/agents` 29 files, 26 differ; omp copies same as above. Diff content not inspected line-by-line (inferred: frontmatter/model fields).
+| Path | Role | Files after archive |
+|---|---|---:|
+| `~/.claude/agents` | Claude Code source | 17 |
+| `~/.claude/.omp/agent-openai/agents` | **omp source** (edit here) | 17 |
+| `~/.claude/.omp/agent/agents` | generated, verbatim | 17 |
+| `~/.claude/.omp/agent-anthropic/agents` | generated, model lines mapped | 17 |
+| `~/.omp/agent/agents` | deployed runtime copy (machine-local) | 17 |
+| `~/.codex/agents` | empty on Forty-Two; 29 files on machine-a (real stale copy) | 0 |
+
+Real drift: `node scripts/sync-omp-profiles.js --check` → **29 drifted files** out of 34 generated (pre-existing, not caused by the archive). Run the sync without `--check` to regenerate, or the source and the deployed copies keep diverging. Not done here — the diff was not inspected.
 
 ## Skills — full table (61 live in `~/.claude/skills`; archived 21 listed above)
 
@@ -362,9 +364,9 @@ Keep `ponytail` (auto-loaded), `rdx-audit`, `kaizen`. Drop `rdx`, `rdx-help`. `r
 ### Fix drift — one source of truth
 
 - `~/.claude/agents` and `~/.claude/skills` = source.
-- Windows already links skills (`~/.agents/skills` junction). Do the same for agents: `~/.codex/agents` (empty) and `~/.omp/agent/agents` (27 stale files) → link to `~/.claude/agents`.
+- Windows already links skills (`~/.agents/skills` junction). Link `~/.codex/agents` (empty) to `~/.claude/agents`. omp agents are a different format — keep them under `sync-omp-profiles.js`, but run it: 29 generated files drift from source.
 - machine-a: link `~/.codex/agents`, `~/.codex/skills`, `~/.omp/agent/agents` the same way; move `loop-video` into `~/.claude/skills` first; reconcile `ponytail` and `test-driven-development` diffs.
-- Delete the three `.omp/*/agents` copies from the repo.
+- Two agent formats (Claude, omp) means every agent edit is done twice. Decide whether omp agents should be generated from `~/.claude/agents` instead of a hand-maintained second source.
 
 ### Measurement fix
 
