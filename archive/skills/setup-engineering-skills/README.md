@@ -1,6 +1,6 @@
 # Setup Engineering Skills
 
-Scaffolds the per-repo configuration that `to-issues`, `triage`, `ralph-init`, `systematic-debugging`, `tdd`, and `zoom-out` all assume exists: where the issue tracker lives, what the triage label strings actually are, and how domain docs (`CONTEXT.md`, ADRs) are laid out.
+Scaffolds the per-repo configuration that `triage`, `ralph-init`, `systematic-debugging`, and `tdd` all assume exists: where the issue tracker lives, what the triage label strings actually are, and how domain docs (`CONTEXT.md`, ADRs) are laid out.
 
 ## What It Does
 
@@ -16,6 +16,6 @@ Scaffolds the per-repo configuration that `to-issues`, `triage`, `ralph-init`, `
 ## When to Use
 
 Trigger when you:
-- are about to use `to-issues`, `triage`, or another engineering skill for the first time in this repo
+- are about to use `triage` or another engineering skill for the first time in this repo
 - notice one of those skills is missing context about the tracker, labels, or domain doc location
 - need to switch issue trackers or reset this configuration from scratch

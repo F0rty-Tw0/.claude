@@ -5,11 +5,11 @@ Moves issues on the project's issue tracker through a small state machine driven
 ## What It Does
 
 - Two category roles (`bug`, `enhancement`) plus five state roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`) — every triaged issue carries exactly one of each
-- On a specific issue: gathers full context (body, comments, prior triage notes, relevant `.out-of-scope/` history), recommends a category/state with reasoning, attempts reproduction for bugs before any further questioning, and optionally runs a `grill-with-docs` session if the issue needs fleshing out
+- On a specific issue: gathers full context (body, comments, prior triage notes, relevant `.out-of-scope/` history), recommends a category/state with reasoning, attempts reproduction for bugs before any further questioning, and optionally runs a `brainstorming` session if the issue needs fleshing out
 - Applies the outcome — posts an agent brief for `ready-for-agent`, triage notes for `needs-info`, a rejection note to `.out-of-scope/` for `wontfix` enhancements, etc.
 - Every tracker comment/issue it posts opens with an AI-generated disclaimer
 
-Relies on `setup-engineering-skills` having already recorded the tracker and label vocabulary for this repo.
+Relies on the repo's AGENTS.md/CLAUDE.md having recorded the tracker and label vocabulary.
 
 ---
 

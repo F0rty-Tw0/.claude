@@ -166,10 +166,9 @@ The code-reviewer agent checks:
 
 ## Use with Other Skills
 
-**With Pipeline:**
+**As a sequential agent chain:**
 
-`pipeline` has no argument parser -- there's no `/pipeline review "..."` shortcut. Drive its Review Pipeline preset
-manually: `explore` -> `architect` -> `critic` -> `executor`, folding each stage's findings into the next prompt,
+Drive it manually: `explore` -> `architect` -> `critic` -> `executor`, folding each stage's findings into the next prompt,
 with this skill's `code-reviewer` delegation standing in for the `critic` stage.
 
 **With Ralph:**

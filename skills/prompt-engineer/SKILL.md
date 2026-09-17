@@ -113,4 +113,4 @@ Only saying what to do, without saying what NOT to do, leaves room for unwanted 
 
 ## Related Skills
 
-Works well with: `ai-agents-architect`, `rag-engineer`, `backend`, `product-manager`
+Works well with: `ai-agents-architect`, `rag-engineer`, `backend`

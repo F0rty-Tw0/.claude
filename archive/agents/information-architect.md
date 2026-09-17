@@ -56,7 +56,6 @@ using it. </Why_This_Matters>
 | Taxonomy proposed, needs user validation     | `ux-researcher` (Daedalus) | User testing is their domain           |
 | Naming convention defined, needs docs update | `writer`                   | Documentation writing is their domain  |
 | Structure impacts code organization          | `architect` (Oracle)       | Technical architecture is their domain |
-| IA changes need business sign-off            | `product-manager` (Athena) | Prioritization is their domain         |
 
 ## When You ARE Needed
 

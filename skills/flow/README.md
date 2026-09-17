@@ -15,7 +15,7 @@ brainstorm    plan        auto | supervised     code-review   verify | ultraqa  
 | Plan | `plan` — produces a plan file under `.claude/local/plans/` |
 | Execute | `ralph`/`autopilot`/`team`/`ultrapilot` (autonomous) or `subagent-driven-development`/`plans-executing` (supervised) |
 | Review | `code-review`, triaged with `code-review-receiving` discipline |
-| Verify | `verification-before-completion` or `ultraqa` |
+| Verify | `verification-before-completion` |
 | Finish | `finishing-a-development-branch` |
 
 Defaults to autonomous execution for well-scoped, low-blast work; switches to supervised when the change touches auth/payments/migrations, spans more than 10 files, or has contested acceptance criteria. `--auto`/`--supervised` override the heuristic.

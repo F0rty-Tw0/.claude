@@ -61,7 +61,7 @@ Do not advance a stage until its gate holds; if a gate can't be met, stop and re
 
 ## Cross-cutting
 
-- **Isolation:** before EXECUTE on non-trivial work, ensure an isolated workspace via `project-session-manager` (tmux + worktree) or `using-git-worktrees` (lightweight).
+- **Isolation:** before EXECUTE on non-trivial work, ensure an isolated workspace via `using-git-worktrees`.
 - **State:** each underlying skill owns its own state files; flow only sequences them.
 
 ## Non-Goals

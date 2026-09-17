@@ -6,6 +6,8 @@
 !.omp/**
 !agents/
 !agents/**
+!archive/
+!archive/**
 !commands/
 !commands/**
 !plans/

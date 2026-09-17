@@ -475,7 +475,7 @@ Analyze the current conversation context to identify potential skill-worthy patt
 - Codebase-specific workarounds discovered
 - Error patterns that took time to resolve
 
-Report findings and ask if user wants to extract any as skills (invoke `/learner` if yes).
+Report findings and ask if user wants to extract any as skills (use `skills-creating` if yes).
 
 **Option 4: Import Skill**
 
@@ -667,9 +667,7 @@ Good skills are:
 
 ## Related Skills
 
-- `learner` - Extract a skill from current conversation
 - `note` - Save quick notes (less formal than skills)
-- `deepinit` - Generate AGENTS.md codebase hierarchy
 
 ---
 

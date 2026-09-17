@@ -52,7 +52,7 @@ Each preset is a recipe: a fixed stage order you replicate with `Agent` calls, c
 ### Implement Pipeline
 
 **Purpose:** Planned implementation with testing
-**Stages:** `planner` -> `executor` -> `test-engineer`
+**Stages:** `/plan` -> `executor` -> `test-engineer`
 **Use for:** New features with clear requirements
 
 ### Debug Pipeline

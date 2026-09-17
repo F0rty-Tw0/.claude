@@ -266,10 +266,9 @@ difficult exploitation **LOW** - Best practice violation or minor security conce
 
 ## Use with Other Skills
 
-**With Pipeline:**
+**As a sequential agent chain:**
 
-`pipeline` has no argument parser -- there's no `/pipeline security "..."` shortcut. Drive its Security Pipeline
-preset manually with sequential `Agent` calls, each fed the prior stage's findings:
+Drive it manually with sequential `Agent` calls, each fed the prior stage's findings:
 `explore` -> `security-reviewer` -> `executor` -> `security-reviewer` (re-verify the fix closed the finding).
 
 **With Team:**
