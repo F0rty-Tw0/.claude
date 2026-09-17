@@ -5,6 +5,7 @@ Sources:
   Claude  ~/.claude.json skillUsage (lifetime), ~/.claude/projects/*/*.jsonl (Agent/Skill tool calls)
   Codex   ~/.codex/sessions/**/*.jsonl (SKILL.md reads, spawn_agent)
   omp     ~/.omp/agent/sessions/**/*.jsonl (read skill://, task tool)
+  MCP     ~/.cache/claude-cli-nodejs/*/mcp-logs-*/*.jsonl (Claude session census, "Calling MCP tool:" lines)
 """
 import collections
 import datetime
@@ -87,10 +88,37 @@ def omp():
     return skill, agent
 
 
+def claude_mcp():
+    """Session census by month + MCP calls per server from Claude debug logs (skillopt tmp runs excluded)."""
+    sessions = collections.defaultdict(set)
+    calls, started, active = collections.Counter(), collections.Counter(), collections.defaultdict(set)
+    for f in glob.glob(f"{H}/.cache/claude-cli-nodejs/*/mcp-logs-*/*.jsonl"):
+        if "skillopt" in f:
+            continue
+        server = f.split("/")[-2].replace("mcp-logs-", "")
+        started[server] += 1
+        for line in open(f, errors="ignore"):
+            try:
+                d = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if d.get("sessionId"):
+                sessions[d.get("timestamp", "")[:7]].add(d["sessionId"])
+            m = re.match(r"Calling MCP tool: (\S+)", d.get("debug", ""))
+            if m:
+                calls[f"{server}:{m.group(1)}"] += 1
+                active[server].add(d.get("sessionId"))
+    return ({k: len(v) for k, v in sorted(sessions.items())},
+            [{"server": s, "started": started[s], "active_sessions": len(active[s]),
+              "calls": sum(v for k, v in calls.items() if k.startswith(s + ":"))} for s in started],
+            dict(calls))
+
+
 def main():
     c_skill, c_last, c_agent = claude()
     x_skill, x_agent = codex()
     o_skill, o_agent = omp()
+    census, mcp_servers, mcp_calls = claude_mcp()
     agents = sorted(f[:-3] for f in os.listdir(f"{H}/.claude/agents"))
     skills = sorted(d for d in os.listdir(f"{H}/.claude/skills") if os.path.isdir(f"{H}/.claude/skills/{d}") and d != "synced")
     out = {
@@ -101,11 +129,15 @@ def main():
         "other_agents_claude": {k: v for k, v in c_agent.items() if k not in agents},
         "other_agents_omp": {k: v for k, v in o_agent.items() if k not in agents},
         "codex_agents": dict(x_agent),
+        "claude_sessions_by_month": census,
+        "mcp_servers": sorted(mcp_servers, key=lambda r: -r["calls"]),
+        "mcp_calls": mcp_calls,
     }
     json.dump(out, open("/tmp/usage-audit.json", "w"), indent=1)
     never_a = [r["name"] for r in out["agents"] if r["claude_4d"] + r["omp"] + r["codex"] == 0]
     never_s = [r["name"] for r in out["skills"] if r["claude_life"] + r["omp"] + r["codex"] == 0]
     print(f"agents never used: {len(never_a)}/{len(agents)}; skills never used: {len(never_s)}/{len(skills)}")
+    print(f"claude sessions by month: {census}")
     print("wrote /tmp/usage-audit.json")
 
 

@@ -11,32 +11,36 @@ Read-only analysis. Nothing deleted.
 - Real load: `executor` + `deep-executor` (Claude), `librarian`/`scout` (omp built-ins), `test-engineer`, `code-reviewer` (omp).
 - Skills that actually earn their keep: `caveman`, `humanizer`, `pr-description`, `skills-using`, `systematic-debugging`, `verification-before-completion`, `analyze`, `angular-developer`, `test-driven-development`.
 - **6 copies of `agents/`**, 2 copies of `skills/`, all drifting. One `skills.backup.*` (3.3 MB) still in repo.
+- **MCP:** `ide` + `playwright` do all the work. `chrome-devtools`, `agentic-mcp`, `context7`, `angular-cli`, 4 claude.ai connectors ≈ 0 calls across 189 sessions.
 
 ## Data sources and limits
 
 | Tool | Window | Source | Limit |
 |---|---|---|---|
 | Claude Code — skills | 2026-05-29 → 2026-09-17 | `~/.claude.json` → `skillUsage` (lifetime counter) | Counts explicit `/skill` or Skill-tool calls only. Skills auto-loaded via `@` in CLAUDE.md (`caveman`, `ponytail`) are undercounted. |
-| Claude Code — agents | 2026-09-14 → 2026-09-17 | `~/.claude/projects/*/*.jsonl` (16 sessions, 3157 assistant msgs) | **4-day sample only.** `clean-claude` deletes older transcripts. `~/.claude.json` has no lifetime agent counter. |
+| Claude Code — agents | 2026-09-14 → 2026-09-17 | `~/.claude/projects/**/*.jsonl` (16 sessions, 3157 assistant msgs + 75 subagent transcripts) | **16 of 189 sessions (8%).** `clean-claude` deletes older transcripts. `~/.claude.json` has no lifetime agent counter. |
+| Claude Code — session census + MCP | 2026-06 → 2026-09 | `~/.cache/claude-cli-nodejs/*/mcp-logs-*/*.jsonl` (1066 debug logs) | Session IDs + `Calling MCP tool:` lines only. No agent/skill data. |
 | Claude Code — prompts | 2026-05-29 → 2026-09-16 | `history.jsonl` (883 prompts, 202 startups) | User-typed text only. |
 | Codex | 2026-09-02 → 2026-09-17 | `state_5.sqlite`, `thread_history_1.sqlite`, 10 rollout files (6 real threads + 4 subagent threads) | 2 weeks. Skill "use" = model ran a command that read `SKILL.md`. |
 | omp (oh-my-pi) | 2026-06 → 2026-09 | `~/.omp/agent/sessions/**` (55 sessions + 96 subagent logs), `agent.db`, `history.db` (266 prompts) | Skill "use" = `read skill://name`. Agent = `task` tool `tasks[].agent`. |
 
 Claude agent numbers are a **sample**, not a census. Skill numbers are lifetime.
 
+Sources checked and found empty for agent/skill signal: `~/.claude/telemetry` (110 `tengu_skill_loaded` = one session's startup index load), 75 nested `subagents/*.jsonl` (0 nested Agent/Skill calls), VS Code `Anthropic.claude-code` ext logs, Codex desktop logs (`~/.local/state/codex`), `~/.omp/logs`, `~/.omp/agent/terminal-sessions`. Prompt text: user asked for an agent by name once in Claude (`executor`), once in omp (`vision`).
+
 ## Activity overview
 
 Prompts per month:
 
-| Month | Claude | omp | Codex threads |
-|---|---:|---:|---:|
-| 2026-05 | 80 | – | – |
-| 2026-06 | 596 | 60 | – |
-| 2026-07 | 178 | 98 | – |
-| 2026-08 | 0 | 82 | – |
-| 2026-09 | 29 | 26 | 6 |
+| Month | Claude prompts | Claude sessions (MCP census) | omp prompts | omp sessions | Codex threads |
+|---|---:|---:|---:|---:|---:|
+| 2026-05 | 80 | – | – | – | – |
+| 2026-06 | 596 | 121 | 60 | 24 | – |
+| 2026-07 | 178 | 46 | 98 | 15 | – |
+| 2026-08 | 0 | 0 | 82 | 8 | – |
+| 2026-09 | 29 | 22 | 26 | 8 | 6 |
 
-Claude went quiet in August; omp carried that month. Codex started Sep 2.
+Claude: 189 sessions Jun–Sep (census excludes `skillopt-sleep` tmp runs). Transcripts survive for 16 → agent table = 8% sample. Claude went quiet in August; omp carried that month. Codex started Sep 2.
 
 Claude tool mix (4-day sample): Bash 1204, Agent 72, Edit 47, Write 26, SendMessage 26, ToolSearch 23, AskUserQuestion 14, Read 14, Skill **4**.
 
@@ -253,6 +257,29 @@ Built-in / plugin skills used (not in local dir): `update-config` 1, `claude-hud
 - Codex-only: `loop-video`. Claude-only: `artification`, `nx-workspace-scafold`, `source-command-*` ×6.
 - `~/.claude/skills.backup.20260707-110001/` — 70 skills, 3.3 MB, in repo.
 
+## MCP servers (Claude, Jun–Sep, from debug logs)
+
+| Server | Sessions started in | Sessions with ≥1 call | Calls | Top tools |
+|---|---:|---:|---:|---|
+| ide | 125 | 94 | 5031 | getDiagnostics 4675, closeAllDiffTabs 356 |
+| playwright | 156 | 15 | 242 | browser_evaluate 100, browser_navigate 57, press_key 30, screenshot 20 |
+| t3-code | 14 | 7 | 9 | link_pull_request 9 |
+| context7 | 156 | 1 | 2 | resolve-library-id 2 |
+| angular-cli | 156 | 1 | 1 | search_documentation 1 |
+| agentic-mcp | 69 | 0 | 0 | – |
+| chrome-devtools | 156 | 0 | 0 | – |
+| claude-ai-Figma | 28 | 0 | 0 | – |
+| claude-ai-Gmail | 27 | 0 | 0 | – |
+| claude-ai-Google-Calendar | 27 | 0 | 0 | – |
+| claude-ai-Google-Drive | 27 | 0 | 0 | – |
+| claude-ai-Claude-Docs | 16 | 0 | 0 | – |
+| claude-ai-Claude-Code-Remote | 10 | 0 | 0 | – |
+
+- `chrome-devtools`, `agentic-mcp`, `context7`, `angular-cli`: booted in every session, ≈0 calls. Each adds tool schemas to every prompt.
+- `using-agentic-mcp` skill (0 uses) + `agentic-mcp` server (0 calls) — drop both together.
+- `chrome-devtools` duplicates `playwright` (which is used). Drop.
+- claude.ai connectors (Figma/Gmail/Calendar/Drive): unauthenticated, 0 calls. Disconnect or authorize.
+
 ## Recommendations
 
 ### Delete now — 0 use, pure alias or duplicate
@@ -289,11 +316,11 @@ Update CLAUDE.md "Team Compositions" and "Picking between overlapping agents" af
 
 ### Measurement fix
 
-`clean-claude` wipes transcripts → no lifetime agent stats for Claude. Options: (a) exclude `projects/` from cleanup, (b) run this audit script before each cleanup and append to this file. Script lives in this PR (see below).
+`clean-claude` wipes transcripts → agent stats for Claude cover 16 of 189 sessions. Options: (a) exclude `projects/` from cleanup, (b) run this audit script before each cleanup and append to this file. Script lives in this PR (see below).
 
 ## Reproduce
 
-Script: `scripts/usage-audit.py` — scans all three tools, writes `/tmp/usage-audit.json`. Re-run and regenerate tables when needed.
+Script: `scripts/usage-audit.py` — scans all three tools plus Claude MCP debug logs, writes `/tmp/usage-audit.json`. Re-run and regenerate tables when needed.
 
 ## Confirmed vs inferred
 
