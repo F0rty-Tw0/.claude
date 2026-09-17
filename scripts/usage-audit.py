@@ -163,18 +163,21 @@ def collect():
     x_skill, x_agent, x_meta = codex()
     o_skill, o_agent, o_meta = omp()
     census, mcp_servers, mcp_calls = claude_mcp()
-    agents = sorted(f[:-3] for f in os.listdir(f"{ROOT}/agents") if f.endswith(".md"))
-    skills = sorted(d for d in os.listdir(f"{ROOT}/skills") if os.path.isdir(f"{ROOT}/skills/{d}") and d != "synced")
+    # live + archive/ so counts for archived items stay in the data; --tables shows live only
+    agents = {f[:-3]: f"{d}/{f}" for d in ("archive/agents", "agents") if os.path.isdir(f"{ROOT}/{d}")
+              for f in os.listdir(f"{ROOT}/{d}") if f.endswith(".md")}
+    skills = {s: f"{d}/{s}" for d in ("archive/skills", "skills") if os.path.isdir(f"{ROOT}/{d}")
+              for s in os.listdir(f"{ROOT}/{d}") if os.path.isdir(f"{ROOT}/{d}/{s}") and s != "synced"}
     out = {
         "machine": platform.node(),
         "platform": platform.system(),
         "collected": datetime.date.today().isoformat(),
         "windows": {"claude": c_meta, "codex": x_meta, "omp": o_meta},
         "agents": [{"name": a, "claude": c_agent.get(a, 0), "omp": o_agent.get(a, 0), "codex": x_agent.get(a, 0),
-                    "kb": round(os.path.getsize(f"{ROOT}/agents/{a}.md") / 1024, 1), "added": added(f"agents/{a}.md")} for a in agents],
+                    "kb": round(os.path.getsize(f"{ROOT}/{p}") / 1024, 1), "added": added(p)} for a, p in sorted(agents.items())],
         "skills": [{"name": s, "claude_life": c_skill.get(s, 0), "claude_last": c_last.get(s, ""),
                     "claude_skill_tool": c_skill_tool.get(s, 0),
-                    "omp": o_skill.get(s, 0), "codex": x_skill.get(s, 0), "added": added(f"skills/{s}")} for s in skills],
+                    "omp": o_skill.get(s, 0), "codex": x_skill.get(s, 0), "added": added(p)} for s, p in sorted(skills.items())],
         "other_agents_claude": {k: v for k, v in c_agent.items() if k not in agents},
         "other_agents_omp": {k: v for k, v in o_agent.items() if k not in agents},
         "other_skills_claude_tool": {k: v for k, v in c_skill_tool.items() if k not in skills},
@@ -217,12 +220,17 @@ def tables():
                 agents[a["name"]][k] += a.get(k, 0)
             agents[a["name"]]["kb"] = a["kb"]
             agents[a["name"]]["added"] = a.get("added") or agents[a["name"]].get("added", "")
-    rows = sorted(agents.items(), key=lambda kv: (-(kv[1]["claude"] + kv[1]["omp"] + kv[1]["codex"]), kv[0]))
+    live = {f[:-3] for f in os.listdir(f"{ROOT}/agents") if f.endswith(".md")}
+    atot = lambda c: c["claude"] + c["omp"] + c["codex"]
+    rows = sorted(((n, c) for n, c in agents.items() if n in live), key=lambda kv: (-atot(kv[1]), kv[0]))
     print(f"## Agents ({len(rows)})\n")
     table(["Agent", "Claude", "omp", "Codex", "Total", "KB", "Added"],
-          [(n, c["claude"], c["omp"], c["codex"], c["claude"] + c["omp"] + c["codex"], c["kb"], c["added"]) for n, c in rows])
-    never = [n for n, c in rows if c["claude"] + c["omp"] + c["codex"] == 0]
+          [(n, c["claude"], c["omp"], c["codex"], atot(c), c["kb"], c["added"]) for n, c in rows])
+    never = [n for n, c in rows if atot(c) == 0]
     print(f"Never spawned ({len(never)}): " + ", ".join(f"`{n}`" for n in never) + "\n")
+    archived = sorted(set(agents) - live)
+    if archived:
+        print("Archived (in data, not in agents/): " + ", ".join(f"`{n}`" for n in archived) + "\n")
 
     skills = collections.defaultdict(lambda: collections.Counter())
     last, added_on = {}, {}
@@ -235,12 +243,16 @@ def tables():
             if s.get("claude_last"):
                 last[s["name"]] = max(last.get(s["name"], ""), s["claude_last"])
     tot = lambda c: c["claude_life"] + c["omp"] + c["codex"]
-    rows = sorted(skills.items(), key=lambda kv: (-tot(kv[1]), kv[0]))
+    live = {d for d in os.listdir(f"{ROOT}/skills") if os.path.isdir(f"{ROOT}/skills/{d}")}
+    rows = sorted(((n, c) for n, c in skills.items() if n in live), key=lambda kv: (-tot(kv[1]), kv[0]))
     print(f"## Skills ({len(rows)})\n")
     table(["Skill", "Claude lifetime", "Claude last used", "omp reads", "Codex reads", "Total", "Added"],
           [(n, c["claude_life"], last.get(n, ""), c["omp"], c["codex"], tot(c), added_on.get(n, "")) for n, c in rows])
     never = [n for n, c in rows if tot(c) == 0]
     print(f"Never used ({len(never)}): " + ", ".join(f"`{n}`" for n in never) + "\n")
+    archived = sorted(set(skills) - live)
+    if archived:
+        print("Archived (in data, not in skills/): " + ", ".join(f"`{n}`" for n in archived) + "\n")
 
     for key in ("other_agents_claude", "other_agents_omp", "codex_agents", "other_skills_claude_tool"):
         c = collections.Counter()

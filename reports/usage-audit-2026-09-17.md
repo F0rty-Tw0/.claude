@@ -1,6 +1,6 @@
 # Usage audit — Claude Code, Codex, omp (both machines)
 
-Date: 2026-09-17
+Date: 2026-09-17, archive applied 2026-09-18
 Scope: `~/.claude`, `~/.codex`, `~/.omp` — skills, custom agents, MCP servers.
 Read-only analysis. Nothing deleted.
 
@@ -12,6 +12,38 @@ The config is shared across machines; the usage data is not. This report merges 
 | `machine-a` | Linux or Mac | `reports/data/usage-audit-machine-a.json` | **Reconstructed** from the first version of this report (single-machine run, 2026-09-17). Run the script there to replace it with real data. |
 
 Every table below = sum of both machines unless a column says otherwise.
+
+## Archived 2026-09-18
+
+Rule applied: **all-time total ≤2 across both machines, and ≥67 days old.** Moved with `git mv` into `archive/agents/` and `archive/skills/`. Claude Code, Codex (`~/.agents/skills` junction) and omp only load from `agents/` and `skills/`, so archived items are invisible to every tool. History preserved.
+
+**Agents (12):** `analyst`, `api-reviewer`, `external-researcher`, `information-architect`, `planner`, `product-analyst`, `product-manager`, `qa-tester`, `quality-strategist`, `style-reviewer`, `ux-researcher`, `vision`
+
+**Skills (21):** `angular-new-app`, `chrome-extensions`, `deepinit`, `grill-with-docs`, `learner`, `nextjs-best-practices`, `pipeline`, `project-session-manager`, `prototype`, `psm`, `ralph-init`, `ralplan`, `rdx-help`, `review`, `setup-engineering-skills`, `to-issues`, `trace`, `ultraqa`, `upgrade-dotnet`, `writer-memory`, `zoom-out`
+
+**Exception kept:** `scientist` (2 spawns) — `research` skill (6 uses) hard-codes `subagent_type="scientist"` 12 times. Archiving it breaks `research`. Either rewrite `research` to `general-purpose` or keep `scientist`. Kept.
+
+**Not touched (too young):** `source-command-*` ×6 (1 day), `nx-workspace-scafold` (1 day), `artification` (9 days).
+
+**Reference edits made in the same change** so nothing points at an archived name:
+
+| File | Change |
+|---|---|
+| `CLAUDE.md` | `analyst`/`planner` → `/plan` skill in tie-breaks and Feature Development; reviewer panel and Code Review recipe now `security` / `performance` / `quality`; Product Discovery, Feature Specification, UX Audit recipes removed (all members archived) |
+| `skills/team/SKILL.md` | team-plan / team-prd rows use `architect` + `critic` instead of `planner` / `analyst` / `product-manager` |
+| `skills/code-review/SKILL.md`, `skills/security-review/SKILL.md` | "With Pipeline" paragraph → "As a sequential agent chain" (same agent sequence, no `pipeline` skill) |
+| `skills/flow/SKILL.md`, `skills/flow/README.md` | isolation via `using-git-worktrees` only; verify via `verification-before-completion` only |
+| `skills/triage/SKILL.md`, `skills/triage/README.md` | label mapping comes from repo AGENTS.md/CLAUDE.md, not `setup-engineering-skills`; grill step → `/brainstorming` |
+| `skills/prompt-engineer/SKILL.md` | dropped `product-manager` from "works well with" |
+| `skills/skill/SKILL.md` | `/learner` → `skills-creating`; dropped `learner`, `deepinit` from related list |
+| `agents/deep-executor.md` | documentation research → `external-context` skill |
+| `agents/ux-researcher.md`, `agents/information-architect.md` | hand-off rows to `product-manager` / `product-analyst` removed (then both agents archived anyway) |
+
+Left as-is: `skills/plan/SKILL.md` deprecation notice naming `/planner`, `/ralplan`, `/review` — accurate history.
+
+Post-archive grep for `` `name` `` / `/name` of every archived item over CLAUDE.md, AGENTS.md, settings.json, skills, agents, hooks, commands: 0 live references.
+
+Stale copies in `~/.omp/agent/agents` and `~/.claude/.omp/*/agents` still contain the archived agents. omp reads from `~/.omp/agent/agents`, so **omp can still spawn them** until that dir is linked to `~/.claude/agents` (see Fix drift).
 
 ## TL;DR
 
@@ -61,7 +93,7 @@ omp tool mix, Forty-Two (all sessions incl. subagents): read 32 431, bash 8408, 
 
 User-typed slash commands in Claude, Forty-Two: `/clear` 66, `/model` 26, `/effort` 11, `/rate-limit-options` 10, `/goal` 10, `/workflows` 9, `/remote-control` 7, `/compact` 7, `/btw` 5, `/meaningful-commits` 3, `/pr-description` 3, `/skills-creating` 2, `/value-realization` 2, `/structuring-feature-modules` 1, `/skills-using` 1. machine-a: `/pr-description` 5, `/caveman` 3, `/modern-web-guidance` 2, `/angular-developer` 2.
 
-## Agents — full table (29 custom agents in `~/.claude/agents`)
+## Agents — full table (17 live in `~/.claude/agents`; archived 12 listed above, their counts in the gate section)
 
 | Agent | Claude | omp | Codex | Total | KB | Added |
 |---|---:|---:|---:|---:|---:|---:|
@@ -81,19 +113,7 @@ User-typed slash commands in Claude, Forty-Two: `/clear` 66, `/model` 26, `/effo
 | verifier | 0 | 6 | 0 | 6 | 5.1 | 2026-05-11 |
 | debugger | 0 | 5 | 0 | 5 | 5.3 | 2026-05-11 |
 | designer | 1 | 4 | 0 | 5 | 8.2 | 2026-05-11 |
-| api-reviewer | 0 | 2 | 0 | 2 | 5.0 | 2026-05-11 |
-| external-researcher | 2 | 0 | 0 | 2 | 8.6 | 2026-06-17 |
-| information-architect | 0 | 2 | 0 | 2 | 12.7 | 2026-05-11 |
-| qa-tester | 0 | 2 | 0 | 2 | 5.4 | 2026-05-11 |
 | scientist | 0 | 2 | 0 | 2 | 5.6 | 2026-05-11 |
-| analyst | 0 | 1 | 0 | 1 | 5.3 | 2026-05-11 |
-| style-reviewer | 0 | 1 | 0 | 1 | 4.3 | 2026-05-11 |
-| ux-researcher | 0 | 1 | 0 | 1 | 13.1 | 2026-05-11 |
-| planner | 0 | 0 | 0 | 0 | 7.4 | 2026-05-11 |
-| product-analyst | 0 | 0 | 0 | 0 | 14.8 | 2026-05-11 |
-| product-manager | 0 | 0 | 0 | 0 | 10.6 | 2026-05-11 |
-| quality-strategist | 0 | 0 | 0 | 0 | 9.5 | 2026-05-11 |
-| vision | 0 | 0 | 0 | 0 | 3.8 | 2026-05-11 |
 
 Non-custom agents also spawned:
 
@@ -101,13 +121,13 @@ Non-custom agents also spawned:
 - omp: unnamed 77, `scout` 71, `librarian` 53, generic `task` 36, `reviewer` 31, `document-specialist` 14, `sonic` 13, `Tester` 6, `code-simplifier` 2 (omp built-ins / ad-hoc)
 - Codex: 4 ad-hoc subagents on machine-a (`boundary_review`, `edge_audit`, `tracker_audit`, `query_audit`). **0 custom agents on either machine.**
 
-### Never spawned anywhere (5)
+### Never spawned anywhere
 
-`planner`, `product-analyst`, `product-manager`, `quality-strategist`, `vision`
+None left after archive.
 
-### Spawned ≤2 times in ~6 months (8)
+### Spawned ≤2 times
 
-`api-reviewer`, `external-researcher`, `information-architect`, `qa-tester`, `scientist`, `analyst`, `style-reviewer`, `ux-researcher`
+`scientist` (kept, `research` dependency). Everything else archived.
 
 ### Agent observations
 
@@ -132,7 +152,7 @@ Non-custom agents also spawned:
 
 machine-a (first report): `~/.codex/agents` 29 files, 26 differ; omp copies same as above. Diff content not inspected line-by-line (inferred: frontmatter/model fields).
 
-## Skills — full table (82 local skills in `~/.claude/skills`)
+## Skills — full table (61 live in `~/.claude/skills`; archived 21 listed above)
 
 | Skill | Claude lifetime | Claude last used | omp reads | Codex reads | Total | Added |
 |---|---:|---:|---:|---:|---:|---:|
@@ -191,45 +211,22 @@ machine-a (first report): `~/.codex/agents` 29 files, 26 differ; omp copies same
 | triage | 0 |  | 3 | 0 | 3 | 2026-06-17 |
 | ultrapilot | 0 |  | 3 | 0 | 3 | 2026-06-16 |
 | wrap-up | 1 | 2026-04-29 | 2 | 0 | 3 | 2026-02-23 |
-| angular-new-app | 1 | 2026-07-11 | 1 | 0 | 2 | 2026-05-29 |
-| chrome-extensions | 1 | 2026-06-08 | 1 | 0 | 2 | 2026-06-05 |
-| learner | 0 |  | 2 | 0 | 2 | 2026-06-16 |
-| nextjs-best-practices | 0 |  | 2 | 0 | 2 | 2026-02-11 |
-| pipeline | 0 |  | 2 | 0 | 2 | 2026-06-16 |
-| prototype | 0 |  | 2 | 0 | 2 | 2026-06-17 |
-| deepinit | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| project-session-manager | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| psm | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| ralph-init | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| ralplan | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| rdx-help | 0 |  | 1 | 0 | 1 | 2026-07-12 |
-| review | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| setup-engineering-skills | 0 |  | 1 | 0 | 1 | 2026-06-17 |
-| trace | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| ultraqa | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| upgrade-dotnet | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| writer-memory | 0 |  | 1 | 0 | 1 | 2026-06-16 |
-| grill-with-docs | 0 |  | 0 | 0 | 0 | 2026-06-17 |
 | source-command-clean-claude | 0 |  | 0 | 0 | 0 | 2026-09-16 |
 | source-command-delete-nul | 0 |  | 0 | 0 | 0 | 2026-09-16 |
 | source-command-review-claude | 0 |  | 0 | 0 | 0 | 2026-09-16 |
 | source-command-skillopt-run | 0 |  | 0 | 0 | 0 | 2026-09-16 |
 | source-command-start-mcp-proxy | 0 |  | 0 | 0 | 0 | 2026-09-16 |
 | source-command-start-pytaiga-mcp | 0 |  | 0 | 0 | 0 | 2026-09-16 |
-| to-issues | 0 |  | 0 | 0 | 0 | 2026-06-17 |
-| zoom-out | 0 |  | 0 | 0 | 0 | 2026-06-17 |
 
 Built-in / plugin skills called via Skill tool on Forty-Two: `claude-in-chrome` 2, `artifact-design` 1, `dataviz` 1, `start-mcp-proxy` 1, `update-config` 1. machine-a: `update-config` 1, `claude-hud:setup` 1, `keybindings-help` 2, `simplify` 1. Codex-only skill on machine-a: `loop-video` 1.
 
-### Never used anywhere (9)
+### Never used anywhere
 
-`grill-with-docs`, `to-issues`, `zoom-out` (added 2026-06-17, 3 months of data) and `source-command-*` ×6 (added 2026-09-16, **1 day** — not a signal).
+`source-command-*` ×6 — added 2026-09-16, **1 day** — not a signal.
 
-### Read once or twice in ~6 months (18)
+### Read once or twice
 
-`angular-new-app`, `chrome-extensions`, `learner`, `nextjs-best-practices`, `pipeline`, `prototype`, `deepinit`, `project-session-manager`, `psm`, `ralph-init`, `ralplan`, `rdx-help`, `review`, `setup-engineering-skills`, `trace`, `ultraqa`, `upgrade-dotnet`, `writer-memory`
-
-A single omp read is usually the model peeking at a skill after `skills-using` told it to — not a real invocation. Treat ≤2 as noise-level.
+All archived (see top).
 
 ### Redundant clusters
 
@@ -346,17 +343,9 @@ Everything else on the cut list needs the referencing file edited in the same ch
 
 Revised against the merged data plus the age and dependency gate above. Cuts are smaller than the first report proposed because omp on Windows uses most of the roster. Nothing younger than 67 days is on a cut list.
 
-### Delete now — 0 use, pure alias or duplicate
+### Archive low-use skills and agents — DONE 2026-09-18
 
-- Skills with no references: `rdx-help`, `zoom-out`*, `to-issues`*, `grill-with-docs`*  (*referenced only by `setup-engineering-skills` / `triage`, both ≤3 reads — cut those references too)
-- Aliases (edit the referencing skill first): `psm` (`project-session-manager`), `ralplan` + `review` (`plan`, CLAUDE.md)
-- Not `source-command-*`: 1 day old. Revisit once `commands/` migration is done — if both copies stay, one is redundant.
-- Dirs: `.omp/agent/`, `.omp/agent-anthropic/`, `.omp/agent-openai/` inside `~/.claude` (3 stale agent copies in the repo); `~/.codex/skills` on Windows (dead, Codex uses the `~/.agents/skills` junction)
-
-### Delete unless you plan to use — ≤2 uses in 3–7 months, domain-specific or superseded
-
-No references: `upgrade-dotnet`, `writer-memory`, `chrome-extensions`, `nextjs-best-practices`, `angular-new-app`, `trace`, `prototype`.
-Referenced (edit referrer): `setup-engineering-skills`, `learner`, `deepinit` (← `skill`), `ultraqa` (← `flow`), `ralph-init` (← `setup-engineering-skills`), `pipeline` (← `code-review`, `security-review`), `project-session-manager` (← `flow`).
+See "Archived 2026-09-18" at the top. Still open from this bucket: `.omp/agent*/` copies inside the repo, `~/.codex/skills` dead dir on Windows.
 
 ### Collapse orchestration → keep 4
 
@@ -366,15 +355,9 @@ Keep `dispatching-parallel-agents`, `subagent-driven-development`, `autopilot`, 
 
 Keep `ponytail` (auto-loaded), `rdx-audit`, `kaizen`. Drop `rdx`, `rdx-help`. `rdx-review` (11 omp reads) is borderline — CLAUDE.md names it as the merge gate, so keep it if that rule stays. Update CLAUDE.md RDX section if `rdx` goes.
 
-### Collapse agents 29 → 18
+### Agents 29 → 17 — DONE
 
-Drop (0–2 spawns, 6 months, both machines): `planner`, `product-analyst`, `product-manager`, `quality-strategist`, `vision`, `ux-researcher`, `information-architect`, `style-reviewer`, `api-reviewer`, `analyst`, `scientist`. That is 92 KB of agent definitions for 9 spawns total.
-
-Keep: `executor`, `deep-executor`, `code-reviewer`, `test-engineer`, `quality-reviewer`, `explore`, `architect`, `build-fixer`, `git-master`, `writer`, `security-reviewer`, `critic`, `performance-reviewer`, `verifier`, `debugger`, `designer`, `external-researcher`, `qa-tester`.
-
-`external-researcher` (2) and `qa-tester` (2) are kept only because they have no skill equivalent in Claude; `external-context` skill covers the first in omp.
-
-Same change must edit CLAUDE.md "Team Compositions" and "Picking between overlapping agents" (they name `analyst`, `planner`, `product-manager`, `ux-researcher`, `product-analyst`, `information-architect`, `style-reviewer`, `api-reviewer`), plus `plan`, `pipeline`, `team`, `research`, `prompt-engineer` skills and the surviving agents that mention cut ones (see gate table).
+12 archived. `scientist` kept for `research`. Remaining low-end: `designer` 5, `debugger` 5, `verifier` 6, `performance-reviewer` 6, `critic` 8 — all referenced by live skills or CLAUDE.md; revisit after the next audit run.
 
 ### Fix drift — one source of truth
 

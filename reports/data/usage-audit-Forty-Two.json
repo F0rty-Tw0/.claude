@@ -108,7 +108,7 @@
    "added": "2026-05-11",
    "claude": 0,
    "codex": 0,
-   "kb": 12.9,
+   "kb": 12.6,
    "name": "information-architect",
    "omp": 2
   },
@@ -204,7 +204,7 @@
    "added": "2026-05-11",
    "claude": 0,
    "codex": 0,
-   "kb": 13.4,
+   "kb": 12.9,
    "name": "ux-researcher",
    "omp": 1
   },
@@ -239,10 +239,10 @@
   "2026-06": 80,
   "2026-07": 98,
   "2026-08": 16,
-  "2026-09": 111
+  "2026-09": 112
  },
  "codex_agents": {},
- "collected": "2026-09-17",
+ "collected": "2026-09-18",
  "machine": "Forty-Two",
  "mcp_calls": {
   "angular-cli:devserver.start": 2,
@@ -274,7 +274,7 @@
    "active_sessions": 10,
    "calls": 20,
    "server": "github",
-   "started": 232
+   "started": 233
   },
   {
    "active_sessions": 6,
@@ -286,31 +286,31 @@
    "active_sessions": 2,
    "calls": 11,
    "server": "exa",
-   "started": 232
+   "started": 233
   },
   {
    "active_sessions": 3,
    "calls": 9,
    "server": "context7",
-   "started": 232
+   "started": 233
   },
   {
    "active_sessions": 1,
    "calls": 2,
    "server": "angular-cli",
-   "started": 232
+   "started": 233
   },
   {
    "active_sessions": 0,
    "calls": 0,
    "server": "agentic-mcp",
-   "started": 232
+   "started": 233
   },
   {
    "active_sessions": 0,
    "calls": 0,
    "server": "claude-in-chrome",
-   "started": 41
+   "started": 42
   },
   {
    "active_sessions": 0,
@@ -322,7 +322,7 @@
    "active_sessions": 0,
    "calls": 0,
    "server": "claude-ai-Claude-Docs",
-   "started": 2
+   "started": 3
   },
   {
    "active_sessions": 0,
@@ -411,7 +411,7 @@
    "omp": 33
   },
   {
-   "added": "2026-05-29",
+   "added": "2026-09-18",
    "claude_last": "2026-07-11",
    "claude_life": 1,
    "claude_skill_tool": 0,
@@ -465,7 +465,7 @@
    "omp": 69
   },
   {
-   "added": "2026-06-05",
+   "added": "2026-09-18",
    "claude_last": "2026-06-08",
    "claude_life": 1,
    "claude_skill_tool": 0,
@@ -501,7 +501,7 @@
    "omp": 131
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -600,7 +600,7 @@
    "omp": 58
   },
   {
-   "added": "2026-06-17",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -627,7 +627,7 @@
    "omp": 34
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -654,7 +654,7 @@
    "omp": 16
   },
   {
-   "added": "2026-02-11",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -681,7 +681,7 @@
    "omp": 4
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -744,7 +744,7 @@
    "omp": 4
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -762,7 +762,7 @@
    "omp": 3
   },
   {
-   "added": "2026-06-17",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -771,7 +771,7 @@
    "omp": 0
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -789,7 +789,7 @@
    "omp": 6
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -798,7 +798,7 @@
    "omp": 1
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -825,7 +825,7 @@
    "omp": 26
   },
   {
-   "added": "2026-07-12",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -852,7 +852,7 @@
    "omp": 3
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -870,7 +870,7 @@
    "omp": 26
   },
   {
-   "added": "2026-06-17",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -1005,7 +1005,7 @@
    "omp": 419
   },
   {
-   "added": "2026-06-17",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -1014,7 +1014,7 @@
    "omp": 0
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -1041,7 +1041,7 @@
    "omp": 3
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -1059,7 +1059,7 @@
    "omp": 8
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -1113,7 +1113,7 @@
    "omp": 2
   },
   {
-   "added": "2026-06-16",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -1122,7 +1122,7 @@
    "omp": 1
   },
   {
-   "added": "2026-06-17",
+   "added": "2026-09-18",
    "claude_last": "",
    "claude_life": 0,
    "claude_skill_tool": 0,
@@ -1133,11 +1133,11 @@
  ],
  "windows": {
   "claude": {
-   "sessions": 90,
+   "sessions": 91,
    "transcripts": {
-    "files": 101,
+    "files": 102,
     "from": "2026-08-19",
-    "to": "2026-09-17"
+    "to": "2026-09-18"
    }
   },
   "codex": {
