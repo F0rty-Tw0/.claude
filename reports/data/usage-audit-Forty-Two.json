@@ -1,0 +1,1174 @@
+{
+ "agents": [
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.4,
+   "name": "analyst",
+   "omp": 0
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.1,
+   "name": "api-reviewer",
+   "omp": 1
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 4,
+   "codex": 0,
+   "kb": 6.5,
+   "name": "architect",
+   "omp": 17
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 4.5,
+   "name": "build-fixer",
+   "omp": 20
+  },
+  {
+   "added": "2026-01-20",
+   "claude": 1,
+   "codex": 0,
+   "kb": 5.6,
+   "name": "code-reviewer",
+   "omp": 182
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 2,
+   "codex": 0,
+   "kb": 5.1,
+   "name": "critic",
+   "omp": 6
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.4,
+   "name": "debugger",
+   "omp": 4
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 76,
+   "codex": 0,
+   "kb": 6.3,
+   "name": "deep-executor",
+   "omp": 47
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 1,
+   "codex": 0,
+   "kb": 8.3,
+   "name": "designer",
+   "omp": 4
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 99,
+   "codex": 0,
+   "kb": 4.8,
+   "name": "executor",
+   "omp": 259
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 6.6,
+   "name": "explore",
+   "omp": 34
+  },
+  {
+   "added": "2026-06-17",
+   "claude": 0,
+   "codex": 0,
+   "kb": 8.7,
+   "name": "external-researcher",
+   "omp": 0
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 4.5,
+   "name": "git-master",
+   "omp": 19
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 12.9,
+   "name": "information-architect",
+   "omp": 2
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.3,
+   "name": "performance-reviewer",
+   "omp": 5
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 7.4,
+   "name": "planner",
+   "omp": 0
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 15.1,
+   "name": "product-analyst",
+   "omp": 0
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 10.8,
+   "name": "product-manager",
+   "omp": 0
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.5,
+   "name": "qa-tester",
+   "omp": 2
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 2,
+   "codex": 0,
+   "kb": 5.7,
+   "name": "quality-reviewer",
+   "omp": 47
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 9.7,
+   "name": "quality-strategist",
+   "omp": 0
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.7,
+   "name": "scientist",
+   "omp": 1
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 6.3,
+   "name": "security-reviewer",
+   "omp": 9
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 4.3,
+   "name": "style-reviewer",
+   "omp": 1
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 1,
+   "codex": 0,
+   "kb": 5.7,
+   "name": "test-engineer",
+   "omp": 52
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 13.4,
+   "name": "ux-researcher",
+   "omp": 1
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.2,
+   "name": "verifier",
+   "omp": 5
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 0,
+   "codex": 0,
+   "kb": 3.9,
+   "name": "vision",
+   "omp": 0
+  },
+  {
+   "added": "2026-05-11",
+   "claude": 3,
+   "codex": 0,
+   "kb": 3.9,
+   "name": "writer",
+   "omp": 10
+  }
+ ],
+ "claude_sessions_by_month": {
+  "2026-03": 70,
+  "2026-05": 3,
+  "2026-06": 80,
+  "2026-07": 98,
+  "2026-08": 16,
+  "2026-09": 111
+ },
+ "codex_agents": {},
+ "collected": "2026-09-17",
+ "machine": "Forty-Two",
+ "mcp_calls": {
+  "angular-cli:devserver.start": 2,
+  "context7:query-docs": 7,
+  "context7:resolve-library-id": 2,
+  "exa:web_fetch_exa": 11,
+  "github:create_issue": 1,
+  "github:get_file_contents": 1,
+  "github:get_issue": 7,
+  "github:get_pull_request": 1,
+  "github:search_code": 10,
+  "ide:closeAllDiffTabs": 921,
+  "ide:close_tab": 101,
+  "ide:getDiagnostics": 15137,
+  "ide:openDiff": 50,
+  "plugin-oh-my-claudecode-t:lsp_diagnostics": 2,
+  "plugin-oh-my-claudecode-t:state_clear": 6,
+  "plugin-oh-my-claudecode-t:state_list_active": 3,
+  "plugin-oh-my-claudecode-t:state_write": 1
+ },
+ "mcp_servers": [
+  {
+   "active_sessions": 143,
+   "calls": 16209,
+   "server": "ide",
+   "started": 148
+  },
+  {
+   "active_sessions": 10,
+   "calls": 20,
+   "server": "github",
+   "started": 232
+  },
+  {
+   "active_sessions": 6,
+   "calls": 12,
+   "server": "plugin-oh-my-claudecode-t",
+   "started": 78
+  },
+  {
+   "active_sessions": 2,
+   "calls": 11,
+   "server": "exa",
+   "started": 232
+  },
+  {
+   "active_sessions": 3,
+   "calls": 9,
+   "server": "context7",
+   "started": 232
+  },
+  {
+   "active_sessions": 1,
+   "calls": 2,
+   "server": "angular-cli",
+   "started": 232
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "agentic-mcp",
+   "started": 232
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-in-chrome",
+   "started": 41
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "filesystem",
+   "started": 168
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Claude-Docs",
+   "started": 2
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Figma",
+   "started": 113
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Gmail",
+   "started": 115
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Google-Calendar",
+   "started": 115
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Google-Drive",
+   "started": 56
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-vscode",
+   "started": 4
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "plugin-oh-my-claudecode-team",
+   "started": 63
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "mempalace",
+   "started": 17
+  }
+ ],
+ "other_agents_claude": {
+  "Explore": 7,
+  "Plan": 1,
+  "fork": 3
+ },
+ "other_agents_omp": {
+  "?": 68,
+  "Tester": 5,
+  "code-simplifier": 2,
+  "document-specialist": 14,
+  "librarian": 38,
+  "reviewer": 31,
+  "scout": 63,
+  "sonic": 13,
+  "task": 27
+ },
+ "other_skills_claude_tool": {
+  "artifact-design": 1,
+  "claude-in-chrome": 2,
+  "dataviz": 1,
+  "start-mcp-proxy": 1,
+  "update-config": 1
+ },
+ "platform": "Windows",
+ "skills": [
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "analyze",
+   "omp": 173
+  },
+  {
+   "added": "2026-05-29",
+   "claude_last": "2026-07-11",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "angular-developer",
+   "omp": 33
+  },
+  {
+   "added": "2026-05-29",
+   "claude_last": "2026-07-11",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "angular-new-app",
+   "omp": 1
+  },
+  {
+   "added": "2026-09-08",
+   "claude_last": "2026-09-14",
+   "claude_life": 17,
+   "claude_skill_tool": 6,
+   "codex": 0,
+   "name": "artification",
+   "omp": 357
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "autopilot",
+   "omp": 10
+  },
+  {
+   "added": "2026-01-20",
+   "claude_last": "2026-07-14",
+   "claude_life": 6,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "brainstorming",
+   "omp": 106
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "build-fix",
+   "omp": 37
+  },
+  {
+   "added": "2026-04-28",
+   "claude_last": "2026-06-13",
+   "claude_life": 17,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "caveman",
+   "omp": 69
+  },
+  {
+   "added": "2026-06-05",
+   "claude_last": "2026-06-08",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "chrome-extensions",
+   "omp": 1
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "2026-07-06",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "code-review",
+   "omp": 230
+  },
+  {
+   "added": "2026-02-11",
+   "claude_last": "2026-06-13",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "code-review-receiving",
+   "omp": 35
+  },
+  {
+   "added": "2026-02-11",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "code-review-requesting",
+   "omp": 131
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "deepinit",
+   "omp": 1
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "deepsearch",
+   "omp": 27
+  },
+  {
+   "added": "2026-05-08",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "deflaky",
+   "omp": 4
+  },
+  {
+   "added": "2026-06-15",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "deglaze",
+   "omp": 11
+  },
+  {
+   "added": "2026-01-20",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "dispatching-parallel-agents",
+   "omp": 31
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "external-context",
+   "omp": 141
+  },
+  {
+   "added": "2026-02-11",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "finishing-a-development-branch",
+   "omp": 10
+  },
+  {
+   "added": "2026-06-17",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "flow",
+   "omp": 7
+  },
+  {
+   "added": "2026-01-30",
+   "claude_last": "2026-09-08",
+   "claude_life": 1,
+   "claude_skill_tool": 1,
+   "codex": 0,
+   "name": "frontend-design",
+   "omp": 5
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "frontend-ui-ux",
+   "omp": 5
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "git-master",
+   "omp": 58
+  },
+  {
+   "added": "2026-06-17",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "grill-with-docs",
+   "omp": 0
+  },
+  {
+   "added": "2026-02-16",
+   "claude_last": "2026-07-10",
+   "claude_life": 16,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "humanizer",
+   "omp": 11
+  },
+  {
+   "added": "2026-01-20",
+   "claude_last": "2026-04-17",
+   "claude_life": 2,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "kaizen",
+   "omp": 34
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "learner",
+   "omp": 2
+  },
+  {
+   "added": "2026-03-07",
+   "claude_last": "2026-07-10",
+   "claude_life": 14,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "meaningful-commits",
+   "omp": 5
+  },
+  {
+   "added": "2026-05-29",
+   "claude_last": "2026-06-03",
+   "claude_life": 2,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "modern-web-guidance",
+   "omp": 16
+  },
+  {
+   "added": "2026-02-11",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "nextjs-best-practices",
+   "omp": 2
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "note",
+   "omp": 14
+  },
+  {
+   "added": "2026-09-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "nx-workspace-scafold",
+   "omp": 4
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "pipeline",
+   "omp": 2
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "2026-07-06",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "plan",
+   "omp": 33
+  },
+  {
+   "added": "2026-02-11",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "plans-executing",
+   "omp": 35
+  },
+  {
+   "added": "2026-02-11",
+   "claude_last": "2026-06-10",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "plans-writing",
+   "omp": 54
+  },
+  {
+   "added": "2026-05-20",
+   "claude_last": "2026-06-19",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "pnpm-best-practices",
+   "omp": 12
+  },
+  {
+   "added": "2026-06-15",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ponytail",
+   "omp": 55
+  },
+  {
+   "added": "2026-02-17",
+   "claude_last": "2026-07-10",
+   "claude_life": 11,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "pr-description",
+   "omp": 4
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "project-session-manager",
+   "omp": 1
+  },
+  {
+   "added": "2026-01-20",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "prompt-engineer",
+   "omp": 3
+  },
+  {
+   "added": "2026-06-17",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "prototype",
+   "omp": 0
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "psm",
+   "omp": 1
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ralph",
+   "omp": 6
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ralph-init",
+   "omp": 1
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ralplan",
+   "omp": 1
+  },
+  {
+   "added": "2026-07-12",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "rdx",
+   "omp": 6
+  },
+  {
+   "added": "2026-07-12",
+   "claude_last": "2026-09-14",
+   "claude_life": 5,
+   "claude_skill_tool": 5,
+   "codex": 0,
+   "name": "rdx-audit",
+   "omp": 26
+  },
+  {
+   "added": "2026-07-12",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "rdx-help",
+   "omp": 1
+  },
+  {
+   "added": "2026-07-12",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "rdx-review",
+   "omp": 9
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "research",
+   "omp": 3
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "review",
+   "omp": 1
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "security-review",
+   "omp": 26
+  },
+  {
+   "added": "2026-06-17",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "setup-engineering-skills",
+   "omp": 1
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "skill",
+   "omp": 4
+  },
+  {
+   "added": "2026-03-12",
+   "claude_last": "2026-07-12",
+   "claude_life": 3,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "skills-creating",
+   "omp": 10
+  },
+  {
+   "added": "2026-02-11",
+   "claude_last": "2026-07-06",
+   "claude_life": 26,
+   "claude_skill_tool": 0,
+   "codex": 2,
+   "name": "skills-using",
+   "omp": 964
+  },
+  {
+   "added": "2026-09-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-clean-claude",
+   "omp": 0
+  },
+  {
+   "added": "2026-09-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-delete-nul",
+   "omp": 0
+  },
+  {
+   "added": "2026-09-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-review-claude",
+   "omp": 0
+  },
+  {
+   "added": "2026-09-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-skillopt-run",
+   "omp": 0
+  },
+  {
+   "added": "2026-09-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-start-mcp-proxy",
+   "omp": 0
+  },
+  {
+   "added": "2026-09-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-start-pytaiga-mcp",
+   "omp": 0
+  },
+  {
+   "added": "2026-06-30",
+   "claude_last": "2026-06-29",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "structuring-feature-modules",
+   "omp": 22
+  },
+  {
+   "added": "2026-01-20",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "subagent-driven-development",
+   "omp": 27
+  },
+  {
+   "added": "2026-01-20",
+   "claude_last": "2026-09-08",
+   "claude_life": 2,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "systematic-debugging",
+   "omp": 227
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "team",
+   "omp": 4
+  },
+  {
+   "added": "2026-01-20",
+   "claude_last": "2026-04-09",
+   "claude_life": 2,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "test-driven-development",
+   "omp": 419
+  },
+  {
+   "added": "2026-06-17",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "to-issues",
+   "omp": 0
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "trace",
+   "omp": 1
+  },
+  {
+   "added": "2026-06-17",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "triage",
+   "omp": 2
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ultrapilot",
+   "omp": 3
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ultraqa",
+   "omp": 1
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "2026-04-08",
+   "claude_life": 22,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ultrawork",
+   "omp": 8
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "upgrade-dotnet",
+   "omp": 1
+  },
+  {
+   "added": "2026-03-07",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "using-agentic-mcp",
+   "omp": 8
+  },
+  {
+   "added": "2026-01-20",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "using-git-worktrees",
+   "omp": 19
+  },
+  {
+   "added": "2026-02-23",
+   "claude_last": "2026-09-11",
+   "claude_life": 3,
+   "claude_skill_tool": 1,
+   "codex": 0,
+   "name": "value-realization",
+   "omp": 1
+  },
+  {
+   "added": "2026-01-20",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "verification-before-completion",
+   "omp": 187
+  },
+  {
+   "added": "2026-02-23",
+   "claude_last": "2026-04-29",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "wrap-up",
+   "omp": 2
+  },
+  {
+   "added": "2026-06-16",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "writer-memory",
+   "omp": 1
+  },
+  {
+   "added": "2026-06-17",
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "zoom-out",
+   "omp": 0
+  }
+ ],
+ "windows": {
+  "claude": {
+   "sessions": 90,
+   "transcripts": {
+    "files": 101,
+    "from": "2026-08-19",
+    "to": "2026-09-17"
+   }
+  },
+  "codex": {
+   "sessions": {
+    "files": 94,
+    "from": "2026-02-11",
+    "to": "2026-09-11"
+   },
+   "sessions_by_month": {
+    "2026-02": 3,
+    "2026-03": 9,
+    "2026-07": 5,
+    "2026-08": 24,
+    "2026-09": 53
+   }
+  },
+  "omp": {
+   "sessions": {
+    "files": 1212,
+    "from": "2026-03-08",
+    "to": "2026-09-16"
+   },
+   "sessions_by_month": {
+    "2026-03": 29,
+    "2026-04": 10,
+    "2026-05": 8,
+    "2026-06": 40,
+    "2026-07": 22,
+    "2026-08": 47,
+    "2026-09": 29
+   }
+  }
+ }
+}

@@ -1,0 +1,1021 @@
+{
+ "agents": [
+  {
+   "claude": 34,
+   "codex": 0,
+   "kb": 6.3,
+   "name": "deep-executor",
+   "omp": 6
+  },
+  {
+   "claude": 29,
+   "codex": 0,
+   "kb": 4.8,
+   "name": "executor",
+   "omp": 10
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.6,
+   "name": "test-engineer",
+   "omp": 10
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.5,
+   "name": "code-reviewer",
+   "omp": 8
+  },
+  {
+   "claude": 3,
+   "codex": 0,
+   "kb": 6.4,
+   "name": "architect",
+   "omp": 2
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.6,
+   "name": "quality-reviewer",
+   "omp": 3
+  },
+  {
+   "claude": 2,
+   "codex": 0,
+   "kb": 3.8,
+   "name": "writer",
+   "omp": 1
+  },
+  {
+   "claude": 2,
+   "codex": 0,
+   "kb": 8.6,
+   "name": "external-researcher",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.3,
+   "name": "analyst",
+   "omp": 1
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.0,
+   "name": "api-reviewer",
+   "omp": 1
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.3,
+   "name": "debugger",
+   "omp": 1
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 6.6,
+   "name": "explore",
+   "omp": 1
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.2,
+   "name": "performance-reviewer",
+   "omp": 1
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.6,
+   "name": "scientist",
+   "omp": 1
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.1,
+   "name": "verifier",
+   "omp": 1
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 4.4,
+   "name": "build-fixer",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.0,
+   "name": "critic",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 8.2,
+   "name": "designer",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 4.4,
+   "name": "git-master",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 12.7,
+   "name": "information-architect",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 7.4,
+   "name": "planner",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 14.8,
+   "name": "product-analyst",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 10.6,
+   "name": "product-manager",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 5.4,
+   "name": "qa-tester",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 9.5,
+   "name": "quality-strategist",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 6.2,
+   "name": "security-reviewer",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 4.3,
+   "name": "style-reviewer",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 13.1,
+   "name": "ux-researcher",
+   "omp": 0
+  },
+  {
+   "claude": 0,
+   "codex": 0,
+   "kb": 3.8,
+   "name": "vision",
+   "omp": 0
+  }
+ ],
+ "claude_sessions_by_month": {
+  "2026-05": 0,
+  "2026-06": 121,
+  "2026-07": 46,
+  "2026-08": 0,
+  "2026-09": 22
+ },
+ "codex_agents": {
+  "boundary_review": 1,
+  "edge_audit": 1,
+  "query_audit": 1,
+  "tracker_audit": 1
+ },
+ "collected": "2026-09-17",
+ "machine": "machine-a",
+ "mcp_calls": {
+  "angular-cli:search_documentation": 1,
+  "context7:resolve-library-id": 2,
+  "ide:closeAllDiffTabs": 356,
+  "ide:getDiagnostics": 4675,
+  "playwright:browser_evaluate": 100,
+  "playwright:browser_navigate": 57,
+  "playwright:press_key": 30,
+  "playwright:screenshot": 20,
+  "t3-code:link_pull_request": 9
+ },
+ "mcp_servers": [
+  {
+   "active_sessions": 94,
+   "calls": 5031,
+   "server": "ide",
+   "started": 125
+  },
+  {
+   "active_sessions": 15,
+   "calls": 242,
+   "server": "playwright",
+   "started": 156
+  },
+  {
+   "active_sessions": 7,
+   "calls": 9,
+   "server": "t3-code",
+   "started": 14
+  },
+  {
+   "active_sessions": 1,
+   "calls": 2,
+   "server": "context7",
+   "started": 156
+  },
+  {
+   "active_sessions": 1,
+   "calls": 1,
+   "server": "angular-cli",
+   "started": 156
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "agentic-mcp",
+   "started": 69
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "chrome-devtools",
+   "started": 156
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Figma",
+   "started": 28
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Gmail",
+   "started": 27
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Google-Calendar",
+   "started": 27
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Google-Drive",
+   "started": 27
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Claude-Docs",
+   "started": 16
+  },
+  {
+   "active_sessions": 0,
+   "calls": 0,
+   "server": "claude-ai-Claude-Code-Remote",
+   "started": 10
+  }
+ ],
+ "other_agents_claude": {
+  "Explore": 2
+ },
+ "other_agents_omp": {
+  "?": 9,
+  "Tester": 1,
+  "librarian": 15,
+  "scout": 8,
+  "task": 9
+ },
+ "other_skills_claude_tool": {},
+ "platform": "Linux-or-Mac (reconstructed from reports/usage-audit-2026-09-17.md tables; rerun the script there to replace)",
+ "skills": [
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 2,
+   "name": "skills-using",
+   "omp": 79
+  },
+  {
+   "claude_last": "2026-06-12",
+   "claude_life": 36,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "caveman",
+   "omp": 10
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 10,
+   "name": "analyze",
+   "omp": 24
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 4,
+   "name": "test-driven-development",
+   "omp": 29
+  },
+  {
+   "claude_last": "2026-07-08",
+   "claude_life": 27,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "humanizer",
+   "omp": 3
+  },
+  {
+   "claude_last": "2026-06-12",
+   "claude_life": 3,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "angular-developer",
+   "omp": 25
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 4,
+   "name": "verification-before-completion",
+   "omp": 20
+  },
+  {
+   "claude_last": "2026-07-08",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "systematic-debugging",
+   "omp": 18
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "external-context",
+   "omp": 18
+  },
+  {
+   "claude_last": "2026-07-08",
+   "claude_life": 14,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "pr-description",
+   "omp": 1
+  },
+  {
+   "claude_last": "2026-09-17",
+   "claude_life": 2,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "rdx-audit",
+   "omp": 11
+  },
+  {
+   "claude_last": "2026-07-08",
+   "claude_life": 2,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "brainstorming",
+   "omp": 9
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "code-review",
+   "omp": 11
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "ponytail",
+   "omp": 9
+  },
+  {
+   "claude_last": "2026-06-12",
+   "claude_life": 2,
+   "claude_skill_tool": 0,
+   "codex": 2,
+   "name": "code-review-receiving",
+   "omp": 2
+  },
+  {
+   "claude_last": "2026-06-23",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "code-review-requesting",
+   "omp": 5
+  },
+  {
+   "claude_last": "2026-07-08",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "plan",
+   "omp": 4
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "git-master",
+   "omp": 4
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "plans-writing",
+   "omp": 3
+  },
+  {
+   "claude_last": "2026-06-15",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "skills-creating",
+   "omp": 3
+  },
+  {
+   "claude_last": "2026-07-01",
+   "claude_life": 2,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "structuring-feature-modules",
+   "omp": 2
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "autopilot",
+   "omp": 3
+  },
+  {
+   "claude_last": "2026-09-17",
+   "claude_life": 3,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "meaningful-commits",
+   "omp": 0
+  },
+  {
+   "claude_last": "2026-06-12",
+   "claude_life": 3,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "modern-web-guidance",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 2,
+   "name": "plans-executing",
+   "omp": 1
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 1,
+   "name": "research",
+   "omp": 2
+  },
+  {
+   "claude_last": "2026-06-12",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "using-git-worktrees",
+   "omp": 2
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "build-fix",
+   "omp": 2
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "deepsearch",
+   "omp": 2
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "finishing-a-development-branch",
+   "omp": 2
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "flow",
+   "omp": 2
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "pnpm-best-practices",
+   "omp": 2
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "prompt-engineer",
+   "omp": 2
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "prototype",
+   "omp": 2
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "rdx-review",
+   "omp": 2
+  },
+  {
+   "claude_last": "2026-09-17",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "artification",
+   "omp": 0
+  },
+  {
+   "claude_last": "2026-07-08",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "deflaky",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "deglaze",
+   "omp": 1
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "dispatching-parallel-agents",
+   "omp": 1
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "kaizen",
+   "omp": 1
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "note",
+   "omp": 1
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ralph",
+   "omp": 1
+  },
+  {
+   "claude_last": "2026-07-08",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "subagent-driven-development",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "triage",
+   "omp": 1
+  },
+  {
+   "claude_last": "2026-06-23",
+   "claude_life": 1,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "value-realization",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "angular-new-app",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "chrome-extensions",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "deepinit",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "frontend-design",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "frontend-ui-ux",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "grill-with-docs",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "learner",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "nextjs-best-practices",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "nx-workspace-scafold",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "pipeline",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "project-session-manager",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "psm",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ralph-init",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ralplan",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "rdx",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "rdx-help",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "review",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "security-review",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "setup-engineering-skills",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "skill",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-clean-claude",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-delete-nul",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-review-claude",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-skillopt-run",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-start-mcp-proxy",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "source-command-start-pytaiga-mcp",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "team",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "to-issues",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "trace",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ultrapilot",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ultraqa",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "ultrawork",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "upgrade-dotnet",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "using-agentic-mcp",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "wrap-up",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "writer-memory",
+   "omp": 0
+  },
+  {
+   "claude_last": "",
+   "claude_life": 0,
+   "claude_skill_tool": 0,
+   "codex": 0,
+   "name": "zoom-out",
+   "omp": 0
+  }
+ ],
+ "windows": {
+  "claude": {
+   "sessions": 16,
+   "transcripts": {
+    "files": 16,
+    "from": "2026-09-14",
+    "to": "2026-09-17"
+   }
+  },
+  "codex": {
+   "sessions": {
+    "files": 10,
+    "from": "2026-09-02",
+    "to": "2026-09-17"
+   },
+   "sessions_by_month": {
+    "2026-05": 0,
+    "2026-06": 0,
+    "2026-07": 0,
+    "2026-08": 0,
+    "2026-09": 6
+   }
+  },
+  "omp": {
+   "sessions": {
+    "files": 151,
+    "from": "2026-06-01",
+    "to": "2026-09-17"
+   },
+   "sessions_by_month": {
+    "2026-05": 0,
+    "2026-06": 24,
+    "2026-07": 15,
+    "2026-08": 8,
+    "2026-09": 8
+   }
+  }
+ }
+}
