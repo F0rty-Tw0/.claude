@@ -1,0 +1,72 @@
+{
+  "mcpServers": {
+    "codex-cli": {
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "@cexll/codex-mcp-server"]
+    },
+    "gemini-cli": {
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "gemini-mcp-tool"]
+    },
+    "angular-cli": {
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "@angular/cli", "mcp"]
+    },
+    "context7": {
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "@upstash/context7-mcp"],
+      "env": {
+        "CONTEXT7_API_KEY": "YOUR_KEY"
+      }
+    },
+    "exa": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "pnpm",
+        "dlx",
+        "exa-mcp-server",
+        "--tools=web_search_advanced_exa,crawling_exa"
+      ],
+      "env": {
+        "EXA_API_KEY": "YOUR_TOKEN"
+      }
+    },
+    "filesystem": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "pnpm",
+        "dlx",
+        "@modelcontextprotocol/server-filesystem",
+        "D:\\"
+      ]
+    },
+    "greb-mcp": {
+      "command": "cmd",
+      "args": ["/c", "greb-mcp-js"],
+      "env": {
+        "GREB_API_KEY": "YOUR_KEY"
+      }
+    },
+    "taigaApi": {
+      "command": "uv",
+      "args": ["--directory", "D:/pytaiga-mcp", "run", "src/server.py"]
+    },
+    "agentic-mcp": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "pnpm", "dlx", "agentic-mcp"]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {}
+    },
+    "chrome-devtools": {
+      "command": "pnpm",
+      "args": ["dlx", "chrome-devtools-mcp@latest", "--slim", "--headless"]
+    }
+  }
+}

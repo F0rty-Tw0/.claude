@@ -1,0 +1,45 @@
+# Ignore everything
+*
+
+# Except settings, agents and skills
+!.omp
+!.omp/**
+!agents/
+!agents/**
+!archive/
+!archive/**
+!commands/
+!commands/**
+!plans/
+!plans/**
+!profiles/
+!profiles/**
+!skills/
+!skills/**
+!hooks/
+!hooks/**
+!scripts/
+!scripts/**
+!reports/
+!reports/**
+!backup/
+!backup/**
+!copilot/
+!copilot/**
+!linux/
+!linux/**
+!settings.json
+!settings.local.json
+!.ignore
+!mcp-proxy-servers.example.json
+!AGENTS.md
+!CLAUDE.md
+!RTK.md
+# Keep gitignore and readme
+!.gitignore
+!README.md
+
+# Ignore Specifics
+skills/orbit-*/
+skills/azure-devops-*/
+skills/synced

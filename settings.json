@@ -1,0 +1,102 @@
+{
+  "respectGitignore": false,
+  "env": {
+    "BASH_MAX_TIMEOUT_MS": "1800000",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.typescriptlang.org)",
+      "Bash(git log:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(npx prettier:*)",
+      "Bash(nx prepush:*)",
+      "Bash(pnpm commit:*)",
+      "Bash(rg:*)",
+      "mcp__nx__nx_docs",
+      "mcp__nx__nx_workspace",
+      "mcp__nx__nx_project_details",
+      "Bash(nx show projects:*)",
+      "Bash(nx run-many:*)",
+      "Bash(nx run:*)",
+      "Bash(nx affected:*)",
+      "Bash(nx lint:*)",
+      "Bash(nx test:*)",
+      "Bash(nx build:*)",
+      "Bash(nx documentation:*)"
+    ],
+    "deny": [
+      "Bash(git push origin main:*)",
+      "Bash(git push origin master:*)",
+      "Bash(rm -rf:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ],
+    "defaultMode": "auto"
+  },
+  "model": "opus[1m]",
+  "enableAllProjectMcpServers": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/nul-guard.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/commit-guard.js"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash -c 'cols=$(stty size </dev/tty 2>/dev/null | awk '\"'\"'{print $2}'\"'\"'); export COLUMNS=$(( ${cols:-120} > 4 ? ${cols:-120} - 4 : 1 )); plugin_dir=$(ls -d \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}\"/plugins/cache/*/claude-hud/*/ 2>/dev/null | awk -F/ '\"'\"'{ print $(NF-1) \"\\t\" $(0) }'\"'\"' | grep -E '\"'\"'^[0-9]+\\.[0-9]+\\.[0-9]+[[:space:]]'\"'\"' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -1 | cut -f2-); node_bin=$(command -v node || ls -d \"$HOME\"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1); exec \"${node_bin:-node}\" \"${plugin_dir}dist/index.js\"'"
+  },
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true,
+    "marksman-lsp": true,
+    "lua-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "claude-hud@claude-hud": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-hud": {
+      "source": {
+        "source": "github",
+        "repo": "jarrodwatts/claude-hud"
+      }
+    }
+  },
+  "effortLevel": "high",
+  "dialogExpiry": "never",
+  "autoUpdatesChannel": "latest",
+  "skipWorkflowUsageWarning": true,
+  "remoteControlAtStartup": true,
+  "skipAutoPermissionPrompt": true,
+  "defaultMode": "auto"
+}
