@@ -115,6 +115,13 @@ export { expect } from '@playwright/test';
 Two mock shapes appear below. A plain factory fulfills a route with a fixed body (shape in [test-data.md](../core/test-data.md), "Fixture with Factory"). A recorded factory also collects every request it served, so a spec can assert the call happened with `expect.poll`. The shared types live in `test/common/`.
 
 ```ts
+// e2e/auth/test/stubs/session.stub.ts
+import type { SessionBody } from '../common/auth-mock.type';
+
+export const REFRESHED_SESSION_STUB: SessionBody = { expiresIn: 3600, valid: true };
+```
+
+```ts
 // e2e/auth/test/common/auth-mock.type.ts
 import type { Request, Route } from '@playwright/test';
 
@@ -131,20 +138,14 @@ export type RecordedMock = {
 import type { Request, Route } from '@playwright/test';
 
 import type { RecordedMock } from '../common/auth-mock.type';
-
-type SessionBody = {
-  readonly expiresIn: number;
-  readonly valid: boolean;
-};
-
-const REFRESHED_SESSION: SessionBody = { expiresIn: 3600, valid: true };
+import { REFRESHED_SESSION_STUB } from '../stubs/session.stub';
 
 export const refreshMock = (): RecordedMock => {
   const calls: Request[] = [];
   const handler = (route: Route): Promise<void> => {
     calls.push(route.request());
 
-    return route.fulfill({ json: REFRESHED_SESSION });
+    return route.fulfill({ json: REFRESHED_SESSION_STUB });
   };
   const mock: RecordedMock = { calls, handler };
 

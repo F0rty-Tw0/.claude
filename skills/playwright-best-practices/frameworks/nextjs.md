@@ -405,18 +405,24 @@ The spec reads `const response = await test.step('open the home page', (): Promi
 
 ### Locale Rewrites
 
-Middleware rewrites by `Accept-Language`. The header set is a named const above the steps.
+Middleware rewrites by `Accept-Language`. The header set is data the spec sends, so it is a typed stub in `test/stubs/`, not a const in the spec file.
+
+```ts
+// e2e/home/test/stubs/locale.stub.ts
+import type { RequestHeaders } from '../../common/home.type';
+
+export const FRENCH_HEADERS_STUB: RequestHeaders = { 'Accept-Language': 'fr-FR,fr;q=0.9' };
+```
 
 ```ts
 // e2e/home/home.e2e.ts
 import { test } from './home.fixture';
-
-const FRENCH_HEADERS = { 'Accept-Language': 'fr-FR,fr;q=0.9' };
+import { FRENCH_HEADERS_STUB } from './test/stubs/locale.stub';
 
 test.describe('FEATURE: locale middleware', () => {
   test.describe('GIVEN a French browser', () => {
     test('SCENARIO: home page open serves the French copy', async ({ context, homePage }): Promise<void> => {
-      await test.step('WHEN French accept-language is sent', (): Promise<void> => context.setExtraHTTPHeaders(FRENCH_HEADERS));
+      await test.step('WHEN French accept-language is sent', (): Promise<void> => context.setExtraHTTPHeaders(FRENCH_HEADERS_STUB));
 
       await test.step('AND the home page is opened', (): Promise<void> => homePage.goto());
 

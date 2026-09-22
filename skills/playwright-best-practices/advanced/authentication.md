@@ -528,21 +528,35 @@ A typical OAuth flow works like this:
 
 In tests you short-circuit step 2 with `page.route()`: intercept the outbound request to the provider and respond with a `302` redirect straight to your callback route, supplying a mock `code` and `state`. Your backend still executes its normal callback handler; only the provider's authorization page is mocked.
 
+The callback url, code, and state are the payload, so they are one typed stub the mock takes as a parameter.
+
+```ts
+// e2e/auth/test/stubs/oauth.stub.ts
+import type { OAuthCallback } from '../../common/auth.type';
+
+export const OAUTH_CALLBACK_STUB: OAuthCallback = {
+  code: 'mock-auth-code-xyz',
+  state: 'expected-state-value',
+  url: 'http://localhost:4000/auth/callback'
+};
+```
+
 ```ts
 // e2e/auth/test/mocks/oauth.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { OAuthCallback, ResponseHeaders } from '../../common/auth.type';
+import { OAUTH_CALLBACK_STUB } from '../stubs/oauth.stub';
+
 type RouteHandler = (route: Route) => Promise<void>;
 
-const CALLBACK_URL = 'http://localhost:4000/auth/callback';
+export const oauthCallbackMock = (callback: OAuthCallback = OAUTH_CALLBACK_STUB): RouteHandler => {
+  const callbackUrl = new URL(callback.url);
 
-export const oauthCallbackMock = (): RouteHandler => {
-  const callbackUrl = new URL(CALLBACK_URL);
+  callbackUrl.searchParams.set('code', callback.code);
+  callbackUrl.searchParams.set('state', callback.state);
 
-  callbackUrl.searchParams.set('code', 'mock-auth-code-xyz');
-  callbackUrl.searchParams.set('state', 'expected-state-value');
-
-  const headers = { location: callbackUrl.toString() };
+  const headers: ResponseHeaders = { location: callbackUrl.toString() };
 
   return (route: Route): Promise<void> => route.fulfill({ headers, status: 302 });
 };

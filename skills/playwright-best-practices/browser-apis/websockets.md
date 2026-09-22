@@ -375,21 +375,29 @@ Covered by the cursor row above. The message's nested `position` object is a nam
 
 ### Test SSE Updates
 
-An SSE endpoint is a normal HTTP response with `Content-Type: text/event-stream`. The mock factory takes the event bodies; `EventSource` parses each `data:` line terminated by a blank line.
+An SSE endpoint is a normal HTTP response with `Content-Type: text/event-stream`. The mock factory takes the event bodies; `EventSource` parses each `data:` line terminated by a blank line. The header set is data, so it lives in `test/common/` and the mock imports it.
+
+```ts
+// e2e/live-data/test/common/live-data.const.ts
+import type { ResponseHeaders } from './live-data.type';
+
+export const SSE_HEADERS: ResponseHeaders = {
+  'Cache-Control': 'no-cache',
+  Connection: 'keep-alive',
+  'Content-Type': 'text/event-stream'
+};
+```
 
 ```ts
 // e2e/live-data/test/mocks/events.mock.ts
 import type { Route } from '@playwright/test';
 
+import { SSE_HEADERS } from '../common/live-data.const';
+import { EVENTS_STUB } from '../stubs/events.stub';
+
 type RouteHandler = (route: Route) => Promise<void>;
 
-const SSE_HEADERS = {
-  'Cache-Control': 'no-cache',
-  Connection: 'keep-alive',
-  'Content-Type': 'text/event-stream'
-};
-
-export const eventsMock = (events: string[]): RouteHandler => {
+export const eventsMock = (events: string[] = EVENTS_STUB): RouteHandler => {
   const body = events.map((event: string): string => `data: ${event}\n\n`).join('');
 
   return (route: Route): Promise<void> => route.fulfill({ body, headers: SSE_HEADERS, status: 200 });

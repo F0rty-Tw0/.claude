@@ -116,28 +116,34 @@ test.describe('FEATURE: dashboard', () => {
 
 ### Full Mock (route.fulfill)
 
-Replace a third-party API response completely. One factory per response shape; `status` defaults to 200.
+Replace a third-party API response completely. Success and decline are two shapes, so they are two stubs and two factories.
+
+```ts
+// e2e/checkout/test/stubs/charge.stub.ts
+import type { Charge, ChargeError, ChargeErrorDetail } from '../../common/checkout.type';
+
+const declinedDetail: ChargeErrorDetail = { code: 'insufficient_funds', message: 'Card declined.' };
+
+export const CHARGE_DECLINED_STUB: ChargeError = { error: declinedDetail };
+
+export const CHARGE_STUB: Charge = { status: 'completed', transactionId: 'txn_mock_abc' };
+```
 
 ```ts
 // e2e/checkout/test/mocks/charge.mock.ts
 import type { Route } from '@playwright/test';
 
-import type { Charge, ChargeError, ChargeErrorDetail } from '../../common/checkout.type';
+import type { Charge, ChargeError } from '../../common/checkout.type';
+import { CHARGE_DECLINED_STUB, CHARGE_STUB } from '../stubs/charge.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 
-const CHARGE_BODY: Charge = { status: 'completed', transactionId: 'txn_mock_abc' };
-
-const DECLINED_DETAIL: ChargeErrorDetail = { code: 'insufficient_funds', message: 'Card declined.' };
-
-const DECLINED_BODY: ChargeError = { error: DECLINED_DETAIL };
-
-export const chargeMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: CHARGE_BODY });
+export const chargeDeclinedMock = (error: ChargeError = CHARGE_DECLINED_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: error, status: 402 });
 };
 
-export const chargeDeclinedMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: DECLINED_BODY, status: 402 });
+export const chargeMock = (charge: Charge = CHARGE_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: charge });
 };
 ```
 
@@ -435,16 +441,24 @@ export default defineConfig({ projects });
 
 ## Validating Mock Accuracy
 
-Guard against mock drift from real APIs. A contract spec charges through the real endpoint and compares key names and value types with the stub the mock serves.
+Guard against mock drift from real APIs. A contract spec charges through the real endpoint and compares key names and value types with the stub the mock serves. The request body is a stub too, so the contract check and the mocked tests send the identical payload; that is what makes the comparison meaningful.
+
+```ts
+// e2e/billing/test/stubs/charge-request.stub.ts
+import type { ChargeRequest } from '../../common/billing.type';
+
+export const CHARGE_REQUEST_STUB: ChargeRequest = { amount: 5000, currency: 'usd' };
+```
 
 ```ts
 // e2e/billing/test/utils/contract.spec.util.ts
 import type { APIRequestContext } from '@playwright/test';
 
-const CHARGE_DATA = { amount: 5000, currency: 'usd' } as const;
+import type { ChargeRequest } from '../../common/billing.type';
+import { CHARGE_REQUEST_STUB } from '../stubs/charge-request.stub';
 
-export const chargeThroughApi = async (request: APIRequestContext): Promise<Record<string, unknown>> => {
-  const response = await request.post('/api/billing/charge', { data: CHARGE_DATA });
+export const chargeThroughApi = async (request: APIRequestContext, charge: ChargeRequest = CHARGE_REQUEST_STUB): Promise<Record<string, unknown>> => {
+  const response = await request.post('/api/billing/charge', { data: charge });
 
   return response.json();
 };

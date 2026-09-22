@@ -72,7 +72,7 @@ export const buildUser = (overrides: Partial<User> = {}): User => {
 
 ### Factory with Traits
 
-A trait is a named `Partial<Product>` applied before the overrides. `buildProduct({}, 'featured')`, `buildProduct({ name: 'Sale Item' }, 'sale', 'featured')`, and `buildProduct({}, 'outOfStock')` all go through the same function. `PRODUCT_STUB` in `test/stubs/product.stub.ts` follows the user stub shape.
+A trait is a named `Partial<Product>` applied before the overrides. `buildProduct({}, 'featured')`, `buildProduct({ name: 'Sale Item' }, 'sale', 'featured')`, and `buildProduct({}, 'outOfStock')` all go through the same function. `PRODUCT_STUB` in `test/stubs/product.stub.ts` is shown under [Test Data Fixtures](#test-data-fixtures).
 
 ```ts
 // e2e/catalog/common/catalog.type.ts
@@ -387,17 +387,34 @@ export const readSearchCases = (): SearchCase[] => {
 
 ### Fixture with Factory
 
-A data fixture builds the values and installs the route mock before `use`, so the spec receives data that the app already serves. The route handler is a factory in `test/mocks/`.
+A data fixture builds the values and installs the route mock before `use`, so the spec receives data that the app already serves. The route handler is a factory in `test/mocks/`, and the payload it fulfills is a typed stub it takes as a parameter. The default covers the happy path; the fixture below passes built products because the spec asserts on their names.
+
+```ts
+// e2e/catalog/test/stubs/product.stub.ts
+import type { Product } from '../../common/catalog.type';
+
+export const PRODUCT_STUB: Product = {
+  category: 'tools',
+  featured: false,
+  id: 'prod-1',
+  name: 'Test Product',
+  price: 19.99,
+  stock: 10
+};
+
+export const PRODUCTS_STUB: Product[] = [PRODUCT_STUB];
+```
 
 ```ts
 // e2e/catalog/test/mocks/products.mock.ts
 import type { Route } from '@playwright/test';
 
 import type { Product } from '../../common/catalog.type';
+import { PRODUCTS_STUB } from '../stubs/product.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 
-export const productsMock = (products: Product[]): RouteHandler => {
+export const productsMock = (products: Product[] = PRODUCTS_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: products });
 };
 ```
@@ -607,6 +624,9 @@ export { expect } from '@playwright/test';
 | Random data without seed        | Non-reproducible failures       | Seed faker per test        |
 | Shared mutable test data        | Tests interfere with each other | Create fresh data per test |
 | Manual data creation everywhere | Duplication, maintenance burden | Centralize in `test/utils/` builders |
+| Payload literal inside `route.fulfill` | Untyped, drifts from the API silently | Typed stub in `test/stubs/`, passed through the mock parameter |
+| `const <X>_BODY` declared in a `.mock.ts` | Data in a behavior file; no one looks there | Move to `test/stubs/` as `<TYPE>_STUB`, import as the parameter default |
+| One mock factory per response variant | Same interception copied N times | One factory, `(<payload>: <Type> = <TYPE>_STUB)`, callers pass a spread |
 
 ## Related References
 

@@ -137,7 +137,7 @@ export class AnalyticsPage {
 }
 ```
 
-A failed export: route `**/api/analytics/export**` to `route.fulfill({ json: { error: 'Generation failed' }, status: 500 })` in a `GIVEN` step before `goto()`, click `exportPdfButton`, then `expect(analyticsPage.alert).toContainText(/failed|error/i)`. The route-mock-in-`GIVEN` shape is shown under [Retry After Failure](#retry-after-failure).
+A failed export: route `**/api/analytics/export**` to `exportFailureMock()`, which fulfills status 500 with `EXPORT_FAILURE_STUB` from `test/stubs/export.stub.ts`, in a `GIVEN` step before `goto()`, click `exportPdfButton`, then `expect(analyticsPage.alert).toContainText(/failed|error/i)`. The route-mock-in-`GIVEN` shape is shown under [Retry After Failure](#retry-after-failure).
 
 ---
 
@@ -614,6 +614,8 @@ The mock fails the first attempt with a 500 and succeeds afterwards. It exposes 
 // e2e/attachments/test/mocks/flaky-upload.mock.ts
 import type { Route } from '@playwright/test';
 
+import { UPLOAD_FAILURE_STUB, UPLOAD_SUCCESS_STUB } from '../stubs/upload.stub';
+
 type RouteHandler = (route: Route) => Promise<void>;
 
 export type FlakyUpload = {
@@ -621,18 +623,15 @@ export type FlakyUpload = {
   readonly handler: RouteHandler;
 };
 
-const FAILURE_BODY = { error: 'Server error' };
-const SUCCESS_BODY = { id: 'abc', name: 'data.csv' };
-
 export const flakyUploadMock = (): FlakyUpload => {
   let attempts = 0;
 
   const handler = (route: Route): Promise<void> => {
     attempts += 1;
 
-    if (attempts === 1) return route.fulfill({ json: FAILURE_BODY, status: 500 });
+    if (attempts === 1) return route.fulfill({ json: UPLOAD_FAILURE_STUB, status: 500 });
 
-    return route.fulfill({ json: SUCCESS_BODY, status: 200 });
+    return route.fulfill({ json: UPLOAD_SUCCESS_STUB, status: 200 });
   };
 
   const promise = { attempts: (): number => attempts, handler };

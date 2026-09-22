@@ -243,19 +243,27 @@ test.describe('FEATURE: admin panel', () => {
 Slow or heavy endpoints get a route handler factory in `test/mocks/`; an auto fixture installs them for every test in the feature.
 
 ```ts
+// e2e/dashboard/test/stubs/analytics.stub.ts
+import type { Analytics } from '../../common/dashboard.type';
+
+export const ANALYTICS_STUB: Analytics = { views: 1000 };
+```
+
+```ts
 // e2e/dashboard/test/mocks/analytics.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { Analytics } from '../../common/dashboard.type';
+import { ANALYTICS_STUB } from '../stubs/analytics.stub';
+
 type RouteHandler = (route: Route) => Promise<void>;
 
-const ANALYTICS_BODY = { views: 1000 };
-
-export const analyticsMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: ANALYTICS_BODY });
+export const analyticsMock = (analytics: Analytics = ANALYTICS_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: analytics });
 };
 ```
 
-`recommendationsMock` follows the same shape and fulfills with `[]`.
+`recommendationsMock` follows the same shape and fulfills with `RECOMMENDATIONS_EMPTY_STUB`, a `Recommendation[]` in `test/stubs/recommendations.stub.ts`.
 
 ```ts
 // e2e/dashboard/dashboard.fixture.ts
@@ -289,15 +297,20 @@ export { expect } from '@playwright/test';
 
 ### Block Unnecessary Resources
 
-One catch-all route aborts requests to tracking hosts and continues everything else. Install it with `page.route('**/*', trackingBlockMock())` in an auto fixture as above.
+One catch-all route aborts requests to tracking hosts and continues everything else. Install it with `page.route('**/*', trackingBlockMock())` in an auto fixture as above. The host list is data, so it lives in `test/common/`, not in the mock.
+
+```ts
+// e2e/dashboard/test/common/dashboard.const.ts
+export const TRACKING_HOSTS: string[] = ['google-analytics', 'facebook', 'hotjar'];
+```
 
 ```ts
 // e2e/dashboard/test/mocks/tracking-block.mock.ts
 import type { Route } from '@playwright/test';
 
-type RouteHandler = (route: Route) => Promise<void>;
+import { TRACKING_HOSTS } from '../common/dashboard.const';
 
-const TRACKING_HOSTS = ['google-analytics', 'facebook', 'hotjar'];
+type RouteHandler = (route: Route) => Promise<void>;
 
 const isTrackingUrl = (url: string): boolean => {
   return TRACKING_HOSTS.some((host: string): boolean => url.includes(host));

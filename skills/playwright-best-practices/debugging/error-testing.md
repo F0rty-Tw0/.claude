@@ -98,20 +98,28 @@ export { expect } from '@playwright/test';
 
 ## Error Boundaries
 
-Route handlers for `**/api/data` live in one mock file. `dataFailOnceMock` answers 500 to the first request and succeeds afterwards; `dataHangMock` never resolves; `dataAbortMock` aborts with a Playwright error code.
+Route handlers for `**/api/data` live in one mock file. `dataFailOnceMock` answers 500 to the first request and succeeds afterwards; `dataHangMock` never resolves; `dataAbortMock` aborts with a Playwright error code. Both payloads are stubs; the error body is derived from the status the case asks for, so it spreads its stub.
+
+```ts
+// e2e/dashboard/test/stubs/data.stub.ts
+import type { DataError, DataResponse } from '../../common/dashboard.type';
+
+export const DATA_ERROR_STUB: DataError = { error: 'Error' };
+
+export const DATA_RESPONSE_STUB: DataResponse = { data: 'success' };
+```
 
 ```ts
 // e2e/dashboard/test/mocks/data.mock.ts
 import type { Route } from '@playwright/test';
 
-import type { DataResponse } from '../../common/dashboard.type';
+import type { DataError, DataResponse } from '../../common/dashboard.type';
+import { DATA_ERROR_STUB, DATA_RESPONSE_STUB } from '../stubs/data.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 
-const DATA_BODY: DataResponse = { data: 'success' };
-
 export const dataErrorMock = (status: number): RouteHandler => {
-  const body = { error: `Error ${status}` };
+  const body: DataError = { ...DATA_ERROR_STUB, error: `Error ${status}` };
 
   return (route: Route): Promise<void> => route.fulfill({ json: body, status });
 };
@@ -124,7 +132,7 @@ export const dataFailOnceMock = (): RouteHandler => {
 
     if (requestCount === 1) return route.fulfill({ status: 500 });
 
-    return route.fulfill({ json: DATA_BODY });
+    return route.fulfill({ json: DATA_RESPONSE_STUB });
   };
 };
 
@@ -137,7 +145,7 @@ export const dataAbortMock = (errorCode: string): RouteHandler => {
 };
 ```
 
-Three cases share the spec: `userNullMock()` fulfills `**/api/user` with `json: null`, which makes the user widget throw, and the error boundary must render its fallback instead of a blank page; the first data request fails, the app shows its error state, and `Retry` triggers a second request that succeeds; an uncaught exception on `/buggy-page` must not take the navigation down, and `pageErrors` proves the exception fired.
+Three cases share the spec: `userNullMock()` fulfills `**/api/user` with `USER_NULL_STUB`, typed `User | null` in `test/stubs/user.stub.ts`, which makes the user widget throw, and the error boundary must render its fallback instead of a blank page; the first data request fails, the app shows its error state, and `Retry` triggers a second request that succeeds; an uncaught exception on `/buggy-page` must not take the navigation down, and `pageErrors` proves the exception fired.
 
 ```ts
 // e2e/dashboard/dashboard.test.ts
@@ -295,7 +303,18 @@ Same shape, different assertions:
 
 ## Loading States
 
-Delayed handlers make the loading UI observable. `postsDelayedMock(1000)` answers after one second; `postsEmptyMock()` answers `[]`.
+Delayed handlers make the loading UI observable. `postsDelayedMock(1000)` answers after one second; `postsEmptyMock()` answers the empty stub. The empty list is a stub too.
+
+```ts
+// e2e/posts/test/stubs/posts.stub.ts
+import type { Post } from '../../common/posts.type';
+
+export const POST_STUB: Post = { id: 1, title: 'Post 1' };
+
+export const POSTS_EMPTY_STUB: Post[] = [];
+
+export const POSTS_STUB: Post[] = [POST_STUB];
+```
 
 ```ts
 // e2e/posts/test/mocks/posts.mock.ts
@@ -304,20 +323,19 @@ import { setTimeout as delay } from 'node:timers/promises';
 import type { Route } from '@playwright/test';
 
 import type { Post } from '../../common/posts.type';
+import { POSTS_EMPTY_STUB, POSTS_STUB } from '../stubs/posts.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 
-const POSTS_BODY: Post[] = [{ id: 1, title: 'Post 1' }];
-
-export const postsDelayedMock = (delayMs: number): RouteHandler => {
+export const postsDelayedMock = (delayMs: number, posts: Post[] = POSTS_STUB): RouteHandler => {
   return async (route: Route): Promise<void> => {
     await delay(delayMs);
-    await route.fulfill({ json: POSTS_BODY });
+    await route.fulfill({ json: posts });
   };
 };
 
 export const postsEmptyMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: [] });
+  return (route: Route): Promise<void> => route.fulfill({ json: POSTS_EMPTY_STUB });
 };
 ```
 
@@ -397,7 +415,7 @@ A malformed email shows the format error on blur; a valid one clears it.
 
 ### Test Server-Side Validation
 
-`registerInvalidMock()` fulfills `**/api/register` with status 422 and `{ errors: { email: 'Email already exists', username: 'Username is taken' } }`. Both messages must render next to their fields.
+`registerInvalidMock()` fulfills `**/api/register` with status 422 and `REGISTER_ERRORS_STUB`, a `RegisterErrors` value in `test/stubs/register.stub.ts` holding `{ errors: { email: 'Email already exists', username: 'Username is taken' } }`. Both messages must render next to their fields.
 
 ```ts
 // e2e/signup/signup.test.ts
