@@ -344,14 +344,13 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
-import type { RouteHandler } from '../../common/signup.type';
+import type { CreatedAccount, RouteHandler } from '../../common/signup.type';
+import { CREATED_ACCOUNT_STUB } from '../stubs/signup.stub';
 
-const CREATED_BODY = { id: 1 };
-
-export const slowSignupMock = (delayMs: number): RouteHandler => {
+export const slowSignupMock = (delayMs: number, account: CreatedAccount = CREATED_ACCOUNT_STUB): RouteHandler => {
   return async (route: Route): Promise<void> => {
     await sleep(delayMs);
-    await route.fulfill({ json: CREATED_BODY, status: 201 });
+    await route.fulfill({ json: account, status: 201 });
   };
 };
 ```
@@ -460,16 +459,25 @@ test.describe('FEATURE: portal dialog', () => {
 A `null` payload makes the widget list crash on render. The recovering mock fails once and succeeds after, so the `Retry` path is observable.
 
 ```ts
+// e2e/panel/test/stubs/widgets.stub.ts
+import type { Widget, WidgetsBody } from '../../common/panel.type';
+
+const chart: Widget = { id: 1, name: 'Chart' };
+
+export const WIDGETS_BROKEN_STUB: WidgetsBody = { widgets: null };
+
+export const WIDGETS_HEALTHY_STUB: WidgetsBody = { widgets: [chart] };
+```
+
+```ts
 // e2e/panel/test/mocks/widgets.mock.ts
 import type { Route } from '@playwright/test';
 
-import type { RouteHandler, WidgetsBody } from '../../common/panel.type';
-
-const BROKEN_BODY: WidgetsBody = { widgets: null };
-const HEALTHY_BODY: WidgetsBody = { widgets: [{ id: 1, name: 'Chart' }] };
+import type { RouteHandler } from '../../common/panel.type';
+import { WIDGETS_BROKEN_STUB, WIDGETS_HEALTHY_STUB } from '../stubs/widgets.stub';
 
 export const brokenWidgetsMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: BROKEN_BODY, status: 200 });
+  return (route: Route): Promise<void> => route.fulfill({ json: WIDGETS_BROKEN_STUB, status: 200 });
 };
 
 export const recoveringWidgetsMock = (): RouteHandler => {
@@ -478,7 +486,7 @@ export const recoveringWidgetsMock = (): RouteHandler => {
   return (route: Route): Promise<void> => {
     calls += 1;
 
-    const json = calls === 1 ? BROKEN_BODY : HEALTHY_BODY;
+    const json = calls === 1 ? WIDGETS_BROKEN_STUB : WIDGETS_HEALTHY_STUB;
 
     return route.fulfill({ json, status: 200 });
   };

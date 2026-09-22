@@ -232,19 +232,27 @@ Driving the real provider popup: slow, needs real credentials, and the provider'
 Two routes replace the provider: the callback answers with a `302` to the dashboard, and the token exchange answers with a stub user. Both are factories registered in `beforeEach` before any navigation.
 
 ```ts
+// e2e/auth/test/stubs/callback.stub.ts
+import type { ResponseHeaders } from '../../common/auth.type';
+
+export const DASHBOARD_REDIRECT_STUB: ResponseHeaders = { Location: '/dashboard' };
+```
+
+```ts
 // e2e/auth/test/mocks/callback-redirect.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { ResponseHeaders } from '../../common/auth.type';
+import { DASHBOARD_REDIRECT_STUB } from '../stubs/callback.stub';
+
 type RouteHandler = (route: Route) => Promise<void>;
 
-const DASHBOARD_HEADERS = { Location: '/dashboard' };
-
-export const callbackRedirectMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ headers: DASHBOARD_HEADERS, status: 302 });
+export const callbackRedirectMock = (headers: ResponseHeaders = DASHBOARD_REDIRECT_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ headers, status: 302 });
 };
 ```
 
-`tokenMock()` in `e2e/auth/test/mocks/token.mock.ts` has the same shape and fulfills `**/api/auth/token` with `{ access_token: 'mock-token', user: { email: 'test@example.com', name: 'Test User' } }`.
+`tokenMock()` in `e2e/auth/test/mocks/token.mock.ts` has the same shape and fulfills `**/api/auth/token` with `TOKEN_STUB`, an `AuthToken` in `test/stubs/token.stub.ts` holding `{ access_token: 'mock-token', user: { email: 'test@example.com', name: 'Test User' } }`.
 
 ```ts
 // e2e/auth/google-mocked.test.ts

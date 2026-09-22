@@ -339,16 +339,17 @@ Reuse the `pageErrors` fixture and print each entry with `pageErrors.forEach(log
 
 ### Test Error Boundary Triggers
 
-React error boundaries catch render errors before they become `pageerror` events, so the listener only fires for errors the boundary missed. A `null` payload makes the widget crash on render; the boundary shows its fallback and `pageErrors` stays empty.
+React error boundaries catch render errors before they become `pageerror` events, so the listener only fires for errors the boundary missed. A `null` payload makes the widget crash on render; the boundary shows its fallback and `pageErrors` stays empty. `null` is still a payload: `WIDGET_DATA_NULL_STUB` is typed `WidgetData | null` in `test/stubs/data.stub.ts`.
 
 ```ts
 // e2e/console/test/mocks/data.mock.ts
 import type { Route } from '@playwright/test';
 
 import type { RouteHandler } from '../../common/console.type';
+import { WIDGET_DATA_NULL_STUB } from '../stubs/data.stub';
 
 export const brokenDataMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: null });
+  return (route: Route): Promise<void> => route.fulfill({ json: WIDGET_DATA_NULL_STUB });
 };
 ```
 

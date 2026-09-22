@@ -47,6 +47,9 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 | Comments | None inside samples except a first-line path comment `// e2e/login/pages/login.page.ts`. Explanation lives in the prose above the block. |
 | Waits | No `waitForTimeout`. No `waitForSelector` when a web-first `expect` covers it. No manual retry loops around `expect`. |
 | Data | Base values are typed stubs in `test/stubs/`, spread and overridden per case. Route handlers are factories in `test/mocks/`. Builders and helpers are functions in `test/utils/*.spec.util.ts`. |
+| Intercepted payload | Every body a mock fulfills is a typed stub imported from `test/stubs/`. A mock declares no payload of its own: no inline literal in `route.fulfill`, no `const <X>_BODY` in the mock file. |
+| Mock signature | `export const <name>Mock = (<payload>: <Type> = <TYPE>_STUB): RouteHandler => …`. The default serves the happy path; a fixture or spec passes a spread of the stub to override one field. |
+| Payload type | The response contract is a named type in `common/<feature>.type.ts`, or `test/common/<feature>.type.ts` when production never imports it. An untyped stub is not a stub. |
 | Config | `defineConfig` receives named consts for every nested object (`use`, `projects`, `reporter`). No inline nested literals. |
 | Gate | `npx playwright test --reporter=list` green, `--repeat-each=3` green for the touched specs, typecheck clean, lint clean, no file over its ceiling. |
 
@@ -275,17 +278,25 @@ export const USER_STUB: Credentials = {
 ```
 
 ```ts
+// e2e/login/test/stubs/session.stub.ts
+import type { Session } from '../../common/login.type';
+
+export const SESSION_STUB: Session = { token: 'stub-token', userId: 'u-1' };
+```
+
+The mock owns the interception, never the data. It takes the payload as a parameter defaulting to the stub, so the happy path is `sessionMock()` and a case overrides with `sessionMock({ ...SESSION_STUB, userId: 'u-2' })`.
+
+```ts
 // e2e/login/test/mocks/session.mock.ts
 import type { Route } from '@playwright/test';
 
 import type { Session } from '../../common/login.type';
+import { SESSION_STUB } from '../stubs/session.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 
-const SESSION_BODY: Session = { token: 'stub-token', userId: 'u-1' };
-
-export const sessionMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: SESSION_BODY });
+export const sessionMock = (session: Session = SESSION_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: session });
 };
 ```
 
@@ -293,9 +304,22 @@ export const sessionMock = (): RouteHandler => {
 |---|---|
 | Stub | One `<TYPE>_STUB: <Type>` per type in `test/stubs/<feature>.stub.ts`. Specs spread and override only what the case asserts on. |
 | Mock | One factory per route or collaborator in `test/mocks/<name>.mock.ts`, named `<name>Mock`. Returns a `page.route` handler. |
+| Mock data | None. Every body the factory fulfills arrives as a parameter or is imported from `test/stubs/`. A `const <X>_BODY = { … }` in a `.mock.ts` is a stub in the wrong file. |
+| Mock parameters | The payload first, with the stub as its default. Status, headers, and delay follow as further parameters with their own defaults. A parameter is never an inline object type; name it in `common/`. |
+| Error payloads | An error body is its own typed stub (`SESSION_ERROR_STUB`), not a literal inside the handler. A mock that can fail takes both stubs or a separate `<name>ErrorMock`. |
+| Recorded calls | A factory that records what it served returns a named type from `test/common/<feature>.type.ts` holding the handler plus the recorded array. It still takes its payload as a stub-defaulted parameter. |
 | Builder | Randomised or sequenced data (faker, counters) is a function in `test/utils/<feature>-builder.spec.util.ts`. Never in `stubs/`. |
 | Upload files | Real files under `test/fixtures/`. Never a `.ts` module exporting base64. |
 | API seeding | Setup through `request` in a fixture or a `setup` project, never through the UI. |
+
+Who calls the mock decides where the override lives:
+
+| Caller | Shape |
+|---|---|
+| Fixture, same body for every test in the feature | `await page.route('**/api/session', sessionMock());` before `use`. |
+| Fixture, body the spec reads back | Build from the stub above the route call, pass it in, then `await use(session)`. |
+| Spec, one case differs | `const session: Session = { ...SESSION_STUB, userId: 'u-2' };` above the steps, then a `GIVEN` step that routes with `sessionMock(session)`. |
+| Spec, failure path | A `GIVEN` step routing with the error mock. Never an inline `route.fulfill` in the spec. |
 
 ## Configuration
 
@@ -362,6 +386,11 @@ Rules for the markdown files in this skill, so every reference reads the same wa
 | "The fixture file is tiny, inline the type." | Inline object types are banned everywhere. Name it. |
 | "`as` is the only way to type `evaluate`." | `page.evaluate<Result>(...)` takes a generic. |
 | "Upstream sample had comments explaining each line." | Explanation moves to prose. The code is the example. |
+| "The body is only used by this one mock, keep it in the file." | A `.mock.ts` is behavior. The moment the body is a value with a shape, it is a stub, and `test/stubs/` is where a reader looks for it. |
+| "`const INTENT_BODY = { clientSecret: '…' }` is obviously typed." | It is inferred, not typed. It drifts from the real response the day the API changes and nothing reports it. Name the type in `common/`, annotate the stub. |
+| "This route returns a one-field object, a stub is overkill." | The one field is the contract the app parses. Same rule, same cost: one line in `test/stubs/`. |
+| "Mocking inline in the spec is clearer for a failure case." | The spec now owns a payload shape and a status code. `GIVEN` step, error mock, typed stub. |
+| "The fixture needs different data per test, so the mock can't be shared." | That is what the stub-defaulted parameter is for. One factory, `sessionMock({ ...SESSION_STUB, … })` per case. |
 
 ## Red Flags
 
@@ -375,6 +404,11 @@ Stop and re-check this file when reasoning includes:
 - A spec step whose name has no `GIVEN` / `WHEN` / `THEN` / `AND`.
 - "should" in a test title.
 - `interface`, `as SomeType`, `any`, or `// ...` inside a sample.
+- An object literal inside `route.fulfill({ json: … })`.
+- A `const <X>_BODY` or any other value declaration inside a `.mock.ts`.
+- A stub declared without a type annotation, or annotated with an inline object type.
+- `page.route` in a spec with the handler written inline.
+- A second mock factory that differs from the first only by its payload.
 - `waitForTimeout`, `waitForSelector`, or a manual polling loop.
 - An `expect` inside a page-object action method.
 - `import { test } from '@playwright/test'` in a spec that has a fixture file.
@@ -398,3 +432,8 @@ Stop and re-check this file when reasoning includes:
 | `fixtures/` folder holding `test.extend` files | `<feature>.fixture.ts` at the feature root; `test/fixtures/` is for on-disk files. |
 | Inline `use: { baseURL, trace }` in `defineConfig` | `const use = { ... } as const;` above. |
 | `const data = response as ApiResponse` | `const data: ApiResponse = await response.json();` with a typed contract, or a predicate. |
+| `route.fulfill({ json: { token: 'abc' } })` | `SESSION_STUB` in `test/stubs/session.stub.ts`, typed, passed through the mock parameter. |
+| `const SESSION_BODY: Session = { … }` in `session.mock.ts` | Move it to `test/stubs/session.stub.ts` as `SESSION_STUB` and import it as the parameter default. |
+| `sessionMock()` and `sessionExpiredMock()` differing only in body | One `sessionMock(session: Session = SESSION_STUB)`; the expired case passes `SESSION_EXPIRED_STUB`. |
+| `await page.route('**/api/x', (route) => route.fulfill(…))` in a spec | `await page.route('**/api/x', xMock())` inside a `GIVEN` step, or in the fixture. |
+| Mock body typed by inference | Annotate the stub with the response type from `common/<feature>.type.ts`. |

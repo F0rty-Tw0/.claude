@@ -488,20 +488,26 @@ export default defineConfig({ use });
 
 ### Network Stubbing for External APIs
 
-Stub third-party endpoints so their latency and outages never reach the test. Each handler is a factory in `test/mocks/`.
+Stub third-party endpoints so their latency and outages never reach the test. Each handler is a factory in `test/mocks/`, and the body it serves is a typed stub in `test/stubs/`. Determinism is the point here: a payload written inline per spec drifts, and a drifting payload is a flake source of its own.
+
+```ts
+// e2e/checkout/test/stubs/payment.stub.ts
+import type { PaymentResult } from '../../common/checkout.type';
+
+export const PAYMENT_RESULT_STUB: PaymentResult = { success: true, transactionId: 'test-123' };
+```
 
 ```ts
 // e2e/checkout/test/mocks/payment.mock.ts
 import type { Route } from '@playwright/test';
 
 import type { PaymentResult } from '../../common/checkout.type';
+import { PAYMENT_RESULT_STUB } from '../stubs/payment.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 
-const PAYMENT_BODY: PaymentResult = { success: true, transactionId: 'test-123' };
-
-export const paymentMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: PAYMENT_BODY });
+export const paymentMock = (result: PaymentResult = PAYMENT_RESULT_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: result });
 };
 ```
 
@@ -532,11 +538,11 @@ test.describe('FEATURE: checkout', () => {
 });
 ```
 
-| Mock | Handler body |
-| --- | --- |
-| `analyticsMock()` | `route.fulfill({ body: '' })` for `**/api.analytics.com/**` |
-| `paymentProviderMock()` | `route.fulfill({ json: { status: 'ok' } })` for `**/api.payment-provider.com/**` |
-| `paymentMock()` | Deterministic success body for the app's own `**/api/payment` |
+| Mock | Handler body | Stub |
+| --- | --- | --- |
+| `analyticsMock()` | `route.fulfill({ body: '' })` for `**/api.analytics.com/**` | None; an empty body has no shape |
+| `paymentProviderMock()` | `route.fulfill({ json: PROVIDER_OK_STUB })` for `**/api.payment-provider.com/**` | `PROVIDER_OK_STUB: ProviderStatus` |
+| `paymentMock()` | `route.fulfill({ json: result })` for the app's own `**/api/payment` | `PAYMENT_RESULT_STUB: PaymentResult` |
 
 ## Quarantine and Management
 

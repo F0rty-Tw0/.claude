@@ -164,24 +164,30 @@ test.describe('FEATURE: login', () => {
 SAML differs from OAuth in one place: the assertion consumer service (`/saml/acs`) sets the session cookie on the redirect. The session mock then reports `provider: 'saml'`.
 
 ```ts
-// e2e/login/test/mocks/saml.mock.ts
-import type { Route } from '@playwright/test';
+// e2e/login/test/stubs/saml.stub.ts
+import type { ResponseHeaders } from '../../common/login.type';
 
-import type { OAuthUser } from '../../common/login.type';
-
-type RouteHandler = (route: Route) => Promise<void>;
-
-const ACS_HEADERS = {
+export const SAML_ACS_HEADERS_STUB: ResponseHeaders = {
   Location: '/dashboard',
   'Set-Cookie': 'session=mock-saml-session; Path=/; HttpOnly'
 };
+```
 
-export const samlAcsMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ headers: ACS_HEADERS, status: 302 });
+```ts
+// e2e/login/test/mocks/saml.mock.ts
+import type { Route } from '@playwright/test';
+
+import type { OAuthSession, OAuthUser, ResponseHeaders } from '../../common/login.type';
+import { OAUTH_USER_STUB, SAML_ACS_HEADERS_STUB } from '../stubs/saml.stub';
+
+type RouteHandler = (route: Route) => Promise<void>;
+
+export const samlAcsMock = (headers: ResponseHeaders = SAML_ACS_HEADERS_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ headers, status: 302 });
 };
 
-export const samlSessionMock = (user: OAuthUser): RouteHandler => {
-  const json = { provider: 'saml', user };
+export const samlSessionMock = (user: OAuthUser = OAUTH_USER_STUB): RouteHandler => {
+  const json: OAuthSession = { provider: 'saml', user };
 
   return (route: Route): Promise<void> => route.fulfill({ json });
 };
@@ -237,33 +243,54 @@ export const stripeMock = async (page: Page, shouldFail: boolean): Promise<void>
 };
 ```
 
-The backend endpoints the checkout calls are plain route mocks.
+The backend endpoints the checkout calls are plain route mocks. `PaymentIntent` is `{ readonly clientSecret: string }` and `PaymentConfirmation` is `{ readonly orderId: string; readonly success: boolean }`, both in `common/checkout.type.ts`. The bodies are stubs; the mocks only intercept.
+
+```ts
+// e2e/checkout/test/stubs/payment.stub.ts
+import type { PaymentConfirmation, PaymentIntent } from '../../common/checkout.type';
+
+export const PAYMENT_CONFIRMATION_STUB: PaymentConfirmation = { orderId: 'order-123', success: true };
+
+export const PAYMENT_INTENT_STUB: PaymentIntent = { clientSecret: 'pi_mock_123_secret_mock' };
+```
 
 ```ts
 // e2e/checkout/test/mocks/payment.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { PaymentConfirmation, PaymentIntent } from '../../common/checkout.type';
+import { PAYMENT_CONFIRMATION_STUB, PAYMENT_INTENT_STUB } from '../stubs/payment.stub';
+
 type RouteHandler = (route: Route) => Promise<void>;
 
-const INTENT_BODY = { clientSecret: 'pi_mock_123_secret_mock' };
-const CONFIRM_BODY = { orderId: 'order-123', success: true };
-
-export const paymentIntentMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: INTENT_BODY });
+export const confirmPaymentMock = (confirmation: PaymentConfirmation = PAYMENT_CONFIRMATION_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: confirmation });
 };
 
-export const confirmPaymentMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: CONFIRM_BODY });
+export const paymentIntentMock = (intent: PaymentIntent = PAYMENT_INTENT_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: intent });
 };
 ```
 
 ### Mock PayPal
 
-The PayPal SDK renders its own button and calls the app's `onApprove` callback. The stub keeps the `Buttons(options)` shape and calls `options.onApprove` from `render()`, which is how the spec simulates approval without reaching into `window`. The order and capture endpoints are route mocks shaped like the Stripe ones.
+The PayPal SDK renders its own button and calls the app's `onApprove` callback. The stub keeps the `Buttons(options)` shape and calls `options.onApprove` from `render()`, which is how the spec simulates approval without reaching into `window`. The order and capture endpoints are route mocks shaped like the Stripe ones, fed by their own stubs.
+
+```ts
+// e2e/checkout/test/stubs/paypal.stub.ts
+import type { PayPalCapture, PayPalOrder } from '../../common/checkout.type';
+
+export const PAYPAL_CAPTURE_STUB: PayPalCapture = { success: true, transactionId: 'TXN-123' };
+
+export const PAYPAL_ORDER_STUB: PayPalOrder = { orderId: 'PAYPAL-ORDER-123' };
+```
 
 ```ts
 // e2e/checkout/test/mocks/paypal.mock.ts
 import type { Page, Route } from '@playwright/test';
+
+import type { PayPalCapture, PayPalOrder } from '../../common/checkout.type';
+import { PAYPAL_CAPTURE_STUB, PAYPAL_ORDER_STUB } from '../stubs/paypal.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 type PayPalApproval = { readonly orderID: string };
@@ -273,9 +300,6 @@ type PayPalStub = {
   readonly Buttons: (options: PayPalButtonOptions) => PayPalButtons;
   readonly FUNDING: Record<string, string>;
 };
-
-const ORDER_BODY = { orderId: 'PAYPAL-ORDER-123' };
-const CAPTURE_BODY = { success: true, transactionId: 'TXN-123' };
 
 const installPayPalStub = (): void => {
   const approval: PayPalApproval = { orderID: 'PAYPAL-ORDER-123' };
@@ -297,12 +321,12 @@ export const paypalSdkMock = async (page: Page): Promise<void> => {
   await page.addInitScript(installPayPalStub);
 };
 
-export const paypalOrderMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: ORDER_BODY });
+export const paypalCaptureMock = (capture: PayPalCapture = PAYPAL_CAPTURE_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: capture });
 };
 
-export const paypalCaptureMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: CAPTURE_BODY });
+export const paypalOrderMock = (order: PayPalOrder = PAYPAL_ORDER_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: order });
 };
 ```
 
@@ -394,17 +418,25 @@ test.describe('FEATURE: checkout', () => {
 
 ### Mock Email API
 
-The send endpoint never sends; it records a token. The verify endpoint compares the query-string token with the recorded one. Both handlers close over the same variable, so one factory returns both plus a `token()` reader the spec uses to build the link the email would have carried.
+The send endpoint never sends; it records a token. The verify endpoint compares the query-string token with the recorded one. Both handlers close over the same variable, so one factory returns both plus a `token()` reader the spec uses to build the link the email would have carried. The token varies per run, so it is generated; the three response bodies are fixed, so they are stubs the mock imports rather than parameters.
+
+```ts
+// e2e/signup/test/stubs/verification.stub.ts
+import type { VerificationError, VerificationSent, VerificationVerified } from '../../common/signup.type';
+
+export const TOKEN_INVALID_STUB: VerificationError = { error: 'Invalid token' };
+
+export const TOKEN_SENT_STUB: VerificationSent = { messageId: 'msg-123', sent: true };
+
+export const TOKEN_VERIFIED_STUB: VerificationVerified = { verified: true };
+```
 
 ```ts
 // e2e/signup/test/mocks/verification.mock.ts
 import type { Route } from '@playwright/test';
 
 import type { VerificationMock } from '../../common/signup.type';
-
-const SENT_BODY = { messageId: 'msg-123', sent: true };
-const VERIFIED_BODY = { verified: true };
-const INVALID_BODY = { error: 'Invalid token' };
+import { TOKEN_INVALID_STUB, TOKEN_SENT_STUB, TOKEN_VERIFIED_STUB } from '../stubs/verification.stub';
 
 export const verificationMock = (): VerificationMock => {
   let token = '';
@@ -412,15 +444,15 @@ export const verificationMock = (): VerificationMock => {
   const send = (route: Route): Promise<void> => {
     token = `mock-token-${Date.now()}`;
 
-    return route.fulfill({ json: SENT_BODY });
+    return route.fulfill({ json: TOKEN_SENT_STUB });
   };
   const verify = (route: Route): Promise<void> => {
     const url = new URL(route.request().url());
     const isValid = url.searchParams.get('token') === token;
 
-    if (isValid) return route.fulfill({ json: VERIFIED_BODY });
+    if (isValid) return route.fulfill({ json: TOKEN_VERIFIED_STUB });
 
-    return route.fulfill({ json: INVALID_BODY, status: 400 });
+    return route.fulfill({ json: TOKEN_INVALID_STUB, status: 400 });
   };
   const mock: VerificationMock = { send, token: (): string => token, verify };
 
@@ -493,17 +525,14 @@ A spec calls it in one step, `const link = await test.step('WHEN the verificatio
 
 ### Mock SMS API
 
-Same shape as the email mock: the send handler generates a six-digit code, the verify handler compares `postDataJSON().code` with it, and a `code()` reader lets the spec type the code the phone would have received.
+Same shape as the email mock: the send handler generates a six-digit code, the verify handler compares `postDataJSON().code` with it, and a `code()` reader lets the spec type the code the phone would have received. The bodies live in `test/stubs/sms.stub.ts` with `SmsError`, `SmsSent`, and `SmsVerified` declared in `common/verify-phone.type.ts`.
 
 ```ts
 // e2e/verify-phone/test/mocks/sms.mock.ts
 import type { Route } from '@playwright/test';
 
 import type { SmsMock, VerifySmsBody } from '../../common/verify-phone.type';
-
-const SENT_BODY = { messageId: 'sms-123', sent: true };
-const VERIFIED_BODY = { verified: true };
-const INVALID_BODY = { error: 'Invalid code' };
+import { CODE_INVALID_STUB, CODE_SENT_STUB, CODE_VERIFIED_STUB } from '../stubs/sms.stub';
 
 export const smsMock = (): SmsMock => {
   let code = '';
@@ -511,15 +540,15 @@ export const smsMock = (): SmsMock => {
   const send = (route: Route): Promise<void> => {
     code = Math.random().toString().slice(2, 8);
 
-    return route.fulfill({ json: SENT_BODY });
+    return route.fulfill({ json: CODE_SENT_STUB });
   };
   const verify = (route: Route): Promise<void> => {
     const body: VerifySmsBody = route.request().postDataJSON();
     const isValid = body.code === code;
 
-    if (isValid) return route.fulfill({ json: VERIFIED_BODY });
+    if (isValid) return route.fulfill({ json: CODE_VERIFIED_STUB });
 
-    return route.fulfill({ json: INVALID_BODY, status: 400 });
+    return route.fulfill({ json: CODE_INVALID_STUB, status: 400 });
   };
   const mock: SmsMock = { code: (): string => code, send, verify };
 
@@ -551,20 +580,34 @@ test.describe('FEATURE: phone verification', () => {
 
 ### Block Analytics in Tests
 
-Blocking belongs to the shared fixture, not to each spec. Overriding `context` routes every tracker host to `abort()` before any page opens.
+Blocking belongs to the shared fixture, not to each spec. Overriding `context` routes every tracker host to `abort()` before any page opens. The fixture wires; the handler is a mock and the host pattern is a const, so neither is declared here.
+
+```ts
+// e2e/common/tracker.const.ts
+export const TRACKER_HOSTS: RegExp = /google-analytics|googletagmanager|facebook|hotjar|segment|mixpanel|amplitude/;
+```
+
+```ts
+// e2e/test/mocks/blocked.mock.ts
+import type { Route } from '@playwright/test';
+
+type RouteHandler = (route: Route) => Promise<void>;
+
+export const blockedMock = (): RouteHandler => {
+  return (route: Route): Promise<void> => route.abort();
+};
+```
 
 ```ts
 // e2e/playwright.fixture.ts
-import type { Route } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
-const TRACKER_HOSTS = /google-analytics|googletagmanager|facebook|hotjar|segment|mixpanel|amplitude/;
-
-const blockedMock = (route: Route): Promise<void> => route.abort();
+import { TRACKER_HOSTS } from './common/tracker.const';
+import { blockedMock } from './test/mocks/blocked.mock';
 
 export const test = base.extend({
   context: async ({ context }, use): Promise<void> => {
-    await context.route(TRACKER_HOSTS, blockedMock);
+    await context.route(TRACKER_HOSTS, blockedMock());
 
     await use(context);
   }

@@ -142,10 +142,11 @@ Freeze now at 14:00 and serve a post created at 12:00, so "2 hours ago" is deter
 import type { Route } from '@playwright/test';
 
 import type { Post } from '../../common/post.type';
+import { POST_STUB } from '../stubs/post.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 
-export const postMock = (post: Post): RouteHandler => {
+export const postMock = (post: Post = POST_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: post });
 };
 ```

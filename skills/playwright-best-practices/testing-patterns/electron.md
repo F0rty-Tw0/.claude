@@ -356,7 +356,7 @@ test.describe('FEATURE: desktop renderer', () => {
 
 ## IPC Communication
 
-`electronAPI.getData('user-settings')` is a preload wrapper around `ipcRenderer.invoke`; `userSettings()` returns the typed result. `roundTripFromMain` registers the renderer listener first, then sends through `webContents.send` from the main process, and returns what the renderer received; registering before sending is what makes the round trip deterministic. `installIpcMock` removes the existing `ipcMain` handler for a channel and installs one that answers with the given response. The response travels as the `evaluate` argument because the callback body is serialised and cannot close over Node-side values.
+`electronAPI.getData('user-settings')` is a preload wrapper around `ipcRenderer.invoke`; `userSettings()` returns the typed result. `roundTripFromMain` registers the renderer listener first, then sends through `webContents.send` from the main process, and returns what the renderer received; registering before sending is what makes the round trip deterministic. `installIpcMock` removes the existing `ipcMain` handler for a channel and installs one that answers with the given response. The response travels as the `evaluate` argument because the callback body is serialised and cannot close over Node-side values. The channel-and-response pair it takes is data, so it is `FETCH_DATA_STUB: IpcMock` in `test/stubs/ipc.stub.ts` holding `{ channel: 'fetch-data', response: { data: 'test-data', mocked: true } }`; a value named `*_MOCK` that never intercepts anything is a stub wearing the wrong name.
 
 ```ts
 // e2e/desktop/test/utils/ipc.spec.util.ts
@@ -391,11 +391,10 @@ export const roundTripFromMain = async (electronApp: ElectronApplication, render
 
 ```ts
 // e2e/desktop/ipc.e2e.ts
-import type { FetchData, IpcMock, UserSettings } from './common/desktop.type';
+import type { FetchData, UserSettings } from './common/desktop.type';
 import { expect, test } from './desktop.fixture';
 import { installIpcMock, roundTripFromMain } from './test/utils/ipc.spec.util';
-
-const FETCH_DATA_MOCK: IpcMock = { channel: 'fetch-data', response: { data: 'test-data', mocked: true } };
+import { FETCH_DATA_STUB } from './test/stubs/ipc.stub';
 
 test.describe('FEATURE: desktop ipc', () => {
   test.describe('GIVEN the main window is open', () => {
@@ -412,7 +411,7 @@ test.describe('FEATURE: desktop ipc', () => {
     });
 
     test('SCENARIO: mocked fetch-data reaches the renderer', async ({ electronApp, renderer }): Promise<void> => {
-      await test.step('GIVEN the fetch-data mock is installed', (): Promise<void> => installIpcMock(electronApp, FETCH_DATA_MOCK));
+      await test.step('GIVEN the fetch-data mock is installed', (): Promise<void> => installIpcMock(electronApp, FETCH_DATA_STUB));
 
       const result = await test.step('WHEN fetchData is invoked', (): Promise<FetchData | undefined> => renderer.fetchData());
 

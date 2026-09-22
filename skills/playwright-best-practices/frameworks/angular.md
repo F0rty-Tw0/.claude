@@ -274,14 +274,13 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
-import type { RouteHandler } from '../../common/signup.type';
+import type { RouteHandler, UsernameCheck } from '../../common/signup.type';
+import { USERNAME_AVAILABLE_STUB } from '../stubs/username-check.stub';
 
-const AVAILABLE_BODY = { available: true };
-
-export const slowUsernameCheckMock = (delayMs: number): RouteHandler => {
+export const slowUsernameCheckMock = (delayMs: number, check: UsernameCheck = USERNAME_AVAILABLE_STUB): RouteHandler => {
   return async (route: Route): Promise<void> => {
     await sleep(delayMs);
-    await route.fulfill({ json: AVAILABLE_BODY });
+    await route.fulfill({ json: check });
   };
 };
 ```

@@ -245,20 +245,33 @@ test('SCENARIO: the registered worker script is sw.js', async ({ serviceWorker }
 
 Serve a new worker script, call `registration.update()`, wait for a `waiting` worker, post `SKIP_WAITING`, and wait for `controllerchange`. `expect.poll` replaces the `updatefound` listener plus timeout, and the route mock replaces the "if an update exists" branch: the test creates the update it asserts on.
 
+The worker script is a parametrised sample, so it is a source builder in `test/utils/`, not a template literal in the mock. The mock keeps only the interception.
+
 ```ts
-// e2e/pwa/test/mocks/service-worker.mock.ts
-import type { Route } from '@playwright/test';
-
-type RouteHandler = (route: Route) => Promise<void>;
-
-export const serviceWorkerMock = (version: string): RouteHandler => {
-  const body = `
+// e2e/pwa/test/utils/service-worker-source.spec.util.ts
+export const serviceWorkerSource = (version: string): string => {
+  const source = `
     const VERSION = '${version}';
     self.addEventListener('install', (event) => {
       event.waitUntil(caches.open('app-cache-' + VERSION));
       self.skipWaiting();
     });
   `;
+
+  return source;
+};
+```
+
+```ts
+// e2e/pwa/test/mocks/service-worker.mock.ts
+import type { Route } from '@playwright/test';
+
+import { serviceWorkerSource } from '../utils/service-worker-source.spec.util';
+
+type RouteHandler = (route: Route) => Promise<void>;
+
+export const serviceWorkerMock = (version: string): RouteHandler => {
+  const body = serviceWorkerSource(version);
 
   return (route: Route): Promise<void> => route.fulfill({ body, contentType: 'application/javascript' });
 };

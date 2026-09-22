@@ -128,7 +128,7 @@ Test backend APIs without browser.
 
 ### API Mocking Patterns
 
-For E2E tests that need to mock API responses, the route handler is a factory in `test/mocks/`. The spec installs it in a step and never builds a handler inline. `route.fulfill` has no `delay` option; a slow response awaits `node:timers/promises` before fulfilling.
+For E2E tests that need to mock API responses, the route handler is a factory in `test/mocks/`. The spec installs it in a step and never builds a handler inline. Every body it serves comes from `test/stubs/users.stub.ts`, which exports `USER_STUB: User`, `USERS_STUB: User[]`, and `SERVER_ERROR_STUB: ErrorBody`, with `ErrorBody` declared in `test/common/users.type.ts`; the mock file declares no data and no type of its own. `route.fulfill` has no `delay` option; a slow response awaits `node:timers/promises` before fulfilling.
 
 ```ts
 // e2e/users/test/mocks/users.mock.ts
@@ -137,7 +137,7 @@ import { setTimeout } from 'node:timers/promises';
 import type { Route } from '@playwright/test';
 
 import type { User } from '../../common/users.type';
-import { USER_STUB } from '../stubs/users.stub';
+import { SERVER_ERROR_STUB, USERS_STUB, USER_STUB } from '../stubs/users.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 
@@ -146,14 +146,8 @@ type UsersMockOptions = {
   readonly users?: User[];
 };
 
-type ErrorBody = {
-  readonly error: string;
-};
-
-const SERVER_ERROR: ErrorBody = { error: 'Server error' };
-
 export const usersMock = (options: UsersMockOptions = {}): RouteHandler => {
-  const { delay = 0, users = [USER_STUB] } = options;
+  const { delay = 0, users = USERS_STUB } = options;
 
   return async (route: Route): Promise<void> => {
     await setTimeout(delay);
@@ -162,7 +156,7 @@ export const usersMock = (options: UsersMockOptions = {}): RouteHandler => {
 };
 
 export const usersErrorMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: SERVER_ERROR, status: 500 });
+  return (route: Route): Promise<void> => route.fulfill({ json: SERVER_ERROR_STUB, status: 500 });
 };
 
 export const usersGetOnlyMock = (): RouteHandler => {
@@ -171,7 +165,7 @@ export const usersGetOnlyMock = (): RouteHandler => {
 
     if (!isGet) return route.continue();
 
-    return route.fulfill({ json: [USER_STUB] });
+    return route.fulfill({ json: USERS_STUB });
   };
 };
 ```

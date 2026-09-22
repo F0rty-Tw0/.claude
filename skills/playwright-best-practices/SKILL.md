@@ -25,6 +25,7 @@ Reference set for Playwright test development, rewritten to house style: `FEATUR
 | Page object, component object | `core/page-object-model.md`, `architecture/pom-vs-fixtures.md` |
 | Fixture, hook, `test.extend`, `mergeTests` | `core/fixtures-hooks.md` |
 | Stubs, builders, seeding, cleanup | `core/test-data.md` |
+| Route mock payload, intercepted body, stubbing your own API | `core/house-style.md` (Test Data and Mocks), `core/test-data.md` |
 | `playwright.config`, projects, dependencies | `core/configuration.md`, `core/projects-dependencies.md` |
 | Global setup, storage state, auth once per run | `core/global-setup.md`, `advanced/authentication.md` |
 | Skip, fixme, slow, conditional runs, steps | `core/annotations.md` |
@@ -81,3 +82,5 @@ Reference set for Playwright test development, rewritten to house style: `FEATUR
 | `test.describe('Login')` | `test.describe('FEATURE: login')`. |
 | `test('WHEN … THEN …')` or `test('<bare title>')` | Title is `SCENARIO: <flow>`; `WHEN` / `THEN` are `test.step` names. |
 | A `page.getByRole` in a spec | Move it to the page object; call the method from a step. |
+| `route.fulfill({ json: { … } })` with a literal | Typed `<TYPE>_STUB` in `test/stubs/`, passed through the mock's stub-defaulted parameter. |
+| A `const <X>_BODY` inside a `.mock.ts` | Data belongs in `test/stubs/`; a mock owns interception only. |

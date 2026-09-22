@@ -17,21 +17,31 @@ Every route handler in this file is a factory in `test/mocks/<name>.mock.ts` ret
 `route.continue({ headers })` forwards the request with extra headers merged over the originals.
 
 ```ts
+// e2e/dashboard/test/stubs/auth-header.stub.ts
+import type { RequestHeaders } from '../../common/dashboard.type';
+
+export const TEST_HEADERS_STUB: RequestHeaders = { Authorization: 'Bearer test-token', 'X-Test-Header': 'test-value' };
+```
+
+```ts
 // e2e/dashboard/test/mocks/auth-header.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RequestHeaders } from '../../common/dashboard.type';
+import { TEST_HEADERS_STUB } from '../stubs/auth-header.stub';
+
 type RouteHandler = (route: Route) => Promise<void>;
 
-const TEST_HEADERS = { Authorization: 'Bearer test-token', 'X-Test-Header': 'test-value' };
-
-export const authHeaderMock = (): RouteHandler => {
+export const authHeaderMock = (extra: RequestHeaders = TEST_HEADERS_STUB): RouteHandler => {
   return (route: Route): Promise<void> => {
-    const headers = { ...route.request().headers(), ...TEST_HEADERS };
+    const headers = { ...route.request().headers(), ...extra };
 
     return route.continue({ headers });
   };
 };
 ```
+
+`RequestHeaders` is `Record<string, string>` in `common/dashboard.type.ts`.
 
 ### Modify Request Body
 
@@ -192,19 +202,17 @@ export { expect } from '@playwright/test';
 
 ```ts
 // e2e/dashboard/test/stubs/graphql.stub.ts
-import type { GraphQLMock, GraphQLResponse } from '../../common/dashboard.type';
+import type { DashboardStats, GraphQLMock, GraphQLResponse, User, UserVariables } from '../../common/dashboard.type';
 
-const STATS = { revenue: 50000, users: 100 };
-const STATS_DATA = { stats: STATS };
-const STATS_RESPONSE: GraphQLResponse = { data: STATS_DATA };
-const USER = { id: '1', name: 'John' };
-const USER_DATA = { user: USER };
-const USER_RESPONSE: GraphQLResponse = { data: USER_DATA };
-const USER_VARIABLES = { id: '1' };
+const stats: DashboardStats = { revenue: 50000, users: 100 };
+const statsResponse: GraphQLResponse = { data: { stats } };
+const user: User = { id: '1', name: 'John' };
+const userResponse: GraphQLResponse = { data: { user } };
+const userVariables: UserVariables = { id: '1' };
 
-export const STATS_MOCK_STUB: GraphQLMock = { operation: 'GetDashboardStats', response: STATS_RESPONSE };
+export const STATS_MOCK_STUB: GraphQLMock = { operation: 'GetDashboardStats', response: statsResponse };
 
-export const USER_MOCK_STUB: GraphQLMock = { operation: 'GetUser', response: USER_RESPONSE, variables: USER_VARIABLES };
+export const USER_MOCK_STUB: GraphQLMock = { operation: 'GetUser', response: userResponse, variables: userVariables };
 ```
 
 ```ts
@@ -229,13 +237,28 @@ test.describe('FEATURE: dashboard', () => {
 
 ### Mock GraphQL Mutations
 
-A mutation mock reads the typed `variables.input` and echoes it back with computed fields, so the response agrees with what the UI sent.
+A mutation mock reads the typed `variables.input` and echoes it back with computed fields, so the response agrees with what the UI sent. The fixed parts of the response are a stub; only `items` and `total` are derived.
+
+```ts
+// e2e/checkout/test/stubs/order.stub.ts
+import type { CreatedOrder } from '../../common/checkout.type';
+
+export const CREATED_ORDER_STUB: CreatedOrder = { id: 'order-123', items: [], status: 'PENDING', total: 0 };
+```
 
 ```ts
 // e2e/checkout/test/mocks/create-order.mock.ts
 import type { Route } from '@playwright/test';
 
-import type { CreateOrderVariables, GraphQLRequest, OrderItem } from '../../common/checkout.type';
+import type {
+  CreateOrderData,
+  CreateOrderVariables,
+  CreatedOrder,
+  GraphQLRequest,
+  GraphQLResponse,
+  OrderItem
+} from '../../common/checkout.type';
+import { CREATED_ORDER_STUB } from '../stubs/order.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
 
@@ -249,9 +272,9 @@ export const createOrderMock = (): RouteHandler => {
     if (!isCreateOrder) return route.continue();
 
     const items = body.variables.input.items;
-    const createOrder = { id: 'order-123', items, status: 'PENDING', total: items.reduce(addLineTotal, 0) };
-    const data = { createOrder };
-    const json = { data };
+    const createOrder: CreatedOrder = { ...CREATED_ORDER_STUB, items, total: items.reduce(addLineTotal, 0) };
+    const data: CreateOrderData = { createOrder };
+    const json: GraphQLResponse<CreateOrderData> = { data };
 
     return route.fulfill({ json });
   };
@@ -319,25 +342,34 @@ Add `notFound: 'fallback'` when the HAR is partial: recorded requests replay, un
 The search mock reads the query and picks the response by guard clauses: an error query returns 500, an empty query returns no results, anything else returns one result echoing the query.
 
 ```ts
+// e2e/search/test/stubs/search.stub.ts
+import type { SearchError, SearchResponse, SearchResult } from '../../common/search.type';
+
+export const SEARCH_EMPTY_STUB: SearchResponse = { results: [] };
+
+export const SEARCH_ERROR_STUB: SearchError = { error: 'Search failed' };
+
+export const SEARCH_RESULT_STUB: SearchResult = { id: 1, title: 'Result' };
+```
+
+```ts
 // e2e/search/test/mocks/search.mock.ts
 import type { Route } from '@playwright/test';
 
-import type { SearchRequest } from '../../common/search.type';
+import type { SearchRequest, SearchResponse, SearchResult } from '../../common/search.type';
+import { SEARCH_EMPTY_STUB, SEARCH_ERROR_STUB, SEARCH_RESULT_STUB } from '../stubs/search.stub';
 
 type RouteHandler = (route: Route) => Promise<void>;
-
-const ERROR_BODY = { error: 'Search failed' };
-const EMPTY_BODY = { results: [] };
 
 export const searchMock = (): RouteHandler => {
   return (route: Route): Promise<void> => {
     const body: SearchRequest = route.request().postDataJSON();
 
-    if (body.query === 'error') return route.fulfill({ json: ERROR_BODY, status: 500 });
-    if (body.query === 'empty') return route.fulfill({ json: EMPTY_BODY });
+    if (body.query === 'error') return route.fulfill({ json: SEARCH_ERROR_STUB, status: 500 });
+    if (body.query === 'empty') return route.fulfill({ json: SEARCH_EMPTY_STUB });
 
-    const results = [{ id: 1, title: `Result for: ${body.query}` }];
-    const json = { results };
+    const match: SearchResult = { ...SEARCH_RESULT_STUB, title: `Result for: ${body.query}` };
+    const json: SearchResponse = { results: [match] };
 
     return route.fulfill({ json });
   };
@@ -369,16 +401,24 @@ test.describe('FEATURE: search', () => {
 
 ### Mock Nth Request
 
-A counter in the factory closure fails the first two calls with 503 and succeeds afterwards, which exercises the app's retry path.
+A counter in the factory closure fails the first two calls with 503 and succeeds afterwards, which exercises the app's retry path. `failuresBeforeSuccess` is the only thing a case varies, so it is the parameter; both bodies stay stubs. `StatusError` and `StatusOk` live in `common/dashboard.type.ts`.
+
+```ts
+// e2e/dashboard/test/stubs/status.stub.ts
+import type { StatusError, StatusOk } from '../../common/dashboard.type';
+
+export const STATUS_OK_STUB: StatusOk = { status: 'ok' };
+
+export const STATUS_UNAVAILABLE_STUB: StatusError = { error: 'Service unavailable' };
+```
 
 ```ts
 // e2e/dashboard/test/mocks/status-retry.mock.ts
 import type { Route } from '@playwright/test';
 
-type RouteHandler = (route: Route) => Promise<void>;
+import { STATUS_OK_STUB, STATUS_UNAVAILABLE_STUB } from '../stubs/status.stub';
 
-const UNAVAILABLE_BODY = { error: 'Service unavailable' };
-const OK_BODY = { status: 'ok' };
+type RouteHandler = (route: Route) => Promise<void>;
 
 export const statusRetryMock = (failuresBeforeSuccess: number): RouteHandler => {
   let callCount = 0;
@@ -386,9 +426,9 @@ export const statusRetryMock = (failuresBeforeSuccess: number): RouteHandler => 
   return (route: Route): Promise<void> => {
     callCount += 1;
 
-    if (callCount <= failuresBeforeSuccess) return route.fulfill({ json: UNAVAILABLE_BODY, status: 503 });
+    if (callCount <= failuresBeforeSuccess) return route.fulfill({ json: STATUS_UNAVAILABLE_STUB, status: 503 });
 
-    return route.fulfill({ json: OK_BODY });
+    return route.fulfill({ json: STATUS_OK_STUB });
   };
 };
 ```
@@ -405,15 +445,16 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
+import type { DashboardData } from '../../common/dashboard.type';
+import { DASHBOARD_DATA_STUB } from '../stubs/dashboard.stub';
+
 type RouteHandler = (route: Route) => Promise<void>;
 
-const DATA_BODY = { data: 'loaded' };
-
-export const slowDataMock = (delayMs: number): RouteHandler => {
+export const slowDataMock = (delayMs: number, data: DashboardData = DASHBOARD_DATA_STUB): RouteHandler => {
   return async (route: Route): Promise<void> => {
     await sleep(delayMs);
 
-    await route.fulfill({ json: DATA_BODY });
+    await route.fulfill({ json: data });
   };
 };
 ```
