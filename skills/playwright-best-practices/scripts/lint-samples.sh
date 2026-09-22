@@ -53,7 +53,7 @@ out="$(for f in "${files[@]}"; do
       if (line ~ /^[[:space:]]*await (page|expect)\./ && spec && !instep) print file ":" NR ": bare page/expect call in spec body (wrap in test.step)"
       if (instep && line ~ /^[[:space:]]*\}\);?[[:space:]]*$/) instep = 0
     }
-    /^\/\/ .*\.spec\.ts$/ { spec = 1 }
+    /^\/\/ .*\.(e2e|test)\.ts$/ { spec = 1 }
   ' "$f"
 done)"
 

@@ -78,7 +78,7 @@ NEXTAUTH_SECRET=test-secret-local
 A server component is plain HTML by the time Playwright sees it. Assert on roles as on any page.
 
 ```ts
-// e2e/home/home.spec.ts
+// e2e/home/home.e2e.ts
 import { test } from './home.fixture';
 
 test.describe('FEATURE: server components', () => {
@@ -94,7 +94,7 @@ test.describe('FEATURE: server components', () => {
 });
 ```
 
-`HomePage` is shared by every `home.spec.ts` below: `goto()` opens `/`; `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
+`HomePage` is shared by every `home.e2e.ts` below: `goto()` opens `/`; `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
 
 ### Loading States with Streaming
 
@@ -119,7 +119,7 @@ export const slowStatsMock = (delayMs: number): RouteHandler => {
 `DashboardPage` owns `heading` (`getByRole('heading', { name: 'Dashboard' })`), `progressbar` (`getByRole('progressbar')`) and `sidebar` (`getByRole('navigation', { name: 'Dashboard' })`). `goto(path = '/dashboard')` navigates; `routeStats(handler: RouteHandler)` wraps `page.route('**/api/stats', handler)`; `expectLoading` asserts the progressbar visible; `expectLoaded` asserts the heading visible and the progressbar hidden in one boxed step; `openSection(name)` clicks the sidebar link then `waitForURL('/dashboard/<name>')`; `expectSection(name)` asserts the sidebar and the section heading.
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.test.ts
 import { test } from './dashboard.fixture';
 import { slowStatsMock } from './test/mocks/stats.mock';
 
@@ -195,7 +195,7 @@ export class PostPage {
 ```
 
 ```ts
-// e2e/blog/blog.spec.ts
+// e2e/blog/blog.e2e.ts
 import type { Response } from '@playwright/test';
 
 import { expect, test } from './blog.fixture';
@@ -241,7 +241,7 @@ export const sortedAscending = (prices: number[]): number[] => [...prices].sort(
 ```
 
 ```ts
-// e2e/products/products.spec.ts
+// e2e/products/products.e2e.ts
 import { expect, test } from './products.fixture';
 import { sortedAscending } from './test/utils/prices.spec.util';
 
@@ -286,7 +286,7 @@ export type CreatedProductBody = {
 ```
 
 ```ts
-// e2e/products/products-api.spec.ts
+// e2e/products/products-api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import type { CreatedProductBody, ProductsBody } from './common/products.type';
@@ -322,7 +322,7 @@ See [api-testing.md](../testing-patterns/api-testing.md) for API objects and `re
 The form posts to the same route. The page object waits for the redirect so the spec asserts the success text after navigation.
 
 ```ts
-// e2e/products/products.spec.ts
+// e2e/products/products.e2e.ts
 import { test } from './products.fixture';
 import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
 
@@ -359,7 +359,7 @@ export const returnUrl = (current: string): string | null => {
 ```
 
 ```ts
-// e2e/auth/auth.unauth.spec.ts
+// e2e/auth/auth.unauth.e2e.ts
 import { expect, test } from './auth.fixture';
 import { returnUrl } from './test/utils/return-url.spec.util';
 
@@ -408,7 +408,7 @@ The spec reads `const response = await test.step('open the home page', (): Promi
 Middleware rewrites by `Accept-Language`. The header set is a named const above the steps.
 
 ```ts
-// e2e/home/home.spec.ts
+// e2e/home/home.e2e.ts
 import { test } from './home.fixture';
 
 const FRENCH_HEADERS = { 'Accept-Language': 'fr-FR,fr;q=0.9' };
@@ -440,7 +440,7 @@ export const hydrationErrors = (errors: string[]): string[] => errors.filter(isH
 ```
 
 ```ts
-// e2e/home/home.spec.ts
+// e2e/home/home.e2e.ts
 import { expect, test } from './home.fixture';
 import { hydrationErrors } from './test/utils/hydration.spec.util';
 
@@ -511,7 +511,7 @@ export class GalleryPage {
 ```
 
 ```ts
-// e2e/gallery/gallery.spec.ts
+// e2e/gallery/gallery.e2e.ts
 import { expect, test } from './gallery.fixture';
 
 test.describe('FEATURE: next/image', () => {
@@ -539,7 +539,7 @@ test.describe('FEATURE: next/image', () => {
 
 ### Setup Project
 
-The `setup` project logs in once and writes storage state; the `authenticated` project depends on it. Unauthenticated specs match `*.unauth.spec.ts` and run without state.
+The `setup` project logs in once and writes storage state; the `authenticated` project depends on it. Unauthenticated specs match `*.unauth.e2e.ts` and run without state.
 
 ```ts
 // e2e/playwright.config.ts
@@ -552,7 +552,7 @@ const authenticated = { storageState: USER_STATE_PATH };
 const projects = [
   { name: 'setup', testMatch: /auth\.setup\.ts/ },
   { dependencies: ['setup'], name: 'authenticated', use: authenticated },
-  { name: 'unauthenticated', testMatch: '**/*.unauth.spec.ts' }
+  { name: 'unauthenticated', testMatch: '**/*.unauth.e2e.ts' }
 ];
 
 export default defineConfig({ projects });

@@ -315,7 +315,7 @@ export default defineConfig({ projects, testDir: './e2e' });
 ```
 
 ```ts
-// e2e/gallery/gallery.spec.ts
+// e2e/gallery/gallery.e2e.ts
 import type { ProjectMetadata } from '../common/playwright.type';
 import { test } from './gallery.fixture';
 

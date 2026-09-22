@@ -71,7 +71,7 @@ export class AnalyticsPage {
 The mask list is a named const above the step because it is a nested array inside the options object.
 
 ```ts
-// e2e/visual/analytics.visual.spec.ts
+// e2e/visual/analytics.visual.e2e.ts
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: analytics panel snapshot', () => {
@@ -93,7 +93,7 @@ test.describe('FEATURE: analytics panel snapshot', () => {
 **Alternative: freeze content with JavaScript** when masking affects layout. `freezeTimestamps` rewrites every `[data-testid="time-display"]` to a fixed string before the capture.
 
 ```ts
-// e2e/visual/analytics-frozen.visual.spec.ts
+// e2e/visual/analytics-frozen.visual.e2e.ts
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: analytics panel snapshot with frozen timestamps', () => {
@@ -112,7 +112,7 @@ test.describe('FEATURE: analytics panel snapshot with frozen timestamps', () => 
 **Use when**: Always. CSS animations and transitions are the primary cause of flaky visual diffs.
 
 ```ts
-// e2e/visual/home.visual.spec.ts
+// e2e/visual/home.visual.e2e.ts
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: home page snapshot', () => {
@@ -170,7 +170,7 @@ export class HeroPage {
 ```
 
 ```ts
-// e2e/visual/hero.visual.spec.ts
+// e2e/visual/hero.visual.e2e.ts
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: animated hero snapshot', () => {
@@ -197,7 +197,7 @@ test.describe('FEATURE: animated hero snapshot', () => {
 The options object is a named const so the step stays one call. The brand logo is the zero-tolerance case; the others differ only in the const.
 
 ```ts
-// e2e/visual/brand-logo.visual.spec.ts
+// e2e/visual/brand-logo.visual.e2e.ts
 import { expect, test } from './visual.fixture';
 
 const PIXEL_PERFECT = { maxDiffPixels: 0, threshold: 0 };
@@ -302,7 +302,7 @@ const snapshotPathTemplate = '{testDir}/{testFileDir}/{testFileName}-snapshots/{
 
 const chrome = devices['Desktop Chrome'];
 
-const projects = [{ name: 'visual', testMatch: '**/*.visual.spec.ts', use: chrome }];
+const projects = [{ name: 'visual', testMatch: '**/*.visual.e2e.ts', use: chrome }];
 
 export default defineConfig({ projects, snapshotPathTemplate });
 ```
@@ -314,7 +314,7 @@ export default defineConfig({ projects, snapshotPathTemplate });
 `expect(page)` without options captures the visible viewport; `fullPage: true` captures the entire scrollable page. `CatalogPage` exposes `table` (`getByRole('table')`) and `featuredItem` (`getByTestId('featured-item')`).
 
 ```ts
-// e2e/visual/scope.visual.spec.ts
+// e2e/visual/scope.visual.e2e.ts
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: snapshot scope', () => {
@@ -354,7 +354,7 @@ export type Breakpoint = {
 ```
 
 ```ts
-// e2e/visual/landing-breakpoints.visual.spec.ts
+// e2e/visual/landing-breakpoints.visual.e2e.ts
 import type { Breakpoint } from './common/visual.type';
 import { expect, test } from './visual.fixture';
 
@@ -394,9 +394,9 @@ const tablet = devices['iPad (gen 7)'];
 const mobile = devices['iPhone 14'];
 
 const projects = [
-  { name: 'desktop', testMatch: '**/*.visual.spec.ts', use: desktop },
-  { name: 'tablet', testMatch: '**/*.visual.spec.ts', use: tablet },
-  { name: 'mobile', testMatch: '**/*.visual.spec.ts', use: mobile }
+  { name: 'desktop', testMatch: '**/*.visual.e2e.ts', use: desktop },
+  { name: 'tablet', testMatch: '**/*.visual.e2e.ts', use: tablet },
+  { name: 'mobile', testMatch: '**/*.visual.e2e.ts', use: mobile }
 ];
 
 export default defineConfig({ projects });
@@ -433,7 +433,7 @@ export class StoryPage {
 ```
 
 ```ts
-// e2e/visual/button.visual.spec.ts
+// e2e/visual/button.visual.e2e.ts
 import { expect, test } from './visual.fixture';
 
 const STILL = { animations: 'disabled' } as const;
@@ -480,7 +480,7 @@ test.describe('FEATURE: button visual states', () => {
 npx playwright test --update-snapshots
 
 # Update for specific file
-npx playwright test tests/landing.spec.ts --update-snapshots
+npx playwright test tests/landing.e2e.ts --update-snapshots
 
 # Update for specific project
 npx playwright test --project=chromium --update-snapshots
@@ -508,7 +508,7 @@ npx playwright test --project=chromium --update-snapshots
 **Tag visual tests for selective updates.** The tag is the second argument of `test`, never part of the title; `--grep @visual` still matches it.
 
 ```ts
-// e2e/visual/landing.visual.spec.ts
+// e2e/visual/landing.visual.e2e.ts
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: landing page snapshot', () => {
@@ -553,7 +553,7 @@ const projects = [
 export default defineConfig({ expect: expectOptions, projects });
 ```
 
-**Strategy**: Run visual tests in a single browser (Chromium on Linux in CI) to minimize snapshot count. Add other browsers only when you have actual cross-browser rendering bugs. The `visual` project matches `*.visual.spec.ts`; the functional projects ignore it.
+**Strategy**: Run visual tests in a single browser (Chromium on Linux in CI) to minimize snapshot count. Add other browsers only when you have actual cross-browser rendering bugs. The `visual` project matches `*.visual.e2e.ts`; the functional projects ignore it.
 
 ```ts
 // e2e/playwright.config.ts
@@ -564,9 +564,9 @@ const chromium = devices['Desktop Chrome'];
 const firefox = devices['Desktop Firefox'];
 
 const projects = [
-  { name: 'visual', testMatch: '**/*.visual.spec.ts', use: chromium },
-  { name: 'chromium', testIgnore: '**/*.visual.spec.ts', use: chromium },
-  { name: 'firefox', testIgnore: '**/*.visual.spec.ts', use: firefox }
+  { name: 'visual', testMatch: '**/*.visual.e2e.ts', use: chromium },
+  { name: 'chromium', testIgnore: '**/*.visual.e2e.ts', use: chromium },
+  { name: 'firefox', testIgnore: '**/*.visual.e2e.ts', use: firefox }
 ];
 
 export default defineConfig({ projects });

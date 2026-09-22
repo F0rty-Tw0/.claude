@@ -137,7 +137,7 @@ export class PerformancePage {
 The spec asserts Google's "good" thresholds one step each. The second test feeds the [CI reporter](#ci-performance-monitoring); the Chromium-only `GIVEN` skips other browsers with a reason because `performance.memory` does not exist there.
 
 ```ts
-// e2e/performance/performance.spec.ts
+// e2e/performance/performance.e2e.ts
 import { HEAP_CEILING_BYTES, LOAD_TIME_BASELINE_MS, REGRESSION_TOLERANCE } from './common/performance.const';
 import type { HeapUsage, NavigationTiming, WebVitals } from './common/performance.type';
 import { expect, test } from './performance.fixture';
@@ -268,7 +268,7 @@ export class WebVitalsPage {
 ```
 
 ```ts
-// e2e/performance/web-vitals.spec.ts
+// e2e/performance/web-vitals.e2e.ts
 import { test } from './performance.fixture';
 
 test.describe('FEATURE: web vitals library', () => {
@@ -451,7 +451,7 @@ export class BudgetPage {
 ```
 
 ```ts
-// e2e/performance/budget.spec.ts
+// e2e/performance/budget.e2e.ts
 import { HOMEPAGE_BUDGET } from './common/performance.const';
 import { test } from './performance.fixture';
 
@@ -538,7 +538,7 @@ export class LighthousePage {
 The default audit runs every category with `audit(DEFAULT_THRESHOLDS)` and asserts `summary.performance >= 80` and `summary.accessibility >= 90` the same way; the throttled spec passes the config as the second argument.
 
 ```ts
-// e2e/lighthouse/lighthouse.spec.ts
+// e2e/lighthouse/lighthouse.e2e.ts
 import { PERFORMANCE_ONLY_CONFIG, PERFORMANCE_ONLY_THRESHOLDS } from './common/lighthouse.const';
 import type { LighthouseSummary } from './common/lighthouse.type';
 import { expect, test } from './lighthouse.fixture';
@@ -610,7 +610,7 @@ export const annotateLoadTime = (loadTime: number): void => {
 };
 ```
 
-The `load time` test in `performance.spec.ts` above records the annotation and detects regressions against `LOAD_TIME_BASELINE_MS * REGRESSION_TOLERANCE`. Reading the baseline from a file or an API is the same shape with the const replaced by a fixture value.
+The `load time` test in `performance.e2e.ts` above records the annotation and detects regressions against `LOAD_TIME_BASELINE_MS * REGRESSION_TOLERANCE`. Reading the baseline from a file or an API is the same shape with the const replaced by a fixture value.
 
 ## Anti-Patterns to Avoid
 

@@ -57,7 +57,7 @@ export default defineConfig({
   projects,
   retries: IS_CI ? 2 : 0,
   testDir: './e2e',
-  testMatch: '**/*.spec.ts',
+  testMatch: '**/*.@(e2e|test).ts',
   use,
   webServer,
   workers: IS_CI ? '50%' : undefined
@@ -95,7 +95,7 @@ export default defineConfig({
   projects,
   retries: IS_CI ? 2 : 0,
   testDir: './e2e',
-  testMatch: '**/*.spec.ts',
+  testMatch: '**/*.@(e2e|test).ts',
   use,
   webServer
 });
@@ -291,7 +291,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/shop/shop.spec.ts
+// e2e/shop/shop.e2e.ts
 import { test } from './shop.fixture';
 
 test.describe('FEATURE: shopping cart store', () => {
@@ -391,7 +391,7 @@ export class HomePage {
 ```
 
 ```ts
-// e2e/navigation/navigation.spec.ts
+// e2e/navigation/navigation.e2e.ts
 import { expect, test } from './navigation.fixture';
 
 test.describe('FEATURE: router navigation', () => {
@@ -493,7 +493,7 @@ export class ItemsPage {
 ```
 
 ```ts
-// e2e/items/items.spec.ts
+// e2e/items/items.e2e.ts
 import { test } from './items.fixture';
 
 test.describe('FEATURE: teleported dialog', () => {
@@ -545,7 +545,7 @@ export const disableAnimations = async (page: Page): Promise<void> => {
 ```
 
 ```ts
-// e2e/tasks/tasks.spec.ts
+// e2e/tasks/tasks.e2e.ts
 import { test } from './tasks.fixture';
 import { disableAnimations } from './test/utils/animations.spec.util';
 
@@ -583,7 +583,7 @@ test.describe('FEATURE: task list transitions', () => {
 **Use when**: Testing components with `<script setup>` or `setup()`. From Playwright's perspective, Composition API and Options API are identical.
 
 ```ts
-// e2e/pricing/pricing.spec.ts
+// e2e/pricing/pricing.e2e.ts
 import { test } from './pricing.fixture';
 
 test.describe('FEATURE: pricing calculator', () => {
@@ -635,7 +635,7 @@ export const fetchItems = async (request: APIRequestContext): Promise<Item[]> =>
 ```
 
 ```ts
-// e2e/posts/posts.spec.ts
+// e2e/posts/posts.e2e.ts
 import type { Item } from './common/posts.type';
 import { expect, test } from './posts.fixture';
 import { fetchItems } from './test/utils/items-api.spec.util';
@@ -802,7 +802,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/home/home.spec.ts
+// e2e/home/home.e2e.ts
 import { expect, test } from './home.fixture';
 
 test.describe('FEATURE: home page', () => {

@@ -289,7 +289,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/signup/signup.spec.ts
+// e2e/signup/signup.e2e.ts
 import { test } from './signup.fixture';
 import { buildApplicant } from './test/utils/applicant-builder.spec.util';
 
@@ -326,7 +326,7 @@ export const LOGIN_SCENARIOS: LoginScenario[] = [
 ```
 
 ```ts
-// e2e/login/login.spec.ts
+// e2e/login/login.e2e.ts
 import { test } from './login.fixture';
 import { LOGIN_SCENARIOS } from './test/stubs/login-scenario.stub';
 
@@ -446,7 +446,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/catalog/catalog.spec.ts
+// e2e/catalog/catalog.test.ts
 import { test } from './catalog.fixture';
 
 test.describe('FEATURE: catalog', () => {
@@ -518,7 +518,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/users/users.spec.ts
+// e2e/users/users.e2e.ts
 import type { User } from './common/users.type';
 import { test } from './users.fixture';
 

@@ -80,7 +80,7 @@ export class ProfilePage {
 `expect(page)` takes the `page` fixture, so it may sit in a spec step directly.
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.e2e.ts
 import { expect, test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
@@ -133,7 +133,7 @@ export const fetchUsers = async (request: APIRequestContext): Promise<User[]> =>
 Use for non-UI values. Do NOT retry - execute immediately. A step returns the value; the next step asserts on it with a `(): void =>` callback.
 
 ```ts
-// e2e/users/users-api.spec.ts
+// e2e/users/users-api.e2e.ts
 import { expect, test } from '@playwright/test';
 
 import type { User } from './common/users.type';
@@ -311,7 +311,7 @@ export class UsersPage {
 ```
 
 ```ts
-// e2e/users/users.spec.ts
+// e2e/users/users.e2e.ts
 import type { Response } from '@playwright/test';
 
 import { expect, test } from './users.fixture';

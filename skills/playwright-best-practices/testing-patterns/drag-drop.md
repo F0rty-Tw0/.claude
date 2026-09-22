@@ -260,7 +260,7 @@ export { expect } from '@playwright/test';
 The second test returns the saved ticket from the drag step and reloads to prove persistence.
 
 ```ts
-// e2e/board/board.spec.ts
+// e2e/board/board.e2e.ts
 import type { Ticket } from './common/board.type';
 import { expect, test } from './board.fixture';
 
@@ -333,7 +333,7 @@ export class PrioritiesPage {
 ```
 
 ```ts
-// e2e/priorities/priorities.spec.ts
+// e2e/priorities/priorities.e2e.ts
 import { test } from './priorities.fixture';
 
 const SEEDED_ORDER = ['Priority A', 'Priority B', 'Priority C'];
@@ -441,7 +441,7 @@ export class DragExamplePage {
 ```
 
 ```ts
-// e2e/drag-example/drag-example.spec.ts
+// e2e/drag-example/drag-example.e2e.ts
 import { test } from './drag-example.fixture';
 
 test.describe('FEATURE: native HTML5 drag and drop', () => {
@@ -568,7 +568,7 @@ export class DesignToolPage {
 ```
 
 ```ts
-// e2e/design-tool/design-tool.spec.ts
+// e2e/design-tool/design-tool.e2e.ts
 import type { BoundingBox, Point } from '../common/drag.type';
 import { test } from './design-tool.fixture';
 
@@ -629,7 +629,7 @@ export class DragPreview {
 ```
 
 ```ts
-// e2e/board/board-preview.spec.ts
+// e2e/board/board-preview.e2e.ts
 import { dropOn, holdBetween } from '../test/utils/drag.spec.util';
 import { test } from './board.fixture';
 

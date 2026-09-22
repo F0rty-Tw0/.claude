@@ -139,7 +139,7 @@ export class BookingPage {
 The spec receives the page object from the fixture in the next section and never constructs it. `BOOKING_DETAILS_STUB` is a typed base value in `test/stubs/booking.stub.ts`; the case overrides only the field it asserts on.
 
 ```ts
-// e2e/booking/booking.spec.ts
+// e2e/booking/booking.e2e.ts
 import type { BookingDetails } from './common/booking.type';
 import { test } from './booking.fixture';
 import { BOOKING_DETAILS_STUB } from './test/stubs/booking.stub';
@@ -224,7 +224,7 @@ export { expect } from '@playwright/test';
 `DashboardPage` and `LoginPage` follow the page-object sample above; `DashboardPage` exposes `goto()` plus `expectWidgets()` and `expectWelcome(email)` as boxed steps.
 
 ```ts
-// e2e/booking/dashboard.spec.ts
+// e2e/booking/dashboard.e2e.ts
 import { test } from './booking.fixture';
 
 test.describe('FEATURE: dashboard', () => {
@@ -309,7 +309,7 @@ export class NotificationComponent {
 `AccountPage` wires `this.notification = new NotificationComponent(page.getByRole('alert'))` in its constructor and exposes `updateEmail(email)` and `expectEmail(email)`.
 
 ```ts
-// e2e/booking/account.spec.ts
+// e2e/booking/account.e2e.ts
 import { test } from './booking.fixture';
 import { generateEmail } from './test/utils/member-builder.spec.util';
 
@@ -346,9 +346,9 @@ e2e/
   playwright.config.ts
   playwright.fixture.ts
   booking/
-    booking.spec.ts
-    dashboard.spec.ts
-    account.spec.ts
+    booking.e2e.ts
+    dashboard.e2e.ts
+    account.e2e.ts
     booking.fixture.ts
     common/
       booking.type.ts

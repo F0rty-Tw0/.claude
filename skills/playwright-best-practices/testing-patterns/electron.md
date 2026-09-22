@@ -177,7 +177,7 @@ A packaged binary launches through `executablePath`; see [Packaging & Distributi
 ### Multiple Windows
 
 ```ts
-// e2e/desktop/windows.spec.ts
+// e2e/desktop/windows.e2e.ts
 import type { SettingsWindowPage } from './pages/settings-window.page';
 import { expect, test } from './desktop.fixture';
 
@@ -237,7 +237,7 @@ Other reads follow the same two shapes:
 | Window title | `window.getTitle()` | `string` |
 
 ```ts
-// e2e/desktop/main-process.spec.ts
+// e2e/desktop/main-process.e2e.ts
 import type { Rectangle } from 'electron';
 
 import { expect, test } from './desktop.fixture';
@@ -340,7 +340,7 @@ With `nodeIntegration: true` the renderer exposes `process.version` and `require
 ### Context Isolation Testing
 
 ```ts
-// e2e/desktop/renderer.spec.ts
+// e2e/desktop/renderer.e2e.ts
 import { expect, test } from './desktop.fixture';
 
 test.describe('FEATURE: desktop renderer', () => {
@@ -390,7 +390,7 @@ export const roundTripFromMain = async (electronApp: ElectronApplication, render
 ```
 
 ```ts
-// e2e/desktop/ipc.spec.ts
+// e2e/desktop/ipc.e2e.ts
 import type { FetchData, IpcMock, UserSettings } from './common/desktop.type';
 import { expect, test } from './desktop.fixture';
 import { installIpcMock, roundTripFromMain } from './test/utils/ipc.spec.util';
@@ -450,7 +450,7 @@ export const installOpenDialogMock = (electronApp: ElectronApplication, filePath
 | Save | `dialog.showSaveDialog` | `SaveDialogReturnValue` | `{ canceled: false, filePath }` |
 
 ```ts
-// e2e/desktop/dialogs.spec.ts
+// e2e/desktop/dialogs.e2e.ts
 import { test } from './desktop.fixture';
 import { installOpenDialogMock } from './test/utils/dialog.spec.util';
 
@@ -561,7 +561,7 @@ export const writeClipboard = (electronApp: ElectronApplication, text: string): 
 ```
 
 ```ts
-// e2e/desktop/native.spec.ts
+// e2e/desktop/native.e2e.ts
 import type { NotificationConstructorOptions } from 'electron';
 
 import { expect, test } from './desktop.fixture';

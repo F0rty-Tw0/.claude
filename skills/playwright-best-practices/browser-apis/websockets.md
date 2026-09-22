@@ -173,10 +173,10 @@ export class ChatPage {
 
 ### Wait for WebSocket Connection
 
-`page.waitForEvent('websocket')` must be started before navigation, so the page object starts it and returns the socket. The step returns the typed value. The import block below covers every fragment of `chat.spec.ts` in this file.
+`page.waitForEvent('websocket')` must be started before navigation, so the page object starts it and returns the socket. The step returns the typed value. The import block below covers every fragment of `chat.test.ts` in this file.
 
 ```ts
-// e2e/chat/chat.spec.ts
+// e2e/chat/chat.test.ts
 import type { WebSocket } from '@playwright/test';
 
 import { expect, test } from './chat.fixture';
@@ -202,7 +202,7 @@ test.describe('FEATURE: chat socket', () => {
 The `frameLog` fixture is created before the test body runs, so the listener is in place before `goto`. `expect.poll` waits for the first frame.
 
 ```ts
-// e2e/chat/chat.spec.ts
+// e2e/chat/chat.test.ts
 test('SCENARIO: a frame pushed by the server carries a type', async ({ chatPage, frameLog }): Promise<void> => {
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
@@ -215,7 +215,7 @@ test('SCENARIO: a frame pushed by the server carries a type', async ({ chatPage,
 ### Capture Sent Messages
 
 ```ts
-// e2e/chat/chat.spec.ts
+// e2e/chat/chat.test.ts
 test('SCENARIO: sending a message makes the last sent frame the chat message', async ({ chatPage, frameLog }): Promise<void> => {
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
@@ -259,7 +259,7 @@ export const dispatchSocketMessage = async (page: Page, message: SocketMessage):
 ```
 
 ```ts
-// e2e/chat/chat.spec.ts
+// e2e/chat/chat.test.ts
 test('SCENARIO: a message event dispatched on the app socket shows the message', async ({ chatPage, page }): Promise<void> => {
   const message: SocketMessage = { content: 'Hello there!', from: 'Alice', type: 'message' };
 
@@ -319,7 +319,7 @@ export const chatSocketMock = (): ChatSocket => {
 The `chatSocket` fixture (shown in [WebSocket Basics](#websocket-basics)) registers the mock with `page.routeWebSocket('**/ws/chat', socket.handler)` and hands the `ChatSocket` to the spec.
 
 ```ts
-// e2e/chat/chat.spec.ts
+// e2e/chat/chat.test.ts
 test.describe('GIVEN a mocked chat socket', () => {
   test.beforeEach(async ({ chatPage }): Promise<void> => {
     await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
@@ -348,7 +348,7 @@ Every real-time feature test has the same shape: open the page, inject one messa
 ### Live Notifications
 
 ```ts
-// e2e/chat/chat.spec.ts
+// e2e/chat/chat.test.ts
 test('SCENARIO: an arriving notification shows the order in the alert', async ({ chatPage, chatSocket }): Promise<void> => {
   const notification: SocketMessage = { message: 'Order #123 received', title: 'New Order', type: 'notification' };
 
@@ -401,7 +401,7 @@ export const eventsMock = (events: string[]): RouteHandler => {
 `liveDataPage` exposes `goto()` and `expectCount(text)`; its fixture follows the chat fixture shape. The route is installed in a step before navigation.
 
 ```ts
-// e2e/live-data/live-data.spec.ts
+// e2e/live-data/live-data.test.ts
 import { expect, test } from './live-data.fixture';
 import { eventsMock } from './test/mocks/events.mock';
 
@@ -431,7 +431,7 @@ A single-event stream is `eventsMock(['{"type":"update","value":42}'])` with `ex
 `chatSocket.close()` closes the mocked route, which the page sees as a server-side close.
 
 ```ts
-// e2e/chat/chat.spec.ts
+// e2e/chat/chat.test.ts
 test('SCENARIO: closing the socket shows the reconnecting status', async ({ chatPage, chatSocket }): Promise<void> => {
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
@@ -448,7 +448,7 @@ test('SCENARIO: closing the socket shows the reconnecting status', async ({ chat
 When the app reconnects, `page.routeWebSocket` calls the handler again for the new connection, so the same mock serves the second socket. If the app only reconnects on the browser `online` event, add a page-object method that dispatches `new Event('online')` on `window` through `page.evaluate` and call it as a step.
 
 ```ts
-// e2e/chat/chat.spec.ts
+// e2e/chat/chat.test.ts
 test('SCENARIO: closing the socket makes the app reconnect', async ({ chatPage, chatSocket }): Promise<void> => {
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 

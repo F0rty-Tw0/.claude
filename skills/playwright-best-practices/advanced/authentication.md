@@ -238,7 +238,7 @@ export default defineConfig({ projects, testDir: './e2e', use });
 Every test in the `chromium` project now starts logged in.
 
 ```ts
-// e2e/auth/home.spec.ts
+// e2e/auth/home.e2e.ts
 import { test } from './auth.fixture';
 
 test.describe('FEATURE: home', () => {
@@ -356,7 +356,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/settings/settings.spec.ts
+// e2e/settings/settings.e2e.ts
 import { test } from './settings.fixture';
 
 test.describe('FEATURE: profile settings', () => {
@@ -411,17 +411,17 @@ const anonymousUse = { storageState: EMPTY_STORAGE_STATE };
 
 const projects = [
   { name: 'setup', testMatch: /.*\.setup\.ts/ },
-  { dependencies: ['setup'], name: 'admin', testMatch: '**/*.admin.spec.ts', use: adminUse },
-  { dependencies: ['setup'], name: 'member', testMatch: '**/*.member.spec.ts', use: memberUse },
-  { dependencies: ['setup'], name: 'guest', testMatch: '**/*.guest.spec.ts', use: guestUse },
-  { name: 'anonymous', testMatch: '**/*.anon.spec.ts', use: anonymousUse }
+  { dependencies: ['setup'], name: 'admin', testMatch: '**/*.admin.e2e.ts', use: adminUse },
+  { dependencies: ['setup'], name: 'member', testMatch: '**/*.member.e2e.ts', use: memberUse },
+  { dependencies: ['setup'], name: 'guest', testMatch: '**/*.guest.e2e.ts', use: guestUse },
+  { name: 'anonymous', testMatch: '**/*.anon.e2e.ts', use: anonymousUse }
 ];
 
 export default defineConfig({ projects, testDir: './e2e' });
 ```
 
 ```ts
-// e2e/admin/admin-panel.admin.spec.ts
+// e2e/admin/admin-panel.admin.e2e.ts
 import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin panel', () => {
@@ -439,8 +439,8 @@ The other role specs differ only in suffix, `GIVEN`, and assertion:
 
 | File | `GIVEN` | Assertion step |
 |---|---|---|
-| `admin-panel.guest.spec.ts` | `GIVEN a guest session` | `adminUsersPage.expectAccessDenied()` |
-| `admin-panel.member.spec.ts` | `GIVEN a member session` | Whatever the member is allowed to see |
+| `admin-panel.guest.e2e.ts` | `GIVEN a guest session` | `adminUsersPage.expectAccessDenied()` |
+| `admin-panel.member.e2e.ts` | `GIVEN a member session` | Whatever the member is allowed to see |
 
 **Alternative**: a `loginAs(role)` fixture when one spec must switch roles. It opens one context per call and closes them all after the test.
 
@@ -489,7 +489,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/admin/role-comparison.spec.ts
+// e2e/admin/role-comparison.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { AdminUsersPage } from './pages/admin-users.page';
@@ -551,7 +551,7 @@ export const oauthCallbackMock = (): RouteHandler => {
 The route is registered in `beforeEach`, before any navigation, so the redirect is in place when the provider button is clicked.
 
 ```ts
-// e2e/auth/oauth-login.spec.ts
+// e2e/auth/oauth-login.e2e.ts
 import { expect, test } from './auth.fixture';
 import { EMPTY_STORAGE_STATE, PROVIDER_AUTHORIZE_URL } from './common/auth.const';
 import { oauthCallbackMock } from './test/mocks/oauth.mock';
@@ -610,7 +610,7 @@ export const SIGNUP_STUB: Signup = {
 ```
 
 ```ts
-// e2e/auth/oauth-session.spec.ts
+// e2e/auth/oauth-session.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import { expect, test } from './auth.fixture';
@@ -664,7 +664,7 @@ export const generateTotp = (secret: string): string => {
 The code is generated inside the step so it is fresh when submitted.
 
 ```ts
-// e2e/auth/mfa-login.spec.ts
+// e2e/auth/mfa-login.e2e.ts
 import { expect, test } from './auth.fixture';
 import { EMPTY_STORAGE_STATE, MFA_TOTP_SECRET } from './common/auth.const';
 import { MFA_USER_STUB } from './test/stubs/auth.stub';
@@ -831,7 +831,7 @@ export class LoginPage {
 Every case is one test under the shared `GIVEN`; its `WHEN` and `THEN` are steps, never a nested describe.
 
 ```ts
-// e2e/auth/login.spec.ts
+// e2e/auth/login.e2e.ts
 import { expect, test } from './auth.fixture';
 import { EMPTY_STORAGE_STATE } from './common/auth.const';
 import { USER_STUB } from './test/stubs/auth.stub';
@@ -940,7 +940,7 @@ export { expect } from '@playwright/test';
 When your config sets a default `storageState`, you must clear it explicitly for unauthenticated tests. The expired-session case needs a real session first, so it sits under its own `GIVEN` with its own `test.use`. `buildSignup()` in `test/utils/signup-builder.spec.util.ts` spreads `SIGNUP_STUB` and sets `email` to `test-${Date.now()}@example.com` so each run creates a new account.
 
 ```ts
-// e2e/auth/public-pages.spec.ts
+// e2e/auth/public-pages.e2e.ts
 import { expect, test } from './auth.fixture';
 import { EMPTY_STORAGE_STATE, SESSION_STATE_PATH } from './common/auth.const';
 import { buildSignup } from './test/utils/signup-builder.spec.util';

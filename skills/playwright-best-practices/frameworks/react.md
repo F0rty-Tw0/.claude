@@ -62,7 +62,7 @@ export class PreferencesPage {
 ```
 
 ```ts
-// e2e/preferences/preferences.spec.ts
+// e2e/preferences/preferences.e2e.ts
 import { test } from './preferences.fixture';
 
 test.describe('FEATURE: theme context', () => {
@@ -148,7 +148,7 @@ export class HomePage {
 ```
 
 ```ts
-// e2e/navigation/navigation.spec.ts
+// e2e/navigation/navigation.e2e.ts
 import { expect, test } from './navigation.fixture';
 
 test.describe('FEATURE: client routing', () => {
@@ -252,7 +252,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/search/search.spec.ts
+// e2e/search/search.test.ts
 import { expect, test } from './search.fixture';
 
 test.describe('FEATURE: useDebounce via SearchBox', () => {
@@ -357,7 +357,7 @@ export const slowSignupMock = (delayMs: number): RouteHandler => {
 ```
 
 ```ts
-// e2e/signup/signup.spec.ts
+// e2e/signup/signup.test.ts
 import { expect, test } from './signup.fixture';
 import { slowSignupMock } from './test/mocks/signup.mock';
 import { SIGNUP_USER_STUB } from './test/stubs/signup.stub';
@@ -412,7 +412,7 @@ test.describe('FEATURE: signup form', () => {
 **Use when**: Testing components rendered via `ReactDOM.createPortal()`: modals, dialogs, tooltips, menus. These render outside the parent DOM but Playwright sees the full document.
 
 ```ts
-// e2e/items/items.spec.ts
+// e2e/items/items.e2e.ts
 import { test } from './items.fixture';
 
 test.describe('FEATURE: portal dialog', () => {
@@ -486,7 +486,7 @@ export const recoveringWidgetsMock = (): RouteHandler => {
 ```
 
 ```ts
-// e2e/panel/panel.spec.ts
+// e2e/panel/panel.test.ts
 import { test } from './panel.fixture';
 import { brokenWidgetsMock, recoveringWidgetsMock } from './test/mocks/widgets.mock';
 
@@ -662,7 +662,7 @@ React Strict Mode runs effects twice in development. Tests should be resilient:
 A lazy route renders a Suspense fallback, then the chunk. The web-first assertion waits through both.
 
 ```ts
-// e2e/analytics/analytics.spec.ts
+// e2e/analytics/analytics.e2e.ts
 import { test } from './analytics.fixture';
 
 test.describe('FEATURE: lazy analytics route', () => {
@@ -717,7 +717,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/panel/panel-leaks.spec.ts
+// e2e/panel/panel-leaks.e2e.ts
 import { expect, test } from './panel.fixture';
 
 test.describe('FEATURE: panel unmount', () => {

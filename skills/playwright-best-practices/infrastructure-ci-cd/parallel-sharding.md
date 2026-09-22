@@ -65,7 +65,7 @@ export default defineConfig({
 **Serial execution for specific files:** `test.describe.configure({ mode: 'serial' })` at the top of a spec runs its tests in order on one worker, and skips the rest after the first failure.
 
 ```ts
-// e2e/checkout/checkout.spec.ts
+// e2e/checkout/checkout.e2e.ts
 import { expect, test } from './checkout.fixture';
 import { CARD_STUB, ITEM_STUB } from './test/stubs/checkout.stub';
 
@@ -276,7 +276,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/profile/profile.spec.ts
+// e2e/profile/profile.e2e.ts
 import { test } from './profile.fixture';
 
 test.describe('FEATURE: profile settings', () => {
@@ -304,7 +304,7 @@ export const uniqueOrderRef = (workerIndex: number): string => {
 ```
 
 ```ts
-// e2e/orders/orders.spec.ts
+// e2e/orders/orders.e2e.ts
 import { test } from './orders.fixture';
 import { uniqueOrderRef } from './test/utils/order-builder.spec.util';
 

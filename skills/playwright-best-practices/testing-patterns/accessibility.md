@@ -24,7 +24,7 @@ npm install -D @axe-core/playwright axe-core
 The scan is a step that returns the `AxeResults`; the assertion is its own step.
 
 ```ts
-// e2e/accessibility/accessibility.spec.ts
+// e2e/accessibility/accessibility.e2e.ts
 import type { AxeResults } from 'axe-core';
 
 import { expect, test } from './accessibility.fixture';
@@ -179,7 +179,7 @@ export class SignupPage {
 ```
 
 ```ts
-// e2e/accessibility/signup-keyboard.spec.ts
+// e2e/accessibility/signup-keyboard.e2e.ts
 import { test } from './accessibility.fixture';
 
 test.describe('FEATURE: signup keyboard navigation', () => {
@@ -244,7 +244,7 @@ export class HomePage {
 ```
 
 ```ts
-// e2e/accessibility/skip-link.spec.ts
+// e2e/accessibility/skip-link.e2e.ts
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: skip link', () => {
@@ -315,7 +315,7 @@ export class DashboardPage {
 ```
 
 ```ts
-// e2e/accessibility/settings-dialog.spec.ts
+// e2e/accessibility/settings-dialog.e2e.ts
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: settings dialog keyboard handling', () => {
@@ -337,7 +337,7 @@ test.describe('FEATURE: settings dialog keyboard handling', () => {
 
 ## ARIA Validation
 
-Every ARIA check is the shape of `settings-dialog.spec.ts`: a `GIVEN` step opens the page, a `WHEN` step calls one page-object action, a `THEN` step asserts one locator. Roles are locators on the page object; several roles that describe one state are asserted together in one boxed `expect*` method.
+Every ARIA check is the shape of `settings-dialog.e2e.ts`: a `GIVEN` step opens the page, a `WHEN` step calls one page-object action, a `THEN` step asserts one locator. Roles are locators on the page object; several roles that describe one state are asserted together in one boxed `expect*` method.
 
 | Check | Page-object member | `WHEN` | `THEN` |
 |---|---|---|---|
@@ -387,7 +387,7 @@ export class DialogComponent {
 `ItemsPage` follows `DashboardPage`: `goto()` opens `/items`, `openDialog()` clicks `getByRole('button', { name: 'Open Modal' })`, and `dialog` is `new DialogComponent(page.getByRole('dialog'))`.
 
 ```ts
-// e2e/accessibility/items-focus.spec.ts
+// e2e/accessibility/items-focus.e2e.ts
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: items page focus management', () => {
@@ -403,7 +403,7 @@ test.describe('FEATURE: items page focus management', () => {
 });
 ```
 
-Focus restoration: the last step of `settings-dialog.spec.ts` covers it: the trigger that opened the dialog must be focused after the dialog closes. Any trigger and dialog pair follows the same three steps: open, close, `toBeFocused()` on the trigger.
+Focus restoration: the last step of `settings-dialog.e2e.ts` covers it: the trigger that opened the dialog must be focused after the dialog closes. Any trigger and dialog pair follows the same three steps: open, close, `toBeFocused()` on the trigger.
 
 ## Color & Contrast
 
@@ -417,7 +417,7 @@ Focus restoration: the last step of `settings-dialog.spec.ts` covers it: the tri
 The computed `animationDuration` is read by a page-object method with a typed `evaluate`, returned from a step, and asserted in the next step.
 
 ```ts
-// e2e/accessibility/reduced-motion.spec.ts
+// e2e/accessibility/reduced-motion.e2e.ts
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: reduced motion', () => {
@@ -435,7 +435,7 @@ test.describe('FEATURE: reduced motion', () => {
 
 ## CI Integration
 
-A dedicated project matches `*.a11y.spec.ts` so CI can run accessibility specs on their own.
+A dedicated project matches `*.a11y.e2e.ts` so CI can run accessibility specs on their own.
 
 ```ts
 // e2e/playwright.config.ts

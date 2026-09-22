@@ -41,7 +41,7 @@ export default defineConfig({
 A device that is not in the catalogue is a plain options object passed to `test.use` at the top of the spec. `viewport` is its own const because it is a nested object.
 
 ```ts
-// e2e/home/home-custom-device.spec.ts
+// e2e/home/home-custom-device.e2e.ts
 import { test } from './home.fixture';
 
 const CUSTOM_VIEWPORT = { height: 844, width: 390 };
@@ -70,7 +70,7 @@ test.describe('FEATURE: home on a custom device', () => {
 To run one case on several devices inside a single project, loop over device names and give each iteration its own `describe` with `test.use`. The describe title stays constant; the device name goes in the test title so the full path is unique.
 
 ```ts
-// e2e/checkout/checkout-devices.spec.ts
+// e2e/checkout/checkout-devices.e2e.ts
 import { devices } from '@playwright/test';
 
 import { test } from './checkout.fixture';
@@ -99,7 +99,7 @@ test.describe('FEATURE: checkout on mobile devices', () => {
 `locator.tap()` is `click()` for touch devices and needs `hasTouch: true` on the context. The page object owns the call: `GalleryPage.tapFirstPhoto()` is `this.firstPhoto.tap()` on `getByRole('img', { name: 'Photo 1' })`; `expectLightboxOpen()` is a boxed step asserting the `dialog` visible.
 
 ```ts
-// e2e/gallery/gallery.spec.ts
+// e2e/gallery/gallery.e2e.ts
 import { test } from './gallery.fixture';
 
 test.use({ hasTouch: true });
@@ -184,7 +184,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/inbox/inbox.spec.ts
+// e2e/inbox/inbox.e2e.ts
 import { test } from './inbox.fixture';
 
 test.use({ hasTouch: true });
@@ -291,7 +291,7 @@ export const WIDE_VIEWPORTS: Viewport[] = [TABLET_VIEWPORT, DESKTOP_VIEWPORT];
 ```
 
 ```ts
-// e2e/home/home-viewports.spec.ts
+// e2e/home/home-viewports.e2e.ts
 import { test } from './home.fixture';
 import { NARROW_VIEWPORTS, WIDE_VIEWPORTS } from './common/home.const';
 
@@ -329,7 +329,7 @@ test.describe('FEATURE: navigation', () => {
 Resizing mid-test verifies the layout reacts without a reload. Each layout has one boxed `expect*` method on the page object.
 
 ```ts
-// e2e/dashboard/dashboard-resize.spec.ts
+// e2e/dashboard/dashboard-resize.e2e.ts
 import { DESKTOP_VIEWPORT, MOBILE_VIEWPORT } from '../home/common/home.const';
 import { test } from './dashboard.fixture';
 
@@ -357,7 +357,7 @@ test.describe('FEATURE: dashboard layout', () => {
 The navigation drawer is a page object: `menuButton` (`getByRole('button', { name: 'Menu' })`), the `nav` landmark, and `productsLink` scoped inside it (`this.nav.getByRole('link', { name: 'Products' })`). `goto()` opens `/`; `openMenu()` and `goToProducts()` click; `expectMenuOpen()` and `expectMenuClosed()` are boxed steps on `nav` visible or hidden. The spec pins the mobile viewport with `test.use`.
 
 ```ts
-// e2e/home/mobile-nav.spec.ts
+// e2e/home/mobile-nav.e2e.ts
 import { MOBILE_VIEWPORT } from './common/home.const';
 import { expect, test } from './home.fixture';
 
@@ -478,7 +478,7 @@ The spec is `goto()`, `pullToRefresh()`, `expectRefreshed()` under `test.use({ h
 
 ### Test All Breakpoints
 
-Breakpoints split into the two groups the header renders differently, so no test branches on width. `header.spec.ts` has the shape of `home-viewports.spec.ts` above with a different loop source and `THEN`; `HeaderPage` holds `menuButton` (`getByTestId('mobile-menu-button')`) and `desktopNav` (`getByTestId('desktop-nav')`) with a boxed `expect*` per layout, each with its two assertions.
+Breakpoints split into the two groups the header renders differently, so no test branches on width. `header.e2e.ts` has the shape of `home-viewports.e2e.ts` above with a different loop source and `THEN`; `HeaderPage` holds `menuButton` (`getByTestId('mobile-menu-button')`) and `desktopNav` (`getByTestId('desktop-nav')`) with a boxed `expect*` per layout, each with its two assertions.
 
 ```ts
 // e2e/home/common/breakpoints.const.ts
@@ -489,9 +489,9 @@ export const WIDE_BREAKPOINTS: Record<string, number> = { '2xl': 1536, lg: 1024,
 
 | Spec | Loop | `GIVEN` | `THEN` |
 |---|---|---|---|
-| `header.spec.ts`, `GIVEN a breakpoint under md` | `Object.entries(NARROW_BREAKPOINTS)` | `page.setViewportSize({ height: HEIGHT, width })` | `headerPage.expectMobileHeader()` |
-| `header.spec.ts`, `GIVEN a breakpoint of md or wider` | `Object.entries(WIDE_BREAKPOINTS)` | same | `headerPage.expectDesktopHeader()` |
-| `home-visual.spec.ts` | `SIZES: Viewport[]` of the three viewports | `page.setViewportSize(viewport)` | `` expect(page).toHaveScreenshot(`homepage-${viewport.name}.png`) `` |
+| `header.e2e.ts`, `GIVEN a breakpoint under md` | `Object.entries(NARROW_BREAKPOINTS)` | `page.setViewportSize({ height: HEIGHT, width })` | `headerPage.expectMobileHeader()` |
+| `header.e2e.ts`, `GIVEN a breakpoint of md or wider` | `Object.entries(WIDE_BREAKPOINTS)` | same | `headerPage.expectDesktopHeader()` |
+| `home-visual.e2e.ts` | `SIZES: Viewport[]` of the three viewports | `page.setViewportSize(viewport)` | `` expect(page).toHaveScreenshot(`homepage-${viewport.name}.png`) `` |
 
 ### Visual Regression at Breakpoints
 

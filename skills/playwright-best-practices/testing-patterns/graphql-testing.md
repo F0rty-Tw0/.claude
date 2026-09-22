@@ -145,7 +145,7 @@ export class GraphqlApi {
 The spec posts the query as the `WHEN` step of every test and asserts one outcome per test. `errors` is checked in its own test because a GraphQL error leaves `data` null and every later assertion would fail with a less useful message.
 
 ```ts
-// e2e/catalog/item-query.api.spec.ts
+// e2e/catalog/item-query.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import type { GraphqlResult } from '../common/graphql.type';
@@ -204,7 +204,7 @@ export const ITEM_INPUT_STUB: ItemInput = {
 ```
 
 ```ts
-// e2e/catalog/add-item.api.spec.ts
+// e2e/catalog/add-item.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import type { GraphqlResult } from '../common/graphql.type';
@@ -233,7 +233,7 @@ test.describe('FEATURE: add item mutation', () => {
 Validation failures arrive as `errors` entries with `extensions.code` set to `BAD_USER_INPUT`; the HTTP status is still 200.
 
 ```ts
-// e2e/catalog/add-item-validation.api.spec.ts
+// e2e/catalog/add-item-validation.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import type { GraphqlResult } from '../common/graphql.type';
@@ -266,7 +266,7 @@ test.describe('FEATURE: add item validation', () => {
 An unauthenticated client is the built-in `request` fixture wrapped in the same API object. The protected field comes back `null` inside `data` and the error carries `UNAUTHORIZED`.
 
 ```ts
-// e2e/catalog/admin-dashboard.api.spec.ts
+// e2e/catalog/admin-dashboard.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import type { GraphqlResult } from '../common/graphql.type';
@@ -369,7 +369,7 @@ export const readGraphql = async <T>(response: APIResponse): Promise<GraphqlResu
 A chained flow reads one operation, then posts the next with a value from the first.
 
 ```ts
-// e2e/catalog/update-item.api.spec.ts
+// e2e/catalog/update-item.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import type { GraphqlResult } from '../common/graphql.type';

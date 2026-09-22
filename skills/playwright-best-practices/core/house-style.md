@@ -37,6 +37,7 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 | File size | Source `.ts` under 150 lines, spec under 300, blank and comment lines skipped. Over means split by concern per `module-size.md`. |
 | Page object | `class` with `private readonly page: Page`, `public readonly` locators assigned in the constructor, `public async` methods returning `Promise<void>`. No parameter properties. No `expect` outside a boxed step. |
 | Locator access | Specs never call `page.getBy*` or `page.locator`. Every locator is a page-object or component-object field. |
+| Spec name | `<feature>.test.ts` when the spec, or a fixture, page object, or mock it imports, routes your own origin: `**/api/**`, `**/graphql`, `**/ws/**`, own assets, `routeFromHAR`. `<feature>.e2e.ts` otherwise, including specs that only stub third-party hosts (payment gateway, analytics, OAuth provider). Component specs are `<feature>.test.tsx`. Never `.spec.ts`; that suffix is the artification unit-test name. |
 | Fixtures | One `test.extend` per feature in `<feature>.fixture.ts`. Fixture shape is a named `type <Feature>Fixtures` with `readonly` members. Specs import `test` and `expect` from the fixture file, never from `@playwright/test` when a fixture exists. |
 | Types | `type` never `interface`. Every property `readonly`. Arrays `T[]`. No inline object type literals. Cross-file types in `common/<feature>.type.ts`. |
 | Return types | Every function, arrow, and method declares its return type. `test`, hook, fixture, and step callbacks: `async ({ page }): Promise<void> =>` or the value type a step returns. `test.describe` callbacks stay `() => {`, matching `spec-style.md`. |
@@ -56,7 +57,8 @@ e2e/
   playwright.config.ts
   playwright.fixture.ts                 mergeTests of every feature fixture
   <feature>/
-    <feature>.spec.ts                   cases only
+    <feature>.e2e.ts                    real backend; third-party hosts may be stubbed
+    <feature>.test.ts                   own api, graphql, ws, or assets routed
     <feature>.fixture.ts                test.extend for this feature
     common/
       <feature>.type.ts                 types the feature exports
@@ -83,13 +85,14 @@ Two words collide here and stay distinct:
 |---|---|---|
 | Playwright fixture | Value injected by `test.extend` | `<feature>.fixture.ts` at the feature root |
 | Artification fixture | Real file the subject reads from disk | `test/fixtures/` |
+| Artification spec | Vitest unit case, `<module>.spec.ts` | Never inside `e2e/` |
 
 `test/` holds only the sub-folders it needs. No barrels. Production code never imports from `test/`.
 
 ## Spec Shape
 
 ```ts
-// e2e/login/login.spec.ts
+// e2e/login/login.e2e.ts
 import type { Credentials } from './common/login.type';
 import { expect, test } from './login.fixture';
 import { USER_STUB } from './test/stubs/user.stub';
@@ -161,7 +164,7 @@ test('login works', async ({ page }) => {
 After, the spec is steps and the page object owns the locators:
 
 ```ts
-// e2e/login/login.spec.ts
+// e2e/login/login.e2e.ts
 test('SCENARIO: valid credentials open the dashboard', async ({ loginPage, page }): Promise<void> => {
   await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
@@ -366,7 +369,7 @@ Stop and re-check this file when reasoning includes:
 
 - A `test(...)` body with a statement that is not `await test.step(...)`.
 - A step callback with braces and two statements.
-- `page.getBy` or `page.locator` inside a `.spec.ts`.
+- `page.getBy` or `page.locator` inside a `.e2e.ts` or `.test.ts`.
 - `test.describe('Login', ...)` or any describe text with no Gherkin keyword.
 - `test.describe('WHEN …')` or a test title starting with `WHEN` / `THEN`.
 - A spec step whose name has no `GIVEN` / `WHEN` / `THEN` / `AND`.

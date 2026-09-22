@@ -123,7 +123,7 @@ export default defineConfig({
   reporter: IS_CI ? ciReporter : localReporter,
   retries: IS_CI ? 2 : 0,
   testDir: './e2e',
-  testMatch: '**/*.spec.ts',
+  testMatch: '**/*.@(e2e|test).ts',
   timeout: 30_000,
   use,
   webServer,

@@ -52,7 +52,7 @@ export default defineConfig({
   projects,
   retries: IS_CI ? 2 : 0,
   testDir: './e2e',
-  testMatch: '**/*.spec.ts',
+  testMatch: '**/*.@(e2e|test).ts',
   use,
   webServer,
   workers: IS_CI ? '50%' : undefined
@@ -67,12 +67,12 @@ my-angular-app/
   e2e/
     playwright.config.ts
     signup/
-      signup.spec.ts
+      signup.e2e.ts
       signup.fixture.ts
       pages/
         signup.page.ts
     members/
-      members.spec.ts
+      members.e2e.ts
       members.fixture.ts
       pages/
         members.page.ts
@@ -214,7 +214,7 @@ export class SignupPage {
 `expectNoError(message)` mirrors `expectError` with `toBeHidden()`.
 
 ```ts
-// e2e/signup/signup.spec.ts
+// e2e/signup/signup.e2e.ts
 import { test } from './signup.fixture';
 import { SIGNUP_USER_STUB } from './test/stubs/signup.stub';
 
@@ -287,7 +287,7 @@ export const slowUsernameCheckMock = (delayMs: number): RouteHandler => {
 ```
 
 ```ts
-// e2e/signup/signup.spec.ts
+// e2e/signup/signup.test.ts
 import { test } from './signup.fixture';
 import { slowUsernameCheckMock } from './test/mocks/username-check.mock';
 
@@ -345,7 +345,7 @@ export class PreferencesPage {
 ```
 
 ```ts
-// e2e/preferences/preferences.spec.ts
+// e2e/preferences/preferences.e2e.ts
 import { test } from './preferences.fixture';
 
 test.describe('FEATURE: material select', () => {
@@ -403,7 +403,7 @@ export class ItemPage {
 ```
 
 ```ts
-// e2e/navigation/navigation.spec.ts
+// e2e/navigation/navigation.e2e.ts
 import { expect, test } from './navigation.fixture';
 
 test.describe('FEATURE: angular router', () => {
@@ -489,7 +489,7 @@ export class HomePage {
 ```
 
 ```ts
-// e2e/analytics/analytics.spec.ts
+// e2e/analytics/analytics.e2e.ts
 import { expect, test } from './analytics.fixture';
 import { chunkErrors } from './test/utils/chunk-errors.spec.util';
 
@@ -552,7 +552,7 @@ export class CounterPage {
 ```
 
 ```ts
-// e2e/counter/counter.spec.ts
+// e2e/counter/counter.e2e.ts
 import { test } from './counter.fixture';
 
 test.describe('FEATURE: signal counter', () => {
@@ -631,7 +631,7 @@ export const collectHydrationError = (errors: string[], message: ConsoleMessage)
 ```
 
 ```ts
-// e2e/home/home.spec.ts
+// e2e/home/home.e2e.ts
 import { expect, test } from './home.fixture';
 
 test.describe('FEATURE: server-side rendering', () => {

@@ -307,7 +307,7 @@ export class CheckoutPage {
 ```
 
 ```ts
-// e2e/checkout/checkout-coverage.spec.ts
+// e2e/checkout/checkout-coverage.e2e.ts
 import { MIN_COVERAGE_PERCENT } from '../coverage/common/coverage.const';
 import type { CssCoverageEntry, JsCoverageEntry } from '../coverage/common/coverage.type';
 import { stylesheetUnusedPercent } from '../coverage/test/utils/css-coverage.spec.util';

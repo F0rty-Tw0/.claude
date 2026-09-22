@@ -22,7 +22,7 @@ Debug probes are throwaway code, but they still follow the house shape: a probe 
 # Run with inspector
 PWDEBUG=1 npx playwright test
 # Or specific test
-PWDEBUG=1 npx playwright test login.spec.ts
+PWDEBUG=1 npx playwright test login.e2e.ts
 ```
 
 Features:
@@ -75,7 +75,7 @@ Features:
 `page.pause()` stops the test and opens the Inspector at that point. It is a step like any other, so it is easy to find and delete.
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
@@ -146,7 +146,7 @@ export const stopTrace = (context: BrowserContext, path: string): Promise<void> 
 ```
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 import { startTrace, stopTrace } from './test/utils/tracing.spec.util';
 
@@ -217,7 +217,7 @@ export const logNetworkSummary = (log: NetworkLog): void => {
 ```
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.e2e.ts
 import type { NetworkLog } from './common/dashboard.type';
 import { test } from './dashboard.fixture';
 import { logNetworkSummary, recordNetwork } from './test/utils/network-log.spec.util';
@@ -383,7 +383,7 @@ export const saveStateWhenRedirected = async (page: Page, context: BrowserContex
 ```
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 import { logAuthState, saveStateWhenRedirected } from './test/utils/auth-debug.spec.util';
 
@@ -421,7 +421,7 @@ export const attachFullPage = async (page: Page, testInfo: TestInfo, name: strin
 ```
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 import { attachFullPage } from './test/utils/screenshot.spec.util';
 
@@ -595,7 +595,7 @@ Call it as `await test.step('attach debug artifacts', (): Promise<void> => attac
 
    ```bash
    # Run with trace enabled
-   npx playwright test tests/failing.spec.ts --trace on
+   npx playwright test tests/failing.e2e.ts --trace on
 
    # If intermittent, run multiple times
    npx playwright test --repeat-each=10
@@ -619,7 +619,7 @@ Call it as `await test.step('attach debug artifacts', (): Promise<void> => attac
    Add three steps before the failing one: pause, print the locator state, and screenshot.
 
    ```ts
-   // e2e/dashboard/dashboard.spec.ts
+   // e2e/dashboard/dashboard.e2e.ts
    await test.step('pause for the inspector', (): Promise<void> => page.pause());
 
    await test.step('print the button state', (): Promise<void> => logLocatorState(dashboardPage.loadButton));

@@ -70,7 +70,7 @@ Three users are three `openUser` calls; nothing else changes.
 ### Two Users in Same Test
 
 ```ts
-// e2e/collaboration/shared-document.spec.ts
+// e2e/collaboration/shared-document.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { test } from './collaboration.fixture';
@@ -101,7 +101,7 @@ test.describe('FEATURE: shared document', () => {
 Each user starts from a different saved session, so the admin sees the admin UI and the member sees the member UI in the same test.
 
 ```ts
-// e2e/collaboration/support-ticket.spec.ts
+// e2e/collaboration/support-ticket.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { AUTH_DIR } from '../auth/common/auth.const';
@@ -143,7 +143,7 @@ test.describe('FEATURE: support tickets', () => {
 `expectContains` is one boxed step per fragment, so the spec lists what each user must see.
 
 ```ts
-// e2e/collaboration/collaborative-editing.spec.ts
+// e2e/collaboration/collaborative-editing.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { test } from './collaboration.fixture';
@@ -204,7 +204,7 @@ export const meMock = (identity: Identity): RouteHandler => {
 ```
 
 ```ts
-// e2e/collaboration/cursor-presence.spec.ts
+// e2e/collaboration/cursor-presence.test.ts
 import type { Page } from '@playwright/test';
 
 import { test } from './collaboration.fixture';
@@ -265,7 +265,7 @@ export const ROLE_PERMISSIONS: RolePermissions[] = [
 ```
 
 ```ts
-// e2e/documents/document-access.spec.ts
+// e2e/documents/document-access.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { AUTH_DIR } from '../auth/common/auth.const';
@@ -298,7 +298,7 @@ test.describe('FEATURE: document access by role', () => {
 A member opening an admin route must be bounced. `AdminUsersPage.expectAccessDenied()` is the same method [authentication.md](authentication.md#multiple-roles) uses.
 
 ```ts
-// e2e/documents/admin-route.spec.ts
+// e2e/documents/admin-route.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { AdminUsersPage } from '../admin/pages/admin-users.page';
@@ -343,7 +343,7 @@ export const countConflicts = async (items: ItemPage[]): Promise<number> => {
 ```
 
 ```ts
-// e2e/collaboration/concurrent-edit.spec.ts
+// e2e/collaboration/concurrent-edit.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './collaboration.fixture';
@@ -433,7 +433,7 @@ export class RecordPage {
 ```
 
 ```ts
-// e2e/collaboration/optimistic-locking.spec.ts
+// e2e/collaboration/optimistic-locking.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { test } from './collaboration.fixture';
@@ -472,7 +472,7 @@ test.describe('FEATURE: optimistic locking', () => {
 ### Real-Time Chat
 
 ```ts
-// e2e/collaboration/chat.spec.ts
+// e2e/collaboration/chat.test.ts
 import type { Page } from '@playwright/test';
 
 import { test } from './collaboration.fixture';

@@ -64,7 +64,7 @@ export { expect } from '@playwright/test';
 The second `GIVEN` uses `test.use({ permissions: [] })` so the browser reports the permission as denied. `browser.newContext({ permissions: [] })` does the same for a hand-built context; prefer `test.use` so the default `page` fixture stays in play.
 
 ```ts
-// e2e/store-finder/store-finder.spec.ts
+// e2e/store-finder/store-finder.e2e.ts
 import { test } from './store-finder.fixture';
 import { OAKLAND_STUB, SAN_FRANCISCO_STUB } from './test/stubs/coordinates.stub';
 
@@ -143,7 +143,7 @@ export const permissionState = (page: Page, name: PermissionName): Promise<Permi
 | Permissions API | `(): Promise<PermissionState> => permissionState(page, 'notifications')` |
 
 ```ts
-// e2e/alerts/permissions.spec.ts
+// e2e/alerts/permissions.e2e.ts
 import { expect, test } from './alerts.fixture';
 import { permissionState } from './test/utils/permissions.spec.util';
 
@@ -226,7 +226,7 @@ export { expect } from '@playwright/test';
 `SharePage` owns `copyLinkButton` and `noteInput`; `goto()`, `copyLink()`, `pasteIntoNote()` (focus the input, press `Control+V`), and the boxed `expectNote(text)` on `toHaveValue`. The copy case reads the clipboard through the fixture and the step returns a `string` the next step asserts on; the paste case writes through the fixture first.
 
 ```ts
-// e2e/share/share.spec.ts
+// e2e/share/share.e2e.ts
 import { expect, test } from './share.fixture';
 
 test.describe('FEATURE: share', () => {
@@ -352,7 +352,7 @@ export { expect } from '@playwright/test';
 `fakeNotification` is requested in the `beforeEach` signature so the init script is installed before `goto`.
 
 ```ts
-// e2e/alerts/alerts.spec.ts
+// e2e/alerts/alerts.e2e.ts
 import { expect, test } from './alerts.fixture';
 import type { NotificationRecord } from './common/alerts.type';
 
@@ -457,7 +457,7 @@ export { expect } from '@playwright/test';
 `GIVEN camera access is denied` sets `error: 'NotAllowedError'`, so the fake `getUserMedia` throws a `DOMException` with that name and the app shows its audio-only fallback. Device selection is the same shape: a `twoCameras` const spreads `MEDIA_DEVICES_STUB` with `devices: [FRONT_CAMERA_STUB, { ...FRONT_CAMERA_STUB, deviceId: 'cam2', groupId: '2', label: 'Back Camera' }]`, `test.use({ mediaDevices: twoCameras })`, then `videoCallPage.goto('/camera')` and `expectCameraOptions(['Front Camera', 'Back Camera'])`.
 
 ```ts
-// e2e/video-call/video-call.spec.ts
+// e2e/video-call/video-call.e2e.ts
 import type { MediaDevicesConfig } from './common/video-call.type';
 import { test } from './video-call.fixture';
 import { MEDIA_DEVICES_STUB } from './test/stubs/media-devices.stub';

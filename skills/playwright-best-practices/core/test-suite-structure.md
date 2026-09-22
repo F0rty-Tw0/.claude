@@ -70,7 +70,7 @@ Full user journey tests through the browser.
 The spec is a Gherkin tree of steps. Shared arrange for the `GIVEN` lives in its `beforeEach`. Every locator and multi-action flow lives in a page object (`ProductsPage`, `CartPage`, `CheckoutPage`) injected by `checkout.fixture.ts`; see [page-object-model.md](page-object-model.md) and [fixtures-hooks.md](fixtures-hooks.md).
 
 ```ts
-// e2e/checkout/checkout.spec.ts
+// e2e/checkout/checkout.e2e.ts
 import { test } from './checkout.fixture';
 import { GUEST_STUB } from './test/stubs/checkout.stub';
 
@@ -177,7 +177,7 @@ export const usersGetOnlyMock = (): RouteHandler => {
 ```
 
 ```ts
-// e2e/users/users.spec.ts
+// e2e/users/users.test.ts
 import { test } from './users.fixture';
 import { usersMock } from './test/mocks/users.mock';
 import { USER_STUB } from './test/stubs/users.stub';
@@ -216,7 +216,7 @@ Compare screenshots to detect visual changes.
 `expect(page).toHaveScreenshot` may sit in a spec step because it takes `page`. A screenshot of one element uses a page-object locator, never `page.getBy*` in the spec.
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.e2e.ts
 import { expect, test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard visuals', () => {
@@ -335,19 +335,19 @@ export default defineConfig({ expect: expectOptions, projects });
 npx playwright test --update-snapshots
 
 # Update specific test
-npx playwright test homepage.spec.ts --update-snapshots
+npx playwright test homepage.e2e.ts --update-snapshots
 ```
 
 ## Directory Structure
 
-Tests group by feature, not by test kind. Each feature folder owns its spec, fixture, page objects, and test data; see the full layout in [house-style.md](house-style.md#layout).
+Tests group by feature, not by test kind. Each feature folder owns its spec, fixture, page objects, and test data; see the full layout in [house-style.md](house-style.md#layout). The spec suffix states the backend: `.e2e.ts` hits your real API, `.test.ts` routes it. Stubbing only third-party hosts keeps `.e2e.ts`.
 
 ```text
 e2e/
   playwright.config.ts
   playwright.fixture.ts             mergeTests of every feature fixture
   checkout/
-    checkout.spec.ts                E2E cases
+    checkout.e2e.ts                real backend
     checkout.fixture.ts
     pages/
       cart.page.ts
@@ -356,19 +356,19 @@ e2e/
       stubs/
         checkout.stub.ts
   users/
-    users.spec.ts
-    users-api.spec.ts               API cases, request fixture only
+    users.test.ts                  own api routed via test/mocks
+    users-api.e2e.ts               API cases, request fixture only
     users.fixture.ts
     test/
       mocks/
         users.mock.ts
   dashboard/
-    dashboard.spec.ts               visual cases
+    dashboard.e2e.ts               visual cases
     dashboard.fixture.ts
     pages/
       dashboard.page.ts
   button/
-    button.spec.tsx                 component cases
+    button.test.tsx                 component cases
 ```
 
 ## Anti-Patterns to Avoid
@@ -393,7 +393,7 @@ e2e/
 Tags are the second argument of `test` or `test.describe`, never part of the title.
 
 ```ts
-// e2e/login/login.spec.ts
+// e2e/login/login.e2e.ts
 import { test } from './login.fixture';
 import { USER_STUB } from './test/stubs/login.stub';
 

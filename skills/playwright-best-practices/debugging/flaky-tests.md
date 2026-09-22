@@ -47,7 +47,7 @@ Test fails intermittently
 
 ```bash
 # Run test multiple times to confirm instability
-npx playwright test e2e/checkout/checkout.spec.ts --repeat-each=20
+npx playwright test e2e/checkout/checkout.e2e.ts --repeat-each=20
 
 # Run with single worker to isolate parallelism issues
 npx playwright test --workers=1
@@ -88,7 +88,7 @@ export const reportPassOnRetry = (testInfo: TestInfo): void => {
 ```
 
 ```ts
-// e2e/checkout/checkout.spec.ts
+// e2e/checkout/checkout.e2e.ts
 import { test } from './checkout.fixture';
 import { reportPassOnRetry } from './test/utils/flaky-report.spec.util';
 
@@ -152,7 +152,7 @@ export const collectSlowRequests = (page: Page): string[] => {
 npx playwright show-trace path/to/trace.zip
 
 # Generate trace for specific test
-npx playwright test e2e/checkout/checkout.spec.ts --trace on
+npx playwright test e2e/checkout/checkout.e2e.ts --trace on
 ```
 
 ## Fixing Strategies by Type
@@ -260,7 +260,7 @@ export class DashboardPage {
 ```
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 
 test('SCENARIO: loaded data shows ten rows', async ({ dashboardPage }): Promise<void> => {
@@ -391,7 +391,7 @@ test.beforeAll(async ({ browser }) => {
 Prefer Playwright's default isolation. Each test receives a fresh context and page; shared arrange lives in a `beforeEach` step.
 
 ```ts
-// e2e/profile/profile.spec.ts
+// e2e/profile/profile.e2e.ts
 import { test } from './profile.fixture';
 
 test.describe('FEATURE: profile', () => {
@@ -506,7 +506,7 @@ export const paymentMock = (): RouteHandler => {
 ```
 
 ```ts
-// e2e/checkout/checkout.spec.ts
+// e2e/checkout/checkout.test.ts
 import { test } from './checkout.fixture';
 import { analyticsMock } from './test/mocks/analytics.mock';
 import { paymentMock } from './test/mocks/payment.mock';
@@ -542,13 +542,13 @@ test.describe('FEATURE: checkout', () => {
 
 ### Quarantine Pattern
 
-Move known-flaky specs to a `*.flaky.spec.ts` name and run them in their own project with more retries. The stable project ignores them so one flake never blocks the pipeline.
+Move known-flaky specs to a `*.flaky.e2e.ts` name and run them in their own project with more retries. The stable project ignores them so one flake never blocks the pipeline.
 
 ```ts
 // e2e/playwright.config.ts
 import { defineConfig } from '@playwright/test';
 
-const FLAKY_SPECS = ['**/*.flaky.spec.ts'];
+const FLAKY_SPECS = ['**/*.flaky.e2e.ts'];
 
 const projects = [
   { name: 'stable', testIgnore: FLAKY_SPECS },
@@ -563,7 +563,7 @@ export default defineConfig({ projects });
 An annotation records why a test is under investigation and appears in the report. `test.skip(condition, reason)` skips only where the flake reproduces. `IS_CI` is a plain value exported from `common/playwright.const.ts`; specs never read `process.env`. At runtime `test.info().annotations.push(...)` adds the same annotation.
 
 ```ts
-// e2e/checkout/checkout.flaky.spec.ts
+// e2e/checkout/checkout.flaky.e2e.ts
 import { IS_CI } from '../common/playwright.const';
 import { test } from './checkout.fixture';
 
@@ -592,10 +592,10 @@ test.describe('FEATURE: checkout', () => {
 
 ```bash
 # Run new tests many times before merging
-npx playwright test e2e/new-feature/new-feature.spec.ts --repeat-each=50
+npx playwright test e2e/new-feature/new-feature.e2e.ts --repeat-each=50
 
 # Run in parallel to expose race conditions
-npx playwright test e2e/new-feature/new-feature.spec.ts --repeat-each=20 --workers=4
+npx playwright test e2e/new-feature/new-feature.e2e.ts --repeat-each=20 --workers=4
 ```
 
 ### Isolation Checklist

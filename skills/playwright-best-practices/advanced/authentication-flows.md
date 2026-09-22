@@ -197,7 +197,7 @@ export const tokenCapture = (field: TokenField): TokenCapture => {
 };
 ```
 
-The captured-token spec has the shape of `password-reset.spec.ts` below: `page.route('**/api/auth/register', capture.handler)` with `tokenCapture('verificationToken')`, then `signupPage.goto()`, `WHEN signupPage.submit(SIGNUP_STUB)`, `THEN signupPage.expectInboxPrompt()`, `const token = await test.step(…, (): Promise<string> => capture.token)`, `WHEN verifyPage.goto(token)`, `THEN verifyPage.expectConfirmed()`.
+The captured-token spec has the shape of `password-reset.test.ts` below: `page.route('**/api/auth/register', capture.handler)` with `tokenCapture('verificationToken')`, then `signupPage.goto()`, `WHEN signupPage.submit(SIGNUP_STUB)`, `THEN signupPage.expectInboxPrompt()`, `const token = await test.step(…, (): Promise<string> => capture.token)`, `WHEN verifyPage.goto(token)`, `THEN verifyPage.expectConfirmed()`.
 
 Fully mocked, with no backend at all: a `beforeEach` registers `page.route('**/api/auth/register', registerMock(MOCK_TOKEN))` and ``page.route(`**/api/auth/verify?token=${MOCK_TOKEN}`, verifyMock())`` as `GIVEN` / `AND` steps before any navigation, and the test runs the same steps with `verifyPage.goto(MOCK_TOKEN)` and no capture step.
 
@@ -206,7 +206,7 @@ Fully mocked, with no backend at all: a `beforeEach` registers `page.route('**/a
 Same capture util as above, reading `resetToken` from the forgot-password response.
 
 ```ts
-// e2e/auth/password-reset.spec.ts
+// e2e/auth/password-reset.test.ts
 import { test } from './auth.fixture';
 import { EMPTY_STORAGE_STATE, TEST_USER } from './common/auth.const';
 import { tokenCapture } from './test/utils/token-capture.spec.util';
@@ -278,7 +278,7 @@ export const clearSessionCookie = async (context: BrowserContext): Promise<void>
 ```
 
 ```ts
-// e2e/auth/session-timeout.spec.ts
+// e2e/auth/session-timeout.e2e.ts
 import { expect, test } from './auth.fixture';
 import { EMPTY_STORAGE_STATE, TEST_USER } from './common/auth.const';
 import { clearSessionCookie } from './test/utils/session-cookie.spec.util';
@@ -311,7 +311,7 @@ test.describe('FEATURE: session timeout', () => {
 `sessionMock(60)` tells the app the session ends in 60 seconds, so the warning appears without waiting for a real timeout. The recorded mock replaces a `let sessionExtended = false` flag; `expect.poll` retries until the request has been served instead of asserting on a flag that may not have flipped yet.
 
 ```ts
-// e2e/auth/session-extension.spec.ts
+// e2e/auth/session-extension.test.ts
 import { expect, test } from './auth.fixture';
 import { SESSION_STATE_PATH } from './common/auth.const';
 import { refreshMock } from './test/mocks/refresh.mock';
@@ -378,7 +378,7 @@ export const openPageWithState = async (browser: Browser, storageState: string):
 ```
 
 ```ts
-// e2e/auth/remember-me.spec.ts
+// e2e/auth/remember-me.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './auth.fixture';
@@ -415,7 +415,7 @@ Session-only login: a second `GIVEN a login with keep me signed in unchecked` in
 `sessionCookies` from the session-timeout util returns every cookie whose name contains `session` or `token`; after logout the list must be empty and a second visit to home must bounce to login.
 
 ```ts
-// e2e/auth/logout.spec.ts
+// e2e/auth/logout.e2e.ts
 import type { Cookie } from '@playwright/test';
 
 import { expect, test } from './auth.fixture';
@@ -447,7 +447,7 @@ test.describe('FEATURE: logout', () => {
 
 ### Logout from All Devices
 
-A second test in the same `GIVEN` follows `session-extension.spec.ts`: `const logoutAll = logoutAllMock()`, `GIVEN page.route('**/api/auth/logout-all', logoutAll.handler)`, `AND securitySettingsPage.goto()`, `WHEN securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
+A second test in the same `GIVEN` follows `session-extension.test.ts`: `const logoutAll = logoutAllMock()`, `GIVEN page.route('**/api/auth/logout-all', logoutAll.handler)`, `AND securitySettingsPage.goto()`, `WHEN securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
 
 ## Tips
 

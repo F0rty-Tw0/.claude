@@ -140,7 +140,7 @@ export const dataAbortMock = (errorCode: string): RouteHandler => {
 Three cases share the spec: `userNullMock()` fulfills `**/api/user` with `json: null`, which makes the user widget throw, and the error boundary must render its fallback instead of a blank page; the first data request fails, the app shows its error state, and `Retry` triggers a second request that succeeds; an uncaught exception on `/buggy-page` must not take the navigation down, and `pageErrors` proves the exception fired.
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.test.ts
 import { expect, test } from './dashboard.fixture';
 import { dataFailOnceMock } from './test/mocks/data.mock';
 import { userNullMock } from './test/mocks/user.mock';
@@ -192,7 +192,7 @@ One `test` per status code, generated in a loop. Every status must surface an al
 | Connection reset | `dataAbortMock('connectionfailed')` | `dashboardPage.expectText('Connection failed')` and `expect(dashboardPage.retryButton).toBeVisible()` |
 
 ```ts
-// e2e/dashboard/dashboard-network.spec.ts
+// e2e/dashboard/dashboard-network.test.ts
 import { expect, test } from './dashboard.fixture';
 import { dataErrorMock } from './test/mocks/data.mock';
 
@@ -234,7 +234,7 @@ export const uploadAbortAfterMock = (delayMs: number): RouteHandler => {
 ```
 
 ```ts
-// e2e/upload/upload.spec.ts
+// e2e/upload/upload.test.ts
 import { test } from './upload.fixture';
 import { uploadAbortAfterMock } from './test/mocks/upload.mock';
 
@@ -262,7 +262,7 @@ This section covers **unexpected network failures** and error recovery. For **of
 `context.setOffline(true)` cuts the network for the whole context. The app must show an offline indicator on the next request and recover when the network returns.
 
 ```ts
-// e2e/dashboard/dashboard-offline.spec.ts
+// e2e/dashboard/dashboard-offline.e2e.ts
 import { expect, test } from './dashboard.fixture';
 
 test('SCENARIO: the dashboard recovers after the connection drops and returns', async ({ context, dashboardPage }): Promise<void> => {
@@ -324,7 +324,7 @@ export const postsEmptyMock = (): RouteHandler => {
 The skeleton appears at once; the content replaces it when the response lands. An empty response renders the empty-state copy and a call to action.
 
 ```ts
-// e2e/posts/posts.spec.ts
+// e2e/posts/posts.test.ts
 import { expect, test } from './posts.fixture';
 import { postsDelayedMock, postsEmptyMock } from './test/mocks/posts.mock';
 
@@ -362,7 +362,7 @@ A save action disables its button and shows a spinner while the request is pendi
 `EditorPage` owns `contentInput` (`getByLabel('Content')`), `saveButton`, `savedMessage` (`getByText('Saved')`) and `spinner` (`getByTestId('spinner')`). `goto()` opens `/editor`; `write(content)` fills the input; `save()` clicks the button; `expectSaving()` asserts the button disabled and the spinner visible in one boxed step; `expectSaved()` asserts the button enabled and `Saved` visible.
 
 ```ts
-// e2e/editor/editor.spec.ts
+// e2e/editor/editor.test.ts
 import { test } from './editor.fixture';
 import { saveDelayedMock } from './test/mocks/save.mock';
 
@@ -400,7 +400,7 @@ A malformed email shows the format error on blur; a valid one clears it.
 `registerInvalidMock()` fulfills `**/api/register` with status 422 and `{ errors: { email: 'Email already exists', username: 'Username is taken' } }`. Both messages must render next to their fields.
 
 ```ts
-// e2e/signup/signup.spec.ts
+// e2e/signup/signup.test.ts
 import { expect, test } from './signup.fixture';
 import { registerInvalidMock } from './test/mocks/register.mock';
 import { SIGNUP_USER_STUB } from './test/stubs/signup.stub';

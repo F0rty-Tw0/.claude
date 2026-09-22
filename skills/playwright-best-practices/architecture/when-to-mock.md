@@ -17,7 +17,7 @@
 
 **Mock at the boundary, test your stack end-to-end.** Mock third-party services you don't own (payment gateways, email providers, OAuth). Never mock your own frontend-to-backend communication. Tests prove YOUR code works, not that third-party APIs are available.
 
-Every route handler is a factory in `test/mocks/<name>.mock.ts`. A spec installs it inside a step: `page.route(pattern, nameMock())`. Response bodies are typed constants, never inline literals.
+Every route handler is a factory in `test/mocks/<name>.mock.ts`. A spec installs it inside a step: `page.route(pattern, nameMock())`. Response bodies are typed constants, never inline literals. The file suffix follows the same boundary: a spec that routes your own API (directly or through a fixture, page object, or mock it imports) is `<feature>.test.ts`; a spec that hits your real API, even while stubbing a third-party host, is `<feature>.e2e.ts`.
 
 ## Decision Matrix
 
@@ -93,7 +93,7 @@ export const trackingBlockMock = (): RouteHandler => {
 ```
 
 ```ts
-// e2e/checkout/dashboard.spec.ts
+// e2e/checkout/dashboard.e2e.ts
 import { test } from './checkout.fixture';
 import { trackingBlockMock } from './test/mocks/tracking.mock';
 
@@ -144,7 +144,7 @@ export const chargeDeclinedMock = (): RouteHandler => {
 The route is installed before the page opens, so the first charge request already hits the mock.
 
 ```ts
-// e2e/checkout/checkout.spec.ts
+// e2e/checkout/checkout.test.ts
 import { test } from './checkout.fixture';
 import { chargeDeclinedMock, chargeMock } from './test/mocks/charge.mock';
 
@@ -226,7 +226,7 @@ export const HAR_REPLAY: HarOptions = { update: false, url: '**/api/**' };
 ```
 
 ```ts
-// e2e/admin/admin.spec.ts
+// e2e/admin/admin.test.ts
 import { test } from './admin.fixture';
 import { ADMIN_HAR, HAR_REPLAY } from './common/admin.const';
 
@@ -383,7 +383,7 @@ export { expect } from '@playwright/test';
 `invoiceMock` fulfils with `INVOICE_STUB` from `test/stubs/invoice.stub.ts`; `notifyMock` fulfils `{ delivered: true }`; `analyticsBlockMock` aborts. All three follow the factory shape shown under [Full Mock](#full-mock-routefulfill).
 
 ```ts
-// e2e/billing/billing.spec.ts
+// e2e/billing/billing.test.ts
 import { test } from './billing.fixture';
 
 test.describe('FEATURE: subscription renewal', () => {
@@ -413,6 +413,8 @@ test.describe('FEATURE: subscription renewal', () => {
 
 ### Environment-Based Test Projects
 
+The file suffix already encodes the split: `.test.ts` files route your own API and run on every PR against the local server; `.e2e.ts` files hit the real API and run nightly against staging.
+
 ```ts
 // e2e/playwright.config.ts
 import { defineConfig } from '@playwright/test';
@@ -424,8 +426,8 @@ const ciFastUse = { baseURL: LOCAL_URL } as const;
 const nightlyUse = { baseURL: STAGING_URL } as const;
 
 const projects = [
-  { name: 'ci-fast', testMatch: '**/*.spec.ts', use: ciFastUse },
-  { name: 'nightly-full', testMatch: '**/*.integration.spec.ts', timeout: 120_000, use: nightlyUse }
+  { name: 'ci-fast', testMatch: '**/*.test.ts', use: ciFastUse },
+  { name: 'nightly-full', testMatch: '**/*.e2e.ts', timeout: 120_000, use: nightlyUse }
 ];
 
 export default defineConfig({ projects });
@@ -455,7 +457,7 @@ export const shapeOf = (body: Record<string, unknown>): string[] => {
 ```
 
 ```ts
-// e2e/billing/billing-contract.spec.ts
+// e2e/billing/billing-contract.test.ts
 import { expect, test } from './billing.fixture';
 import { INVOICE_STUB } from './test/stubs/invoice.stub';
 import { chargeThroughApi, shapeOf } from './test/utils/contract.spec.util';
