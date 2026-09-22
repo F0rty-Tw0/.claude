@@ -75,7 +75,7 @@ The mask list is a named const above the step because it is a nested array insid
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: analytics panel snapshot', () => {
-  test('masking volatile elements matches the panel snapshot', async ({ analyticsPage, page }): Promise<void> => {
+  test('SCENARIO: masking volatile elements matches the panel snapshot', async ({ analyticsPage, page }): Promise<void> => {
     const mask = [analyticsPage.lastUpdated, analyticsPage.profileAvatar, analyticsPage.activeUsers, analyticsPage.promoBanner];
 
     await test.step('WHEN the analytics page opens', (): Promise<void> => analyticsPage.goto());
@@ -97,7 +97,7 @@ test.describe('FEATURE: analytics panel snapshot', () => {
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: analytics panel snapshot with frozen timestamps', () => {
-  test('frozen timestamps match the panel snapshot', async ({ analyticsPage, page }): Promise<void> => {
+  test('SCENARIO: frozen timestamps match the panel snapshot', async ({ analyticsPage, page }): Promise<void> => {
     await test.step('GIVEN the analytics page is open', (): Promise<void> => analyticsPage.goto());
 
     await test.step('WHEN the timestamps are frozen', (): Promise<void> => analyticsPage.freezeTimestamps());
@@ -116,7 +116,7 @@ test.describe('FEATURE: analytics panel snapshot with frozen timestamps', () => 
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: home page snapshot', () => {
-  test('disabled animations match the home page snapshot', async ({ homePage, page }): Promise<void> => {
+  test('SCENARIO: disabled animations match the home page snapshot', async ({ homePage, page }): Promise<void> => {
     await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
 
     await test.step('THEN the page matches home.png', (): Promise<void> => expect(page).toHaveScreenshot('home.png', { animations: 'disabled' }));
@@ -174,7 +174,7 @@ export class HeroPage {
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: animated hero snapshot', () => {
-  test('settled JS animation matches the hero snapshot', async ({ heroPage, page }): Promise<void> => {
+  test('SCENARIO: settled JS animation matches the hero snapshot', async ({ heroPage, page }): Promise<void> => {
     await test.step('WHEN the animated hero opens', (): Promise<void> => heroPage.goto());
 
     await test.step('THEN the hero banner has settled', (): Promise<void> => heroPage.expectSettled());
@@ -203,7 +203,7 @@ import { expect, test } from './visual.fixture';
 const PIXEL_PERFECT = { maxDiffPixels: 0, threshold: 0 };
 
 test.describe('FEATURE: brand logo snapshot', () => {
-  test('the brand logo matches pixel for pixel', async ({ brandPage }): Promise<void> => {
+  test('SCENARIO: the brand logo matches pixel for pixel', async ({ brandPage }): Promise<void> => {
     await test.step('WHEN the brand page opens', (): Promise<void> => brandPage.goto());
 
     await test.step('THEN the logo matches brand-logo.png exactly', (): Promise<void> => expect(brandPage.logo).toHaveScreenshot('brand-logo.png', PIXEL_PERFECT));
@@ -318,7 +318,7 @@ export default defineConfig({ projects, snapshotPathTemplate });
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: snapshot scope', () => {
-  test('the home page matches its viewport and full-page snapshots', async ({ homePage, page }): Promise<void> => {
+  test('SCENARIO: the home page matches its viewport and full-page snapshots', async ({ homePage, page }): Promise<void> => {
     await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
 
     await test.step('THEN the viewport matches home-viewport.png', (): Promise<void> => expect(page).toHaveScreenshot('home-viewport.png'));
@@ -326,7 +326,7 @@ test.describe('FEATURE: snapshot scope', () => {
     await test.step('AND the full page matches home-full.png', (): Promise<void> => expect(page).toHaveScreenshot('home-full.png', { fullPage: true }));
   });
 
-  test('each catalog component matches its element snapshot', async ({ catalogPage }): Promise<void> => {
+  test('SCENARIO: each catalog component matches its element snapshot', async ({ catalogPage }): Promise<void> => {
     await test.step('WHEN the catalog opens', (): Promise<void> => catalogPage.goto());
 
     await test.step('THEN the table matches catalog-table.png', (): Promise<void> => expect(catalogPage.table).toHaveScreenshot('catalog-table.png'));
@@ -369,7 +369,7 @@ test.describe('FEATURE: landing page breakpoints', () => {
     test.describe('GIVEN a viewport size', () => {
       test.use({ viewport: breakpoint });
 
-      test(`the landing page at ${breakpoint.name} (${breakpoint.width}x${breakpoint.height}) matches landing-${breakpoint.name}.png`, async ({ landingPage, page }): Promise<void> => {
+      test(`SCENARIO: the landing page at ${breakpoint.name} (${breakpoint.width}x${breakpoint.height}) matches landing-${breakpoint.name}.png`, async ({ landingPage, page }): Promise<void> => {
         await test.step('WHEN the landing page opens', (): Promise<void> => landingPage.goto());
 
         await test.step(`THEN the full page matches landing-${breakpoint.name}.png`, (): Promise<void> => expect(page).toHaveScreenshot(`landing-${breakpoint.name}.png`, { animations: 'disabled', fullPage: true }));
@@ -446,13 +446,13 @@ test.describe('FEATURE: button visual states', () => {
       await test.step('GIVEN the primary button story is open', (): Promise<void> => storyPage.goto('button--primary'));
     });
 
-    test('the rendered button matches btn-primary.png', async ({ storyPage }): Promise<void> => {
+    test('SCENARIO: the rendered button matches btn-primary.png', async ({ storyPage }): Promise<void> => {
       await test.step('WHEN the button has rendered', (): Promise<void> => expect(storyPage.button).toBeVisible());
 
       await test.step('THEN the button matches btn-primary.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary.png', STILL));
     });
 
-    test('the hovered button matches btn-primary-hover.png', async ({ storyPage }): Promise<void> => {
+    test('SCENARIO: the hovered button matches btn-primary-hover.png', async ({ storyPage }): Promise<void> => {
       await test.step('WHEN the button is hovered', (): Promise<void> => storyPage.hoverButton());
 
       await test.step('THEN the button matches btn-primary-hover.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary-hover.png', STILL));
@@ -460,7 +460,7 @@ test.describe('FEATURE: button visual states', () => {
   });
 
   for (const size of SIZES) {
-    test(`the ${size} button matches btn-${size}.png`, async ({ storyPage }): Promise<void> => {
+    test(`SCENARIO: the ${size} button matches btn-${size}.png`, async ({ storyPage }): Promise<void> => {
       await test.step(`WHEN the ${size} button story opens`, (): Promise<void> => storyPage.goto(`button--${size}`));
 
       await test.step(`THEN the button matches btn-${size}.png`, (): Promise<void> => expect(storyPage.button).toHaveScreenshot(`btn-${size}.png`, STILL));
@@ -512,7 +512,7 @@ npx playwright test --project=chromium --update-snapshots
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: landing page snapshot', () => {
-  test('the landing page matches landing.png', { tag: ['@visual'] }, async ({ landingPage, page }): Promise<void> => {
+  test('SCENARIO: the landing page matches landing.png', { tag: ['@visual'] }, async ({ landingPage, page }): Promise<void> => {
     await test.step('WHEN the landing page opens', (): Promise<void> => landingPage.goto());
 
     await test.step('THEN the page matches landing.png', (): Promise<void> => expect(page).toHaveScreenshot('landing.png', { animations: 'disabled' }));

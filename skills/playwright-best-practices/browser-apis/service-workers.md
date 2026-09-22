@@ -202,7 +202,7 @@ test.describe('FEATURE: pwa service worker', () => {
       await test.step('GIVEN the app is open', (): Promise<void> => pwaPage.goto());
     });
 
-    test('loading the app activates a service worker', async ({ page }): Promise<void> => {
+    test('SCENARIO: loading the app activates a service worker', async ({ page }): Promise<void> => {
       const active = await test.step('WHEN the worker registration is ready', (): Promise<boolean> => isServiceWorkerActive(page));
 
       await test.step('THEN a worker is active', (): void => expect(active).toBe(true));
@@ -217,7 +217,7 @@ test.describe('FEATURE: pwa service worker', () => {
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('the registration is active in the app scope', async ({ page }): Promise<void> => {
+test('SCENARIO: the registration is active in the app scope', async ({ page }): Promise<void> => {
   const state = await test.step('WHEN the registration state is read', (): Promise<ServiceWorkerState | null> => serviceWorkerState(page));
 
   await test.step('THEN the worker is active', (): void => expect(state?.active).toBe(true));
@@ -232,7 +232,7 @@ test('the registration is active in the app scope', async ({ page }): Promise<vo
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('the registered worker script is sw.js', async ({ serviceWorker }): Promise<void> => {
+test('SCENARIO: the registered worker script is sw.js', async ({ serviceWorker }): Promise<void> => {
   const url = await test.step('WHEN the worker url is read', (): string => serviceWorker.url());
 
   await test.step('THEN the url ends in sw.js', (): void => expect(url).toContain('sw.js'));
@@ -312,12 +312,12 @@ test.describe('GIVEN a new worker version is served', () => {
     });
   });
 
-  test('a registration update lets the new worker take control', async ({ page }): Promise<void> => {
+  test('SCENARIO: a registration update lets the new worker take control', async ({ page }): Promise<void> => {
     await test.step('WHEN an update check is triggered', (): Promise<void> => updateServiceWorker(page));
 
     await test.step('THEN a worker is waiting', (): Promise<void> => expect.poll((): Promise<boolean> => hasWaitingWorker(page)).toBe(true));
 
-    await test.step('WHEN the waiting worker is told to skip waiting', (): Promise<void> => skipWaiting(page));
+    await test.step('AND the waiting worker is told to skip waiting', (): Promise<void> => skipWaiting(page));
 
     await test.step('AND the controller changes', (): Promise<void> => waitForControllerChange(page));
   });
@@ -330,7 +330,7 @@ test.describe('GIVEN a new worker version is served', () => {
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('the installed worker reports its version', async ({ serviceWorker }): Promise<void> => {
+test('SCENARIO: the installed worker reports its version', async ({ serviceWorker }): Promise<void> => {
   const version = await test.step('WHEN the worker version is read', (): Promise<string> => serviceWorkerVersion(serviceWorker));
 
   await test.step('THEN the version is 1.0.0', (): void => expect(version).toBe('1.0.0'));
@@ -399,7 +399,7 @@ export const bodyFontFamily = (page: Page): Promise<string> => page.evaluate(rea
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('worker activation caches the app assets', async ({ page }): Promise<void> => {
+test('SCENARIO: worker activation caches the app assets', async ({ page }): Promise<void> => {
   await test.step('THEN the cache is populated', (): Promise<void> => expect.poll((): Promise<number> => cachedUrls(page, 'app-cache-v1').then((urls: string[]): number => urls.length)).toBeGreaterThan(0));
 
   const urls = await test.step('WHEN the cached urls are read', (): Promise<string[]> => cachedUrls(page, 'app-cache-v1'));
@@ -416,7 +416,7 @@ To prove a cache-first strategy, abort the network request for a cached asset, r
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('a blocked stylesheet request still applies the cached stylesheet', async ({ page, pwaPage }): Promise<void> => {
+test('SCENARIO: a blocked stylesheet request still applies the cached stylesheet', async ({ page, pwaPage }): Promise<void> => {
   await test.step('THEN the cache is populated', (): Promise<void> => expect.poll((): Promise<number> => cachedUrls(page, 'app-cache-v1').then((urls: string[]): number => urls.length)).toBeGreaterThan(0));
 
   await test.step('WHEN the stylesheet is blocked on the network', async (): Promise<void> => {
@@ -435,7 +435,7 @@ Serving `serviceWorkerMock('v2')` (above) and triggering an update creates `app-
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('installing worker v2 creates the v2 cache', async ({ page }): Promise<void> => {
+test('SCENARIO: installing worker v2 creates the v2 cache', async ({ page }): Promise<void> => {
   await test.step('WHEN worker v2 is served', async (): Promise<void> => {
     await page.route('**/sw.js', serviceWorkerMock('v2'));
   });
@@ -465,14 +465,14 @@ test.describe('GIVEN the app is cached and the network is off', () => {
     await test.step('AND the network goes offline', (): Promise<void> => context.setOffline(true));
   });
 
-  test('an offline reload shows the cached dashboard with the offline badge', async ({ context, pwaPage }): Promise<void> => {
+  test('SCENARIO: an offline reload shows the cached dashboard with the offline badge', async ({ context, pwaPage }): Promise<void> => {
     await test.step('WHEN the app is reloaded', (): Promise<void> => pwaPage.reload());
 
     await test.step('THEN the dashboard is shown', (): Promise<void> => pwaPage.expectDashboard());
 
     await test.step('AND the offline badge is shown', (): Promise<void> => pwaPage.expectOfflineBadge());
 
-    await test.step('WHEN the network returns', (): Promise<void> => context.setOffline(false));
+    await test.step('AND the network returns', (): Promise<void> => context.setOffline(false));
 
     await test.step('THEN the offline badge disappears', (): Promise<void> => pwaPage.expectOnline());
   });
@@ -483,7 +483,7 @@ test.describe('GIVEN the app is cached and the network is off', () => {
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('an uncached route shows the offline fallback', async ({ pwaPage }): Promise<void> => {
+test('SCENARIO: an uncached route shows the offline fallback', async ({ pwaPage }): Promise<void> => {
   await test.step('WHEN an uncached page is opened', (): Promise<void> => pwaPage.goto('/uncached-page'));
 
   await test.step('THEN the offline fallback is shown', (): Promise<void> => pwaPage.expectOfflineFallback());
@@ -496,7 +496,7 @@ The form is submitted offline, queued, then synced when the network returns. `re
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('a message sent offline syncs once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
+test('SCENARIO: a message sent offline syncs once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
   await test.step('GIVEN the form is open', (): Promise<void> => pwaPage.goto('/pwa-app/form'));
 
   await test.step('WHEN the network goes offline', (): Promise<void> => context.setOffline(true));
@@ -505,7 +505,7 @@ test('a message sent offline syncs once the network returns', async ({ context, 
 
   await test.step('THEN the message is queued', (): Promise<void> => pwaPage.expectStatus('Queued for sync'));
 
-  await test.step('WHEN the network returns', (): Promise<void> => context.setOffline(false));
+  await test.step('AND the network returns', (): Promise<void> => context.setOffline(false));
 
   await test.step('AND the form sync is triggered', (): Promise<void> => registerSync(page, 'form-sync'));
 
@@ -566,7 +566,7 @@ test.describe('GIVEN notification permission is granted', () => {
     await test.step('AND the app is open', (): Promise<void> => pwaPage.goto());
   });
 
-  test('a push subscription has an endpoint', async ({ page }): Promise<void> => {
+  test('SCENARIO: a push subscription has an endpoint', async ({ page }): Promise<void> => {
     const subscription = await test.step('WHEN the app subscribes to push', (): Promise<PushSubscriptionJSON> => subscribeToPush(page));
 
     await test.step('THEN the subscription has an endpoint', (): void => expect(subscription.endpoint).toBeDefined());
@@ -580,7 +580,7 @@ test.describe('GIVEN notification permission is granted', () => {
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('the worker handles a push event', async ({ serviceWorker }): Promise<void> => {
+test('SCENARIO: the worker handles a push event', async ({ serviceWorker }): Promise<void> => {
   const payload: PushPayload = { body: 'Push message', title: 'Test' };
 
   await test.step('WHEN a push event is dispatched in the worker', (): Promise<void> => dispatchPushEvent(serviceWorker, payload));
@@ -593,7 +593,7 @@ The worker's `notificationclick` handler opens the target URL in a new page. `co
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('clicking a notification opens the target page', async ({ context, page, serviceWorker }): Promise<void> => {
+test('SCENARIO: clicking a notification opens the target page', async ({ context, page, serviceWorker }): Promise<void> => {
   await test.step('WHEN a notification targeting a url is shown', (): Promise<void> => showNotification(page, '/notification-target'));
 
   const pagePromise = await test.step('AND a new page is awaited', (): Promise<Promise<Page>> => Promise.resolve(context.waitForEvent('page')));
@@ -653,7 +653,7 @@ export const isSyncCompleted = (page: Page): Promise<boolean> => page.evaluate(r
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('the browser accepts a registered sync tag', async ({ page }): Promise<void> => {
+test('SCENARIO: the browser accepts a registered sync tag', async ({ page }): Promise<void> => {
   const supported = await test.step('WHEN a sync tag is registered', (): Promise<boolean> => isSyncSupported(page, 'my-sync'));
 
   await test.step('THEN background sync is supported', (): void => expect(supported).toBe(true));
@@ -666,7 +666,7 @@ The app queues its data (IndexedDB or the offline form above) while offline and 
 
 ```ts
 // e2e/pwa/pwa.spec.ts
-test('the queued sync completes once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
+test('SCENARIO: the queued sync completes once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
   await test.step('GIVEN the form is open', (): Promise<void> => pwaPage.goto('/pwa-app/form'));
 
   await test.step('WHEN the network goes offline', (): Promise<void> => context.setOffline(true));

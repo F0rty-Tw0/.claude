@@ -147,7 +147,7 @@ import { mountButton } from './test/utils/button-mount.spec.util';
 
 test.describe('FEATURE: button', () => {
   test.describe('GIVEN default props', () => {
-    test('mounting renders the label', async ({ mount }): Promise<void> => {
+    test('SCENARIO: mounting renders the label', async ({ mount }): Promise<void> => {
       const button = await test.step('WHEN the button is mounted', (): Promise<ButtonComponent> => mountButton(mount, {}, 'Click me'));
 
       await test.step('THEN the label reads Click me', (): Promise<void> => button.expectText('Click me'));
@@ -155,7 +155,7 @@ test.describe('FEATURE: button', () => {
   });
 
   test.describe('GIVEN a primary large button with an icon', () => {
-    test('mounting renders the variant classes and the icon', async ({ mount }): Promise<void> => {
+    test('SCENARIO: mounting renders the variant classes and the icon', async ({ mount }): Promise<void> => {
       const props: ButtonProps = { icon: 'check', size: 'large', variant: 'primary' };
       const button = await test.step('WHEN the button is mounted', (): Promise<ButtonComponent> => mountButton(mount, props, 'Submit'));
 
@@ -232,7 +232,7 @@ const VARIANTS = ['danger', 'ghost', 'primary', 'secondary'] as const;
 test.describe('FEATURE: button variants', () => {
   test.describe('GIVEN each variant', () => {
     for (const variant of VARIANTS) {
-      test(`mounting the ${variant} variant applies the ${variant} class`, async ({ mount }): Promise<void> => {
+      test(`SCENARIO: mounting the ${variant} variant applies the ${variant} class`, async ({ mount }): Promise<void> => {
         const button = await test.step(`WHEN the ${variant} button is mounted`, (): Promise<ButtonComponent> => mountButton(mount, { variant }, 'Button'));
 
         await test.step(`THEN the ${variant} class is applied`, (): Promise<void> => button.expectVariant(variant));
@@ -291,7 +291,7 @@ import { mountCounter } from './test/utils/counter-mount.spec.util';
 
 test.describe('FEATURE: counter', () => {
   test.describe('GIVEN a counter mounted at 0', () => {
-    test('updating initialCount to 10 makes the count read 10', async ({ mount }): Promise<void> => {
+    test('SCENARIO: updating initialCount to 10 makes the count read 10', async ({ mount }): Promise<void> => {
       const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterComponent> => mountCounter(mount, { initialCount: 0 }));
 
       await test.step('AND the count reads 0', (): Promise<void> => counter.expectCount(0));
@@ -301,7 +301,7 @@ test.describe('FEATURE: counter', () => {
       await test.step('THEN the count reads 10', (): Promise<void> => counter.expectCount(10));
     });
 
-    test('clicking + makes the count read 1', async ({ mount }): Promise<void> => {
+    test('SCENARIO: clicking + makes the count read 1', async ({ mount }): Promise<void> => {
       const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterComponent> => mountCounter(mount, { initialCount: 0 }));
 
       await test.step('WHEN + is clicked', (): Promise<void> => counter.increment());
@@ -387,7 +387,7 @@ import { mountLoginForm, recordInto } from './test/utils/login-form-mount.spec.u
 
 test.describe('FEATURE: login form', () => {
   test.describe('GIVEN a form with a recording onSubmit', () => {
-    test('submitting credentials passes them to onSubmit once', async ({ mount }): Promise<void> => {
+    test('SCENARIO: submitting credentials passes them to onSubmit once', async ({ mount }): Promise<void> => {
       const submissions: Credentials[] = [];
       const form = await test.step('GIVEN the form is mounted', (): Promise<LoginFormComponent> => mountLoginForm(mount, recordInto(submissions)));
 
@@ -450,7 +450,7 @@ import { mountModal } from './test/utils/modal-mount.spec.util';
 
 test.describe('FEATURE: modal slots', () => {
   test.describe('GIVEN header, default, and footer slots', () => {
-    test('mounting renders each slot', async ({ mount }): Promise<void> => {
+    test('SCENARIO: mounting renders each slot', async ({ mount }): Promise<void> => {
       const modal = await test.step('WHEN the modal is mounted with all slots', (): Promise<ModalComponent> => mountModal(mount, MODAL_SLOTS_STUB));
 
       await test.step('THEN the heading reads Modal Title', (): Promise<void> => modal.expectHeading('Modal Title'));
@@ -503,7 +503,7 @@ import { mountFeatureBanner } from './test/utils/feature-banner-mount.spec.util'
 
 test.describe('FEATURE: feature banner', () => {
   test.describe('GIVEN the newFeature flag is on', () => {
-    test('mounting shows the new feature text', async ({ mount }): Promise<void> => {
+    test('SCENARIO: mounting shows the new feature text', async ({ mount }): Promise<void> => {
       const featureFlags: FeatureFlags = { newFeature: true };
       const hooksConfig: HooksConfig = { featureFlags };
       const banner = await test.step('WHEN the banner is mounted with the flag on', (): Promise<FeatureBannerComponent> => mountFeatureBanner(mount, hooksConfig));
@@ -548,7 +548,7 @@ test.describe('FEATURE: user profile', () => {
       });
     });
 
-    test('mounting shows the user name', async ({ mount }): Promise<void> => {
+    test('SCENARIO: mounting shows the user name', async ({ mount }): Promise<void> => {
       const profile = await test.step('WHEN the profile is mounted', (): Promise<UserProfileComponent> => mountUserProfile(mount, USER_STUB.id));
 
       await test.step('THEN the user name is shown', (): Promise<void> => profile.expectName(USER_STUB.name));
@@ -602,7 +602,7 @@ import { mountTextInput } from './test/utils/text-input-mount.spec.util';
 
 test.describe('FEATURE: text input v-model', () => {
   test.describe('GIVEN an empty model', () => {
-    test('typing text emits update:modelValue with the text', async ({ mount }): Promise<void> => {
+    test('SCENARIO: typing text emits update:modelValue with the text', async ({ mount }): Promise<void> => {
       const values: string[] = [];
       const onUpdate = (value: string): number => values.push(value);
       const input = await test.step('GIVEN the input is mounted with an empty model', (): Promise<TextInputComponent> => mountTextInput(mount, '', onUpdate));

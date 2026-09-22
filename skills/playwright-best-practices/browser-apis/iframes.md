@@ -178,7 +178,7 @@ import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: checkout', () => {
   test.describe('GIVEN the payment frame is ready', () => {
-    test('paying with the test card shows the confirmation', async ({ paymentReadyPage }): Promise<void> => {
+    test('SCENARIO: paying with the test card shows the confirmation', async ({ paymentReadyPage }): Promise<void> => {
       await test.step('WHEN the test card is paid', (): Promise<void> => paymentReadyPage.pay(CARD_STUB.number));
 
       await test.step('THEN the payment confirmation is shown', (): Promise<void> => paymentReadyPage.expectConfirmed());
@@ -292,7 +292,7 @@ test.describe('FEATURE: dashboard widget', () => {
       await test.step('GIVEN the dashboard is open', (): Promise<void> => widgetPage.goto());
     });
 
-    test('opening the widget makes the widget frame report loaded', async ({ widgetPage }): Promise<void> => {
+    test('SCENARIO: opening the widget makes the widget frame report loaded', async ({ widgetPage }): Promise<void> => {
       await test.step('WHEN the widget is opened', (): Promise<void> => widgetPage.openWidget());
 
       await test.step('THEN the widget frame shows Widget Loaded', (): Promise<void> => widgetPage.expectWidgetLoaded());
@@ -379,7 +379,7 @@ export const recordFrameNavigations = (page: Page): string[] => {
 import { expect, test } from './checkout.fixture';
 
 test.describe('FEATURE: frame navigation', () => {
-  test('navigating inside the frame records the frame navigation', async ({ contentFramePage, frameNavigations }): Promise<void> => {
+  test('SCENARIO: navigating inside the frame records the frame navigation', async ({ contentFramePage, frameNavigations }): Promise<void> => {
     await test.step('GIVEN the page with the content frame is open', (): Promise<void> => contentFramePage.goto());
 
     await test.step('WHEN the frame navigates to page 2', (): Promise<void> => contentFramePage.openPage2());

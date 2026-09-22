@@ -263,7 +263,7 @@ export class DashboardPage {
 // e2e/dashboard/dashboard.spec.ts
 import { test } from './dashboard.fixture';
 
-test('loaded data shows ten rows', async ({ dashboardPage }): Promise<void> => {
+test('SCENARIO: loaded data shows ten rows', async ({ dashboardPage }): Promise<void> => {
   await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
   await test.step('WHEN the data is loaded', (): Promise<void> => dashboardPage.loadData());
@@ -400,13 +400,13 @@ test.describe('FEATURE: profile', () => {
       await test.step('GIVEN the profile page is open', (): Promise<void> => profilePage.goto());
     });
 
-    test('updated name shows in the header', async ({ profilePage }): Promise<void> => {
+    test('SCENARIO: updated name shows in the header', async ({ profilePage }): Promise<void> => {
       await test.step('WHEN the name is updated', (): Promise<void> => profilePage.updateName('Ada'));
 
       await test.step('THEN header shows the new name', (): Promise<void> => profilePage.expectHeaderName('Ada'));
     });
 
-    test('updated email shows in the account', async ({ profilePage }): Promise<void> => {
+    test('SCENARIO: updated email shows in the account', async ({ profilePage }): Promise<void> => {
       await test.step('WHEN the email is updated', (): Promise<void> => profilePage.updateEmail('ada@example.com'));
 
       await test.step('THEN account shows the new email', (): Promise<void> => profilePage.expectEmail('ada@example.com'));
@@ -523,7 +523,7 @@ test.describe('FEATURE: checkout', () => {
       });
     });
 
-    test('paid order opens the confirmation', async ({ checkoutPage }): Promise<void> => {
+    test('SCENARIO: paid order opens the confirmation', async ({ checkoutPage }): Promise<void> => {
       await test.step('WHEN the order is paid', (): Promise<void> => checkoutPage.pay());
 
       await test.step('THEN confirmation page is shown', (): Promise<void> => checkoutPage.expectConfirmation());
@@ -570,13 +570,13 @@ import { test } from './checkout.fixture';
 const FLAKY_ANNOTATION = { description: 'Investigating payment API timing - JIRA-1234', type: 'flaky' };
 
 test.describe('FEATURE: checkout', () => {
-  test('paid order opens the confirmation', { annotation: FLAKY_ANNOTATION }, async ({ checkoutPage }): Promise<void> => {
+  test('SCENARIO: paid order opens the confirmation', { annotation: FLAKY_ANNOTATION }, async ({ checkoutPage }): Promise<void> => {
     await test.step('WHEN the order is paid', (): Promise<void> => checkoutPage.pay());
 
     await test.step('THEN confirmation page is shown', (): Promise<void> => checkoutPage.expectConfirmation());
   });
 
-  test('applied coupon drops the total', async ({ checkoutPage }): Promise<void> => {
+  test('SCENARIO: applied coupon drops the total', async ({ checkoutPage }): Promise<void> => {
     test.skip(IS_CI, 'Flaky in CI - investigating JIRA-5678');
 
     await test.step('WHEN the coupon is applied', (): Promise<void> => checkoutPage.applyCoupon('TEN'));

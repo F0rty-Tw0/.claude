@@ -7,7 +7,7 @@ description: Use when writing, refactoring, or reviewing Playwright end-to-end, 
 
 ## Overview
 
-Reference set for Playwright test development, rewritten to house style: `FEATURE` / `GIVEN` describes, scenario-named tests, `GIVEN` / `WHEN` / `THEN` / `AND` steps with one call each, page objects that own every locator, fixtures that own every page object, and one responsibility per file.
+Reference set for Playwright test development, rewritten to house style: `FEATURE` / `GIVEN` describes, `SCENARIO:` tests, `GIVEN` / `WHEN` / `THEN` / `AND` steps with one call each, page objects that own every locator, fixtures that own every page object, and one responsibility per file.
 
 **REQUIRED BACKGROUND:** skill:artification. Its `typescript-style.md` and `spec-style.md` apply to every Playwright file unchanged.
 
@@ -75,8 +75,8 @@ Reference set for Playwright test development, rewritten to house style: `FEATUR
 | Mistake | Fix |
 |---|---|
 | Reading a topic file without `house-style.md` | Read `house-style.md` first; topic files assume it. |
-| Copying a Playwright docs sample verbatim | Reshape it: scenario title, Gherkin steps, page object, fixture, return types. |
+| Copying a Playwright docs sample verbatim | Reshape it: `SCENARIO:` title, Gherkin steps, page object, fixture, return types. |
 | Fixing a flake by retrying | skill:deflaky audit, then the matching category in `debugging/flaky-tests.md`. |
 | `test.describe('Login')` | `test.describe('FEATURE: login')`. |
-| `test('WHEN … THEN …')` | Title is the scenario; `WHEN` / `THEN` are `test.step` names. |
+| `test('WHEN … THEN …')` or `test('<bare title>')` | Title is `SCENARIO: <flow>`; `WHEN` / `THEN` are `test.step` names. |
 | A `page.getByRole` in a spec | Move it to the page object; call the method from a step. |

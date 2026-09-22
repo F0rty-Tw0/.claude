@@ -84,7 +84,7 @@ export class ProfilePage {
 import { expect, test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test('dashboard url and title match', async ({ dashboardPage, page }): Promise<void> => {
+  test('SCENARIO: dashboard url and title match', async ({ dashboardPage, page }): Promise<void> => {
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
     await test.step('THEN url is /dashboard', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
@@ -140,7 +140,7 @@ import type { User } from './common/users.type';
 import { fetchUsers } from './test/utils/users-api.spec.util';
 
 test.describe('FEATURE: users api', () => {
-  test('users request returns three users', async ({ request }): Promise<void> => {
+  test('SCENARIO: users request returns three users', async ({ request }): Promise<void> => {
     const users = await test.step('WHEN the users are requested', (): Promise<User[]> => fetchUsers(request));
 
     await test.step('THEN three users are returned', (): void => expect(users).toHaveLength(3));
@@ -317,7 +317,7 @@ import type { Response } from '@playwright/test';
 import { expect, test } from './users.fixture';
 
 test.describe('FEATURE: users list', () => {
-  test('list refresh gets a 200 from the users api', async ({ usersPage }): Promise<void> => {
+  test('SCENARIO: list refresh gets a 200 from the users api', async ({ usersPage }): Promise<void> => {
     const response = await test.step('WHEN the list is refreshed', (): Promise<Response> => usersPage.refresh());
 
     await test.step('THEN users api answered 200', (): void => expect(response.status()).toBe(200));

@@ -146,7 +146,7 @@ import { dataFailOnceMock } from './test/mocks/data.mock';
 import { userNullMock } from './test/mocks/user.mock';
 
 test.describe('FEATURE: dashboard error handling', () => {
-  test('a null user api response shows the error boundary fallback', async ({ dashboardPage, page }): Promise<void> => {
+  test('SCENARIO: a null user api response shows the error boundary fallback', async ({ dashboardPage, page }): Promise<void> => {
     await test.step('GIVEN the user api is stubbed with null', async (): Promise<void> => {
       await page.route('**/api/user', userNullMock());
     });
@@ -156,7 +156,7 @@ test.describe('FEATURE: dashboard error handling', () => {
     await test.step('THEN the fallback offers a retry', (): Promise<void> => dashboardPage.expectErrorFallback());
   });
 
-  test('clicking retry after a failed first request shows the data', async ({ dashboardPage, page }): Promise<void> => {
+  test('SCENARIO: clicking retry after a failed first request shows the data', async ({ dashboardPage, page }): Promise<void> => {
     await test.step('GIVEN the first data request fails', async (): Promise<void> => {
       await page.route('**/api/data', dataFailOnceMock());
     });
@@ -170,7 +170,7 @@ test.describe('FEATURE: dashboard error handling', () => {
     await test.step('THEN the data is shown', (): Promise<void> => dashboardPage.expectText('success'));
   });
 
-  test('a runtime error leaves the navigation rendered', async ({ dashboardPage, page, pageErrors }): Promise<void> => {
+  test('SCENARIO: a runtime error leaves the navigation rendered', async ({ dashboardPage, page, pageErrors }): Promise<void> => {
     await test.step('WHEN the buggy page is opened', async (): Promise<void> => {
       await page.goto('/buggy-page');
     });
@@ -200,7 +200,7 @@ const ERROR_STATUSES = [400, 401, 403, 404, 500, 502, 503];
 
 test.describe('FEATURE: dashboard network failures', () => {
   for (const status of ERROR_STATUSES) {
-    test(`a ${status} from the data api shows an alert`, async ({ dashboardPage, page }): Promise<void> => {
+    test(`SCENARIO: a ${status} from the data api shows an alert`, async ({ dashboardPage, page }): Promise<void> => {
       await test.step(`GIVEN the data api is stubbed with ${status}`, async (): Promise<void> => {
         await page.route('**/api/data', dataErrorMock(status));
       });
@@ -238,7 +238,7 @@ export const uploadAbortAfterMock = (delayMs: number): RouteHandler => {
 import { test } from './upload.fixture';
 import { uploadAbortAfterMock } from './test/mocks/upload.mock';
 
-test('an upload aborted mid-request shows the failure', async ({ page, uploadPage }): Promise<void> => {
+test('SCENARIO: an upload aborted mid-request shows the failure', async ({ page, uploadPage }): Promise<void> => {
   await test.step('GIVEN the upload aborts after 500ms', async (): Promise<void> => {
     await page.route('**/api/upload', uploadAbortAfterMock(500));
   });
@@ -265,7 +265,7 @@ This section covers **unexpected network failures** and error recovery. For **of
 // e2e/dashboard/dashboard-offline.spec.ts
 import { expect, test } from './dashboard.fixture';
 
-test('the dashboard recovers after the connection drops and returns', async ({ context, dashboardPage }): Promise<void> => {
+test('SCENARIO: the dashboard recovers after the connection drops and returns', async ({ context, dashboardPage }): Promise<void> => {
   await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
   await test.step('AND the data is visible', (): Promise<void> => expect(dashboardPage.data).toBeVisible());
@@ -276,7 +276,7 @@ test('the dashboard recovers after the connection drops and returns', async ({ c
 
   await test.step('THEN the offline indicator is shown', (): Promise<void> => expect(dashboardPage.offlineIndicator).toBeVisible());
 
-  await test.step('WHEN the browser goes back online', (): Promise<void> => context.setOffline(false));
+  await test.step('AND the browser goes back online', (): Promise<void> => context.setOffline(false));
 
   await test.step('AND the data is refreshed', (): Promise<void> => dashboardPage.refresh());
 
@@ -329,7 +329,7 @@ import { expect, test } from './posts.fixture';
 import { postsDelayedMock, postsEmptyMock } from './test/mocks/posts.mock';
 
 test.describe('FEATURE: posts loading states', () => {
-  test('a slow response shows the skeleton until the content lands', async ({ page, postsPage }): Promise<void> => {
+  test('SCENARIO: a slow response shows the skeleton until the content lands', async ({ page, postsPage }): Promise<void> => {
     await test.step('GIVEN the posts api is delayed by one second', async (): Promise<void> => {
       await page.route('**/api/posts', postsDelayedMock(1000));
     });
@@ -341,7 +341,7 @@ test.describe('FEATURE: posts loading states', () => {
     await test.step('AND the first post replaces the skeleton', (): Promise<void> => postsPage.expectPost('Post 1'));
   });
 
-  test('no posts shows the empty state', async ({ page, postsPage }): Promise<void> => {
+  test('SCENARIO: no posts shows the empty state', async ({ page, postsPage }): Promise<void> => {
     await test.step('GIVEN the posts api is stubbed with an empty list', async (): Promise<void> => {
       await page.route('**/api/posts', postsEmptyMock());
     });
@@ -366,7 +366,7 @@ A save action disables its button and shows a spinner while the request is pendi
 import { test } from './editor.fixture';
 import { saveDelayedMock } from './test/mocks/save.mock';
 
-test('saving content shows the button loading then success', async ({ editorPage, page }): Promise<void> => {
+test('SCENARIO: saving content shows the button loading then success', async ({ editorPage, page }): Promise<void> => {
   await test.step('GIVEN the save api is delayed', async (): Promise<void> => {
     await page.route('**/api/save', saveDelayedMock(500));
   });
@@ -411,7 +411,7 @@ test.describe('FEATURE: signup validation', () => {
       await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
     });
 
-    test('submitting an empty form shows the required errors and keeps the url', async ({ page, signupPage }): Promise<void> => {
+    test('SCENARIO: submitting an empty form shows the required errors and keeps the url', async ({ page, signupPage }): Promise<void> => {
       await test.step('WHEN the empty form is submitted', (): Promise<void> => signupPage.submit());
 
       await test.step('THEN the email is required', (): Promise<void> => signupPage.expectFieldError('Email is required'));
@@ -421,17 +421,17 @@ test.describe('FEATURE: signup validation', () => {
       await test.step('AND the url is still the signup page', (): Promise<void> => expect(page).toHaveURL('/signup'));
     });
 
-    test('correcting a malformed email clears the format error', async ({ signupPage }): Promise<void> => {
+    test('SCENARIO: correcting a malformed email clears the format error', async ({ signupPage }): Promise<void> => {
       await test.step('WHEN a malformed email is filled in', (): Promise<void> => signupPage.fillEmail('invalid-email'));
 
       await test.step('THEN the format error is shown', (): Promise<void> => signupPage.expectFieldError('Invalid email address'));
 
-      await test.step('WHEN a valid email is filled in', (): Promise<void> => signupPage.fillEmail('valid@email.com'));
+      await test.step('AND a valid email is filled in', (): Promise<void> => signupPage.fillEmail('valid@email.com'));
 
       await test.step('THEN the format error is gone', (): Promise<void> => signupPage.expectNoFieldError('Invalid email address'));
     });
 
-    test('a server rejection shows its errors on the form', async ({ page, signupPage }): Promise<void> => {
+    test('SCENARIO: a server rejection shows its errors on the form', async ({ page, signupPage }): Promise<void> => {
       await test.step('GIVEN the register api is stubbed with 422', async (): Promise<void> => {
         await page.route('**/api/register', registerInvalidMock());
       });

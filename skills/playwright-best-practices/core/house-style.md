@@ -2,7 +2,7 @@
 
 Read this file before any other reference in this skill. Every code sample in this skill follows these rules; every Playwright file written with this skill follows them too. Where a Playwright doc or an older test in the repo disagrees, this file wins.
 
-**REQUIRED BACKGROUND:** skill:artification. `references/typescript-style.md` and `references/spec-style.md` apply to Playwright code unchanged. This file adds only what Playwright needs on top.
+**REQUIRED BACKGROUND:** skill:artification. `references/typescript-style.md` applies unchanged. `references/spec-style.md` applies with one override, stated in its Scope section: Playwright has `test.step`, so `WHEN` / `THEN` move from `describe` / `it` into steps and the `test` title is `SCENARIO:`. This file adds only what Playwright needs on top.
 
 ## Contents
 
@@ -28,7 +28,7 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 
 | Concern | Rule |
 |---|---|
-| Naming tree | `test.describe('FEATURE: <name>')` → `test.describe('GIVEN <state>')` → `test('<scenario>')`. Steps carry `GIVEN` / `WHEN` / `THEN` / `AND`. `SCENARIO:` describe only for two or more independent flows, as in `spec-style.md`. Never a `WHEN` describe; the step owns it. |
+| Naming tree | `test.describe('FEATURE: <name>')` → `test.describe('GIVEN <state>')` → `test('SCENARIO: <flow>')`. Steps carry `GIVEN` / `WHEN` / `THEN` / `AND`. Every level carries its keyword; a title without one is not house style. Never a `WHEN` describe; the step owns it. |
 | Test body | Every statement inside `test(...)` is `await test.step('<prose>', ...)`. No bare `page.*`, `expect(...)`, or page-object call outside a step. |
 | Step body | One call. `(): Promise<void> => loginPage.submit(user)`. Two or more statements mean a page-object or fixture method is missing. |
 | Step naming | Upper-case Gherkin keyword, then present-tense prose: `'WHEN wrong credentials are submitted'`, `'THEN the error names invalid credentials'`. `GIVEN` for arrange, `WHEN` for action, `THEN` for assertion, `AND` for a consecutive step of the same kind. |
@@ -100,7 +100,7 @@ test.describe('FEATURE: login', () => {
       await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
     });
 
-    test('valid credentials open the dashboard', async ({ dashboardPage, loginPage, page }): Promise<void> => {
+    test('SCENARIO: valid credentials open the dashboard', async ({ dashboardPage, loginPage, page }): Promise<void> => {
       await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
 
       await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
@@ -108,7 +108,7 @@ test.describe('FEATURE: login', () => {
       await test.step('AND the greeting names the user', (): Promise<void> => dashboardPage.expectGreeting(USER_STUB.displayName));
     });
 
-    test('wrong password shows the error banner', async ({ loginPage }): Promise<void> => {
+    test('SCENARIO: wrong password shows the error banner', async ({ loginPage }): Promise<void> => {
       const user: Credentials = { ...USER_STUB, password: 'wrong' };
 
       await test.step('WHEN the wrong password is submitted', (): Promise<void> => loginPage.submit(user));
@@ -121,14 +121,14 @@ test.describe('FEATURE: login', () => {
 
 | Concern | Rule |
 |---|---|
-| `describe` text | Exactly `FEATURE:`, `SCENARIO:`, `GIVEN`. Upper-case keyword, plain present-tense prose after it. |
-| `test` text | The scenario as one lower-case present-tense sentence naming the outcome: `'wrong password shows the error banner'`. No Gherkin keyword, no "should". |
+| `describe` text | Exactly `FEATURE:` or `GIVEN`. Upper-case keyword, plain present-tense prose after it. |
+| `test` text | `SCENARIO:` then the flow as one lower-case present-tense sentence naming the outcome: `'SCENARIO: wrong password shows the error banner'`. `WHEN` / `THEN` never appear in the title; they are steps. No "should". |
 | Step keywords | Every step in a spec starts with `GIVEN`, `WHEN`, `THEN`, or `AND`. A test holds at least one `WHEN` and one `THEN`. `beforeEach` steps are `GIVEN` / `AND`. |
-| Step order | `GIVEN`* → `WHEN`+ → `THEN`+, `AND` continuing the kind before it. A second `WHEN` after a `THEN` is allowed only when the second phase depends on the first (drag, then reload; go offline, then back online). Independent phases are separate tests. |
+| Step order | `GIVEN`? → `WHEN` → `THEN`, then only `AND` and `THEN` repeat. One `GIVEN` and one `WHEN` per test; a further arrange or action step is `AND` (`AND 5 more minutes pass`). Independent phases are separate tests. |
 | Arrange | Shared arrange for every test in a `GIVEN` goes in that `GIVEN`'s `beforeEach`, itself expressed as a step. Case-specific arrange is a `const` above the first step, blank line after. |
 | Steps | One step per action or per assertion group. Blank line between steps. |
 | Fixtures in signature | Destructure only what the test uses, alphabetical. |
-| Tags | `test('<scenario>', { tag: ['@smoke'] }, async …)`. Tags are the second argument, never in the title. |
+| Tags | `test('SCENARIO: <flow>', { tag: ['@smoke'] }, async …)`. Tags are the second argument, never in the title. |
 | Annotations | `test.skip`, `test.fixme`, `test.slow` carry a reason string. |
 
 ## Steps
@@ -162,7 +162,7 @@ After, the spec is steps and the page object owns the locators:
 
 ```ts
 // e2e/login/login.spec.ts
-test('valid credentials open the dashboard', async ({ loginPage, page }): Promise<void> => {
+test('SCENARIO: valid credentials open the dashboard', async ({ loginPage, page }): Promise<void> => {
   await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
   await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
@@ -349,7 +349,8 @@ Rules for the markdown files in this skill, so every reference reads the same wa
 | Excuse | Counter |
 |---|---|
 | "Steps make short tests longer." | A three-line test with three steps is still three lines. The trace now names them. |
-| "The title already says WHEN and THEN." | The title is the scenario; the steps are the Gherkin. Saying it twice is what the rule removes. |
+| "The title already says WHEN and THEN." | The title is the `SCENARIO:`; `WHEN` / `THEN` are steps. Saying it twice is what the rule removes. |
+| "`SCENARIO:` on every test is noise." | Every level names its keyword. A bare title is the one shape a reader cannot place in the tree. |
 | "One `page.getByRole` in the spec is fine." | The spec now knows the DOM. Move it to the page object. |
 | "Return types on test callbacks are noise." | The rule has no exception for tests. Consistency is the point. |
 | "Playwright docs use `interface`." | Playwright docs are not this repo. `type` with `readonly`. |
@@ -381,7 +382,8 @@ Stop and re-check this file when reasoning includes:
 | Mistake | Fix |
 |---|---|
 | `test.describe('Checkout', ...)` | `test.describe('FEATURE: checkout', ...)`. |
-| `test('WHEN the order is placed THEN the confirmation page opens', ...)` | `test('placing the order opens the confirmation page', ...)` with `WHEN` / `THEN` steps inside. |
+| `test('WHEN the order is placed THEN the confirmation page opens', ...)` | `test('SCENARIO: placing the order opens the confirmation page', ...)` with `WHEN` / `THEN` steps inside. |
+| `test('placing the order opens the confirmation page', ...)` | Same, with `SCENARIO:` in front. No keyword, no place in the tree. |
 | `test.describe('WHEN the order is placed', ...)` | Delete the describe; `'WHEN the order is placed'` is a step. |
 | `test.step('submit credentials', ...)` in a spec | `test.step('WHEN credentials are submitted', ...)`. |
 | Step with `async () => { await a(); await b(); }` | Add `checkoutPage.placeOrder()` and call it. |

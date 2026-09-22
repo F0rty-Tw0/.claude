@@ -149,7 +149,7 @@ test.describe('FEATURE: performance', () => {
       await test.step('GIVEN the home page is open', (): Promise<void> => performancePage.goto('/'));
     });
 
-    test('core web vitals stay inside the good thresholds', async ({ performancePage }): Promise<void> => {
+    test('SCENARIO: core web vitals stay inside the good thresholds', async ({ performancePage }): Promise<void> => {
       const vitals = await test.step('WHEN core web vitals are read', (): Promise<WebVitals> => performancePage.webVitals());
 
       await test.step('THEN LCP is under 2.5 seconds', (): void => expect(vitals.lcp).toBeLessThan(2500));
@@ -157,7 +157,7 @@ test.describe('FEATURE: performance', () => {
       await test.step('AND CLS is under 0.1', (): void => expect(vitals.cls).toBeLessThan(0.1));
     });
 
-    test('load time stays within 10% of the baseline', async ({ performancePage }): Promise<void> => {
+    test('SCENARIO: load time stays within 10% of the baseline', async ({ performancePage }): Promise<void> => {
       const timing = await test.step('WHEN navigation timing is read', (): Promise<NavigationTiming> => performancePage.navigationTiming());
 
       await test.step('AND the load time is recorded for the reporter', (): void => annotateLoadTime(timing.loadComplete));
@@ -173,7 +173,7 @@ test.describe('FEATURE: performance', () => {
       await test.step('GIVEN the dashboard is open', (): Promise<void> => performancePage.goto('/dashboard'));
     });
 
-    test('heap usage stays under 100 MB', async ({ performancePage }): Promise<void> => {
+    test('SCENARIO: heap usage stays under 100 MB', async ({ performancePage }): Promise<void> => {
       const usage = await test.step('WHEN heap usage is read', (): Promise<HeapUsage> => performancePage.heapUsage());
 
       await test.step('THEN the used heap is under 100 MB', (): void => expect(usage.usedJSHeapSize).toBeLessThan(HEAP_CEILING_BYTES));
@@ -277,7 +277,7 @@ test.describe('FEATURE: web vitals library', () => {
       await test.step('GIVEN the home page is open', (): Promise<void> => webVitalsPage.goto('/'));
     });
 
-    test('clicking the first button keeps LCP and INP inside the good thresholds', async ({ webVitalsPage }): Promise<void> => {
+    test('SCENARIO: clicking the first button keeps LCP and INP inside the good thresholds', async ({ webVitalsPage }): Promise<void> => {
       await test.step('WHEN the first button is clicked', (): Promise<void> => webVitalsPage.clickFirstButton());
 
       await test.step('THEN LCP is under 2.5 seconds', (): Promise<void> => webVitalsPage.expectVital('LCP', 2500));
@@ -461,7 +461,7 @@ test.describe('FEATURE: performance budget', () => {
       await test.step('GIVEN the home page is open', (): Promise<void> => budgetPage.goto('/'));
     });
 
-    test('the home page stays inside its budget', async ({ budgetPage }): Promise<void> => {
+    test('SCENARIO: the home page stays inside its budget', async ({ budgetPage }): Promise<void> => {
       await test.step('THEN the metrics stay inside the home page budget', (): Promise<void> => budgetPage.expectWithinBudget(HOMEPAGE_BUDGET));
     });
   });
@@ -549,7 +549,7 @@ test.describe('FEATURE: lighthouse audit', () => {
       await test.step('GIVEN the home page is open', (): Promise<void> => lighthousePage.goto('/'));
     });
 
-    test('the performance-only audit clears 70', async ({ lighthousePage }): Promise<void> => {
+    test('SCENARIO: the performance-only audit clears 70', async ({ lighthousePage }): Promise<void> => {
       const summary = await test.step('WHEN the throttled performance audit runs', (): Promise<LighthouseSummary> => lighthousePage.audit(PERFORMANCE_ONLY_THRESHOLDS, PERFORMANCE_ONLY_CONFIG));
 
       await test.step('THEN performance scores at least 70', (): void => expect(summary.performance).toBeGreaterThanOrEqual(70));

@@ -30,7 +30,7 @@ import type { AxeResults } from 'axe-core';
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: accessibility', () => {
-  test('scanning the home page reports no axe violations', async ({ homePage, makeAxeBuilder }): Promise<void> => {
+  test('SCENARIO: scanning the home page reports no axe violations', async ({ homePage, makeAxeBuilder }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     const results = await test.step('WHEN the page is scanned with axe', (): Promise<AxeResults> => makeAxeBuilder().analyze());
@@ -183,7 +183,7 @@ export class SignupPage {
 import { test } from './accessibility.fixture';
 
 test.describe('FEATURE: signup keyboard navigation', () => {
-  test('tabbing from the page start visits email, password, sign up in order', async ({ signupPage }): Promise<void> => {
+  test('SCENARIO: tabbing from the page start visits email, password, sign up in order', async ({ signupPage }): Promise<void> => {
     await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
 
     await test.step('WHEN tab is pressed from the page start THEN focus visits email, password, sign up in order', (): Promise<void> => signupPage.expectTabOrder());
@@ -193,7 +193,7 @@ test.describe('FEATURE: signup keyboard navigation', () => {
 
 ### Keyboard-Only Interaction and Skip Links
 
-A keyboard flow is a page-object method per user intent; the key sequence stays inside the method and the spec step names the intent. A shop flow reads `WHEN the first product is opened with tab and enter` → `shopPage.openFirstProductByKeyboard()` (Tab twice, then Enter), `THEN` `expect(page).toHaveURL(/\/products\/\d+/)`, then a second `WHEN` / `THEN` pair for `addToCartByKeyboard()` and `expect(shopPage.toast).toContainText('Added to cart')`.
+A keyboard flow is a page-object method per user intent; the key sequence stays inside the method and the spec step names the intent. A shop flow reads `WHEN the first product is opened with tab and enter` → `shopPage.openFirstProductByKeyboard()` (Tab twice, then Enter), `THEN` `expect(page).toHaveURL(/\/products\/\d+/)`, then an `AND` / `THEN` pair for `addToCartByKeyboard()` and `expect(shopPage.toast).toContainText('Added to cart')`.
 
 `HomePage` also carries the landmark locators and the media-emulation methods used under [Color & Contrast](#color--contrast).
 
@@ -248,7 +248,7 @@ export class HomePage {
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: skip link', () => {
-  test('activating the skip link moves focus to the main landmark', async ({ homePage }): Promise<void> => {
+  test('SCENARIO: activating the skip link moves focus to the main landmark', async ({ homePage }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     await test.step('AND tab is pressed', (): Promise<void> => homePage.pressTab());
@@ -319,7 +319,7 @@ export class DashboardPage {
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: settings dialog keyboard handling', () => {
-  test('pressing escape closes the dialog and returns focus to the trigger', async ({ dashboardPage }): Promise<void> => {
+  test('SCENARIO: pressing escape closes the dialog and returns focus to the trigger', async ({ dashboardPage }): Promise<void> => {
     await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
     await test.step('AND the settings dialog is open', (): Promise<void> => dashboardPage.openSettings());
@@ -391,7 +391,7 @@ export class DialogComponent {
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: items page focus management', () => {
-  test('an open dialog keeps tab inside it', async ({ itemsPage }): Promise<void> => {
+  test('SCENARIO: an open dialog keeps tab inside it', async ({ itemsPage }): Promise<void> => {
     await test.step('GIVEN the items page is open', (): Promise<void> => itemsPage.goto());
 
     await test.step('WHEN the dialog is opened', (): Promise<void> => itemsPage.openDialog());
@@ -421,7 +421,7 @@ The computed `animationDuration` is read by a page-object method with a typed `e
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: reduced motion', () => {
-  test('preferring reduced motion disables the hero animation', async ({ homePage }): Promise<void> => {
+  test('SCENARIO: preferring reduced motion disables the hero animation', async ({ homePage }): Promise<void> => {
     await test.step('GIVEN reduced motion is emulated', (): Promise<void> => homePage.emulateReducedMotion());
 
     await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());

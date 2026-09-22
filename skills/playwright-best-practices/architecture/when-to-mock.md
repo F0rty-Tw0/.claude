@@ -105,7 +105,7 @@ test.describe('FEATURE: dashboard', () => {
       });
     });
 
-    test('opening the dashboard shows the heading', async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: opening the dashboard shows the heading', async ({ dashboardPage }): Promise<void> => {
       await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
       await test.step('THEN the dashboard heading is visible', (): Promise<void> => dashboardPage.expectHeading());
@@ -150,7 +150,7 @@ import { chargeDeclinedMock, chargeMock } from './test/mocks/charge.mock';
 
 test.describe('FEATURE: checkout', () => {
   test.describe('GIVEN the order confirmation page', () => {
-    test('a successful charge confirms the order', async ({ orderPage, page }): Promise<void> => {
+    test('SCENARIO: a successful charge confirms the order', async ({ orderPage, page }): Promise<void> => {
       await test.step('GIVEN a successful charge is stubbed', async (): Promise<void> => {
         await page.route('**/api/charge', chargeMock());
       });
@@ -162,7 +162,7 @@ test.describe('FEATURE: checkout', () => {
       await test.step('THEN the confirmation message is shown', (): Promise<void> => orderPage.expectConfirmed());
     });
 
-    test('a declined charge names the decline in the alert', async ({ orderPage, page }): Promise<void> => {
+    test('SCENARIO: a declined charge names the decline in the alert', async ({ orderPage, page }): Promise<void> => {
       await test.step('GIVEN a declined charge is stubbed', async (): Promise<void> => {
         await page.route('**/api/charge', chargeDeclinedMock());
       });
@@ -238,7 +238,7 @@ test.describe('FEATURE: admin panel', () => {
       });
     });
 
-    test('opening the admin panel shows the reports heading', async ({ adminPage }): Promise<void> => {
+    test('SCENARIO: opening the admin panel shows the reports heading', async ({ adminPage }): Promise<void> => {
       await test.step('WHEN the admin panel opens', (): Promise<void> => adminPage.goto());
 
       await test.step('THEN the reports heading is visible', (): Promise<void> => adminPage.expectReportsHeading());
@@ -388,7 +388,7 @@ import { test } from './billing.fixture';
 
 test.describe('FEATURE: subscription renewal', () => {
   test.describe('GIVEN the payment gateway is mocked', () => {
-    test('renewing the subscription shows the renewal message', async ({ billingPage }): Promise<void> => {
+    test('SCENARIO: renewing the subscription shows the renewal message', async ({ billingPage }): Promise<void> => {
       await test.step('GIVEN the billing page is open', (): Promise<void> => billingPage.goto());
 
       await test.step('WHEN the subscription is renewed', (): Promise<void> => billingPage.renew());
@@ -400,7 +400,7 @@ test.describe('FEATURE: subscription renewal', () => {
   test.describe('GIVEN the real test gateway', () => {
     test.use({ mockPayments: false });
 
-    test('renewing the subscription shows the renewal message', async ({ billingPage }): Promise<void> => {
+    test('SCENARIO: renewing the subscription shows the renewal message', async ({ billingPage }): Promise<void> => {
       await test.step('GIVEN the billing page is open', (): Promise<void> => billingPage.goto());
 
       await test.step('WHEN the subscription is renewed', (): Promise<void> => billingPage.renew());
@@ -464,7 +464,7 @@ test.describe('FEATURE: billing mock contract', () => {
   test.describe('GIVEN the real billing API', () => {
     test.use({ mockPayments: false });
 
-    test('posting a charge matches the mock body shape', async ({ request }): Promise<void> => {
+    test('SCENARIO: posting a charge matches the mock body shape', async ({ request }): Promise<void> => {
       const realBody = await test.step('WHEN a charge is posted through the real API', (): Promise<Record<string, unknown>> => chargeThroughApi(request));
 
       await test.step('THEN the mock keys and value types match the real body', (): void => expect(shapeOf(INVOICE_STUB)).toEqual(shapeOf(realBody)));

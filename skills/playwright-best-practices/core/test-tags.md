@@ -34,13 +34,13 @@ import { test } from './login.fixture';
 
 test.describe('FEATURE: login', () => {
   test.describe('GIVEN a visitor', () => {
-    test('login page shows the heading', { tag: '@fast' }, async ({ loginPage }): Promise<void> => {
+    test('SCENARIO: login page shows the heading', { tag: '@fast' }, async ({ loginPage }): Promise<void> => {
       await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
       await test.step('THEN heading is visible', (): Promise<void> => loginPage.expectHeadingVisible());
     });
 
-    test('dashboard renders the charts', { tag: ['@slow', '@smoke'] }, async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: dashboard renders the charts', { tag: ['@slow', '@smoke'] }, async ({ dashboardPage }): Promise<void> => {
       await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
       await test.step('THEN charts are visible', (): Promise<void> => dashboardPage.expectChartsVisible());
@@ -65,13 +65,13 @@ import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin', { tag: '@admin' }, () => {
   test.describe('GIVEN an admin session', () => {
-    test('dashboard lists the metrics', async ({ adminPage }): Promise<void> => {
+    test('SCENARIO: dashboard lists the metrics', async ({ adminPage }): Promise<void> => {
       await test.step('WHEN the dashboard is opened', (): Promise<void> => adminPage.gotoDashboard());
 
       await test.step('THEN metrics are listed', (): Promise<void> => adminPage.expectMetricsListed());
     });
 
-    test('saved settings are recorded in the audit log', { tag: ['@critical', '@slow'] }, async ({ adminPage }): Promise<void> => {
+    test('SCENARIO: saved settings are recorded in the audit log', { tag: ['@critical', '@slow'] }, async ({ adminPage }): Promise<void> => {
       await test.step('WHEN the settings are saved', (): Promise<void> => adminPage.saveSettings());
 
       await test.step('THEN audit log lists the change', (): Promise<void> => adminPage.expectAuditEntry('settings saved'));
@@ -186,13 +186,13 @@ import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: payments', { tag: '@payments' }, () => {
   test.describe('GIVEN a saved card', () => {
-    test('charged card shows the receipt', { tag: ['@critical', '@p0'] }, async ({ paymentsPage }): Promise<void> => {
+    test('SCENARIO: charged card shows the receipt', { tag: ['@critical', '@p0'] }, async ({ paymentsPage }): Promise<void> => {
       await test.step('WHEN the card is charged', (): Promise<void> => paymentsPage.charge(CARD_STUB));
 
       await test.step('THEN receipt is visible', (): Promise<void> => paymentsPage.expectReceiptVisible());
     });
 
-    test('PayPal selection opens the redirect', { tag: ['@critical', '@slow'] }, async ({ paymentsPage }): Promise<void> => {
+    test('SCENARIO: PayPal selection opens the redirect', { tag: ['@critical', '@slow'] }, async ({ paymentsPage }): Promise<void> => {
       await test.step('WHEN PayPal is selected', (): Promise<void> => paymentsPage.selectPaypal());
 
       await test.step('THEN PayPal redirect is open', (): Promise<void> => paymentsPage.expectPaypalRedirect());

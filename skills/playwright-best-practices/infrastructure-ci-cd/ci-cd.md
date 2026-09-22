@@ -356,7 +356,7 @@ export const CI_USER: Credentials = {
 import { CI_USER } from './common/login.const';
 import { expect, test } from './login.fixture';
 
-test('CI credentials open the dashboard', async ({ loginPage, page }): Promise<void> => {
+test('SCENARIO: CI credentials open the dashboard', async ({ loginPage, page }): Promise<void> => {
   await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
   await test.step('WHEN the CI credentials are submitted', (): Promise<void> => loginPage.submit(CI_USER));

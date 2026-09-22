@@ -6,7 +6,7 @@ Playwright reference set covering E2E, component, API, visual, accessibility, se
 
 | Area | Files |
 |---|---|
-| Contract | `core/house-style.md` — `FEATURE` / `GIVEN` describes, scenario titles, `GIVEN` / `WHEN` / `THEN` steps with one call each, page objects own locators, fixtures own page objects, artification TypeScript rules, file layout, size caps. |
+| Contract | `core/house-style.md` — `FEATURE` / `GIVEN` describes, `SCENARIO:` titles, `GIVEN` / `WHEN` / `THEN` steps with one call each, page objects own locators, fixtures own page objects, artification TypeScript rules, file layout, size caps. |
 | Core | `core/` — structure, locators, assertions, POM, fixtures, data, config, projects, global setup, annotations, tags. |
 | Advanced | `advanced/` — auth flows, multi-user, multi-context, clock, network, third-party, mobile. |
 | Browser APIs | `browser-apis/` — WebSockets, service workers, iframes, geolocation, permissions, clipboard, media. |

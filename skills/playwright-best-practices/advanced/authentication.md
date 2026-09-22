@@ -29,7 +29,7 @@ import { expect, test } from '@playwright/test';
 import { SESSION_STATE_PATH, TEST_USER } from './common/auth.const';
 import { saveApiSessionState } from './test/utils/session.spec.util';
 
-test('api login saves the storage state', async ({ request }): Promise<void> => {
+test('SCENARIO: api login saves the storage state', async ({ request }): Promise<void> => {
   const response = await test.step('WHEN credentials are posted', (): Promise<APIResponse> => request.post('/api/auth/login', { data: TEST_USER }));
 
   await test.step('THEN the login responds ok', (): Promise<void> => expect(response).toBeOK());
@@ -208,7 +208,7 @@ import { test } from './auth.fixture';
 import { SESSION_STATE_PATH, TEST_USER } from './common/auth.const';
 import { saveSessionState } from './test/utils/session.spec.util';
 
-test('ui login saves the storage state', async ({ loginPage, page }): Promise<void> => {
+test('SCENARIO: ui login saves the storage state', async ({ loginPage, page }): Promise<void> => {
   await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
   await test.step('WHEN credentials are submitted and home opens', (): Promise<void> => loginPage.submitAndWaitForHome(TEST_USER));
@@ -243,7 +243,7 @@ import { test } from './auth.fixture';
 
 test.describe('FEATURE: home', () => {
   test.describe('GIVEN a saved session', () => {
-    test('the home page shows the heading', async ({ homePage }): Promise<void> => {
+    test('SCENARIO: the home page shows the heading', async ({ homePage }): Promise<void> => {
       await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
       await test.step('THEN the home heading is shown', (): Promise<void> => homePage.expectHeading());
@@ -361,7 +361,7 @@ import { test } from './settings.fixture';
 
 test.describe('FEATURE: profile settings', () => {
   test.describe('GIVEN a worker-scoped authenticated session', () => {
-    test('saving the display name shows a confirmation', async ({ settingsPage }): Promise<void> => {
+    test('SCENARIO: saving the display name shows a confirmation', async ({ settingsPage }): Promise<void> => {
       await test.step('GIVEN the profile settings are open', (): Promise<void> => settingsPage.goto());
 
       await test.step('WHEN a new display name is saved', (): Promise<void> => settingsPage.saveDisplayName('Updated Name'));
@@ -386,7 +386,7 @@ import { AUTH_DIR, ROLE_ACCOUNTS } from './common/auth.const';
 import { saveSessionState } from './test/utils/session.spec.util';
 
 for (const account of ROLE_ACCOUNTS) {
-  test(`${account.role} login saves the ${account.role} storage state`, async ({ loginPage, page }): Promise<void> => {
+  test(`SCENARIO: ${account.role} login saves the ${account.role} storage state`, async ({ loginPage, page }): Promise<void> => {
     await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
     await test.step('WHEN credentials are submitted and home opens', (): Promise<void> => loginPage.submitAndWaitForHome(account.credentials));
@@ -426,7 +426,7 @@ import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin panel', () => {
   test.describe('GIVEN an admin session', () => {
-    test('user management enables the remove button', async ({ adminUsersPage }): Promise<void> => {
+    test('SCENARIO: user management enables the remove button', async ({ adminUsersPage }): Promise<void> => {
       await test.step('WHEN user management is opened', (): Promise<void> => adminUsersPage.goto());
 
       await test.step('THEN the remove user button is enabled', (): Promise<void> => adminUsersPage.expectRemoveEnabled());
@@ -497,7 +497,7 @@ import { test } from './role.fixture';
 
 test.describe('FEATURE: admin panel access', () => {
   test.describe('GIVEN saved admin and guest sessions', () => {
-    test('only the admin sees the remove button in user management', async ({ loginAs }): Promise<void> => {
+    test('SCENARIO: only the admin sees the remove button in user management', async ({ loginAs }): Promise<void> => {
       const adminPage = await test.step('GIVEN a page is open as admin', (): Promise<Page> => loginAs('admin'));
       const guestPage = await test.step('AND a page is open as guest', (): Promise<Page> => loginAs('guest'));
       const adminUsers = new AdminUsersPage(adminPage);
@@ -566,7 +566,7 @@ test.describe('FEATURE: oauth login', () => {
       });
     });
 
-    test('signing in with the provider opens the home page', async ({ homePage, loginPage, page }): Promise<void> => {
+    test('SCENARIO: signing in with the provider opens the home page', async ({ homePage, loginPage, page }): Promise<void> => {
       await test.step('AND the login page is open', (): Promise<void> => loginPage.goto());
 
       await test.step('WHEN the provider sign in is started', (): Promise<void> => loginPage.signInWithProvider());
@@ -620,7 +620,7 @@ import { saveSessionState } from './test/utils/session.spec.util';
 
 test.describe('FEATURE: oauth session injection', () => {
   test.describe('GIVEN a test-only session endpoint', () => {
-    test('an api-created session opens the home page without the provider', async ({ homePage, page }): Promise<void> => {
+    test('SCENARIO: an api-created session opens the home page without the provider', async ({ homePage, page }): Promise<void> => {
       const response = await test.step('GIVEN a session is created server-side', (): Promise<APIResponse> => page.request.post('/api/test/create-session', { data: OAUTH_SESSION_STUB }));
 
       await test.step('AND the session endpoint responds ok', (): Promise<void> => expect(response).toBeOK());
@@ -674,7 +674,7 @@ test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: mfa login', () => {
   test.describe('GIVEN a user with totp enabled', () => {
-    test('submitting the current code opens the home page', async ({ homePage, loginPage, mfaPage, page }): Promise<void> => {
+    test('SCENARIO: submitting the current code opens the home page', async ({ homePage, loginPage, mfaPage, page }): Promise<void> => {
       await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
       await test.step('AND credentials are submitted', (): Promise<void> => loginPage.submit(MFA_USER_STUB));
@@ -844,25 +844,25 @@ test.describe('FEATURE: login', () => {
       await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
     });
 
-    test('valid credentials open the home page', async ({ homePage, loginPage }): Promise<void> => {
+    test('SCENARIO: valid credentials open the home page', async ({ homePage, loginPage }): Promise<void> => {
       await test.step('WHEN credentials are submitted and home opens', (): Promise<void> => loginPage.submitAndWaitForHome(USER_STUB));
 
       await test.step('THEN the home heading is shown', (): Promise<void> => homePage.expectHeading());
     });
 
-    test('wrong password shows the error message', async ({ loginPage }): Promise<void> => {
+    test('SCENARIO: wrong password shows the error message', async ({ loginPage }): Promise<void> => {
       await test.step('WHEN a wrong password is submitted', (): Promise<void> => loginPage.submit({ ...USER_STUB, password: 'wrong-password' }));
 
       await test.step('THEN the error names invalid credentials', (): Promise<void> => loginPage.expectError('Invalid username or password'));
     });
 
-    test('empty form reports the username as required', async ({ loginPage }): Promise<void> => {
+    test('SCENARIO: empty form reports the username as required', async ({ loginPage }): Promise<void> => {
       await test.step('WHEN the empty form is submitted', (): Promise<void> => loginPage.submitEmpty());
 
       await test.step('THEN the username field reports required', (): Promise<void> => loginPage.expectFieldError(loginPage.usernameInput, 'Username is required'));
     });
 
-    test('forgot password link opens the reset page', async ({ loginPage, page }): Promise<void> => {
+    test('SCENARIO: forgot password link opens the reset page', async ({ loginPage, page }): Promise<void> => {
       await test.step('WHEN the forgot password link is followed', (): Promise<void> => loginPage.openForgotPassword());
 
       await test.step('THEN the forgot password url is shown', (): Promise<void> => expect(page).toHaveURL('/forgot-password'));
@@ -949,19 +949,19 @@ test.describe('FEATURE: public pages', () => {
   test.describe('GIVEN no stored session', () => {
     test.use({ storageState: EMPTY_STORAGE_STATE });
 
-    test('the landing page shows the welcome heading and log in link', async ({ landingPage }): Promise<void> => {
+    test('SCENARIO: the landing page shows the welcome heading and log in link', async ({ landingPage }): Promise<void> => {
       await test.step('WHEN the landing page is opened', (): Promise<void> => landingPage.goto());
 
       await test.step('THEN the welcome heading and log in link are shown', (): Promise<void> => landingPage.expectWelcome());
     });
 
-    test('a protected route opens the login page with a redirect param', async ({ homePage, page }): Promise<void> => {
+    test('SCENARIO: a protected route opens the login page with a redirect param', async ({ homePage, page }): Promise<void> => {
       await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
       await test.step('THEN the login url carries the redirect target', (): Promise<void> => expect(page).toHaveURL(/\/login.*redirect=%2Fhome/));
     });
 
-    test('signup greets the new user in onboarding', async ({ page, signupPage }): Promise<void> => {
+    test('SCENARIO: signup greets the new user in onboarding', async ({ page, signupPage }): Promise<void> => {
       const signup = buildSignup();
 
       await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
@@ -977,7 +977,7 @@ test.describe('FEATURE: public pages', () => {
   test.describe('GIVEN a stored session', () => {
     test.use({ storageState: SESSION_STATE_PATH });
 
-    test('vanished session cookies report an expired session', async ({ context, homePage, loginPage }): Promise<void> => {
+    test('SCENARIO: vanished session cookies report an expired session', async ({ context, homePage, loginPage }): Promise<void> => {
       await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
       await test.step('WHEN every cookie is cleared', (): Promise<void> => context.clearCookies());
