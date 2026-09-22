@@ -501,10 +501,9 @@ export const PAYMENT_RESULT_STUB: PaymentResult = { success: true, transactionId
 // e2e/checkout/test/mocks/payment.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { PaymentResult } from '../../common/checkout.type';
 import { PAYMENT_RESULT_STUB } from '../stubs/payment.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const paymentMock = (result: PaymentResult = PAYMENT_RESULT_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: result });

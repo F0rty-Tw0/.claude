@@ -274,7 +274,8 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
-import type { RouteHandler, UsernameCheck } from '../../common/signup.type';
+import type { RouteHandler } from '../../../common/playwright.type';
+import type { UsernameCheck } from '../../common/signup.type';
 import { USERNAME_AVAILABLE_STUB } from '../stubs/username-check.stub';
 
 export const slowUsernameCheckMock = (delayMs: number, check: UsernameCheck = USERNAME_AVAILABLE_STUB): RouteHandler => {

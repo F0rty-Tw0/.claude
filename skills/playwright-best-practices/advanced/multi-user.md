@@ -194,10 +194,9 @@ export const BOB_STUB: Identity = { id: 'user-2', name: 'Bob' };
 // e2e/collaboration/test/mocks/me.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { Identity } from '../../common/collaboration.type';
 import { ALICE_STUB } from '../stubs/identity.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const meMock = (identity: Identity = ALICE_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: identity });

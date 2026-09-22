@@ -30,9 +30,8 @@ export type OAuthUser = {
 // e2e/login/test/mocks/oauth.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { OAuthProvider, OAuthUser } from '../../common/login.type';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const oauthCallbackMock = (provider: OAuthProvider): RouteHandler => {
   const headers = { Location: `/auth/success?provider=${provider}` };
@@ -177,10 +176,9 @@ export const SAML_ACS_HEADERS_STUB: ResponseHeaders = {
 // e2e/login/test/mocks/saml.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { OAuthSession, OAuthUser, ResponseHeaders } from '../../common/login.type';
 import { OAUTH_USER_STUB, SAML_ACS_HEADERS_STUB } from '../stubs/saml.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const samlAcsMock = (headers: ResponseHeaders = SAML_ACS_HEADERS_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ headers, status: 302 });
@@ -258,10 +256,9 @@ export const PAYMENT_INTENT_STUB: PaymentIntent = { clientSecret: 'pi_mock_123_s
 // e2e/checkout/test/mocks/payment.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { PaymentConfirmation, PaymentIntent } from '../../common/checkout.type';
 import { PAYMENT_CONFIRMATION_STUB, PAYMENT_INTENT_STUB } from '../stubs/payment.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const confirmPaymentMock = (confirmation: PaymentConfirmation = PAYMENT_CONFIRMATION_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: confirmation });
@@ -289,10 +286,10 @@ export const PAYPAL_ORDER_STUB: PayPalOrder = { orderId: 'PAYPAL-ORDER-123' };
 // e2e/checkout/test/mocks/paypal.mock.ts
 import type { Page, Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { PayPalCapture, PayPalOrder } from '../../common/checkout.type';
 import { PAYPAL_CAPTURE_STUB, PAYPAL_ORDER_STUB } from '../stubs/paypal.stub';
 
-type RouteHandler = (route: Route) => Promise<void>;
 type PayPalApproval = { readonly orderID: string };
 type PayPalButtonOptions = { readonly onApprove: (approval: PayPalApproval) => Promise<void> };
 type PayPalButtons = { readonly isEligible: () => boolean; readonly render: () => Promise<void> };
@@ -591,7 +588,7 @@ export const TRACKER_HOSTS: RegExp = /google-analytics|googletagmanager|facebook
 // e2e/test/mocks/blocked.mock.ts
 import type { Route } from '@playwright/test';
 
-type RouteHandler = (route: Route) => Promise<void>;
+import type { RouteHandler } from '../../common/playwright.type';
 
 export const blockedMock = (): RouteHandler => {
   return (route: Route): Promise<void> => route.abort();

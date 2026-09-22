@@ -522,10 +522,9 @@ A component that fetches on mount needs the route installed before `mount`. The 
 // e2e/user-profile/test/mocks/user.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { User } from '../../common/user-profile.type';
 import { USER_STUB } from '../stubs/user.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const userMock = (user: User = USER_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: user });

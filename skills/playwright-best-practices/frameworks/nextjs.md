@@ -106,7 +106,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
-import type { RouteHandler } from '../../common/dashboard.type';
+import type { RouteHandler } from '../../../common/playwright.type';
 
 export const slowStatsMock = (delayMs: number): RouteHandler => {
   return async (route: Route): Promise<void> => {

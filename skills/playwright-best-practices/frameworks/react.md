@@ -213,7 +213,7 @@ A `useDebounce` hook is observed by counting requests. The mock records each URL
 // e2e/search/test/mocks/search-calls.mock.ts
 import type { Route } from '@playwright/test';
 
-import type { RouteHandler } from '../../common/search.type';
+import type { RouteHandler } from '../../../common/playwright.type';
 
 export const searchCallsMock = (calls: string[]): RouteHandler => {
   return (route: Route): Promise<void> => {
@@ -344,7 +344,8 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
-import type { CreatedAccount, RouteHandler } from '../../common/signup.type';
+import type { RouteHandler } from '../../../common/playwright.type';
+import type { CreatedAccount } from '../../common/signup.type';
 import { CREATED_ACCOUNT_STUB } from '../stubs/signup.stub';
 
 export const slowSignupMock = (delayMs: number, account: CreatedAccount = CREATED_ACCOUNT_STUB): RouteHandler => {
@@ -473,7 +474,7 @@ export const WIDGETS_HEALTHY_STUB: WidgetsBody = { widgets: [chart] };
 // e2e/panel/test/mocks/widgets.mock.ts
 import type { Route } from '@playwright/test';
 
-import type { RouteHandler } from '../../common/panel.type';
+import type { RouteHandler } from '../../../common/playwright.type';
 import { WIDGETS_BROKEN_STUB, WIDGETS_HEALTHY_STUB } from '../stubs/widgets.stub';
 
 export const brokenWidgetsMock = (): RouteHandler => {

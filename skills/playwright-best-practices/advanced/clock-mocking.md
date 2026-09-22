@@ -141,10 +141,9 @@ Freeze now at 14:00 and serve a post created at 12:00, so "2 hours ago" is deter
 // e2e/posts/test/mocks/post.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { Post } from '../../common/post.type';
 import { POST_STUB } from '../stubs/post.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const postMock = (post: Post = POST_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: post });
@@ -345,7 +344,7 @@ A recorded mock counts requests; `expect.poll` retries until the count matches, 
 // e2e/live-data/test/mocks/data.mock.ts
 import type { Request, Route } from '@playwright/test';
 
-type RouteHandler = (route: Route) => Promise<void>;
+import type { RouteHandler } from '../../../common/playwright.type';
 
 type DataBody = {
   readonly value: number;

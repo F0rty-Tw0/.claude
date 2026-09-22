@@ -136,10 +136,9 @@ import { setTimeout } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { User } from '../../common/users.type';
 import { SERVER_ERROR_STUB, USERS_STUB, USER_STUB } from '../stubs/users.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 type UsersMockOptions = {
   readonly delay?: number;

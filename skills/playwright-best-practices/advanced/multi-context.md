@@ -242,10 +242,9 @@ export const DASHBOARD_REDIRECT_STUB: ResponseHeaders = { Location: '/dashboard'
 // e2e/auth/test/mocks/callback-redirect.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { ResponseHeaders } from '../../common/auth.type';
 import { DASHBOARD_REDIRECT_STUB } from '../stubs/callback.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const callbackRedirectMock = (headers: ResponseHeaders = DASHBOARD_REDIRECT_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ headers, status: 302 });

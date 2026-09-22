@@ -27,10 +27,9 @@ export const TEST_HEADERS_STUB: RequestHeaders = { Authorization: 'Bearer test-t
 // e2e/dashboard/test/mocks/auth-header.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { RequestHeaders } from '../../common/dashboard.type';
 import { TEST_HEADERS_STUB } from '../stubs/auth-header.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const authHeaderMock = (extra: RequestHeaders = TEST_HEADERS_STUB): RouteHandler => {
   return (route: Route): Promise<void> => {
@@ -51,9 +50,8 @@ Check the method first; a GET on the same pattern continues untouched. The typed
 // e2e/checkout/test/mocks/order-body.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { OrderRequest } from '../../common/checkout.type';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const orderTestModeMock = (): RouteHandler => {
   return (route: Route): Promise<void> => {
@@ -77,9 +75,8 @@ export const orderTestModeMock = (): RouteHandler => {
 // e2e/products/test/mocks/discount.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { Product } from '../../common/products.type';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 const discounted = (product: Product): Product => {
   const priced: Product = { ...product, price: product.price * 0.9, testMode: true };
@@ -129,9 +126,8 @@ export type GraphQLMock = {
 // e2e/dashboard/test/mocks/graphql.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { GraphQLMock, GraphQLRequest } from '../../common/dashboard.type';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 const matches = (mock: GraphQLMock, body: GraphQLRequest): boolean => {
   const isOperation = mock.operation === body.operationName;
@@ -258,9 +254,8 @@ import type {
   GraphQLResponse,
   OrderItem
 } from '../../common/checkout.type';
+import type { RouteHandler } from '../../../common/playwright.type';
 import { CREATED_ORDER_STUB } from '../stubs/order.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 const addLineTotal = (sum: number, item: OrderItem): number => sum + item.price * item.quantity;
 
@@ -356,10 +351,9 @@ export const SEARCH_RESULT_STUB: SearchResult = { id: 1, title: 'Result' };
 // e2e/search/test/mocks/search.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { SearchRequest, SearchResponse, SearchResult } from '../../common/search.type';
 import { SEARCH_EMPTY_STUB, SEARCH_ERROR_STUB, SEARCH_RESULT_STUB } from '../stubs/search.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const searchMock = (): RouteHandler => {
   return (route: Route): Promise<void> => {
@@ -416,9 +410,8 @@ export const STATUS_UNAVAILABLE_STUB: StatusError = { error: 'Service unavailabl
 // e2e/dashboard/test/mocks/status-retry.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import { STATUS_OK_STUB, STATUS_UNAVAILABLE_STUB } from '../stubs/status.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const statusRetryMock = (failuresBeforeSuccess: number): RouteHandler => {
   let callCount = 0;
@@ -445,10 +438,9 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { DashboardData } from '../../common/dashboard.type';
 import { DASHBOARD_DATA_STUB } from '../stubs/dashboard.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const slowDataMock = (delayMs: number, data: DashboardData = DASHBOARD_DATA_STUB): RouteHandler => {
   return async (route: Route): Promise<void> => {

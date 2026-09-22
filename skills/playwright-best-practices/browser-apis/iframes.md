@@ -478,9 +478,8 @@ export const readWidgetHtml = (): string => {
 // e2e/checkout/test/mocks/widget.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import { readWidgetHtml } from '../utils/widget-fixture.spec.util';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const widgetMock = (body: string = readWidgetHtml()): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ body, contentType: 'text/html' });

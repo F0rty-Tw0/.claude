@@ -253,10 +253,9 @@ export const ANALYTICS_STUB: Analytics = { views: 1000 };
 // e2e/dashboard/test/mocks/analytics.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { Analytics } from '../../common/dashboard.type';
 import { ANALYTICS_STUB } from '../stubs/analytics.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const analyticsMock = (analytics: Analytics = ANALYTICS_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: analytics });
@@ -308,9 +307,8 @@ export const TRACKING_HOSTS: string[] = ['google-analytics', 'facebook', 'hotjar
 // e2e/dashboard/test/mocks/tracking-block.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import { TRACKING_HOSTS } from '../common/dashboard.const';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 const isTrackingUrl = (url: string): boolean => {
   return TRACKING_HOSTS.some((host: string): boolean => url.includes(host));
@@ -345,7 +343,7 @@ A module-level `Map` caches JSON per URL for the life of the worker. First hit f
 // e2e/dashboard/test/mocks/api-cache.mock.ts
 import type { Route } from '@playwright/test';
 
-type RouteHandler = (route: Route) => Promise<void>;
+import type { RouteHandler } from '../../../common/playwright.type';
 
 const apiCache = new Map<string, unknown>();
 

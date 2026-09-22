@@ -266,9 +266,8 @@ export const serviceWorkerSource = (version: string): string => {
 // e2e/pwa/test/mocks/service-worker.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import { serviceWorkerSource } from '../utils/service-worker-source.spec.util';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const serviceWorkerMock = (version: string): RouteHandler => {
   const body = serviceWorkerSource(version);

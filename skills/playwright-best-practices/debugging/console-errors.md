@@ -12,8 +12,6 @@ Every sample lives under `e2e/console/`. A listener registered in a fixture runs
 
 ```ts
 // e2e/console/common/console.type.ts
-import type { Route } from '@playwright/test';
-
 export type ConsoleCapture = {
   readonly errors: string[];
   readonly infos: string[];
@@ -40,8 +38,6 @@ export type ConsoleRecord = {
 export type ConsoleFilter = () => ConsoleRecord[];
 
 export type NoErrorsAssertion = (allowed?: RegExp[]) => void;
-
-export type RouteHandler = (route: Route) => Promise<void>;
 ```
 
 ```ts
@@ -49,7 +45,7 @@ export type RouteHandler = (route: Route) => Promise<void>;
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-import type { RouteHandler } from '../common/console.type';
+import type { RouteHandler } from '../../common/playwright.type';
 
 export class DashboardPage {
   public readonly fallback: Locator;
@@ -345,7 +341,7 @@ React error boundaries catch render errors before they become `pageerror` events
 // e2e/console/test/mocks/data.mock.ts
 import type { Route } from '@playwright/test';
 
-import type { RouteHandler } from '../../common/console.type';
+import type { RouteHandler } from '../../../common/playwright.type';
 import { WIDGET_DATA_NULL_STUB } from '../stubs/data.stub';
 
 export const brokenDataMock = (): RouteHandler => {

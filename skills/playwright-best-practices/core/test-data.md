@@ -409,10 +409,9 @@ export const PRODUCTS_STUB: Product[] = [PRODUCT_STUB];
 // e2e/catalog/test/mocks/products.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { Product } from '../../common/catalog.type';
 import { PRODUCTS_STUB } from '../stubs/product.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const productsMock = (products: Product[] = PRODUCTS_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: products });

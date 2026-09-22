@@ -545,10 +545,9 @@ export const OAUTH_CALLBACK_STUB: OAuthCallback = {
 // e2e/auth/test/mocks/oauth.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { OAuthCallback, ResponseHeaders } from '../../common/auth.type';
 import { OAUTH_CALLBACK_STUB } from '../stubs/oauth.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const oauthCallbackMock = (callback: OAuthCallback = OAUTH_CALLBACK_STUB): RouteHandler => {
   const callbackUrl = new URL(callback.url);

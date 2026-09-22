@@ -123,9 +123,9 @@ export const REFRESHED_SESSION_STUB: SessionBody = { expiresIn: 3600, valid: tru
 
 ```ts
 // e2e/auth/test/common/auth-mock.type.ts
-import type { Request, Route } from '@playwright/test';
+import type { Request } from '@playwright/test';
 
-export type RouteHandler = (route: Route) => Promise<void>;
+import type { RouteHandler } from '../../../common/playwright.type';
 
 export type RecordedMock = {
   readonly calls: Request[];
@@ -169,7 +169,7 @@ The real backend issues the token. A pass-through handler fetches the real respo
 // e2e/auth/test/utils/token-capture.spec.util.ts
 import type { Route } from '@playwright/test';
 
-import type { RouteHandler } from '../common/auth-mock.type';
+import type { RouteHandler } from '../../../common/playwright.type';
 
 type TokenBody = {
   readonly resetToken: string;

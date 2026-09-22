@@ -557,7 +557,7 @@ The cancellation case needs the upload to stay in flight. The mock holds the req
 // e2e/attachments/test/mocks/slow-upload.mock.ts
 import type { Route } from '@playwright/test';
 
-type RouteHandler = (route: Route) => Promise<void>;
+import type { RouteHandler } from '../../../common/playwright.type';
 
 const HOLD_MS = 10_000;
 
@@ -614,9 +614,8 @@ The mock fails the first attempt with a 500 and succeeds afterwards. It exposes 
 // e2e/attachments/test/mocks/flaky-upload.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import { UPLOAD_FAILURE_STUB, UPLOAD_SUCCESS_STUB } from '../stubs/upload.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export type FlakyUpload = {
   readonly attempts: () => number;

@@ -39,7 +39,8 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 | Locator access | Specs never call `page.getBy*` or `page.locator`. Every locator is a page-object or component-object field. |
 | Spec name | `<feature>.test.ts` when the spec, or a fixture, page object, or mock it imports, routes your own origin: `**/api/**`, `**/graphql`, `**/ws/**`, own assets, `routeFromHAR`. `<feature>.e2e.ts` otherwise, including specs that only stub third-party hosts (payment gateway, analytics, OAuth provider). Component specs are `<feature>.test.tsx`. Never `.spec.ts`; that suffix is the artification unit-test name. |
 | Fixtures | One `test.extend` per feature in `<feature>.fixture.ts`. Fixture shape is a named `type <Feature>Fixtures` with `readonly` members. Specs import `test` and `expect` from the fixture file, never from `@playwright/test` when a fixture exists. |
-| Types | `type` never `interface`. Every property `readonly`. Arrays `T[]`. No inline object type literals. Cross-file types in `common/<feature>.type.ts`. |
+| Types | `type` never `interface`. Every property `readonly`. Arrays `T[]`. No inline object type literals. Cross-file types in `common/<feature>.type.ts`; types every feature shares in `e2e/common/playwright.type.ts`. |
+| Shared types | `RouteHandler` is declared once, in `e2e/common/playwright.type.ts`, and imported. A `type RouteHandler = …` in a `.mock.ts` is the same type spelled again; two copies drift the day the signature changes. |
 | Return types | Every function, arrow, and method declares its return type. `test`, hook, fixture, and step callbacks: `async ({ page }): Promise<void> =>` or the value type a step returns. `test.describe` callbacks stay `() => {`, matching `spec-style.md`. |
 | Imports | `import type { Locator, Page } from '@playwright/test';` on its own line above `import { expect, test } from '@playwright/test';`. Groups and members alphabetical. |
 | Quotes | Single quotes. Template literals only with interpolation. |
@@ -59,6 +60,9 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 e2e/
   playwright.config.ts
   playwright.fixture.ts                 mergeTests of every feature fixture
+  common/
+    playwright.type.ts                  types every feature shares, e.g. RouteHandler
+    playwright.const.ts                 BASE_URL, timeouts, shared paths
   <feature>/
     <feature>.e2e.ts                    real backend; third-party hosts may be stubbed
     <feature>.test.ts                   own api, graphql, ws, or assets routed
@@ -266,6 +270,15 @@ export { expect } from '@playwright/test';
 
 ## Test Data and Mocks
 
+Every route mock returns the same handler type, so it is declared once and imported.
+
+```ts
+// e2e/common/playwright.type.ts
+import type { Route } from '@playwright/test';
+
+export type RouteHandler = (route: Route) => Promise<void>;
+```
+
 ```ts
 // e2e/login/test/stubs/user.stub.ts
 import type { Credentials } from '../../common/login.type';
@@ -290,10 +303,9 @@ The mock owns the interception, never the data. It takes the payload as a parame
 // e2e/login/test/mocks/session.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { Session } from '../../common/login.type';
 import { SESSION_STUB } from '../stubs/session.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const sessionMock = (session: Session = SESSION_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: session });
@@ -406,6 +418,7 @@ Stop and re-check this file when reasoning includes:
 - `interface`, `as SomeType`, `any`, or `// ...` inside a sample.
 - An object literal inside `route.fulfill({ json: … })`.
 - A `const <X>_BODY` or any other value declaration inside a `.mock.ts`.
+- `type RouteHandler = (route: Route) => Promise<void>;` declared anywhere but `e2e/common/playwright.type.ts`.
 - A stub declared without a type annotation, or annotated with an inline object type.
 - `page.route` in a spec with the handler written inline.
 - A second mock factory that differs from the first only by its payload.
@@ -437,3 +450,4 @@ Stop and re-check this file when reasoning includes:
 | `sessionMock()` and `sessionExpiredMock()` differing only in body | One `sessionMock(session: Session = SESSION_STUB)`; the expired case passes `SESSION_EXPIRED_STUB`. |
 | `await page.route('**/api/x', (route) => route.fulfill(…))` in a spec | `await page.route('**/api/x', xMock())` inside a `GIVEN` step, or in the fixture. |
 | Mock body typed by inference | Annotate the stub with the response type from `common/<feature>.type.ts`. |
+| `type RouteHandler` redeclared per mock file | Import it from `e2e/common/playwright.type.ts`. |

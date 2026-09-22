@@ -113,10 +113,9 @@ export const DATA_RESPONSE_STUB: DataResponse = { data: 'success' };
 // e2e/dashboard/test/mocks/data.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { DataError, DataResponse } from '../../common/dashboard.type';
 import { DATA_ERROR_STUB, DATA_RESPONSE_STUB } from '../stubs/data.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const dataErrorMock = (status: number): RouteHandler => {
   const body: DataError = { ...DATA_ERROR_STUB, error: `Error ${status}` };
@@ -231,7 +230,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
-type RouteHandler = (route: Route) => Promise<void>;
+import type { RouteHandler } from '../../../common/playwright.type';
 
 export const uploadAbortAfterMock = (delayMs: number): RouteHandler => {
   return async (route: Route): Promise<void> => {
@@ -322,10 +321,9 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { Post } from '../../common/posts.type';
 import { POSTS_EMPTY_STUB, POSTS_STUB } from '../stubs/posts.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const postsDelayedMock = (delayMs: number, posts: Post[] = POSTS_STUB): RouteHandler => {
   return async (route: Route): Promise<void> => {

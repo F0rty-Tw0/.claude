@@ -392,10 +392,9 @@ export const SSE_HEADERS: ResponseHeaders = {
 // e2e/live-data/test/mocks/events.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import { SSE_HEADERS } from '../common/live-data.const';
 import { EVENTS_STUB } from '../stubs/events.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const eventsMock = (events: string[] = EVENTS_STUB): RouteHandler => {
   const body = events.map((event: string): string => `data: ${event}\n\n`).join('');

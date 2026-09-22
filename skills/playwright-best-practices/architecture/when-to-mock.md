@@ -85,7 +85,7 @@ Block third-party scripts that slow tests and add no coverage. The mock aborts; 
 // e2e/checkout/test/mocks/tracking.mock.ts
 import type { Route } from '@playwright/test';
 
-type RouteHandler = (route: Route) => Promise<void>;
+import type { RouteHandler } from '../../../common/playwright.type';
 
 export const trackingBlockMock = (): RouteHandler => {
   return (route: Route): Promise<void> => route.abort();
@@ -133,10 +133,9 @@ export const CHARGE_STUB: Charge = { status: 'completed', transactionId: 'txn_mo
 // e2e/checkout/test/mocks/charge.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { Charge, ChargeError } from '../../common/checkout.type';
 import { CHARGE_DECLINED_STUB, CHARGE_STUB } from '../stubs/charge.stub';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const chargeDeclinedMock = (error: ChargeError = CHARGE_DECLINED_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ json: error, status: 402 });
@@ -191,9 +190,8 @@ Let the real call happen with `route.fetch()`, patch the typed body, and fulfil 
 // e2e/checkout/test/mocks/inventory.mock.ts
 import type { Route } from '@playwright/test';
 
+import type { RouteHandler } from '../../../common/playwright.type';
 import type { Inventory } from '../../common/checkout.type';
-
-type RouteHandler = (route: Route) => Promise<void>;
 
 export const lowStockMock = (): RouteHandler => {
   return async (route: Route): Promise<void> => {
