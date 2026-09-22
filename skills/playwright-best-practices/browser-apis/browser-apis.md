@@ -76,7 +76,7 @@ test.describe('FEATURE: store finder', () => {
       await test.step('AND the store finder is open', (): Promise<void> => storeFinderPage.goto());
     });
 
-    test('a location change shows the new position in the tracker', async ({ setLocation, storeFinderPage }): Promise<void> => {
+    test('SCENARIO: a location change shows the new position in the tracker', async ({ setLocation, storeFinderPage }): Promise<void> => {
       await test.step('GIVEN tracking is started', (): Promise<void> => storeFinderPage.startTracking());
 
       await test.step('AND the tracker shows the initial latitude', (): Promise<void> => storeFinderPage.expectLocation('37.7749'));
@@ -92,7 +92,7 @@ test.describe('FEATURE: store finder', () => {
   test.describe('GIVEN geolocation is denied', () => {
     test.use({ permissions: [] });
 
-    test('requesting nearby stores shows the ZIP fallback', async ({ storeFinderPage }): Promise<void> => {
+    test('SCENARIO: requesting nearby stores shows the ZIP fallback', async ({ storeFinderPage }): Promise<void> => {
       await test.step('GIVEN the store finder is open', (): Promise<void> => storeFinderPage.goto());
 
       await test.step('WHEN nearby stores are requested', (): Promise<void> => storeFinderPage.findNearby());
@@ -155,7 +155,7 @@ test.describe('FEATURE: alert permissions', () => {
       await test.step('AND the alerts page is open', (): Promise<void> => alertsPage.goto());
     });
 
-    test('querying the permissions API reports notifications granted', async ({ page }): Promise<void> => {
+    test('SCENARIO: querying the permissions API reports notifications granted', async ({ page }): Promise<void> => {
       const state = await test.step('WHEN the notifications permission is queried', (): Promise<PermissionState> => permissionState(page, 'notifications'));
 
       await test.step('THEN the state is granted', (): void => expect(state).toBe('granted'));
@@ -165,7 +165,7 @@ test.describe('FEATURE: alert permissions', () => {
   test.describe('GIVEN notifications are denied', () => {
     test.use({ permissions: [] });
 
-    test('enabling notifications shows the permission hint', async ({ alertsPage }): Promise<void> => {
+    test('SCENARIO: enabling notifications shows the permission hint', async ({ alertsPage }): Promise<void> => {
       await test.step('GIVEN the alerts page is open', (): Promise<void> => alertsPage.goto());
 
       await test.step('WHEN notifications are enabled', (): Promise<void> => alertsPage.enableNotifications());
@@ -235,7 +235,7 @@ test.describe('FEATURE: share', () => {
       await test.step('GIVEN the share page is open', (): Promise<void> => sharePage.goto());
     });
 
-    test('clicking the copy button puts the share link on the clipboard', async ({ clipboard, sharePage }): Promise<void> => {
+    test('SCENARIO: clicking the copy button puts the share link on the clipboard', async ({ clipboard, sharePage }): Promise<void> => {
       await test.step('WHEN the link is copied', (): Promise<void> => sharePage.copyLink());
 
       const link = await test.step('AND the clipboard is read', (): Promise<string> => clipboard.read());
@@ -243,7 +243,7 @@ test.describe('FEATURE: share', () => {
       await test.step('THEN the clipboard holds a share url', (): void => expect(link).toContain('https://example.com/share/'));
     });
 
-    test('pasting clipboard text shows it in the note', async ({ clipboard, sharePage }): Promise<void> => {
+    test('SCENARIO: pasting clipboard text shows it in the note', async ({ clipboard, sharePage }): Promise<void> => {
       await test.step('GIVEN text is on the clipboard', (): Promise<void> => clipboard.write('Pasted content'));
 
       await test.step('WHEN the text is pasted into the note', (): Promise<void> => sharePage.pasteIntoNote());
@@ -362,7 +362,7 @@ test.describe('FEATURE: alerts', () => {
       await test.step('GIVEN the alerts page is open', (): Promise<void> => alertsPage.goto());
     });
 
-    test('clicking Notify Me creates one notification titled New Alert', async ({ alertsPage, fakeNotification }): Promise<void> => {
+    test('SCENARIO: clicking Notify Me creates one notification titled New Alert', async ({ alertsPage, fakeNotification }): Promise<void> => {
       await test.step('WHEN Notify Me is clicked', (): Promise<void> => alertsPage.notifyMe());
 
       const created = await test.step('AND the created notifications are read', (): Promise<NotificationRecord[]> => fakeNotification.created());
@@ -370,7 +370,7 @@ test.describe('FEATURE: alerts', () => {
       await test.step('THEN one notification titled New Alert exists', (): void => expect(created).toEqual([{ title: 'New Alert' }]));
     });
 
-    test('clicking a notification opens the messages page', async ({ fakeNotification, page }): Promise<void> => {
+    test('SCENARIO: clicking a notification opens the messages page', async ({ fakeNotification, page }): Promise<void> => {
       await test.step('WHEN a New Message notification is raised and clicked', (): Promise<void> => fakeNotification.raise('New Message'));
 
       await test.step('THEN the messages page is shown', (): Promise<void> => expect(page).toHaveURL(/\/messages/));
@@ -466,7 +466,7 @@ const cameraDenied: MediaDevicesConfig = { ...MEDIA_DEVICES_STUB, error: 'NotAll
 
 test.describe('FEATURE: video call', () => {
   test.describe('GIVEN one camera is available', () => {
-    test('starting the camera shows the preview', async ({ videoCallPage }): Promise<void> => {
+    test('SCENARIO: starting the camera shows the preview', async ({ videoCallPage }): Promise<void> => {
       await test.step('GIVEN the video settings are open', (): Promise<void> => videoCallPage.goto('/video-settings'));
 
       await test.step('WHEN the camera is started', (): Promise<void> => videoCallPage.startCamera());
@@ -478,7 +478,7 @@ test.describe('FEATURE: video call', () => {
   test.describe('GIVEN camera access is denied', () => {
     test.use({ mediaDevices: cameraDenied });
 
-    test('joining the call offers the audio-only fallback', async ({ videoCallPage }): Promise<void> => {
+    test('SCENARIO: joining the call offers the audio-only fallback', async ({ videoCallPage }): Promise<void> => {
       await test.step('GIVEN the video call is open', (): Promise<void> => videoCallPage.goto('/video-call'));
 
       await test.step('WHEN the call is joined', (): Promise<void> => videoCallPage.joinCall());

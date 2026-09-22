@@ -321,7 +321,7 @@ import { test } from './gallery.fixture';
 
 test.describe('FEATURE: gallery', () => {
   test.describe('GIVEN a desktop project', () => {
-    test('hovered image shows the caption', async ({ galleryPage }, testInfo): Promise<void> => {
+    test('SCENARIO: hovered image shows the caption', async ({ galleryPage }, testInfo): Promise<void> => {
       const metadata: ProjectMetadata = testInfo.project.metadata;
 
       test.skip(metadata.platform !== 'desktop', 'Hover needs a pointer');

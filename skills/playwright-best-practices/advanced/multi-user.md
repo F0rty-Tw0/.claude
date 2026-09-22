@@ -78,7 +78,7 @@ import { DocumentPage } from './pages/document.page';
 
 test.describe('FEATURE: shared document', () => {
   test.describe('GIVEN two users on the same document', () => {
-    test('text typed by one user is seen by the other', async ({ openUser }): Promise<void> => {
+    test('SCENARIO: text typed by one user is seen by the other', async ({ openUser }): Promise<void> => {
       const pageA = await test.step('GIVEN a browser is open for user A', (): Promise<Page> => openUser());
       const pageB = await test.step('AND a browser is open for user B', (): Promise<Page> => openUser());
       const documentA = new DocumentPage(pageA);
@@ -114,7 +114,7 @@ const MEMBER_STATE = `${AUTH_DIR}/member.json`;
 
 test.describe('FEATURE: support tickets', () => {
   test.describe('GIVEN an admin session and a member session', () => {
-    test('an admin reply reaches the member who asked', async ({ openUser }): Promise<void> => {
+    test('SCENARIO: an admin reply reaches the member who asked', async ({ openUser }): Promise<void> => {
       const adminPage = await test.step('GIVEN a browser is open as admin', (): Promise<Page> => openUser(ADMIN_STATE));
       const memberPage = await test.step('AND a browser is open as member', (): Promise<Page> => openUser(MEMBER_STATE));
       const tickets = new TicketsPage(adminPage);
@@ -128,7 +128,7 @@ test.describe('FEATURE: support tickets', () => {
 
       await test.step('THEN the admin sees the request', (): Promise<void> => tickets.expectTicket('Need help!'));
 
-      await test.step('WHEN the admin replies', (): Promise<void> => tickets.reply('How can I help?'));
+      await test.step('AND the admin replies', (): Promise<void> => tickets.reply('How can I help?'));
 
       await test.step('THEN the member sees the reply', (): Promise<void> => support.expectReply('How can I help?'));
     });
@@ -151,7 +151,7 @@ import { EditorPage } from './pages/editor.page';
 
 test.describe('FEATURE: collaborative editing', () => {
   test.describe('GIVEN two users in the same editor', () => {
-    test('typing at different ends shows both users the combined text', async ({ openUser }): Promise<void> => {
+    test('SCENARIO: typing at different ends shows both users the combined text', async ({ openUser }): Promise<void> => {
       const pageOne = await test.step('GIVEN a browser is open for user 1', (): Promise<Page> => openUser());
       const pageTwo = await test.step('AND a browser is open for user 2', (): Promise<Page> => openUser());
       const editorOne = new EditorPage(pageOne);
@@ -214,7 +214,7 @@ import { ALICE_STUB, BOB_STUB } from './test/stubs/identity.stub';
 
 test.describe('FEATURE: cursor presence', () => {
   test.describe('GIVEN Alice and Bob on the same whiteboard', () => {
-    test('a cursor moved by Alice shows Bob her name', async ({ openUser }): Promise<void> => {
+    test('SCENARIO: a cursor moved by Alice shows Bob her name', async ({ openUser }): Promise<void> => {
       const alicePage = await test.step('GIVEN a browser is open for Alice', (): Promise<Page> => openUser());
       const bobPage = await test.step('AND a browser is open for Bob', (): Promise<Page> => openUser());
       const aliceBoard = new WhiteboardPage(alicePage);
@@ -276,7 +276,7 @@ import { DocumentAccessPage } from './pages/document-access.page';
 test.describe('FEATURE: document access by role', () => {
   test.describe('GIVEN a saved session for every role', () => {
     for (const permissions of ROLE_PERMISSIONS) {
-      test(`the ${permissions.role} sees the controls that match the role`, async ({ openUser }): Promise<void> => {
+      test(`SCENARIO: the ${permissions.role} sees the controls that match the role`, async ({ openUser }): Promise<void> => {
         const page = await test.step(`GIVEN a browser is open as ${permissions.role}`, (): Promise<Page> => openUser(`${AUTH_DIR}/${permissions.role}.json`));
         const documentPage = new DocumentAccessPage(page);
 
@@ -309,7 +309,7 @@ const MEMBER_STATE = `${AUTH_DIR}/member.json`;
 
 test.describe('FEATURE: admin route protection', () => {
   test.describe('GIVEN a member session', () => {
-    test('opening the admin users route directly is denied', async ({ openUser }): Promise<void> => {
+    test('SCENARIO: opening the admin users route directly is denied', async ({ openUser }): Promise<void> => {
       const page = await test.step('GIVEN a browser is open as member', (): Promise<Page> => openUser(MEMBER_STATE));
       const adminUsers = new AdminUsersPage(page);
 
@@ -352,7 +352,7 @@ import { countConflicts } from './test/utils/conflict.spec.util';
 
 test.describe('FEATURE: concurrent item edit', () => {
   test.describe('GIVEN two users on the same item', () => {
-    test('saving at once gives exactly one user a conflict', async ({ openUser }): Promise<void> => {
+    test('SCENARIO: saving at once gives exactly one user a conflict', async ({ openUser }): Promise<void> => {
       const pageOne = await test.step('GIVEN a browser is open for user 1', (): Promise<Page> => openUser());
       const pageTwo = await test.step('AND a browser is open for user 2', (): Promise<Page> => openUser());
       const itemOne = new ItemPage(pageOne);
@@ -441,7 +441,7 @@ import { RecordPage } from './pages/record.page';
 
 test.describe('FEATURE: optimistic locking', () => {
   test.describe('GIVEN two users holding the same record version', () => {
-    test('a save on a stale version is rejected', async ({ openUser }): Promise<void> => {
+    test('SCENARIO: a save on a stale version is rejected', async ({ openUser }): Promise<void> => {
       const pageOne = await test.step('GIVEN a browser is open for user 1', (): Promise<Page> => openUser());
       const pageTwo = await test.step('AND a browser is open for user 2', (): Promise<Page> => openUser());
       const recordOne = new RecordPage(pageOne);
@@ -457,7 +457,7 @@ test.describe('FEATURE: optimistic locking', () => {
 
       await test.step('THEN user 1 sees saved', (): Promise<void> => recordOne.expectSaved());
 
-      await test.step('WHEN user 2 edits', (): Promise<void> => recordTwo.edit());
+      await test.step('AND user 2 edits', (): Promise<void> => recordTwo.edit());
 
       await test.step('AND user 2 saves the stale version', (): Promise<void> => recordTwo.save('Updated by User 2'));
 
@@ -482,7 +482,7 @@ import { ALICE_STUB, BOB_STUB } from './test/stubs/identity.stub';
 
 test.describe('FEATURE: chat room', () => {
   test.describe('GIVEN Alice and Bob in the same room', () => {
-    test('a sent message reaches the other user with the sender name', async ({ openUser }): Promise<void> => {
+    test('SCENARIO: a sent message reaches the other user with the sender name', async ({ openUser }): Promise<void> => {
       const alicePage = await test.step('GIVEN a browser is open for Alice', (): Promise<Page> => openUser());
       const bobPage = await test.step('AND a browser is open for Bob', (): Promise<Page> => openUser());
       const aliceChat = new ChatPage(alicePage);
@@ -504,7 +504,7 @@ test.describe('FEATURE: chat room', () => {
 
       await test.step('THEN Bob sees the message', (): Promise<void> => bobChat.expectMessage('Alice: Hi Bob!'));
 
-      await test.step('WHEN Bob replies', (): Promise<void> => bobChat.send('Hey Alice!'));
+      await test.step('AND Bob replies', (): Promise<void> => bobChat.send('Hey Alice!'));
 
       await test.step('THEN Alice sees the reply', (): Promise<void> => aliceChat.expectMessage('Bob: Hey Alice!'));
     });

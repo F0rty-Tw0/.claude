@@ -217,7 +217,7 @@ test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: password reset', () => {
   test.describe('GIVEN the forgot-password endpoint is passed through with token capture', () => {
-    test('requesting and following the reset link updates the password', async ({ forgotPasswordPage, page, resetPasswordPage }): Promise<void> => {
+    test('SCENARIO: requesting and following the reset link updates the password', async ({ forgotPasswordPage, page, resetPasswordPage }): Promise<void> => {
       const capture = tokenCapture('resetToken');
 
       await test.step('GIVEN the forgot-password response token is captured', async (): Promise<void> => {
@@ -232,7 +232,7 @@ test.describe('FEATURE: password reset', () => {
 
       const token = await test.step('AND the captured token is read', (): Promise<string> => capture.token);
 
-      await test.step('WHEN the reset link is opened', (): Promise<void> => resetPasswordPage.goto(token));
+      await test.step('AND the reset link is opened', (): Promise<void> => resetPasswordPage.goto(token));
 
       await test.step('AND the new password is submitted', (): Promise<void> => resetPasswordPage.submit(NEW_PASSWORD));
 
@@ -293,7 +293,7 @@ test.describe('FEATURE: session timeout', () => {
       await test.step('AND the user is logged in on home', (): Promise<void> => loginPage.submitAndWaitForHome(TEST_USER));
     });
 
-    test('a missing session cookie redirects a protected route to login', async ({ context, loginPage, page, profilePage }): Promise<void> => {
+    test('SCENARIO: a missing session cookie redirects a protected route to login', async ({ context, loginPage, page, profilePage }): Promise<void> => {
       await test.step('WHEN the session cookie is removed', (): Promise<void> => clearSessionCookie(context));
 
       await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
@@ -321,7 +321,7 @@ test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: session extension', () => {
   test.describe('GIVEN the session expires in 60 seconds', () => {
-    test('extend calls the refresh endpoint and hides the warning', async ({ homePage, page }): Promise<void> => {
+    test('SCENARIO: extend calls the refresh endpoint and hides the warning', async ({ homePage, page }): Promise<void> => {
       const refresh = refreshMock();
 
       await test.step('GIVEN the session endpoint is mocked', async (): Promise<void> => {
@@ -390,7 +390,7 @@ const REMEMBERED_STATE_PATH = `${AUTH_DIR}/remembered.json`;
 
 test.describe('FEATURE: remember me', () => {
   test.describe('GIVEN a login with keep me signed in checked', () => {
-    test('a fresh browser from the saved state opens home without login', async ({ browser }): Promise<void> => {
+    test('SCENARIO: a fresh browser from the saved state opens home without login', async ({ browser }): Promise<void> => {
       await test.step('GIVEN a login with remember me saved the state', (): Promise<void> => loginWithRememberMe(browser, REMEMBERED_STATE_PATH));
 
       const page = await test.step('WHEN a fresh browser starts from the saved state', (): Promise<Page> => openPageWithState(browser, REMEMBERED_STATE_PATH));
@@ -426,7 +426,7 @@ test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: logout', () => {
   test.describe('GIVEN a logged-in user', () => {
-    test('sign out clears the session', async ({ context, homePage, page }): Promise<void> => {
+    test('SCENARIO: sign out clears the session', async ({ context, homePage, page }): Promise<void> => {
       await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
       await test.step('WHEN sign out is clicked in the account menu', (): Promise<void> => homePage.signOut());
@@ -437,7 +437,7 @@ test.describe('FEATURE: logout', () => {
 
       await test.step('AND no session cookies remain', (): void => expect(cookies).toHaveLength(0));
 
-      await test.step('WHEN the home page is opened again', (): Promise<void> => homePage.goto());
+      await test.step('AND the home page is opened again', (): Promise<void> => homePage.goto());
 
       await test.step('THEN home redirects to login', (): Promise<void> => expect(page).toHaveURL(/\/login/));
     });

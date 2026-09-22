@@ -92,13 +92,13 @@ import { createProduct, deleteProduct, listProducts } from './test/utils/product
 
 test.describe('FEATURE: products API', () => {
   test.describe('GIVEN a manager token', () => {
-    test('posting a valid product returns 201', async ({ managerToken, request }): Promise<void> => {
+    test('SCENARIO: posting a valid product returns 201', async ({ managerToken, request }): Promise<void> => {
       const response = await test.step('WHEN the product is posted', (): Promise<APIResponse> => createProduct(request, managerToken, PRODUCT_STUB));
 
       await test.step('THEN the status is 201', (): void => expect(response.status()).toBe(201));
     });
 
-    test('posting the same sku twice returns 409', async ({ managerToken, request }): Promise<void> => {
+    test('SCENARIO: posting the same sku twice returns 409', async ({ managerToken, request }): Promise<void> => {
       await test.step('GIVEN the product is posted', (): Promise<APIResponse> => createProduct(request, managerToken, PRODUCT_STUB));
 
       const response = await test.step('WHEN the same sku is posted again', (): Promise<APIResponse> => createProduct(request, managerToken, PRODUCT_STUB));
@@ -106,13 +106,13 @@ test.describe('FEATURE: products API', () => {
       await test.step('THEN the status is 409', (): void => expect(response.status()).toBe(409));
     });
 
-    test('a missing sku returns 422', async ({ managerToken, request }): Promise<void> => {
+    test('SCENARIO: a missing sku returns 422', async ({ managerToken, request }): Promise<void> => {
       const response = await test.step('WHEN a product without a sku is posted', (): Promise<APIResponse> => createProduct(request, managerToken, { name: 'Incomplete' }));
 
       await test.step('THEN the status is 422', (): void => expect(response.status()).toBe(422));
     });
 
-    test('listing the first page returns at most twenty items', async ({ managerToken, request }): Promise<void> => {
+    test('SCENARIO: listing the first page returns at most twenty items', async ({ managerToken, request }): Promise<void> => {
       const response = await test.step('WHEN the first page is listed', (): Promise<APIResponse> => listProducts(request, managerToken, { limit: '20', page: '1' }));
 
       const body = await test.step('AND the body is read', (): Promise<ProductPage> => response.json());
@@ -122,7 +122,7 @@ test.describe('FEATURE: products API', () => {
   });
 
   test.describe('GIVEN a staff token', () => {
-    test('deleting a product returns 403', async ({ request }): Promise<void> => {
+    test('SCENARIO: deleting a product returns 403', async ({ request }): Promise<void> => {
       const staffToken = await test.step('GIVEN a staff token is requested', (): Promise<string> => requestToken(request, STAFF_STUB));
 
       const response = await test.step('WHEN a product is deleted', (): Promise<APIResponse> => deleteProduct(request, staffToken, '123'));
@@ -188,7 +188,7 @@ import { mountContactForm, recordInto } from './test/utils/mount.spec.util';
 
 test.describe('FEATURE: contact form', () => {
   test.describe('GIVEN an empty form', () => {
-    test('submitting shows both required-field errors', async ({ mount }): Promise<void> => {
+    test('SCENARIO: submitting shows both required-field errors', async ({ mount }): Promise<void> => {
       const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormComponent> => mountContactForm(mount));
 
       await test.step('WHEN the empty form is submitted', (): Promise<void> => form.submit());
@@ -196,7 +196,7 @@ test.describe('FEATURE: contact form', () => {
       await test.step('THEN the name and email errors are shown', (): Promise<void> => form.expectErrors(['Name is required', 'Email is required']));
     });
 
-    test('submitting a malformed email shows the email error', async ({ mount }): Promise<void> => {
+    test('SCENARIO: submitting a malformed email shows the email error', async ({ mount }): Promise<void> => {
       const message: ContactMessage = { ...MESSAGE_STUB, email: 'invalid-email' };
       const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormComponent> => mountContactForm(mount));
 
@@ -205,7 +205,7 @@ test.describe('FEATURE: contact form', () => {
       await test.step('THEN the email error is shown', (): Promise<void> => form.expectErrors(['Enter a valid email']));
     });
 
-    test('submitting valid data calls onSubmit once', async ({ mount }): Promise<void> => {
+    test('SCENARIO: submitting valid data calls onSubmit once', async ({ mount }): Promise<void> => {
       const submissions: ContactMessage[] = [];
       const form = await test.step('GIVEN the form is mounted with a recording handler', (): Promise<ContactFormComponent> => mountContactForm(mount, recordInto(submissions)));
 
@@ -216,7 +216,7 @@ test.describe('FEATURE: contact form', () => {
   });
 
   test.describe('GIVEN a form that is submitting', () => {
-    test('rendering disables the send button', async ({ mount }): Promise<void> => {
+    test('SCENARIO: rendering disables the send button', async ({ mount }): Promise<void> => {
       const form = await test.step('WHEN the submitting form is mounted', (): Promise<ContactFormComponent> => mountContactForm(mount, noop, true));
 
       await test.step('THEN the send button is disabled', (): Promise<void> => form.expectSubmitting());
@@ -292,7 +292,7 @@ test.describe('FEATURE: subscription upgrade', () => {
       await test.step('AND the upgrade page is open', (): Promise<void> => upgradePage.goto());
     });
 
-    test('purchasing the premium plan shows the subscription number on the welcome page', async ({ successPage, upgradePage }): Promise<void> => {
+    test('SCENARIO: purchasing the premium plan shows the subscription number on the welcome page', async ({ successPage, upgradePage }): Promise<void> => {
       await test.step('WHEN the premium plan is selected', (): Promise<void> => upgradePage.selectPlan('Premium'));
 
       await test.step('AND the billing details are entered', (): Promise<void> => upgradePage.fillBilling(BILLING_STUB));

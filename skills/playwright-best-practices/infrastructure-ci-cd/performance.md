@@ -39,13 +39,13 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('FEATURE: onboarding', () => {
   test.describe('GIVEN a new account', () => {
-    test('completed profile opens the plan step', async ({ onboardingPage }): Promise<void> => {
+    test('SCENARIO: completed profile opens the plan step', async ({ onboardingPage }): Promise<void> => {
       await test.step('WHEN the profile is filled in', (): Promise<void> => onboardingPage.completeProfile(PROFILE_STUB));
 
       await test.step('THEN plan step is shown', (): Promise<void> => onboardingPage.expectStep('plan'));
     });
 
-    test('picked plan opens the summary step', async ({ onboardingPage }): Promise<void> => {
+    test('SCENARIO: picked plan opens the summary step', async ({ onboardingPage }): Promise<void> => {
       await test.step('WHEN the free plan is picked', (): Promise<void> => onboardingPage.pickPlan('free'));
 
       await test.step('THEN summary step is shown', (): Promise<void> => onboardingPage.expectStep('summary'));
@@ -179,11 +179,11 @@ test.describe('FEATURE: dashboard', () => {
       await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
     });
 
-    test('page load shows the stats panel', async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: page load shows the stats panel', async ({ dashboardPage }): Promise<void> => {
       await test.step('THEN stats panel is visible', (): Promise<void> => dashboardPage.expectStatsVisible());
     });
 
-    test('page load shows the chart', async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: page load shows the chart', async ({ dashboardPage }): Promise<void> => {
       await test.step('THEN chart is visible', (): Promise<void> => dashboardPage.expectChartVisible());
     });
   });
@@ -219,7 +219,7 @@ import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin panel', () => {
   test.describe('GIVEN an admin user', () => {
-    test('opened admin panel shows the user list', async ({ adminPage }): Promise<void> => {
+    test('SCENARIO: opened admin panel shows the user list', async ({ adminPage }): Promise<void> => {
       test.skip(!ADMIN_ENABLED, 'admin features disabled in this environment');
 
       await test.step('WHEN the admin panel is opened', (): Promise<void> => adminPage.goto());
@@ -234,7 +234,7 @@ test.describe('FEATURE: admin panel', () => {
 |---|---|
 | `test.skip(condition, reason)` | Skip when the environment lacks the feature |
 | `test.fixme(condition, reason)` | Known broken; skipped but tracked in the report |
-| `test.fixme('<scenario>', body)` | Declaration form for a test that is not ready |
+| `test.fixme('SCENARIO: <flow>', body)` | Declaration form for a test that is not ready |
 
 ## Network Optimization
 
@@ -514,13 +514,13 @@ import { annotateLoadTime } from './test/utils/annotate.spec.util';
 
 test.describe('FEATURE: home page performance', () => {
   test.describe('GIVEN a cold visitor', () => {
-    test('home page load time is recorded on the report', async ({ homePage }, testInfo): Promise<void> => {
+    test('SCENARIO: home page load time is recorded on the report', async ({ homePage }, testInfo): Promise<void> => {
       const loadTime = await test.step('GIVEN the home page is opened and timed', (): Promise<number> => homePage.gotoTimed());
 
       await test.step('WHEN the load time is recorded on the report', (): void => annotateLoadTime(testInfo, loadTime));
     });
 
-    test('home page loads under three seconds', async ({ homePage }): Promise<void> => {
+    test('SCENARIO: home page loads under three seconds', async ({ homePage }): Promise<void> => {
       await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
       const metrics = await test.step('WHEN navigation timing is read', (): Promise<PageMetrics> => homePage.metrics());
@@ -572,7 +572,7 @@ import { auditHome } from './test/utils/lighthouse.spec.util';
 
 test.describe('FEATURE: home page lighthouse audit', () => {
   test.describe('GIVEN a cold visitor', () => {
-    test('home page audit scores at least 80', async ({ homePage, page }): Promise<void> => {
+    test('SCENARIO: home page audit scores at least 80', async ({ homePage, page }): Promise<void> => {
       await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
       const score = await test.step('WHEN the lighthouse audit is run', (): Promise<number> => auditHome(page));

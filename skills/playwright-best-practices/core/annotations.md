@@ -37,13 +37,13 @@ import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: payments', () => {
   test.describe('GIVEN a saved card', () => {
-    test.skip('charging the card lists the amount on the receipt', async ({ paymentsPage }): Promise<void> => {
+    test.skip('SCENARIO: charging the card lists the amount on the receipt', async ({ paymentsPage }): Promise<void> => {
       await test.step('WHEN the card is charged', (): Promise<void> => paymentsPage.charge(CARD_STUB));
 
       await test.step('THEN the receipt shows the amount', (): Promise<void> => paymentsPage.expectReceiptAmount(CARD_STUB.amount));
     });
 
-    test('requesting a refund restores the balance', async ({ paymentsPage }): Promise<void> => {
+    test('SCENARIO: requesting a refund restores the balance', async ({ paymentsPage }): Promise<void> => {
       test.skip(true, 'Payment gateway in maintenance');
 
       await test.step('WHEN a refund is requested', (): Promise<void> => paymentsPage.refund(CARD_STUB));
@@ -65,7 +65,7 @@ import { test } from './media.fixture';
 
 test.describe('FEATURE: media playback', () => {
   test.describe('GIVEN a signed-in viewer', () => {
-    test('the codec page renders the player', async ({ browserName, mediaPage }): Promise<void> => {
+    test('SCENARIO: the codec page renders the player', async ({ browserName, mediaPage }): Promise<void> => {
       test.skip(browserName !== 'webkit', 'Codec only ships in WebKit');
 
       await test.step('WHEN the codec page is opened', (): Promise<void> => mediaPage.gotoCodec());
@@ -73,7 +73,7 @@ test.describe('FEATURE: media playback', () => {
       await test.step('THEN the player is visible', (): Promise<void> => mediaPage.expectPlayerVisible());
     });
 
-    test('the CDN page plays the production stream', async ({ mediaPage }): Promise<void> => {
+    test('SCENARIO: the CDN page plays the production stream', async ({ mediaPage }): Promise<void> => {
       test.skip(TARGET_ENV !== 'production', 'Only runs against production');
 
       await test.step('WHEN the CDN page is opened', (): Promise<void> => mediaPage.gotoCdn());
@@ -107,13 +107,13 @@ test.describe('FEATURE: admin', () => {
   test.skip(({ browserName }): boolean => browserName === 'firefox', 'Firefox admin bug');
 
   test.describe('GIVEN an admin session', () => {
-    test('the dashboard shows the metrics panel', async ({ adminPage }): Promise<void> => {
+    test('SCENARIO: the dashboard shows the metrics panel', async ({ adminPage }): Promise<void> => {
       await test.step('WHEN the dashboard is opened', (): Promise<void> => adminPage.gotoDashboard());
 
       await test.step('THEN the metrics panel is visible', (): Promise<void> => adminPage.expectMetricsVisible());
     });
 
-    test('settings list the audit log', async ({ adminPage }): Promise<void> => {
+    test('SCENARIO: settings list the audit log', async ({ adminPage }): Promise<void> => {
       await test.step('WHEN settings are opened', (): Promise<void> => adminPage.gotoSettings());
 
       await test.step('THEN the audit log is listed', (): Promise<void> => adminPage.expectAuditLogVisible());
@@ -135,13 +135,13 @@ import { test } from './reports.fixture';
 
 test.describe('FEATURE: reports', () => {
   test.describe('GIVEN a generated report', () => {
-    test.fixme('exporting the report downloads the CSV', async ({ reportsPage }): Promise<void> => {
+    test.fixme('SCENARIO: exporting the report downloads the CSV', async ({ reportsPage }): Promise<void> => {
       await test.step('WHEN the report is exported', (): Promise<void> => reportsPage.exportCsv());
 
       await test.step('THEN the download completes', (): Promise<void> => reportsPage.expectDownloadComplete());
     });
 
-    test('the chart page renders the chart', async ({ reportsPage }): Promise<void> => {
+    test('SCENARIO: the chart page renders the chart', async ({ reportsPage }): Promise<void> => {
       test.fixme(IS_CI, 'Investigate CI flakiness - ticket #123');
 
       await test.step('WHEN the chart page is opened', (): Promise<void> => reportsPage.gotoChart());
@@ -162,7 +162,7 @@ import { test } from './render.fixture';
 
 test.describe('FEATURE: render', () => {
   test.describe('GIVEN the buggy page', () => {
-    test('the buggy page reports a working status', async ({ renderPage }): Promise<void> => {
+    test('SCENARIO: the buggy page reports a working status', async ({ renderPage }): Promise<void> => {
       test.fail();
 
       await test.step('WHEN the buggy page is opened', (): Promise<void> => renderPage.gotoBuggy());
@@ -170,7 +170,7 @@ test.describe('FEATURE: render', () => {
       await test.step('THEN the status text reads working', (): Promise<void> => renderPage.expectStatus('Working'));
     });
 
-    test('the layout page renders the box 100px wide', async ({ browserName, renderPage }): Promise<void> => {
+    test('SCENARIO: the layout page renders the box 100px wide', async ({ browserName, renderPage }): Promise<void> => {
       test.fail(browserName === 'webkit', 'WebKit rendering bug #456');
 
       await test.step('WHEN the layout page is opened', (): Promise<void> => renderPage.gotoLayout());
@@ -207,7 +207,7 @@ test.describe('FEATURE: data import', () => {
       await test.step('GIVEN the import page is open', (): Promise<void> => importPage.goto());
     });
 
-    test('importing a large file shows the completion banner', async ({ importPage }): Promise<void> => {
+    test('SCENARIO: importing a large file shows the completion banner', async ({ importPage }): Promise<void> => {
       test.slow();
 
       await test.step('WHEN the file is uploaded and imported', (): Promise<void> => importPage.importFile(LARGE_CSV));
@@ -215,7 +215,7 @@ test.describe('FEATURE: data import', () => {
       await test.step('THEN the completion banner is visible', (): Promise<void> => importPage.expectImportComplete());
     });
 
-    test('processing a video shows the preview', async ({ browserName, importPage }): Promise<void> => {
+    test('SCENARIO: processing a video shows the preview', async ({ browserName, importPage }): Promise<void> => {
       test.slow(browserName === 'webkit', 'WebKit video processing is slow');
 
       await test.step('WHEN the sample video is processed', (): Promise<void> => importPage.processSampleVideo());
@@ -238,7 +238,7 @@ test.describe('FEATURE: export', () => {
   test.describe.configure({ timeout: 60_000 });
 
   test.describe('GIVEN a large dataset', () => {
-    test('a full export downloads the archive', async ({ exportPage }): Promise<void> => {
+    test('SCENARIO: a full export downloads the archive', async ({ exportPage }): Promise<void> => {
       test.setTimeout(120_000);
 
       await test.step('WHEN the full export is started', (): Promise<void> => exportPage.startFullExport());
@@ -263,7 +263,7 @@ import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: checkout', () => {
   test.describe('GIVEN a product in the catalog', () => {
-    test('paying the order shows the confirmation', async ({ checkoutPage, productsPage }): Promise<void> => {
+    test('SCENARIO: paying the order shows the confirmation', async ({ checkoutPage, productsPage }): Promise<void> => {
       await test.step('GIVEN the first product is in the cart', (): Promise<void> => productsPage.addFirstToCart());
 
       await test.step('AND the checkout page is open', (): Promise<void> => productsPage.gotoCheckout());
@@ -293,7 +293,7 @@ test.describe('FEATURE: registration', () => {
       await test.step('GIVEN the registration page is open', (): Promise<void> => registerPage.goto());
     });
 
-    test('submitting the form shows the welcome message', async ({ registerPage }): Promise<void> => {
+    test('SCENARIO: submitting the form shows the welcome message', async ({ registerPage }): Promise<void> => {
       await test.step('WHEN the registration form is filled', (): Promise<void> => registerPage.fillForm(REGISTRATION_STUB));
 
       await test.step('AND the form is submitted', (): Promise<void> => registerPage.submit());
@@ -314,7 +314,7 @@ import { test } from './orders.fixture';
 
 test.describe('FEATURE: orders', () => {
   test.describe('GIVEN a filled cart', () => {
-    test('placing the order names it on the order page', async ({ checkoutPage, orderPage }): Promise<void> => {
+    test('SCENARIO: placing the order names it on the order page', async ({ checkoutPage, orderPage }): Promise<void> => {
       const orderId = await test.step('WHEN the order is placed', (): Promise<string> => checkoutPage.placeOrder());
 
       await test.step('AND the order page is opened', (): Promise<void> => orderPage.goto(orderId));
@@ -398,7 +398,7 @@ import { test } from './billing.fixture';
 
 test.describe('FEATURE: billing', () => {
   test.describe('GIVEN an active subscription', () => {
-    test('the invoice page lists the latest invoice', async ({ billingPage }, testInfo): Promise<void> => {
+    test('SCENARIO: the invoice page lists the latest invoice', async ({ billingPage }, testInfo): Promise<void> => {
       testInfo.annotations.push({ description: 'high', type: 'priority' });
       testInfo.annotations.push({ description: 'JIRA-123', type: 'ticket' });
 
@@ -519,7 +519,7 @@ import { test } from './devtools.fixture';
 
 test.describe('FEATURE: developer tools', () => {
   test.describe('GIVEN a developer session', () => {
-    test('the local panel lists the disk usage', async ({ devtoolsPage }): Promise<void> => {
+    test('SCENARIO: the local panel lists the disk usage', async ({ devtoolsPage }): Promise<void> => {
       skipInCi('Uses local resources');
 
       await test.step('WHEN the local panel is opened', (): Promise<void> => devtoolsPage.gotoLocalPanel());
@@ -527,7 +527,7 @@ test.describe('FEATURE: developer tools', () => {
       await test.step('THEN the disk usage is listed', (): Promise<void> => devtoolsPage.expectDiskUsageListed());
     });
 
-    test('the production check reports a green status', async ({ devtoolsPage }): Promise<void> => {
+    test('SCENARIO: the production check reports a green status', async ({ devtoolsPage }): Promise<void> => {
       onlyInEnv('production');
 
       await test.step('WHEN the production check is run', (): Promise<void> => devtoolsPage.runProductionCheck());
@@ -552,7 +552,7 @@ test.describe('FEATURE: gallery', () => {
       test.skip(!isMobile, 'Mobile only tests');
     });
 
-    test('swiping the image shows the next image', async ({ galleryPage }): Promise<void> => {
+    test('SCENARIO: swiping the image shows the next image', async ({ galleryPage }): Promise<void> => {
       await test.step('WHEN the current image is swiped', (): Promise<void> => galleryPage.swipeLeft());
 
       await test.step('THEN the next image is shown', (): Promise<void> => galleryPage.expectImageIndex(2));
@@ -564,7 +564,7 @@ test.describe('FEATURE: gallery', () => {
       test.skip(isMobile, 'Desktop only tests');
     });
 
-    test('hovering the image shows the caption', async ({ galleryPage }): Promise<void> => {
+    test('SCENARIO: hovering the image shows the caption', async ({ galleryPage }): Promise<void> => {
       await test.step('WHEN the current image is hovered', (): Promise<void> => galleryPage.hoverImage());
 
       await test.step('THEN the caption is visible', (): Promise<void> => galleryPage.expectCaptionVisible());

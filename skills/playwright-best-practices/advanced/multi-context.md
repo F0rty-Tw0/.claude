@@ -76,7 +76,7 @@ import { test } from './support.fixture';
 
 test.describe('FEATURE: support chat popup', () => {
   test.describe('GIVEN the home page', () => {
-    test('sending a message in the chat popup shows the confirmation', async ({ homePage }): Promise<void> => {
+    test('SCENARIO: sending a message in the chat popup shows the confirmation', async ({ homePage }): Promise<void> => {
       await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
       const popup = await test.step('WHEN the support chat popup is opened', (): Promise<Page> => homePage.openSupportChat());
@@ -106,7 +106,7 @@ import { ProviderLoginPage } from './pages/provider-login.page';
 
 test.describe('FEATURE: connect account', () => {
   test.describe('GIVEN the dashboard', () => {
-    test('completing the provider login in the popup connects the account', async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: completing the provider login in the popup connects the account', async ({ dashboardPage }): Promise<void> => {
       await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
       const popup = await test.step('WHEN the connect account popup is opened', (): Promise<Page> => dashboardPage.openConnectAccount());
@@ -150,7 +150,7 @@ test.describe('FEATURE: share to twitter', () => {
       await test.step('GIVEN window.open is stubbed to return null', (): Promise<void> => blockPopups(page));
     });
 
-    test('clicking share to twitter shows the copy link fallback', async ({ sharePage }): Promise<void> => {
+    test('SCENARIO: clicking share to twitter shows the copy link fallback', async ({ sharePage }): Promise<void> => {
       await test.step('GIVEN the share page is open', (): Promise<void> => sharePage.goto());
 
       await test.step('WHEN share to twitter is clicked', (): Promise<void> => sharePage.shareToTwitter());
@@ -178,7 +178,7 @@ import { expect, test } from './resources.fixture';
 
 test.describe('FEATURE: documentation link', () => {
   test.describe('GIVEN the resources page', () => {
-    test('clicking the documentation link opens the docs in a new tab', async ({ page, resourcesPage }): Promise<void> => {
+    test('SCENARIO: clicking the documentation link opens the docs in a new tab', async ({ page, resourcesPage }): Promise<void> => {
       await test.step('GIVEN the resources page is open', (): Promise<void> => resourcesPage.goto());
 
       const docsTab = await test.step('WHEN the documentation link is clicked', (): Promise<Page> => resourcesPage.openDocumentation());
@@ -267,7 +267,7 @@ test.describe('FEATURE: google sign in', () => {
       });
     });
 
-    test('clicking sign in with google opens the dashboard without the provider', async ({ homePage, loginPage, page }): Promise<void> => {
+    test('SCENARIO: clicking sign in with google opens the dashboard without the provider', async ({ homePage, loginPage, page }): Promise<void> => {
       await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
       await test.step('WHEN sign in with google is clicked', (): Promise<void> => loginPage.signInWithGoogle());
@@ -299,7 +299,7 @@ import { SyncDashboardPage } from './pages/dashboard.page';
 
 test.describe('FEATURE: dashboard window sync', () => {
   test.describe('GIVEN two windows on the dashboard', () => {
-    test('adding an item in one window shows it in the other', async ({ context }): Promise<void> => {
+    test('SCENARIO: adding an item in one window shows it in the other', async ({ context }): Promise<void> => {
       const firstTab = await test.step('GIVEN a first window is open', (): Promise<Page> => context.newPage());
       const secondTab = await test.step('AND a second window is open', (): Promise<Page> => context.newPage());
       const firstDashboard = new SyncDashboardPage(firstTab);

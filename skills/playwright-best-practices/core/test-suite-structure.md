@@ -86,7 +86,7 @@ test.describe('FEATURE: checkout', () => {
       await test.step('AND the cart is open', (): Promise<void> => cartPage.goto());
     });
 
-    test('a guest paying confirms the order', async ({ cartPage, checkoutPage }): Promise<void> => {
+    test('SCENARIO: a guest paying confirms the order', async ({ cartPage, checkoutPage }): Promise<void> => {
       await test.step('WHEN checkout starts', (): Promise<void> => cartPage.startCheckout());
 
       await test.step('AND the shipping details are filled', (): Promise<void> => checkoutPage.fillShipping(GUEST_STUB));
@@ -96,7 +96,7 @@ test.describe('FEATURE: checkout', () => {
       await test.step('THEN the confirmation heading is shown', (): Promise<void> => checkoutPage.expectConfirmed());
     });
 
-    test('applying a discount code shows the discount banner', async ({ cartPage }): Promise<void> => {
+    test('SCENARIO: applying a discount code shows the discount banner', async ({ cartPage }): Promise<void> => {
       await test.step('WHEN the discount code is applied', (): Promise<void> => cartPage.applyDiscount('SAVE10'));
 
       await test.step('THEN the banner reports the ten percent discount', (): Promise<void> => cartPage.expectDiscount('10% discount applied'));
@@ -190,7 +190,7 @@ test.describe('FEATURE: users list', () => {
       });
     });
 
-    test('opening the users page lists the stubbed user', async ({ usersPage }): Promise<void> => {
+    test('SCENARIO: opening the users page lists the stubbed user', async ({ usersPage }): Promise<void> => {
       await test.step('WHEN the users page opens', (): Promise<void> => usersPage.goto());
 
       await test.step('THEN the stubbed user is listed', (): Promise<void> => usersPage.expectUser(USER_STUB.name));
@@ -225,19 +225,19 @@ test.describe('FEATURE: dashboard visuals', () => {
       await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
     });
 
-    test('the rendered page matches the stored screenshot', async ({ page }): Promise<void> => {
+    test('SCENARIO: the rendered page matches the stored screenshot', async ({ page }): Promise<void> => {
       await test.step('WHEN the page has rendered', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
 
       await test.step('THEN the page matches dashboard.png', (): Promise<void> => expect(page).toHaveScreenshot('dashboard.png'));
     });
 
-    test('the rendered primary button matches the stored screenshot', async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: the rendered primary button matches the stored screenshot', async ({ dashboardPage }): Promise<void> => {
       await test.step('WHEN the primary button has rendered', (): Promise<void> => expect(dashboardPage.primaryButton).toBeVisible());
 
       await test.step('THEN the button matches primary-button.png', (): Promise<void> => expect(dashboardPage.primaryButton).toHaveScreenshot('primary-button.png'));
     });
 
-    test('hiding dynamic content matches the masked page', async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: hiding dynamic content matches the masked page', async ({ dashboardPage }): Promise<void> => {
       await test.step('WHEN dynamic content is hidden', (): Promise<void> => dashboardPage.hideDynamicContent());
 
       await test.step('THEN the masked page matches dashboard-stable.png', (): Promise<void> => dashboardPage.expectScreenshot('dashboard-stable.png'));
@@ -399,7 +399,7 @@ import { USER_STUB } from './test/stubs/login.stub';
 
 test.describe('FEATURE: login', { tag: '@auth' }, () => {
   test.describe('GIVEN a registered user', () => {
-    test('valid credentials open the dashboard', { tag: ['@critical', '@smoke'] }, async ({ dashboardPage, loginPage }): Promise<void> => {
+    test('SCENARIO: valid credentials open the dashboard', { tag: ['@critical', '@smoke'] }, async ({ dashboardPage, loginPage }): Promise<void> => {
       await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
 
       await test.step('THEN the dashboard heading is shown', (): Promise<void> => dashboardPage.expectHeading());

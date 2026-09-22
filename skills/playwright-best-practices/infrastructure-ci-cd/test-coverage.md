@@ -318,7 +318,7 @@ const MAX_UNUSED_CSS_PERCENT = 50;
 
 test.describe('FEATURE: checkout coverage', () => {
   test.describe('GIVEN the checkout page', () => {
-    test('submitting the payment covers the checkout module', async ({ checkoutPage, page }): Promise<void> => {
+    test('SCENARIO: submitting the payment covers the checkout module', async ({ checkoutPage, page }): Promise<void> => {
       await test.step('GIVEN js coverage is recording', (): Promise<void> => page.coverage.startJSCoverage({ resetOnNavigation: false }));
 
       await test.step('AND the checkout page is open', (): Promise<void> => checkoutPage.goto());
@@ -333,7 +333,7 @@ test.describe('FEATURE: checkout coverage', () => {
       await test.step('AND the checkout module meets the minimum', (): Promise<void> => expect(percent).toBeGreaterThan(MIN_COVERAGE_PERCENT));
     });
 
-    test('opening the help dialog uses most of the stylesheet', async ({ checkoutPage, page }): Promise<void> => {
+    test('SCENARIO: opening the help dialog uses most of the stylesheet', async ({ checkoutPage, page }): Promise<void> => {
       await test.step('GIVEN css coverage is recording', (): Promise<void> => page.coverage.startCSSCoverage());
 
       await test.step('AND the checkout page is open', (): Promise<void> => checkoutPage.goto());

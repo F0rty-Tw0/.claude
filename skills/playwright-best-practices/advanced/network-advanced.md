@@ -218,7 +218,7 @@ test.describe('FEATURE: dashboard', () => {
       await test.step('GIVEN the dashboard queries are mocked', (): Promise<void> => mockGraphQL([STATS_MOCK_STUB, USER_MOCK_STUB]));
     });
 
-    test('dashboard shows the mocked user count', async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: dashboard shows the mocked user count', async ({ dashboardPage }): Promise<void> => {
       await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
       await test.step('THEN stats card shows 100 users', (): Promise<void> => dashboardPage.expectUserCount(100));
@@ -354,7 +354,7 @@ test.describe('FEATURE: search', () => {
       await test.step('GIVEN the search endpoint is mocked', (): Promise<void> => mockSearch());
     });
 
-    test('error query shows the failure message', async ({ searchPage }): Promise<void> => {
+    test('SCENARIO: error query shows the failure message', async ({ searchPage }): Promise<void> => {
       await test.step('GIVEN the search page is open', (): Promise<void> => searchPage.goto());
 
       await test.step('WHEN the error query is searched', (): Promise<void> => searchPage.search('error'));
@@ -428,7 +428,7 @@ test.describe('FEATURE: dashboard loading state', () => {
       await test.step('GIVEN the data endpoint is mocked with a delay', (): Promise<void> => mockSlowData(2000));
     });
 
-    test('dashboard shows the loader before the data', async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: dashboard shows the loader before the data', async ({ dashboardPage }): Promise<void> => {
       await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
       await test.step('THEN loading indicator is shown', (): Promise<void> => dashboardPage.expectLoading());

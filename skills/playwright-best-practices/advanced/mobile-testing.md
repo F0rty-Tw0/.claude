@@ -57,7 +57,7 @@ const CUSTOM_DEVICE = {
 test.use(CUSTOM_DEVICE);
 
 test.describe('FEATURE: home on a custom device', () => {
-  test('opening the home page shows the mobile layout', async ({ homePage }): Promise<void> => {
+  test('SCENARIO: opening the home page shows the mobile layout', async ({ homePage }): Promise<void> => {
     await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
 
     await test.step('THEN the mobile layout is shown', (): Promise<void> => homePage.expectMobileLayout());
@@ -82,7 +82,7 @@ test.describe('FEATURE: checkout on mobile devices', () => {
     test.describe('GIVEN a mobile device', () => {
       test.use({ ...devices[deviceName] });
 
-      test(`opening the checkout on ${deviceName} shows the pay button`, async ({ checkoutPage }): Promise<void> => {
+      test(`SCENARIO: opening the checkout on ${deviceName} shows the pay button`, async ({ checkoutPage }): Promise<void> => {
         await test.step('WHEN the checkout opens', (): Promise<void> => checkoutPage.goto());
 
         await test.step('THEN the pay button is visible', (): Promise<void> => checkoutPage.expectPayButton());
@@ -105,7 +105,7 @@ import { test } from './gallery.fixture';
 test.use({ hasTouch: true });
 
 test.describe('FEATURE: gallery', () => {
-  test('tapping a photo opens the lightbox', async ({ galleryPage }): Promise<void> => {
+  test('SCENARIO: tapping a photo opens the lightbox', async ({ galleryPage }): Promise<void> => {
     await test.step('GIVEN the gallery is open', (): Promise<void> => galleryPage.goto());
 
     await test.step('WHEN the first photo is tapped', (): Promise<void> => galleryPage.tapFirstPhoto());
@@ -190,7 +190,7 @@ import { test } from './inbox.fixture';
 test.use({ hasTouch: true });
 
 test.describe('FEATURE: inbox', () => {
-  test('swiping a message left reveals the delete button', async ({ inboxPage, swipe }): Promise<void> => {
+  test('SCENARIO: swiping a message left reveals the delete button', async ({ inboxPage, swipe }): Promise<void> => {
     await test.step('GIVEN the inbox is open', (): Promise<void> => inboxPage.goto());
 
     await test.step('WHEN the first message is swiped left', (): Promise<void> => swipe(inboxPage.firstMessage, 'left'));
@@ -298,7 +298,7 @@ import { NARROW_VIEWPORTS, WIDE_VIEWPORTS } from './common/home.const';
 test.describe('FEATURE: navigation', () => {
   test.describe('GIVEN a viewport under 768px', () => {
     for (const viewport of NARROW_VIEWPORTS) {
-      test(`opening the home page at ${viewport.name} shows the menu button`, async ({ homePage, page }): Promise<void> => {
+      test(`SCENARIO: opening the home page at ${viewport.name} shows the menu button`, async ({ homePage, page }): Promise<void> => {
         await test.step(`GIVEN the viewport is ${viewport.name}`, (): Promise<void> => page.setViewportSize(viewport));
 
         await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
@@ -310,7 +310,7 @@ test.describe('FEATURE: navigation', () => {
 
   test.describe('GIVEN a viewport of 768px or wider', () => {
     for (const viewport of WIDE_VIEWPORTS) {
-      test(`opening the home page at ${viewport.name} shows the nav links`, async ({ homePage, page }): Promise<void> => {
+      test(`SCENARIO: opening the home page at ${viewport.name} shows the nav links`, async ({ homePage, page }): Promise<void> => {
         await test.step(`GIVEN the viewport is ${viewport.name}`, (): Promise<void> => page.setViewportSize(viewport));
 
         await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
@@ -334,7 +334,7 @@ import { DESKTOP_VIEWPORT, MOBILE_VIEWPORT } from '../home/common/home.const';
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard layout', () => {
-  test('shrinking the viewport to mobile collapses the sidebar into the menu', async ({ dashboardPage, page }): Promise<void> => {
+  test('SCENARIO: shrinking the viewport to mobile collapses the sidebar into the menu', async ({ dashboardPage, page }): Promise<void> => {
     await test.step('GIVEN the viewport is desktop', (): Promise<void> => page.setViewportSize(DESKTOP_VIEWPORT));
 
     await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
@@ -364,7 +364,7 @@ import { expect, test } from './home.fixture';
 test.use({ viewport: MOBILE_VIEWPORT });
 
 test.describe('FEATURE: mobile navigation', () => {
-  test('following a drawer link changes the page and closes the drawer', async ({ mobileNavPage, page }): Promise<void> => {
+  test('SCENARIO: following a drawer link changes the page and closes the drawer', async ({ mobileNavPage, page }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => mobileNavPage.goto());
 
     await test.step('AND the menu is open', (): Promise<void> => mobileNavPage.openMenu());

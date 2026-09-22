@@ -272,7 +272,7 @@ test.describe('FEATURE: kanban board', () => {
       await test.step('GIVEN the board is open', (): Promise<void> => boardPage.goto());
     });
 
-    test('dragging the ticket to active moves it out of the backlog', async ({ boardPage }): Promise<void> => {
+    test('SCENARIO: dragging the ticket to active moves it out of the backlog', async ({ boardPage }): Promise<void> => {
       await test.step('WHEN the ticket is dragged to active', (): Promise<void> => boardPage.backlogColumn.dragCardTo(TICKET, boardPage.activeColumn));
 
       await test.step('THEN active shows the ticket', (): Promise<void> => boardPage.activeColumn.expectCard(TICKET));
@@ -280,12 +280,12 @@ test.describe('FEATURE: kanban board', () => {
       await test.step('AND the backlog hides the ticket', (): Promise<void> => boardPage.backlogColumn.expectNoCard(TICKET));
     });
 
-    test('dragging the ticket to active saves the move across a reload', async ({ boardPage }): Promise<void> => {
+    test('SCENARIO: dragging the ticket to active saves the move across a reload', async ({ boardPage }): Promise<void> => {
       const ticket = await test.step('WHEN the ticket is dragged to active and the save completes', (): Promise<Ticket> => boardPage.moveCardAndAwaitSave(TICKET, boardPage.backlogColumn, boardPage.activeColumn));
 
       await test.step('THEN the saved ticket names the active column', (): void => expect(ticket.column).toBe('active'));
 
-      await test.step('WHEN the board is reloaded', (): Promise<void> => boardPage.reload());
+      await test.step('AND the board is reloaded', (): Promise<void> => boardPage.reload());
 
       await test.step('THEN active still shows the ticket', (): Promise<void> => boardPage.activeColumn.expectCard(TICKET));
     });
@@ -347,7 +347,7 @@ test.describe('FEATURE: priority list ordering', () => {
       await test.step('AND the list starts in the seeded order', (): Promise<void> => prioritiesPage.expectOrder(SEEDED_ORDER));
     });
 
-    test('dropping C on A reorders the list to C, A, B', async ({ prioritiesPage }): Promise<void> => {
+    test('SCENARIO: dropping C on A reorders the list to C, A, B', async ({ prioritiesPage }): Promise<void> => {
       await test.step('WHEN C is dragged onto A', (): Promise<void> => prioritiesPage.dragItemBefore('Priority C', 'Priority A'));
 
       await test.step('THEN the list reads C, A, B', (): Promise<void> => prioritiesPage.expectOrder(REORDERED));
@@ -450,18 +450,18 @@ test.describe('FEATURE: native HTML5 drag and drop', () => {
       await test.step('GIVEN the drag example is open', (): Promise<void> => dragExamplePage.goto());
     });
 
-    test('dragging element 1 to area B lists it there', async ({ dragExamplePage }): Promise<void> => {
+    test('SCENARIO: dragging element 1 to area B lists it there', async ({ dragExamplePage }): Promise<void> => {
       await test.step('WHEN element 1 is dragged to area B', (): Promise<void> => dragExamplePage.dragElementTo(dragExamplePage.areaB));
 
       await test.step('THEN area B lists element 1', (): Promise<void> => dragExamplePage.areaB.expectItem('Element 1'));
     });
 
-    test('holding the element over the zone highlights it until release', async ({ dragExamplePage }): Promise<void> => {
+    test('SCENARIO: holding the element over the zone highlights it until release', async ({ dragExamplePage }): Promise<void> => {
       await test.step('WHEN the element is held over the target zone', (): Promise<void> => dragExamplePage.holdElementOverZone());
 
       await test.step('THEN the target zone is highlighted', (): Promise<void> => dragExamplePage.dropZone.expectHighlighted());
 
-      await test.step('WHEN the element is released', (): Promise<void> => dragExamplePage.releaseElement());
+      await test.step('AND the element is released', (): Promise<void> => dragExamplePage.releaseElement());
 
       await test.step('THEN the highlight is gone', (): Promise<void> => dragExamplePage.dropZone.expectIdle());
 
@@ -578,13 +578,13 @@ test.describe('FEATURE: design tool shape dragging', () => {
       await test.step('GIVEN the design tool is open', (): Promise<void> => designToolPage.goto());
     });
 
-    test('dragging the shape to a canvas point centers it there', async ({ designToolPage }): Promise<void> => {
+    test('SCENARIO: dragging the shape to a canvas point centers it there', async ({ designToolPage }): Promise<void> => {
       const target = await test.step('WHEN the shape is dragged 300px right and 200px down', (): Promise<Point> => designToolPage.dragShapeToCanvasOffset(300, 200));
 
       await test.step('THEN the shape is centered on the target', (): Promise<void> => designToolPage.shape.expectCenteredAt(target));
     });
 
-    test('dragging the resize handle grows the shape by the drag distance', async ({ designToolPage }): Promise<void> => {
+    test('SCENARIO: dragging the resize handle grows the shape by the drag distance', async ({ designToolPage }): Promise<void> => {
       const before = await test.step('WHEN the handle is dragged 100px right and 80px down', (): Promise<BoundingBox> => designToolPage.resizeShapeBy(100, 80));
 
       await test.step('THEN the shape grew by the drag distance', (): Promise<void> => designToolPage.shape.expectSize(before.width + 100, before.height + 80));
@@ -639,14 +639,14 @@ test.describe('FEATURE: kanban drag preview', () => {
       await test.step('GIVEN the board is open', (): Promise<void> => boardPage.goto());
     });
 
-    test('holding a card between columns shows the preview until the drop', async ({ boardPage, page }): Promise<void> => {
+    test('SCENARIO: holding a card between columns shows the preview until the drop', async ({ boardPage, page }): Promise<void> => {
       await test.step('WHEN ticket 1 is held between backlog and active', (): Promise<void> => holdBetween(page, boardPage.ticket('ticket-1'), boardPage.activeColumn.root));
 
       await test.step('THEN the drag preview is shown', (): Promise<void> => boardPage.dragPreview.expectVisible());
 
       await test.step('AND ticket 1 shows its dragging state', (): Promise<void> => boardPage.expectTicketDragging('ticket-1'));
 
-      await test.step('WHEN the card is dropped on the active column', (): Promise<void> => dropOn(page, boardPage.activeColumn.root));
+      await test.step('AND the card is dropped on the active column', (): Promise<void> => dropOn(page, boardPage.activeColumn.root));
 
       await test.step('THEN the drag preview is gone', (): Promise<void> => boardPage.dragPreview.expectHidden());
     });

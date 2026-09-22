@@ -80,7 +80,7 @@ import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
   test.describe('GIVEN the dashboard', () => {
-    test('inspector opens before the load click', async ({ dashboardPage, page }): Promise<void> => {
+    test('SCENARIO: inspector opens before the load click', async ({ dashboardPage, page }): Promise<void> => {
       await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
       await test.step('WHEN the run pauses for the inspector', (): Promise<void> => page.pause());
@@ -152,7 +152,7 @@ import { startTrace, stopTrace } from './test/utils/tracing.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
   test.describe('GIVEN the dashboard', () => {
-    test('data load flow is saved as a trace', async ({ context, dashboardPage }): Promise<void> => {
+    test('SCENARIO: data load flow is saved as a trace', async ({ context, dashboardPage }): Promise<void> => {
       await test.step('GIVEN tracing is started', (): Promise<void> => startTrace(context));
 
       await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
@@ -224,7 +224,7 @@ import { logNetworkSummary, recordNetwork } from './test/utils/network-log.spec.
 
 test.describe('FEATURE: dashboard', () => {
   test.describe('GIVEN the dashboard', () => {
-    test('page load prints the network log', async ({ dashboardPage, page }): Promise<void> => {
+    test('SCENARIO: page load prints the network log', async ({ dashboardPage, page }): Promise<void> => {
       const network = await test.step('GIVEN network traffic is recorded', (): NetworkLog => recordNetwork(page));
 
       await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
@@ -389,7 +389,7 @@ import { logAuthState, saveStateWhenRedirected } from './test/utils/auth-debug.s
 
 test.describe('FEATURE: dashboard', () => {
   test.describe('GIVEN a stored session', () => {
-    test('protected page open inspects the auth state', async ({ context, page }): Promise<void> => {
+    test('SCENARIO: protected page open inspects the auth state', async ({ context, page }): Promise<void> => {
       await test.step('WHEN the cookies are printed', (): Promise<void> => logAuthState(context));
 
       await test.step('AND the protected page is opened', async (): Promise<void> => {
@@ -427,7 +427,7 @@ import { attachFullPage } from './test/utils/screenshot.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
   test.describe('GIVEN the dashboard', () => {
-    test('menu open attaches before and after screenshots', async ({ dashboardPage, page }): Promise<void> => {
+    test('SCENARIO: menu open attaches before and after screenshots', async ({ dashboardPage, page }): Promise<void> => {
       await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
       await test.step('AND the before screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'before'));
@@ -504,7 +504,7 @@ Call it on the page-object locator: `await test.step('print the button state', (
 |---|---|---|
 | One assertion | `expect(this.loaded).toBeVisible({ timeout: 30_000 })` | Inside a boxed `expect*` page-object method |
 | Every test in a group | `test.setTimeout(60_000)` | First line of the `test.describe` callback |
-| One test | `test.slow('reason')` or `test('<scenario>', { timeout: 60_000 }, …)` | Spec |
+| One test | `test.slow('reason')` or `test('SCENARIO: <flow>', { timeout: 60_000 }, …)` | Spec |
 
 To see what is blocking, record network traffic with `recordNetwork(page)` from [Monitor All Requests](#monitor-all-requests) before opening the slow page.
 

@@ -33,10 +33,13 @@ out="$(for f in "${files[@]}"; do
       if (line ~ / as unknown as /) print file ":" NR ": `as unknown as`"
       if (line ~ /: any([^A-Za-z]|$)|<any>/) print file ":" NR ": `any`"
       if (line ~ /from "/) print file ":" NR ": double-quoted import"
-      if (line ~ /test\.describe\(["'\''`]/ && line !~ /test\.describe\('\''(FEATURE:|SCENARIO:|GIVEN )/) print file ":" NR ": describe title must start with FEATURE: / SCENARIO: / GIVEN"
-      if (line ~ /^[[:space:]]*test\(['\''`](GIVEN|WHEN|THEN|AND) /) print file ":" NR ": Gherkin keyword in test title (move to steps; title is the scenario)"
+      if (line ~ /test\.describe\(["'\''`]/ && line !~ /test\.describe\('\''(FEATURE:|GIVEN )/) print file ":" NR ": describe title must start with FEATURE: / GIVEN"
+      if (line ~ /^[[:space:]]*test(\.skip|\.fixme)?\(['\''"`]/ && line !~ /^[[:space:]]*test(\.skip|\.fixme)?\(['\''"`]SCENARIO: /) print file ":" NR ": test title must start with SCENARIO: (WHEN / THEN belong to steps)"
       if (line ~ /^[[:space:]]*test\(["'\''`]/ && line ~ /[Ss]hould/) print file ":" NR ": `should` in test title"
       if (spec && line ~ /test\.step\(['\''`]/ && line !~ /test\.step\(['\''`](GIVEN|WHEN|THEN|AND) /) print file ":" NR ": spec step without GIVEN / WHEN / THEN / AND"
+      if (line ~ /^[[:space:]]*test(\.skip|\.fixme|\.describe|\.beforeEach|\.afterEach|\.beforeAll|\.afterAll)?\(/) { givens = 0; whens = 0 }
+      if (spec && line ~ /test\.step\(['\''`]GIVEN /) { givens++; if (givens > 1) print file ":" NR ": second GIVEN step in one test (use AND)" }
+      if (spec && line ~ /test\.step\(['\''`]WHEN /) { whens++; if (whens > 1) print file ":" NR ": second WHEN step in one test (use AND, or split the test)" }
       if (line ~ /async \([^)]*\) =>/) print file ":" NR ": async arrow without return type"
       if (line ~ /constructor\((private|public|protected|readonly) /) print file ":" NR ": parameter property"
       if (line ~ /readonly [a-zA-Z]+: (Page|Locator)/ && line !~ /(public|private|protected) readonly/) print file ":" NR ": member without accessibility"

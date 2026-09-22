@@ -83,7 +83,7 @@ import { test } from './home.fixture';
 
 test.describe('FEATURE: server components', () => {
   test.describe('GIVEN the home page', () => {
-    test('page load shows the server-rendered heading and navigation', async ({ homePage }): Promise<void> => {
+    test('SCENARIO: page load shows the server-rendered heading and navigation', async ({ homePage }): Promise<void> => {
       await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
       await test.step('THEN welcome heading is shown', (): Promise<void> => homePage.expectHeading('Welcome'));
@@ -125,7 +125,7 @@ import { slowStatsMock } from './test/mocks/stats.mock';
 
 test.describe('FEATURE: streaming dashboard', () => {
   test.describe('GIVEN the stats endpoint takes two seconds', () => {
-    test('dashboard open shows the loading boundary and resolves it', async ({ dashboardPage }): Promise<void> => {
+    test('SCENARIO: dashboard open shows the loading boundary and resolves it', async ({ dashboardPage }): Promise<void> => {
       await test.step('WHEN the stats response is held for 2s', (): Promise<void> => dashboardPage.routeStats(slowStatsMock(2_000)));
 
       await test.step('AND the dashboard is opened', (): Promise<void> => dashboardPage.goto());
@@ -202,7 +202,7 @@ import { expect, test } from './blog.fixture';
 
 test.describe('FEATURE: blog post routes', () => {
   test.describe('GIVEN a published post', () => {
-    test('published slug renders the post', async ({ postPage }): Promise<void> => {
+    test('SCENARIO: published slug renders the post', async ({ postPage }): Promise<void> => {
       await test.step('WHEN the testing guide is opened', (): Promise<Response | null> => postPage.goto('testing-guide'));
 
       await test.step('THEN post is shown', (): Promise<void> => postPage.expectPost('Testing Guide'));
@@ -210,7 +210,7 @@ test.describe('FEATURE: blog post routes', () => {
   });
 
   test.describe('GIVEN an unknown slug', () => {
-    test('unknown slug responds 404', async ({ postPage }): Promise<void> => {
+    test('SCENARIO: unknown slug responds 404', async ({ postPage }): Promise<void> => {
       const response = await test.step('WHEN a missing post is opened', (): Promise<Response | null> => postPage.goto('nonexistent-post'));
 
       await test.step('THEN status is 404', (): void => expect(response?.status()).toBe(404));
@@ -247,12 +247,12 @@ import { sortedAscending } from './test/utils/prices.spec.util';
 
 test.describe('FEATURE: product filters', () => {
   test.describe('GIVEN electronics sorted by price ascending', () => {
-    test('page load lists prices ascending', async ({ productsPage }): Promise<void> => {
+    test('SCENARIO: page load lists prices ascending', async ({ productsPage }): Promise<void> => {
       await test.step('WHEN electronics sorted by price is opened', (): Promise<void> => productsPage.goto('category=electronics&sort=price-asc'));
 
       await test.step('THEN electronics heading is shown', (): Promise<void> => productsPage.expectHeading('Electronics'));
 
-      const prices = await test.step('WHEN the rendered prices are read', (): Promise<number[]> => productsPage.prices());
+      const prices = await test.step('AND the rendered prices are read', (): Promise<number[]> => productsPage.prices());
 
       await test.step('THEN prices are ascending', (): void => expect(prices).toEqual(sortedAscending(prices)));
     });
@@ -295,12 +295,12 @@ import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
 
 test.describe('FEATURE: products api', () => {
   test.describe('GIVEN the products route', () => {
-    test('GET returns a product list', async ({ request }): Promise<void> => {
+    test('SCENARIO: GET returns a product list', async ({ request }): Promise<void> => {
       const response = await test.step('WHEN products are fetched', (): Promise<APIResponse> => request.get('/api/products'));
 
       await test.step('THEN response is ok', (): void => expect(response.ok()).toBeTruthy());
 
-      const body = await test.step('WHEN the body is read', (): Promise<ProductsBody> => response.json());
+      const body = await test.step('AND the body is read', (): Promise<ProductsBody> => response.json());
 
       await test.step('THEN first product has an id and a name', (): void => expect(body.products[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String) }));
     });
@@ -328,7 +328,7 @@ import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
 
 test.describe('FEATURE: product form', () => {
   test.describe('GIVEN the new product page', () => {
-    test('submitted product is created by the api and confirmed on the page', async ({ newProductPage }): Promise<void> => {
+    test('SCENARIO: submitted product is created by the api and confirmed on the page', async ({ newProductPage }): Promise<void> => {
       await test.step('GIVEN the new product page is open', (): Promise<void> => newProductPage.goto());
 
       await test.step('WHEN a widget is created', (): Promise<void> => newProductPage.create({ ...NEW_PRODUCT_STUB, name: 'Widget', price: 19.99 }));
@@ -365,7 +365,7 @@ import { returnUrl } from './test/utils/return-url.spec.util';
 
 test.describe('FEATURE: auth middleware', () => {
   test.describe('GIVEN a signed-out visitor', () => {
-    test('nested page redirect shows login and keeps the return url', async ({ loginPage, page }): Promise<void> => {
+    test('SCENARIO: nested page redirect shows login and keeps the return url', async ({ loginPage, page }): Promise<void> => {
       await test.step('WHEN dashboard settings is opened', async (): Promise<void> => {
         await page.goto('/dashboard/settings');
       });
@@ -415,7 +415,7 @@ const FRENCH_HEADERS = { 'Accept-Language': 'fr-FR,fr;q=0.9' };
 
 test.describe('FEATURE: locale middleware', () => {
   test.describe('GIVEN a French browser', () => {
-    test('home page open serves the French copy', async ({ context, homePage }): Promise<void> => {
+    test('SCENARIO: home page open serves the French copy', async ({ context, homePage }): Promise<void> => {
       await test.step('WHEN French accept-language is sent', (): Promise<void> => context.setExtraHTTPHeaders(FRENCH_HEADERS));
 
       await test.step('AND the home page is opened', (): Promise<void> => homePage.goto());
@@ -446,7 +446,7 @@ import { hydrationErrors } from './test/utils/hydration.spec.util';
 
 test.describe('FEATURE: hydration', () => {
   test.describe('GIVEN the home page', () => {
-    test('hydrated page click logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
+    test('SCENARIO: hydrated page click logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
       await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
       await test.step('WHEN get started is clicked', (): Promise<void> => homePage.getStarted());
@@ -520,11 +520,11 @@ test.describe('FEATURE: next/image', () => {
       await test.step('GIVEN the gallery is open', (): Promise<void> => galleryPage.goto());
     });
 
-    test('page load renders the hero image eager with a srcset', async ({ galleryPage }): Promise<void> => {
+    test('SCENARIO: page load renders the hero image eager with a srcset', async ({ galleryPage }): Promise<void> => {
       await test.step('THEN hero image is eager', (): Promise<void> => galleryPage.expectHeroEager());
     });
 
-    test('offscreen image loads when scrolled into view', async ({ galleryPage }): Promise<void> => {
+    test('SCENARIO: offscreen image loads when scrolled into view', async ({ galleryPage }): Promise<void> => {
       await test.step('WHEN item 20 is scrolled to', (): Promise<void> => galleryPage.scrollToItem(20));
 
       const width = await test.step('AND the natural width is read', (): Promise<number> => galleryPage.itemNaturalWidth(20));

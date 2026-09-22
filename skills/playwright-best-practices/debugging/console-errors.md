@@ -222,7 +222,7 @@ import { expectNoConsoleErrors } from './test/utils/console-error.spec.util';
 
 test.describe('FEATURE: console errors', () => {
   test.describe('GIVEN the dashboard', () => {
-    test('loading data logs no console error', async ({ consoleErrors, dashboardPage }): Promise<void> => {
+    test('SCENARIO: loading data logs no console error', async ({ consoleErrors, dashboardPage }): Promise<void> => {
       await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
       await test.step('WHEN data is loaded', (): Promise<void> => dashboardPage.loadData());
@@ -359,7 +359,7 @@ import { brokenDataMock } from './test/mocks/data.mock';
 
 test.describe('FEATURE: error boundary', () => {
   test.describe('GIVEN the data endpoint returns null', () => {
-    test('rendering the dashboard lets the boundary catch the error', async ({ dashboardPage, pageErrors }): Promise<void> => {
+    test('SCENARIO: rendering the dashboard lets the boundary catch the error', async ({ dashboardPage, pageErrors }): Promise<void> => {
       await test.step('GIVEN data is routed to a null payload', (): Promise<void> => dashboardPage.routeData(brokenDataMock()));
 
       await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
