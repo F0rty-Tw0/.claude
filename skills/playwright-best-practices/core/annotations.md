@@ -31,7 +31,7 @@ export const TARGET_ENV = process.env.ENV ?? 'local';
 `test.skip(title, body)` in place of `test` never runs the body. `test.skip(condition, reason)` as the first statement of a body skips at runtime and records the reason in the report.
 
 ```ts
-// e2e/payments/payments.spec.ts
+// e2e/payments/payments.e2e.ts
 import { test } from './payments.fixture';
 import { CARD_STUB } from './test/stubs/card.stub';
 
@@ -59,7 +59,7 @@ test.describe('FEATURE: payments', () => {
 The condition is any boolean. Built-in fixtures (`browserName`, `isMobile`) come from the test arguments; environment facts come from `playwright.const.ts`.
 
 ```ts
-// e2e/media/media.spec.ts
+// e2e/media/media.e2e.ts
 import { TARGET_ENV } from '../common/playwright.const';
 import { test } from './media.fixture';
 
@@ -100,7 +100,7 @@ Same shape as the conditional skip above; only the condition changes.
 `test.skip` with a callback at describe level skips every test in the block when the callback returns `true`.
 
 ```ts
-// e2e/admin/admin.spec.ts
+// e2e/admin/admin.e2e.ts
 import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin', () => {
@@ -129,7 +129,7 @@ test.describe('FEATURE: admin', () => {
 `test.fixme` skips like `test.skip` but records intent: the test is broken and tracked, not inapplicable. Put the ticket in the reason.
 
 ```ts
-// e2e/reports/reports.spec.ts
+// e2e/reports/reports.e2e.ts
 import { IS_CI } from '../common/playwright.const';
 import { test } from './reports.fixture';
 
@@ -157,7 +157,7 @@ test.describe('FEATURE: reports', () => {
 `test.fail()` runs the body and expects it to fail. When the bug is fixed the test passes and Playwright reports it as a failure, which is the signal to remove the annotation.
 
 ```ts
-// e2e/render/render.spec.ts
+// e2e/render/render.e2e.ts
 import { test } from './render.fixture';
 
 test.describe('FEATURE: render', () => {
@@ -196,7 +196,7 @@ test.describe('FEATURE: render', () => {
 `test.slow()` triples the test timeout. The upload file is a real file under `test/fixtures/`.
 
 ```ts
-// e2e/import/import.spec.ts
+// e2e/import/import.e2e.ts
 import { test } from './import.fixture';
 
 const LARGE_CSV = 'e2e/import/test/fixtures/large-file.csv';
@@ -231,7 +231,7 @@ test.describe('FEATURE: data import', () => {
 `test.setTimeout(ms)` sets an exact budget for one test. `test.describe.configure({ timeout })` sets it for every test in the block.
 
 ```ts
-// e2e/export/export.spec.ts
+// e2e/export/export.e2e.ts
 import { test } from './export.fixture';
 
 test.describe('FEATURE: export', () => {
@@ -256,7 +256,7 @@ test.describe('FEATURE: export', () => {
 Every statement is a step and every step is one call. A step that would need two lines is a missing page-object method.
 
 ```ts
-// e2e/checkout/checkout.spec.ts
+// e2e/checkout/checkout.e2e.ts
 import { test } from './checkout.fixture';
 import { ADDRESS_STUB } from './test/stubs/address.stub';
 import { CARD_STUB } from './test/stubs/card.stub';
@@ -283,7 +283,7 @@ test.describe('FEATURE: checkout', () => {
 A page-object method may open its own steps for a multi-part flow. The spec calls one method; the trace shows the nested steps under it. Nesting depth is two, never three.
 
 ```ts
-// e2e/register/register.spec.ts
+// e2e/register/register.e2e.ts
 import { test } from './register.fixture';
 import { REGISTRATION_STUB } from './test/stubs/registration.stub';
 
@@ -309,7 +309,7 @@ test.describe('FEATURE: registration', () => {
 A step returns whatever its call returns. Declare the value type on the callback.
 
 ```ts
-// e2e/orders/orders.spec.ts
+// e2e/orders/orders.e2e.ts
 import { test } from './orders.fixture';
 
 test.describe('FEATURE: orders', () => {
@@ -393,7 +393,7 @@ export class RegisterPage {
 `testInfo.annotations` is a mutable list of `{ type, description }`. Pushes sit with the other annotation calls above the first step.
 
 ```ts
-// e2e/billing/billing.spec.ts
+// e2e/billing/billing.e2e.ts
 import { test } from './billing.fixture';
 
 test.describe('FEATURE: billing', () => {
@@ -513,7 +513,7 @@ export const onlyInEnv = (env: string): void => {
 ```
 
 ```ts
-// e2e/devtools/devtools.spec.ts
+// e2e/devtools/devtools.e2e.ts
 import { onlyInEnv, skipInCi } from '../test/utils/skip.spec.util';
 import { test } from './devtools.fixture';
 
@@ -543,7 +543,7 @@ test.describe('FEATURE: developer tools', () => {
 A `beforeEach` that only annotates carries the condition for the whole `GIVEN`. The desktop variant flips the condition to `test.skip(isMobile, 'Desktop only tests')`.
 
 ```ts
-// e2e/gallery/gallery.spec.ts
+// e2e/gallery/gallery.e2e.ts
 import { test } from './gallery.fixture';
 
 test.describe('FEATURE: gallery', () => {

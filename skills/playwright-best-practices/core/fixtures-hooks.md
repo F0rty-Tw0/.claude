@@ -44,7 +44,7 @@ export const fetchUsers = async (request: APIRequestContext): Promise<User[]> =>
 ```
 
 ```ts
-// e2e/users/users-api.spec.ts
+// e2e/users/users-api.e2e.ts
 import { expect, test } from '@playwright/test';
 
 import type { User } from './common/users.type';
@@ -250,7 +250,7 @@ export const captureOnFailure = async (page: Page, testInfo: TestInfo): Promise<
 ```
 
 ```ts
-// e2e/users/users.spec.ts
+// e2e/users/users.e2e.ts
 import { test } from './users.fixture';
 import { captureOnFailure } from './test/utils/failure-screenshot.spec.util';
 
@@ -268,7 +268,7 @@ test.afterEach(async ({ page }, testInfo): Promise<void> => {
 `beforeAll` and `afterAll` run once per worker per file. Only worker-scoped fixtures (`browser`, `browserName`) are available; `page` is not.
 
 ```ts
-// e2e/catalog/catalog.spec.ts
+// e2e/catalog/catalog.e2e.ts
 import { test } from './catalog.fixture';
 import { resetCatalog, seedCatalog } from './test/utils/catalog.spec.util';
 
@@ -286,7 +286,7 @@ test.afterAll(async (): Promise<void> => {
 A `beforeEach` inside a `GIVEN` describe is the shared arrange for every test in that state.
 
 ```ts
-// e2e/users/users.spec.ts
+// e2e/users/users.e2e.ts
 import { test } from './users.fixture';
 import { USER_STUB } from './test/stubs/users.stub';
 

@@ -99,7 +99,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/admin/accounts.api.spec.ts
+// e2e/admin/accounts.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import { readJson } from '../utils/read-json.util';
@@ -210,7 +210,7 @@ export class ItemsApi {
 The spec creates its item in a `GIVEN` `beforeEach`, deletes it in `afterEach`, and asserts one outcome per test. `remove` returns the response instead of throwing, so the `afterEach` delete is safe after the delete test.
 
 ```ts
-// e2e/items/items.api.spec.ts
+// e2e/items/items.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import { readJson } from '../utils/read-json.util';
@@ -265,7 +265,7 @@ test.describe('FEATURE: items api', () => {
 
 **Use when**: Writing dedicated API test suites that do not need a browser.
 
-API specs are named `*.api.spec.ts` and matched by project; `testDir` per project works the same way when API specs live in their own tree.
+API specs are named `*.api.e2e.ts` and matched by project; `testDir` per project works the same way when API specs live in their own tree.
 
 ```ts
 // e2e/playwright.config.ts
@@ -293,7 +293,7 @@ export default defineConfig({ projects });
 Status first, then headers, then body. Matcher shapes are module-level consts so each test is one step per assertion.
 
 ```ts
-// e2e/items/item-shape.api.spec.ts
+// e2e/items/item-shape.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import { readJson } from '../utils/read-json.util';
@@ -433,7 +433,7 @@ export { expect } from '@playwright/test';
 `LoginPage` is the one from `core/house-style.md`; `DashboardPage.expectWorkspace(name)` is a boxed step over `page.getByRole('heading', { name })`.
 
 ```ts
-// e2e/workspace/workspace-dashboard.spec.ts
+// e2e/workspace/workspace-dashboard.e2e.ts
 import { expect, test } from './workspace.fixture';
 
 test.describe('FEATURE: workspace dashboard', () => {
@@ -479,7 +479,7 @@ export class SearchApi {
 ```
 
 ```ts
-// e2e/items/items-errors.api.spec.ts
+// e2e/items/items-errors.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import type { NewItem, ValidationError } from './common/items.type';
@@ -562,7 +562,7 @@ export class DocumentsApi {
 ```
 
 ```ts
-// e2e/documents/upload.api.spec.ts
+// e2e/documents/upload.api.e2e.ts
 import { resolve } from 'node:path';
 
 import type { APIResponse } from '@playwright/test';
@@ -655,7 +655,7 @@ export class ShopApi {
 ```
 
 ```ts
-// e2e/orders/checkout.api.spec.ts
+// e2e/orders/checkout.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import { readJson } from '../utils/read-json.util';
@@ -791,7 +791,7 @@ export const PAGINATED_ITEMS_SCHEMA = z.object({
 `parse` throws a `ZodError` whose message lists every issue with its path, so `not.toThrow()` reports the full diff without a hand-written formatter.
 
 ```ts
-// e2e/items/items-schema.api.spec.ts
+// e2e/items/items-schema.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import { PAGINATED_ITEMS_SCHEMA } from './common/item-schema.const';

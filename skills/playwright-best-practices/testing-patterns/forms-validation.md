@@ -65,7 +65,7 @@ export class ProductSearchPage {
 ```
 
 ```ts
-// e2e/product-search/product-search.spec.ts
+// e2e/product-search/product-search.e2e.ts
 import { expect, test } from './product-search.fixture';
 
 test.describe('FEATURE: product typeahead', () => {
@@ -149,7 +149,7 @@ export class LoanApplicationPage {
 ```
 
 ```ts
-// e2e/loan/loan-application.spec.ts
+// e2e/loan/loan-application.e2e.ts
 import { expect, test } from './loan.fixture';
 import { BUSINESS_STUB } from './test/stubs/loan.stub';
 
@@ -246,7 +246,7 @@ export class BookingWizardPage {
 ```
 
 ```ts
-// e2e/booking/booking-wizard.spec.ts
+// e2e/booking/booking-wizard.e2e.ts
 import { expect, test } from './booking.fixture';
 import { GUEST_STUB, ROOM_STUB } from './test/stubs/booking.stub';
 
@@ -361,7 +361,7 @@ export class FeedbackPage {
 ```
 
 ```ts
-// e2e/feedback/feedback.spec.ts
+// e2e/feedback/feedback.e2e.ts
 import type { Response } from '@playwright/test';
 
 import { expect, test } from './feedback.fixture';
@@ -481,7 +481,7 @@ export class SignupPage {
 ```
 
 ```ts
-// e2e/signup/signup.spec.ts
+// e2e/signup/signup.e2e.ts
 import { expect, test } from './signup.fixture';
 import { SIGNUP_STUB } from './test/stubs/signup.stub';
 
@@ -515,7 +515,7 @@ Native inputs take ISO strings through `fill()`. A third-party picker is driven 
 `ReservationPage` owns `eventDate`, `reminder`, `reservationDate` and `timeSlot`, each a `getByLabel` locator, plus `goto()`. `fillNativeInputs(date, time, reminder)` fills the three native inputs. `pickEventDateNextMonth(day)` clicks `eventDate`, then `getByRole('button', { name: 'Next month' })`, then `getByRole('gridcell', { name: day })`.
 
 ```ts
-// e2e/reservation/reservation.spec.ts
+// e2e/reservation/reservation.e2e.ts
 import { expect, test } from './reservation.fixture';
 
 test.describe('FEATURE: reservation dates', () => {
@@ -548,7 +548,7 @@ test.describe('FEATURE: reservation dates', () => {
 `InquiryPage` owns `email`, `name`, `nameError` (`getByText('Name is required')`) and `sendButton`, plus `goto()` and `send()`. `fillNameAndLeave(name)` fills the name and calls `this.email.focus()`. `emailValidationMessage(): Promise<string>` returns `this.email.evaluate((element: HTMLInputElement): string => element.validationMessage)`. Boxed `expectRequiredErrors()` asserts `nameError`, `Email is required` and `Question is required` are visible.
 
 ```ts
-// e2e/inquiry/inquiry.spec.ts
+// e2e/inquiry/inquiry.e2e.ts
 import { expect, test } from './inquiry.fixture';
 
 test.describe('FEATURE: inquiry validation', () => {
@@ -591,7 +591,7 @@ test.describe('FEATURE: inquiry validation', () => {
 Validation runs on `blur`, so `fillEmail()` on `SignupPage` fills and blurs. One test per invalid value keeps the failing case named; the loop sits outside the `test` body.
 
 ```ts
-// e2e/signup/email-format.spec.ts
+// e2e/signup/email-format.e2e.ts
 import { expect, test } from './signup.fixture';
 
 const INVALID_EMAILS: string[] = ['invalid', 'missing@', '@nodomain.com', 'has spaces@mail.com'];
@@ -637,7 +637,7 @@ The same fill-blur-assert shape covers other rules. Each row is one test.
 `PreferencesPage` owns `emailAlerts`, `language`, `nickname` and `resetButton`, plus `goto()`. `changeEverything()` fills the nickname, `selectOption('es')` on language and `uncheck()` on email alerts. `reset()` clicks Reset. Boxed `expectDefaults()` asserts `toHaveValue('')`, `toHaveValue('en')` and `toBeChecked()` in one step.
 
 ```ts
-// e2e/preferences/preferences.spec.ts
+// e2e/preferences/preferences.e2e.ts
 import { test } from './preferences.fixture';
 
 test.describe('FEATURE: preferences reset', () => {

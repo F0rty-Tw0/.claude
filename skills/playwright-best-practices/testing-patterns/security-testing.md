@@ -191,7 +191,7 @@ export class SearchPage {
 ```
 
 ```ts
-// e2e/security/reflected-xss.spec.ts
+// e2e/security/reflected-xss.e2e.ts
 import { XSS_PAYLOADS } from './common/security.const';
 import { expect, test } from './security.fixture';
 
@@ -215,7 +215,7 @@ test.describe('FEATURE: reflected XSS', () => {
 A stored payload goes in through a form and comes back on a later page. `PostEditorPage` has `goto()` and `submit(body)`. `PostPage` has `gotoLatest()` and `expectSanitized(visibleText)`, which reads `page.content()`, asserts it does not contain `<script>alert`, and asserts the `article` role `toContainText(visibleText)`, each in a boxed step.
 
 ```ts
-// e2e/security/stored-xss.spec.ts
+// e2e/security/stored-xss.e2e.ts
 import { test } from './security.fixture';
 
 const STORED_PAYLOAD = '<script>alert("xss")</script>Hello';
@@ -240,7 +240,7 @@ test.describe('FEATURE: stored XSS', () => {
 The token is a hidden input named `_csrf` or `csrf_token`. `SettingsPage.csrfInput` is `page.locator('input[name="_csrf"], input[name="csrf_token"]')`; `expectCsrfToken` asserts `toHaveAttribute('value', /.{21,}/)`, one web-first assertion that waits for the input and fails when the value is missing or shorter than 21 characters. `saveTheme(theme)` selects the `Theme` option and clicks Save; `expectSaved` asserts the `Settings saved` text is visible. The positive case is the form itself: the page renders the token, the app sends it, and the save succeeds.
 
 ```ts
-// e2e/security/csrf.spec.ts
+// e2e/security/csrf.e2e.ts
 import { test } from './security.fixture';
 
 test.describe('FEATURE: CSRF token', () => {
@@ -297,7 +297,7 @@ export class SettingsApi {
 ```
 
 ```ts
-// e2e/security/csrf-validation.api.spec.ts
+// e2e/security/csrf-validation.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import type { SettingsPatch } from './common/security.type';
@@ -321,7 +321,7 @@ test.describe('FEATURE: CSRF validation', () => {
 `LoginPage.login(credentials)` opens `/login`, fills `Email` and `Password`, and clicks Sign in; `expectSessionExpired` asserts the `Session expired` text is visible. The clock jumps two hours through `page.clock.fastForward`, which needs `page.clock.install()` earlier in the test or fixture (see [clock-mocking.md](../advanced/clock-mocking.md)). The next navigation, `ProfilePage.goto()` to `/profile`, must land on the login page with the expiry notice.
 
 ```ts
-// e2e/security/session-expiry.spec.ts
+// e2e/security/session-expiry.e2e.ts
 import { expect, test } from './security.fixture';
 import { USER_STUB } from './test/stubs/security.stub';
 
@@ -353,7 +353,7 @@ test.describe('FEATURE: session expiry', () => {
 A second sign-in from another browser context must end or warn the first. `secondLoginPage` signs in on the fresh context; `DashboardPage.reload()` reloads the first, and `expectSessionEnded` asserts `page.getByText(/session.*another device|logged out/i)` is visible.
 
 ```ts
-// e2e/security/concurrent-sessions.spec.ts
+// e2e/security/concurrent-sessions.e2e.ts
 import { test } from './security.fixture';
 import { USER_STUB } from './test/stubs/security.stub';
 
@@ -375,7 +375,7 @@ test.describe('FEATURE: concurrent session limit', () => {
 A reset token works once. In a test environment the token is exposed or captured from an email mock; here it is a constant. `ForgotPasswordPage.request(email)` submits the forgot-password form. `ResetPasswordPage.goto(token)` opens `/reset-password?token=<token>`; `submit(password)` fills the new password and clicks Reset; `expectUpdated` and `expectInvalidToken` assert the success and the invalid-or-expired notices.
 
 ```ts
-// e2e/security/password-reset.spec.ts
+// e2e/security/password-reset.e2e.ts
 import { test } from './security.fixture';
 import { USER_STUB } from './test/stubs/security.stub';
 
@@ -415,7 +415,7 @@ A regular user's storage state is pinned with `test.use` under its own `GIVEN`. 
 | Dedicated 403 page | `expect(page).toHaveURL(/\/403/)` |
 
 ```ts
-// e2e/security/admin-access.spec.ts
+// e2e/security/admin-access.e2e.ts
 import { expect, test } from './security.fixture';
 
 test.describe('FEATURE: admin route authorization', () => {
@@ -435,19 +435,19 @@ test.describe('FEATURE: admin route authorization', () => {
 
 ### Test IDOR (Insecure Direct Object Reference)
 
-The API call must carry the signed-in user's session, otherwise a 401 for a missing cookie would pass as a 403. `idor.spec.ts` pins `storageState: '.auth/user.json'` like `admin-access.spec.ts` and follows the shape of `csrf-validation.api.spec.ts`: `WHEN ordersApi.get('other-user-order-456')`, `THEN` `response.status()` is 403. `OrdersApi.get(orderId)` sends `GET /api/orders/<orderId>` through `page.request`, which shares the context's cookies, and joins the fixture in the same shape as `settingsApi`.
+The API call must carry the signed-in user's session, otherwise a 401 for a missing cookie would pass as a 403. `idor.e2e.ts` pins `storageState: '.auth/user.json'` like `admin-access.e2e.ts` and follows the shape of `csrf-validation.api.e2e.ts`: `WHEN ordersApi.get('other-user-order-456')`, `THEN` `response.status()` is 403. `OrdersApi.get(orderId)` sends `GET /api/orders/<orderId>` through `page.request`, which shares the context's cookies, and joins the fixture in the same shape as `settingsApi`.
 
 ## Input Validation
 
 ### Test SQL Injection Prevention
 
-`sql-injection.spec.ts` loops `SQL_PAYLOADS` exactly as `reflected-xss.spec.ts` loops `XSS_PAYLOADS`, so the failing payload names itself: `searchPage.goto()` in a `GIVEN` `beforeEach`, `WHEN searchPage.submitSearch(payload)`, `THEN searchPage.expectNoDatabaseError()`, which asserts no text matching `/database error|sql|syntax|error/i` is visible.
+`sql-injection.e2e.ts` loops `SQL_PAYLOADS` exactly as `reflected-xss.e2e.ts` loops `XSS_PAYLOADS`, so the failing payload names itself: `searchPage.goto()` in a `GIVEN` `beforeEach`, `WHEN searchPage.submitSearch(payload)`, `THEN searchPage.expectNoDatabaseError()`, which asserts no text matching `/database error|sql|syntax|error/i` is visible.
 
 ### Test Input Length Limits
 
 A 10 000-character bio must be refused or truncated to the field's limit. `ProfilePage.saveBio(bio)` fills `Bio` and clicks Save; `expectBioAtMost(length)` asserts `toHaveValue(limit)` on the input, where `limit` is `new RegExp('^.{0,' + length + '}$', 's')`, which waits for the app to truncate.
 
-`input-length.spec.ts` is one test: `GIVEN profilePage.goto()`, `WHEN profilePage.saveBio('a'.repeat(10000))`, `THEN profilePage.expectBioAtMost(500)`.
+`input-length.e2e.ts` is one test: `GIVEN profilePage.goto()`, `WHEN profilePage.saveBio('a'.repeat(10000))`, `THEN profilePage.expectBioAtMost(500)`.
 
 ## Security Headers
 
@@ -494,7 +494,7 @@ export class HomePage {
 ```
 
 ```ts
-// e2e/security/security-headers.spec.ts
+// e2e/security/security-headers.e2e.ts
 import type { Response } from '@playwright/test';
 
 import type { HeaderMap } from './common/security.type';

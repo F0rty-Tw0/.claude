@@ -172,7 +172,7 @@ export class StripeCardComponent {
 `CARD_STUB` in `test/stubs/card.stub.ts` holds the `4242 4242 4242 4242` test card. The page wires `this.stripeCard = new StripeCardComponent(page.frameLocator('iframe[name*="__privateStripeFrame"]').first())`; the component also exposes `expectCardNumber(value)` as a boxed `toHaveValue` step, and a Stripe spec calls `checkoutPage.stripeCard.expectReady()`, `.fill(CARD_STUB)`, then `.expectCardNumber(CARD_STUB.number)`. `paymentReadyPage` is the fixture from [iFrame Fixture](#iframe-fixture): it opens checkout and asserts the payment frame is ready before the test starts.
 
 ```ts
-// e2e/checkout/checkout.spec.ts
+// e2e/checkout/checkout.e2e.ts
 import { test } from './checkout.fixture';
 import { CARD_STUB } from './test/stubs/card.stub';
 
@@ -283,7 +283,7 @@ await expect(widgetFrame.getByText('Widget Loaded')).toBeVisible();
 Prefer a web-first assertion on content inside the frame; `frameLocator` waits for the frame to attach on its own, so `WidgetPage.expectWidgetLoaded()` needs no wait for the `<iframe>` element.
 
 ```ts
-// e2e/checkout/widget.spec.ts
+// e2e/checkout/widget.e2e.ts
 import { test } from './checkout.fixture';
 
 test.describe('FEATURE: dashboard widget', () => {
@@ -375,7 +375,7 @@ export const recordFrameNavigations = (page: Page): string[] => {
 ```
 
 ```ts
-// e2e/checkout/frame-navigation.spec.ts
+// e2e/checkout/frame-navigation.e2e.ts
 import { expect, test } from './checkout.fixture';
 
 test.describe('FEATURE: frame navigation', () => {

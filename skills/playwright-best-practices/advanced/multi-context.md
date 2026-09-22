@@ -68,7 +68,7 @@ export class HomePage {
 ### Basic Popup
 
 ```ts
-// e2e/support/support-chat.spec.ts
+// e2e/support/support-chat.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { SupportChatPage } from './pages/support-chat.page';
@@ -97,7 +97,7 @@ test.describe('FEATURE: support chat popup', () => {
 The popup closes itself after login; `popup.waitForEvent('close')` is the step that waits for it.
 
 ```ts
-// e2e/integrations/connect-account.spec.ts
+// e2e/integrations/connect-account.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { TEST_USER } from '../auth/common/auth.const';
@@ -140,7 +140,7 @@ export const blockPopups = async (page: Page): Promise<void> => {
 ```
 
 ```ts
-// e2e/share/share.spec.ts
+// e2e/share/share.e2e.ts
 import { test } from './share.fixture';
 import { blockPopups } from './test/utils/popup-blocker.spec.util';
 
@@ -170,7 +170,7 @@ test.describe('FEATURE: share to twitter', () => {
 `target="_blank"` links raise `page` on the context, not `popup` on the page. `openDocumentation` waits on `this.page.context().waitForEvent('page')`, then `waitForLoadState`, and returns the tab.
 
 ```ts
-// e2e/resources/documentation-link.spec.ts
+// e2e/resources/documentation-link.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { DocsPage } from './pages/docs.page';
@@ -198,7 +198,7 @@ test.describe('FEATURE: documentation link', () => {
 
 ### Intercept New Tab
 
-Removing `target="_blank"` keeps the navigation in the current tab, so the destination can be asserted on `page`. The spec (`e2e/links/external-link.spec.ts`) runs `linksPage.goto()`, then `keepLinksInTab(page)` as an `AND` arrange step, clicks through `linksPage.openExternalSite()`, and asserts `expect(page).toHaveURL(/external-site\.com/)`.
+Removing `target="_blank"` keeps the navigation in the current tab, so the destination can be asserted on `page`. The spec (`e2e/links/external-link.e2e.ts`) runs `linksPage.goto()`, then `keepLinksInTab(page)` as an `AND` arrange step, clicks through `linksPage.openExternalSite()`, and asserts `expect(page).toHaveURL(/external-site\.com/)`.
 
 ```ts
 // e2e/links/test/utils/links.spec.util.ts
@@ -247,7 +247,7 @@ export const callbackRedirectMock = (): RouteHandler => {
 `tokenMock()` in `e2e/auth/test/mocks/token.mock.ts` has the same shape and fulfills `**/api/auth/token` with `{ access_token: 'mock-token', user: { email: 'test@example.com', name: 'Test User' } }`.
 
 ```ts
-// e2e/auth/google-mocked.spec.ts
+// e2e/auth/google-mocked.test.ts
 import { expect, test } from './auth.fixture';
 import { EMPTY_STORAGE_STATE } from './common/auth.const';
 import { callbackRedirectMock } from './test/mocks/callback-redirect.mock';
@@ -291,7 +291,7 @@ test.describe('FEATURE: google sign in', () => {
 Two tabs in one context share cookies and storage, which is what "same user, two windows" needs. `expectItem` carries a 10 s timeout because real-time sync is slower than a local render.
 
 ```ts
-// e2e/dashboard/window-sync.spec.ts
+// e2e/dashboard/window-sync.e2e.ts
 import type { Page } from '@playwright/test';
 
 import { test } from './dashboard.fixture';
@@ -329,9 +329,9 @@ Same two-tab shape as the window sync spec above. `bringToFront()` and `reload()
 
 | Spec | Page objects on `context.newPage()` tabs | WHEN | THEN |
 |---|---|---|---|
-| `e2e/dashboard/window-sync.spec.ts` | `SyncDashboardPage` twice, `goto()` each | `firstDashboard.addItem('New Item')` | `secondDashboard.expectItem('New Item')` |
-| `e2e/editor/preview-tab.spec.ts` | `EditorPage`, `PreviewPage`, `goto()` each | `editorPage.bringToFront()`, `fillContent('Hello World')`, `previewPage.bringToFront()`, `reload()` | `previewPage.expectContent('Hello World')` |
-| `e2e/support/tab-cleanup.spec.ts` | `HomePage` on the main tab, `goto()`, then `openTabs(context, ['/popup/0', '/popup/1', '/popup/2'])` | `closeOtherTabs(context, mainTab)` | `expect(context.pages()).toHaveLength(1)` |
+| `e2e/dashboard/window-sync.e2e.ts` | `SyncDashboardPage` twice, `goto()` each | `firstDashboard.addItem('New Item')` | `secondDashboard.expectItem('New Item')` |
+| `e2e/editor/preview-tab.e2e.ts` | `EditorPage`, `PreviewPage`, `goto()` each | `editorPage.bringToFront()`, `fillContent('Hello World')`, `previewPage.bringToFront()`, `reload()` | `previewPage.expectContent('Hello World')` |
+| `e2e/support/tab-cleanup.e2e.ts` | `HomePage` on the main tab, `goto()`, then `openTabs(context, ['/popup/0', '/popup/1', '/popup/2'])` | `closeOtherTabs(context, mainTab)` | `expect(context.pages()).toHaveLength(1)` |
 
 ### Close All Tabs Except One
 

@@ -352,7 +352,7 @@ export const CI_USER: Credentials = {
 ```
 
 ```ts
-// e2e/login/login.spec.ts
+// e2e/login/login.e2e.ts
 import { CI_USER } from './common/login.const';
 import { expect, test } from './login.fixture';
 

@@ -216,7 +216,7 @@ export const expectNoConsoleErrors = (errors: string[]): void => {
 ```
 
 ```ts
-// e2e/console/console-error.spec.ts
+// e2e/console/console-error.test.ts
 import { test } from './console.fixture';
 import { expectNoConsoleErrors } from './test/utils/console-error.spec.util';
 
@@ -353,7 +353,7 @@ export const brokenDataMock = (): RouteHandler => {
 ```
 
 ```ts
-// e2e/console/error-boundary.spec.ts
+// e2e/console/error-boundary.test.ts
 import { expect, test } from './console.fixture';
 import { brokenDataMock } from './test/mocks/data.mock';
 

@@ -31,7 +31,7 @@ export default defineConfig({
 `test.describe.configure({ mode: 'serial' })` at the top of a file runs every test in order on one worker and skips the rest after a failure. The same call inside a `describe` scopes the mode to that block; `test.describe.serial('GIVEN …', …)` is the shorthand. Blocks without the call stay parallel.
 
 ```ts
-// e2e/onboarding/onboarding.spec.ts
+// e2e/onboarding/onboarding.e2e.ts
 import { test } from './onboarding.fixture';
 import { PROFILE_STUB } from './test/stubs/onboarding.stub';
 
@@ -170,7 +170,7 @@ test.describe('Dashboard', () => {
 Prefer storage state from a setup project (see [Reuse Authentication](#reuse-authentication)) and one navigation step in the `GIVEN`'s `beforeEach`. Each test gets a fresh page; the navigation cost is one `goto`:
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.test.ts
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
@@ -213,7 +213,7 @@ Prefer the shape in [Reuse Page State](#reuse-page-state-serial-only--trade-off-
 `test.skip(condition, reason)` inside the body skips before any step runs. The condition reads a const from `common/<feature>.const.ts`, never `process.env` in the spec.
 
 ```ts
-// e2e/admin/admin.spec.ts
+// e2e/admin/admin.e2e.ts
 import { ADMIN_ENABLED } from './common/admin.const';
 import { test } from './admin.fixture';
 
@@ -507,7 +507,7 @@ export const annotateLoadTime = (testInfo: TestInfo, loadTime: number): void => 
 ```
 
 ```ts
-// e2e/home/home.spec.ts
+// e2e/home/home.e2e.ts
 import type { PageMetrics } from './common/home.type';
 import { expect, test } from './home.fixture';
 import { annotateLoadTime } from './test/utils/annotate.spec.util';
@@ -566,7 +566,7 @@ export const auditHome = async (page: Page): Promise<number> => {
 ```
 
 ```ts
-// e2e/home/lighthouse.spec.ts
+// e2e/home/lighthouse.e2e.ts
 import { expect, test } from './home.fixture';
 import { auditHome } from './test/utils/lighthouse.spec.util';
 

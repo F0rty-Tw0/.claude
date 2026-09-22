@@ -67,7 +67,7 @@ export class LoginPage {
 The spec receives `loginPage` from `login.fixture.ts` (see [Using with Fixtures](#using-with-fixtures)) and never constructs a page object or touches a locator.
 
 ```ts
-// e2e/login/login.spec.ts
+// e2e/login/login.e2e.ts
 import type { Credentials } from './common/login.type';
 import { expect, test } from './login.fixture';
 import { USER_STUB } from './test/stubs/login.stub';
@@ -213,12 +213,12 @@ Not used. A factory returning an object literal of closures cannot follow the me
 ```text
 e2e/
   login/
-    login.spec.ts
+    login.e2e.ts
     login.fixture.ts
     pages/
       login.page.ts
   dashboard/
-    dashboard.spec.ts
+    dashboard.e2e.ts
     dashboard.fixture.ts
     components/
       modal.component.ts

@@ -65,7 +65,7 @@ export const readDownload = async (download: Download): Promise<string> => {
 ```
 
 ```ts
-// e2e/exports/exports.spec.ts
+// e2e/exports/exports.e2e.ts
 import type { Download } from '@playwright/test';
 
 import { expect, test } from './exports.fixture';
@@ -235,7 +235,7 @@ The `exports` and `avatar` fixtures follow the same shape with `exportsPage`, `a
 Real files live under `test/fixtures/`; the spec resolves the path and hands it to `select()`. In-memory files are typed stubs: `Buffer.from()` keeps the test self-contained, and a stub is spread and renamed when a case needs several copies. Selecting a stub is the first test with `attachmentsPage.select(CSV_FILE_STUB)` and `expectListed(CSV_FILE_STUB.name)`.
 
 ```ts
-// e2e/attachments/attachments.spec.ts
+// e2e/attachments/attachments.e2e.ts
 import path from 'node:path';
 
 import { expect, test } from './attachments.fixture';
@@ -308,7 +308,7 @@ export const PDF_FILE_STUB: UploadFile = {
 `select()` accepts an array. Removing one row is a `removeFile(name)` page method that clicks `getByText(name).locator('..').getByRole('button', { name: /remove|delete|×/i })`, then `expectNotListed(name)` and `expectListed` on the survivor.
 
 ```ts
-// e2e/attachments/attachments-multiple.spec.ts
+// e2e/attachments/attachments-multiple.e2e.ts
 import type { UploadFile } from './common/attachments.type';
 import { expect, test } from './attachments.fixture';
 import { PDF_FILE_STUB } from './test/stubs/attachments.stub';
@@ -380,7 +380,7 @@ export class DropZoneComponent {
 ```
 
 ```ts
-// e2e/attachments/drop-zone.spec.ts
+// e2e/attachments/drop-zone.e2e.ts
 import { test } from './attachments.fixture';
 
 test.describe('FEATURE: attachments drop zone', () => {
@@ -461,7 +461,7 @@ export class AvatarPage {
 ```
 
 ```ts
-// e2e/avatar/avatar.spec.ts
+// e2e/avatar/avatar.e2e.ts
 import type { FileChooser } from '@playwright/test';
 import path from 'node:path';
 
@@ -572,7 +572,7 @@ export const slowUploadMock = (): RouteHandler => {
 ```
 
 ```ts
-// e2e/attachments/upload-progress.spec.ts
+// e2e/attachments/upload-progress.test.ts
 import { test } from './attachments.fixture';
 import { slowUploadMock } from './test/mocks/slow-upload.mock';
 import { LARGE_FILE_STUB } from './test/stubs/attachments.stub';
@@ -642,7 +642,7 @@ export const flakyUploadMock = (): FlakyUpload => {
 ```
 
 ```ts
-// e2e/attachments/upload-retry.spec.ts
+// e2e/attachments/upload-retry.test.ts
 import { expect, test } from './attachments.fixture';
 import { flakyUploadMock } from './test/mocks/flaky-upload.mock';
 import { CSV_FILE_STUB } from './test/stubs/attachments.stub';
@@ -681,7 +681,7 @@ test.describe('FEATURE: attachments upload retry', () => {
 The HTML `accept` attribute only filters the OS dialog. `setInputFiles()` bypasses it, which is what lets the spec exercise the app's JavaScript validation with a disallowed type. The allowed case is a `GIVEN` step with `expect(attachmentsPage.fileInput).toHaveAttribute('accept', /\.pdf|\.doc|\.docx|\.txt/)`, `select(PDF_FILE_STUB)`, `expectListed('report.pdf')` and `expectNotListed(/not allowed|invalid/i)`.
 
 ```ts
-// e2e/attachments/upload-restrictions.spec.ts
+// e2e/attachments/upload-restrictions.e2e.ts
 import { expect, test } from './attachments.fixture';
 import { EXE_FILE_STUB } from './test/stubs/attachments.stub';
 
@@ -714,7 +714,7 @@ Every other limit is the rejection test with a different selection and alert pat
 
 ## Authenticated Downloads
 
-The browser download succeeds because the context's cookies travel with the request, so `exportsPage.download('confidential.pdf')` from `exports.spec.ts` needs nothing extra. The `request` fixture shares the same auth state, so the API path is checked alongside: `const response = await test.step('WHEN the same file is fetched through the API', (): Promise<APIResponse> => request.get('/api/attachments/456/download'));` then `expect(response.ok()).toBeTruthy()` and `expect(response.headers()['content-type']).toContain('application/pdf')` in sync `THEN` steps.
+The browser download succeeds because the context's cookies travel with the request, so `exportsPage.download('confidential.pdf')` from `exports.e2e.ts` needs nothing extra. The `request` fixture shares the same auth state, so the API path is checked alongside: `const response = await test.step('WHEN the same file is fetched through the API', (): Promise<APIResponse> => request.get('/api/attachments/456/download'));` then `expect(response.ok()).toBeTruthy()` and `expect(response.headers()['content-type']).toContain('application/pdf')` in sync `THEN` steps.
 
 
 ---

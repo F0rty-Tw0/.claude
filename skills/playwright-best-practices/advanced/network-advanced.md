@@ -208,7 +208,7 @@ export const USER_MOCK_STUB: GraphQLMock = { operation: 'GetUser', response: USE
 ```
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.test.ts
 import { test } from './dashboard.fixture';
 import { STATS_MOCK_STUB, USER_MOCK_STUB } from './test/stubs/graphql.stub';
 
@@ -345,7 +345,7 @@ export const searchMock = (): RouteHandler => {
 ```
 
 ```ts
-// e2e/search/search.spec.ts
+// e2e/search/search.e2e.ts
 import { test } from './search.fixture';
 
 test.describe('FEATURE: search', () => {
@@ -419,7 +419,7 @@ export const slowDataMock = (delayMs: number): RouteHandler => {
 ```
 
 ```ts
-// e2e/dashboard/dashboard-loading.spec.ts
+// e2e/dashboard/dashboard-loading.test.ts
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard loading state', () => {

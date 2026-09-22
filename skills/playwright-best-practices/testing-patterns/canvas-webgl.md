@@ -178,7 +178,7 @@ export const canvasOrigin = async (canvas: Locator): Promise<Point> => {
 
 ### Reading Canvas Pixels
 
-A freshly mounted canvas is blank. `readHasContent` reports whether any colour channel differs from the `blank` value: `hasCanvasContent` passes `0` for a transparent canvas, `hasInk` passes `255` for a white one. `expect.poll` on either replaces `waitForFunction`. `canvasDataUrl` returns `toDataURL('image/png')`; `pixelAt` returns the RGBA of one pixel. `chart.spec.ts` under [Visual Comparison](#visual-comparison) uses both.
+A freshly mounted canvas is blank. `readHasContent` reports whether any colour channel differs from the `blank` value: `hasCanvasContent` passes `0` for a transparent canvas, `hasInk` passes `255` for a white one. `expect.poll` on either replaces `waitForFunction`. `canvasDataUrl` returns `toDataURL('image/png')`; `pixelAt` returns the RGBA of one pixel. `chart.e2e.ts` under [Visual Comparison](#visual-comparison) uses both.
 
 ```ts
 // e2e/canvas/test/utils/canvas-pixels.spec.util.ts
@@ -268,7 +268,7 @@ export const waitForAnimationComplete = (page: Page): Promise<void> => page.eval
 `expect(page).toHaveScreenshot` may sit in a spec step because it takes `page`; an element screenshot uses the page-object locator. Tolerance is a named const passed as the options argument. The last test swaps `freezeAnimation` for `waitForAnimationComplete` when the app must finish the animation first. Canvas output differs by anti-aliasing across machines, so the project-wide `toHaveScreenshot` defaults (`animations: 'disabled', maxDiffPixelRatio: 0.02, threshold: 0.3`) are looser than for DOM screenshots; option meanings and the `defineConfig` shape are in [visual-regression.md](visual-regression.md).
 
 ```ts
-// e2e/canvas/chart.spec.ts
+// e2e/canvas/chart.e2e.ts
 import type { Point, Rgba } from './common/canvas.type';
 import { expect, test } from './canvas.fixture';
 import { freezeAnimation } from './test/utils/chart-globals.spec.util';
@@ -401,7 +401,7 @@ export class MapPage {
 | Drag a shape | `whiteboardPage.dragShape(from, to)` | `dragAcross(page, canvas, from, to, 20)` so a diagram editor registers intermediate positions | `expect(canvas).toHaveScreenshot('shape-moved.png')` |
 
 ```ts
-// e2e/canvas/interaction.spec.ts
+// e2e/canvas/interaction.e2e.ts
 import type { Point } from './common/canvas.type';
 import { expect, test } from './canvas.fixture';
 import { hasInk } from './test/utils/canvas-pixels.spec.util';
@@ -496,7 +496,7 @@ export const isWebglSupported = (page: Page): Promise<boolean> => page.evaluate(
 `ViewerPage` has `goto('/3d-viewer')` and `orbit(deltaX)`, which reads `canvasMidpoint(this.canvas)` and calls `dragAcross(this.page, this.canvas, midpoint, { x: midpoint.x + deltaX, y: midpoint.y }, 10)`; orbit controls turn the horizontal drag into a camera rotation. WebGL output varies more between GPUs than 2D canvas output, so the screenshot tolerance is wider.
 
 ```ts
-// e2e/canvas/webgl.spec.ts
+// e2e/canvas/webgl.e2e.ts
 import { expect, test } from './canvas.fixture';
 import { cameraRotationY, hasWebglContent, isSceneReady, isWebglSupported } from './test/utils/webgl.spec.util';
 
@@ -538,7 +538,7 @@ test.describe('FEATURE: webgl viewer', () => {
 Chart.js registers each instance on its canvas; `Chart.getChart(canvas)` returns it and `chartData` reads the first dataset. `expect.poll` until the data arrives replaces waiting for `window.Chart` by hand. SVG charts (D3) expose real elements: hover a bar and assert the tooltip. Canvas charts (ECharts, Chart.js) take `chartPage.clickAt(BAR_POSITION)` in the `WHEN` step instead of `hoverFirstBar()`, with the same tooltip assertion. One test per renderer replaces a branch on `bars.count()`.
 
 ```ts
-// e2e/canvas/chart-libraries.spec.ts
+// e2e/canvas/chart-libraries.e2e.ts
 import { expect, test } from './canvas.fixture';
 import { chartData } from './test/utils/chart-globals.spec.util';
 
@@ -603,7 +603,7 @@ export const tickGame = (page: Page, count: number): Promise<void> => page.evalu
 ```
 
 ```ts
-// e2e/canvas/game.spec.ts
+// e2e/canvas/game.e2e.ts
 import { expect, test } from './canvas.fixture';
 
 test.describe('FEATURE: canvas game', () => {

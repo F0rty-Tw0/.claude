@@ -80,7 +80,7 @@ export const listProducts = (request: APIRequestContext, token: string, params: 
 ```
 
 ```ts
-// e2e/products/products-api.spec.ts
+// e2e/products/products-api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
 import type { ProductPage } from './common/products.type';
@@ -178,7 +178,7 @@ export const mountContactForm = async (mount: Mount, onSubmit: SubmitHandler = n
 ```
 
 ```tsx
-// e2e/contact-form/contact-form.spec.tsx
+// e2e/contact-form/contact-form.test.tsx
 import { expect, test } from '@playwright/experimental-ct-react';
 
 import type { ContactMessage } from './common/contact-form.type';
@@ -278,7 +278,7 @@ export class PaymentFrameComponent {
 ```
 
 ```ts
-// e2e/subscription/subscription.spec.ts
+// e2e/subscription/subscription.e2e.ts
 import { test } from './subscription.fixture';
 import { BILLING_STUB } from './test/stubs/billing.stub';
 import { CARD_STUB } from './test/stubs/card.stub';
@@ -318,7 +318,7 @@ Effective test suites combine all three types. Example for an "inventory managem
 Cover every backend logic permutation. Cheap to run and maintain.
 
 ```text
-e2e/inventory/inventory-api.spec.ts
+e2e/inventory/inventory-api.e2e.ts
   FEATURE: inventory API
     GIVEN a manager token
       posting a valid item returns 201
@@ -341,7 +341,7 @@ e2e/inventory/inventory-api.spec.ts
 Cover every visual state and interaction.
 
 ```text
-e2e/inventory/inventory-form.spec.tsx
+e2e/inventory/inventory-form.test.tsx
   FEATURE: inventory form
     GIVEN an empty form
       submitting shows validation errors
@@ -351,7 +351,7 @@ e2e/inventory/inventory-form.spec.tsx
     GIVEN a saving form
       rendering disables the submit button
 
-e2e/inventory/inventory-table.spec.tsx
+e2e/inventory/inventory-table.test.tsx
   FEATURE: inventory table
     GIVEN a list of items
       rendering shows one row per item
@@ -367,7 +367,7 @@ e2e/inventory/inventory-table.spec.tsx
 Cover only critical paths proving full stack works.
 
 ```text
-e2e/inventory/inventory.spec.ts
+e2e/inventory/inventory.e2e.ts
   FEATURE: inventory management
     GIVEN a logged-in manager
       creating an item adds it to the list

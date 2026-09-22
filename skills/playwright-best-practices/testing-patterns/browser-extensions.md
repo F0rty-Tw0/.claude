@@ -144,7 +144,7 @@ export { expect } from '@playwright/test';
 A Manifest V3 extension registers a service worker whose URL starts with `chrome-extension://`. The fixture already waited for it.
 
 ```ts
-// e2e/extension/extension-load.spec.ts
+// e2e/extension/extension-load.e2e.ts
 import { expect, test } from './extension.fixture';
 
 test.describe('FEATURE: extension loading', () => {
@@ -280,7 +280,7 @@ export const sendRuntimeMessage = (page: Page, request: RuntimeRequest): Promise
 ```
 
 ```ts
-// e2e/extension/popup.spec.ts
+// e2e/extension/popup.e2e.ts
 import type { PopupPage } from './pages/popup.page';
 import { expect, test } from './extension.fixture';
 
@@ -314,7 +314,7 @@ test.describe('FEATURE: extension popup', () => {
 A regular page sends `GET_STATUS` to the extension through `sendRuntimeMessage`; the worker's `onMessageExternal` handler answers.
 
 ```ts
-// e2e/extension/background-messages.spec.ts
+// e2e/extension/background-messages.e2e.ts
 import type { RuntimeRequest } from './common/extension.type';
 import { expect, test } from './extension.fixture';
 import { sendRuntimeMessage } from './test/utils/runtime-message.spec.util';
@@ -363,7 +363,7 @@ export const createAndAwaitAlarm = (worker: Worker, request: AlarmRequest): Prom
 ```
 
 ```ts
-// e2e/extension/background-alarm.spec.ts
+// e2e/extension/background-alarm.e2e.ts
 import type { AlarmRequest, StorageItems } from './common/extension.type';
 import { expect, test } from './extension.fixture';
 import { createAndAwaitAlarm } from './test/utils/alarm.spec.util';
@@ -446,7 +446,7 @@ The content script relays a click to the background and reflects the answer in a
 Style injection is counted with `injectedStyleCount`; DOM markers are asserted through the `modifiedElements` locator with `not.toHaveCount(0)`, which retries instead of reading `count()` once.
 
 ```ts
-// e2e/extension/content-script.spec.ts
+// e2e/extension/content-script.e2e.ts
 import { expect, test } from './extension.fixture';
 import { injectedStyleCount } from './test/utils/injected-styles.spec.util';
 
@@ -502,7 +502,7 @@ export const writeLocalStorage = (worker: Worker, items: StorageItems): Promise<
 | `sync` | `chrome.storage.sync.get` / `.set` | `readSyncStorage`, `writeSyncStorage`, same signatures |
 
 ```ts
-// e2e/extension/storage-api.spec.ts
+// e2e/extension/storage-api.e2e.ts
 import type { StorageItems } from './common/extension.type';
 import { expect, test } from './extension.fixture';
 import { readLocalStorage, writeLocalStorage } from './test/utils/extension-storage.spec.util';
@@ -548,7 +548,7 @@ export const sendTabMessage = (worker: Worker, tab: chrome.tabs.Tab, type: strin
 ```
 
 ```ts
-// e2e/extension/tabs-api.spec.ts
+// e2e/extension/tabs-api.e2e.ts
 import { expect, test } from './extension.fixture';
 import { queryTabs, sendTabMessage } from './test/utils/tabs.spec.util';
 
@@ -623,7 +623,7 @@ export const requestOriginPermission = (worker: Worker, origin: string): Promise
 ```
 
 ```ts
-// e2e/extension/permissions-api.spec.ts
+// e2e/extension/permissions-api.e2e.ts
 import { expect, test } from './extension.fixture';
 import { hasOriginPermission, requestOriginPermission } from './test/utils/permissions.spec.util';
 

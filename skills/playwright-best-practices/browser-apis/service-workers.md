@@ -192,7 +192,7 @@ export const activeServiceWorker = (context: BrowserContext): Promise<Worker> =>
 ```
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 import { expect, test } from './pwa.fixture';
 import { isServiceWorkerActive, serviceWorkerState, serviceWorkerVersion } from './test/utils/service-worker.spec.util';
 
@@ -216,7 +216,7 @@ test.describe('FEATURE: pwa service worker', () => {
 `serviceWorkerState` maps the registration to a plain object so the spec asserts on named fields.
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: the registration is active in the app scope', async ({ page }): Promise<void> => {
   const state = await test.step('WHEN the registration state is read', (): Promise<ServiceWorkerState | null> => serviceWorkerState(page));
 
@@ -231,7 +231,7 @@ test('SCENARIO: the registration is active in the app scope', async ({ page }): 
 `context.serviceWorkers()` lists workers already running; `context.waitForEvent('serviceworker')` waits for the next one. `activeServiceWorker` (above) picks whichever applies, and the `serviceWorker` fixture starts the wait before navigating so no registration is missed.
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: the registered worker script is sw.js', async ({ serviceWorker }): Promise<void> => {
   const url = await test.step('WHEN the worker url is read', (): string => serviceWorker.url());
 
@@ -302,7 +302,7 @@ export const waitForControllerChange = (page: Page): Promise<void> => page.evalu
 ```
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.test.ts
 test.describe('GIVEN a new worker version is served', () => {
   test.beforeEach(async ({ page, pwaPage }): Promise<void> => {
     await test.step('GIVEN the app is open', (): Promise<void> => pwaPage.goto());
@@ -329,7 +329,7 @@ test.describe('GIVEN a new worker version is served', () => {
 `worker.evaluate` runs inside the worker scope. `serviceWorkerVersion` (in `service-worker.spec.util.ts` above) reads `SW_VERSION` from `self` through the optional `SwGlobals` type.
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: the installed worker reports its version', async ({ serviceWorker }): Promise<void> => {
   const version = await test.step('WHEN the worker version is read', (): Promise<string> => serviceWorkerVersion(serviceWorker));
 
@@ -357,7 +357,7 @@ export const resetServiceWorkers = (page: Page): Promise<void> => page.evaluate(
 ```
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test.beforeEach(async ({ page, pwaPage }): Promise<void> => {
   await test.step('GIVEN the app is open', (): Promise<void> => pwaPage.goto('/'));
 
@@ -398,7 +398,7 @@ export const bodyFontFamily = (page: Page): Promise<string> => page.evaluate(rea
 ```
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: worker activation caches the app assets', async ({ page }): Promise<void> => {
   await test.step('THEN the cache is populated', (): Promise<void> => expect.poll((): Promise<number> => cachedUrls(page, 'app-cache-v1').then((urls: string[]): number => urls.length)).toBeGreaterThan(0));
 
@@ -415,7 +415,7 @@ test('SCENARIO: worker activation caches the app assets', async ({ page }): Prom
 To prove a cache-first strategy, abort the network request for a cached asset, reload, and assert the asset still applied. `abortMock` is a one-line route factory in `test/mocks/abort.mock.ts` returning `(route: Route): Promise<void> => route.abort()`.
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.test.ts
 test('SCENARIO: a blocked stylesheet request still applies the cached stylesheet', async ({ page, pwaPage }): Promise<void> => {
   await test.step('THEN the cache is populated', (): Promise<void> => expect.poll((): Promise<number> => cachedUrls(page, 'app-cache-v1').then((urls: string[]): number => urls.length)).toBeGreaterThan(0));
 
@@ -434,7 +434,7 @@ test('SCENARIO: a blocked stylesheet request still applies the cached stylesheet
 Serving `serviceWorkerMock('v2')` (above) and triggering an update creates `app-cache-v2`. `expect.poll` on `hasCache` replaces `waitForFunction`.
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.test.ts
 test('SCENARIO: installing worker v2 creates the v2 cache', async ({ page }): Promise<void> => {
   await test.step('WHEN worker v2 is served', async (): Promise<void> => {
     await page.route('**/sw.js', serviceWorkerMock('v2'));
@@ -455,7 +455,7 @@ This section covers **offline-first apps (PWAs)** that are designed to work offl
 `context.setOffline(true)` cuts the network for every page in the context. The cache must be populated before going offline; `expect.poll` on the cached URL count replaces a fixed wait.
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test.describe('GIVEN the app is cached and the network is off', () => {
   test.beforeEach(async ({ context, page, pwaPage }): Promise<void> => {
     await test.step('GIVEN the app is open', (): Promise<void> => pwaPage.goto());
@@ -482,7 +482,7 @@ test.describe('GIVEN the app is cached and the network is off', () => {
 ### Testing Offline Fallback
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: an uncached route shows the offline fallback', async ({ pwaPage }): Promise<void> => {
   await test.step('WHEN an uncached page is opened', (): Promise<void> => pwaPage.goto('/uncached-page'));
 
@@ -495,7 +495,7 @@ test('SCENARIO: an uncached route shows the offline fallback', async ({ pwaPage 
 The form is submitted offline, queued, then synced when the network returns. `registerSync` (see [Background Sync](#background-sync)) triggers the sync tag explicitly instead of waiting for the browser's own schedule. The final assertion allows extra time for the sync round trip.
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: a message sent offline syncs once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
   await test.step('GIVEN the form is open', (): Promise<void> => pwaPage.goto('/pwa-app/form'));
 
@@ -558,7 +558,7 @@ export const clickFirstNotification = (worker: Worker): Promise<void> => worker.
 ```
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test.describe('GIVEN notification permission is granted', () => {
   test.beforeEach(async ({ context, pwaPage }): Promise<void> => {
     await test.step('GIVEN notification permission is granted', (): Promise<void> => context.grantPermissions(['notifications']));
@@ -579,7 +579,7 @@ test.describe('GIVEN notification permission is granted', () => {
 `PushEvent` accepts a string `data`, so no `PushMessageData` construction is needed. Playwright cannot observe the OS notification the worker shows; assert on what the worker does with the push (a cached record, a `postMessage` to the page, or a `showNotification` call the next sample clicks).
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: the worker handles a push event', async ({ serviceWorker }): Promise<void> => {
   const payload: PushPayload = { body: 'Push message', title: 'Test' };
 
@@ -592,7 +592,7 @@ test('SCENARIO: the worker handles a push event', async ({ serviceWorker }): Pro
 The worker's `notificationclick` handler opens the target URL in a new page. `context.waitForEvent('page')` is started in a step before the click and returns the new page; the last step asserts its URL. `page.waitForTimeout` is not needed.
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: clicking a notification opens the target page', async ({ context, page, serviceWorker }): Promise<void> => {
   await test.step('WHEN a notification targeting a url is shown', (): Promise<void> => showNotification(page, '/notification-target'));
 
@@ -652,7 +652,7 @@ export const isSyncCompleted = (page: Page): Promise<boolean> => page.evaluate(r
 ```
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: the browser accepts a registered sync tag', async ({ page }): Promise<void> => {
   const supported = await test.step('WHEN a sync tag is registered', (): Promise<boolean> => isSyncSupported(page, 'my-sync'));
 
@@ -665,7 +665,7 @@ test('SCENARIO: the browser accepts a registered sync tag', async ({ page }): Pr
 The app queues its data (IndexedDB or the offline form above) while offline and registers a sync tag. The page listens for the worker's `SYNC_COMPLETE` message before the network returns; `expect.poll` on the flag replaces `waitForFunction`.
 
 ```ts
-// e2e/pwa/pwa.spec.ts
+// e2e/pwa/pwa.e2e.ts
 test('SCENARIO: the queued sync completes once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
   await test.step('GIVEN the form is open', (): Promise<void> => pwaPage.goto('/pwa-app/form'));
 

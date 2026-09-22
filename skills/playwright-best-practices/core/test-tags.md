@@ -29,7 +29,7 @@ test('quick validation @fast @smoke', async ({ page }) => {
 Prefer the details object as the second argument. A single tag is a string; several tags are an array.
 
 ```ts
-// e2e/login/login.spec.ts
+// e2e/login/login.e2e.ts
 import { test } from './login.fixture';
 
 test.describe('FEATURE: login', () => {
@@ -60,7 +60,7 @@ A tag on `test.describe` is inherited by every test inside.
 Test-level tags add to the inherited ones. The second test below carries `@admin`, `@critical`, and `@slow`.
 
 ```ts
-// e2e/admin/admin.spec.ts
+// e2e/admin/admin.e2e.ts
 import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin', { tag: '@admin' }, () => {
@@ -180,7 +180,7 @@ All three schemes use the same two mechanisms: a describe-level tag for the shar
 ### By Feature Area
 
 ```ts
-// e2e/payments/payments.spec.ts
+// e2e/payments/payments.e2e.ts
 import { test } from './payments.fixture';
 import { CARD_STUB } from './test/stubs/card.stub';
 

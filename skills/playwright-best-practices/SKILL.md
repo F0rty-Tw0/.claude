@@ -77,6 +77,7 @@ Reference set for Playwright test development, rewritten to house style: `FEATUR
 | Reading a topic file without `house-style.md` | Read `house-style.md` first; topic files assume it. |
 | Copying a Playwright docs sample verbatim | Reshape it: `SCENARIO:` title, Gherkin steps, page object, fixture, return types. |
 | Fixing a flake by retrying | skill:deflaky audit, then the matching category in `debugging/flaky-tests.md`. |
+| `login.spec.ts` for a Playwright file | `login.test.ts` when your own API is routed (directly or via fixture, page object, mock); `login.e2e.ts` otherwise, third-party stubs included. `.spec.ts` is artification's unit-test suffix. |
 | `test.describe('Login')` | `test.describe('FEATURE: login')`. |
 | `test('WHEN … THEN …')` or `test('<bare title>')` | Title is `SCENARIO: <flow>`; `WHEN` / `THEN` are `test.step` names. |
 | A `page.getByRole` in a spec | Move it to the page object; call the method from a step. |

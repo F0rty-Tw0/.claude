@@ -138,7 +138,7 @@ export class LoginPage {
 ```
 
 ```ts
-// e2e/login/login.spec.ts
+// e2e/login/login.test.ts
 import { test } from './login.fixture';
 import { OAUTH_USER_STUB } from './test/stubs/oauth.stub';
 
@@ -354,7 +354,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/checkout/checkout.spec.ts
+// e2e/checkout/checkout.test.ts
 import { test } from './checkout.fixture';
 
 test.describe('FEATURE: checkout', () => {
@@ -431,7 +431,7 @@ export const verificationMock = (): VerificationMock => {
 `VerificationMock` lives in `e2e/signup/common/signup.type.ts` as `{ readonly send: RouteHandler; readonly token: () => string; readonly verify: RouteHandler }`. A `verification` fixture creates it, routes `send` on `**/api/send-verification` and `verify` on `**/api/verify-email**`, and yields it.
 
 ```ts
-// e2e/signup/signup.spec.ts
+// e2e/signup/signup.e2e.ts
 import { test } from './signup.fixture';
 import { SIGNUP_STUB } from './test/stubs/signup.stub';
 
@@ -528,7 +528,7 @@ export const smsMock = (): SmsMock => {
 ```
 
 ```ts
-// e2e/verify-phone/verify-phone.spec.ts
+// e2e/verify-phone/verify-phone.e2e.ts
 import { test } from './verify-phone.fixture';
 import { PHONE_STUB } from './test/stubs/phone.stub';
 
@@ -616,7 +616,7 @@ export const analyticsCaptureMock = (): AnalyticsCapture => {
 `AnalyticsEvent` is `{ readonly event: string; readonly props: Record<string, unknown> }` and `AnalyticsCapture` is `{ readonly events: AnalyticsEvent[]; readonly handler: RouteHandler }`, both in `common/checkout.type.ts`. An `analytics` fixture installs the SDK stub, routes `**/api/analytics/**` to the capture handler, and yields the capture.
 
 ```ts
-// e2e/checkout/checkout-analytics.spec.ts
+// e2e/checkout/checkout-analytics.test.ts
 import { expect, test } from './checkout.fixture';
 
 test.describe('FEATURE: checkout analytics', () => {

@@ -29,7 +29,7 @@ Every spec below imports `test` from its own feature fixture. Each feature fixtu
 `page.clock.install({ time })` before the first `goto`. `time` accepts an ISO string, a `Date`, or epoch milliseconds; the page then sees that instant as now.
 
 ```ts
-// e2e/dashboard/dashboard.spec.ts
+// e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard date', () => {
@@ -99,7 +99,7 @@ A `GIVEN` sets its time through `test.use({ frozenTime })`; see [Fixed Time Test
 One `GIVEN` per frozen date. Each holds one test with a `WHEN` (open the page) and a `THEN` step.
 
 ```ts
-// e2e/billing/billing.spec.ts
+// e2e/billing/billing.e2e.ts
 import { test } from './billing.fixture';
 
 test.describe('FEATURE: end of month billing', () => {
@@ -129,9 +129,9 @@ Other date-dependent specs keep the same shape and differ only in these three ce
 
 | Spec | `frozenTime` | Page object and assertion |
 |---|---|---|
-| `e2e/subscription/subscription.spec.ts` | `'2025-12-31T23:59:00Z'` | `SubscriptionPage.expectExpiry('Expires today')` |
-| `e2e/home/holiday-banner.spec.ts` | `'2025-12-20T10:00:00Z'` | `HomePage.expectHolidayBanner()` (banner role, name `/holiday/i`) |
-| `e2e/home/holiday-banner.spec.ts` | `'2025-01-15T10:00:00Z'` | `HomePage.expectNoHolidayBanner()` |
+| `e2e/subscription/subscription.e2e.ts` | `'2025-12-31T23:59:00Z'` | `SubscriptionPage.expectExpiry('Expires today')` |
+| `e2e/home/holiday-banner.e2e.ts` | `'2025-12-20T10:00:00Z'` | `HomePage.expectHolidayBanner()` (banner role, name `/holiday/i`) |
+| `e2e/home/holiday-banner.e2e.ts` | `'2025-01-15T10:00:00Z'` | `HomePage.expectNoHolidayBanner()` |
 
 ### Test Relative Time Display
 
@@ -151,7 +151,7 @@ export const postMock = (post: Post): RouteHandler => {
 ```
 
 ```ts
-// e2e/posts/relative-time.spec.ts
+// e2e/posts/relative-time.test.ts
 import type { Post } from './common/post.type';
 import { test } from './posts.fixture';
 import { postMock } from './test/mocks/post.mock';
@@ -183,7 +183,7 @@ test.describe('FEATURE: relative post time', () => {
 `page.clock.fastForward` accepts `'mm:ss'`, `'hh:mm:ss'`, or milliseconds. Timers due inside the jump fire once, at the end of it.
 
 ```ts
-// e2e/dashboard/session-timeout.spec.ts
+// e2e/dashboard/session-timeout.e2e.ts
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: session timeout notice', () => {
@@ -209,9 +209,9 @@ The installed clock is paused; each `fastForward` is an explicit jump, so a coun
 
 | Spec | Act | Jump | Assertions before and after the jump |
 |---|---|---|---|
-| `e2e/sale/countdown.spec.ts` | none | `fastForward('01:00:00')`, then `fastForward('01:00:01')` | `SalePage.expectCountdown('Sale ends in 2:00:00')`, `'Sale ends in 1:00:00'`, `'Sale ended'` |
-| `e2e/notifications/queue.spec.ts` | `NotificationsPage.showAll()` | `fastForward('00:02')` twice | `NotificationsPage.expectNotification('Notification 1')`, `'Notification 2'`, `'Notification 3'` |
-| `e2e/animation/fade-in.spec.ts` | `AnimationPage.animate()` | `fastForward(500)` | `AnimationPage.expectBoxOpacity('0')`, `'1'` (`toHaveCSS('opacity', value)` on `animated-box`) |
+| `e2e/sale/countdown.e2e.ts` | none | `fastForward('01:00:00')`, then `fastForward('01:00:01')` | `SalePage.expectCountdown('Sale ends in 2:00:00')`, `'Sale ends in 1:00:00'`, `'Sale ended'` |
+| `e2e/notifications/queue.e2e.ts` | `NotificationsPage.showAll()` | `fastForward('00:02')` twice | `NotificationsPage.expectNotification('Notification 1')`, `'Notification 2'`, `'Notification 3'` |
+| `e2e/animation/fade-in.e2e.ts` | `AnimationPage.animate()` | `fastForward(500)` | `AnimationPage.expectBoxOpacity('0')`, `'1'` (`toHaveCSS('opacity', value)` on `animated-box`) |
 
 ### Run Pending Timers
 
@@ -253,7 +253,7 @@ export class SearchPage {
 ```
 
 ```ts
-// e2e/search/debounce.spec.ts
+// e2e/search/debounce.e2e.ts
 import { test } from './search.fixture';
 
 test.describe('FEATURE: debounced search', () => {
@@ -280,7 +280,7 @@ test.describe('FEATURE: debounced search', () => {
 `timezoneId` is a built-in context option, so a `GIVEN` sets it with `test.use` next to `frozenTime`. 17:00 UTC is 9 AM in Los Angeles and 2 AM the next day in Tokyo.
 
 ```ts
-// e2e/schedule/timezone.spec.ts
+// e2e/schedule/timezone.e2e.ts
 import { test } from './schedule.fixture';
 
 test.describe('FEATURE: schedule time display', () => {
@@ -371,7 +371,7 @@ export const dataMock = (): RecordedMock => {
 ```
 
 ```ts
-// e2e/live-data/auto-refresh.spec.ts
+// e2e/live-data/auto-refresh.test.ts
 import { expect, test } from './live-data.fixture';
 import { dataMock } from './test/mocks/data.mock';
 

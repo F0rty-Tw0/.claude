@@ -16,7 +16,7 @@
 `ExportsPage.download(name)` registers `page.waitForEvent('download')` before the click and returns the `Download`. The spec checks `suggestedFilename()` and saves the file with `saveAs`.
 
 ```ts
-// e2e/exports/exports-basic.spec.ts
+// e2e/exports/exports-basic.e2e.ts
 import type { Download } from '@playwright/test';
 
 import { expect, test } from './exports.fixture';
@@ -119,7 +119,7 @@ export const pdfCount = (downloads: Download[]): number => downloads.filter(isPd
 ```
 
 ```ts
-// e2e/exports/batch-export.spec.ts
+// e2e/exports/batch-export.e2e.ts
 import type { Download } from '@playwright/test';
 
 import { expect, test } from './exports.fixture';
@@ -201,7 +201,7 @@ The spec hands `selectPicture()` a path under `test/fixtures/`.
 `ProfilePage` owns `alert` (`getByRole('alert')`), `pictureInput` (`getByLabel('Profile Picture')`), `preview` (`getByAltText('Profile preview')`) and `saveButton`. Methods: `goto()`, `selectPicture(filePath)` calling `pictureInput.setInputFiles(filePath)`, `save()`, and boxed `expectPreview()` asserting `toBeVisible()` on the preview.
 
 ```ts
-// e2e/profile/profile.spec.ts
+// e2e/profile/profile.e2e.ts
 import path from 'node:path';
 
 import { expect, test } from './profile.fixture';
@@ -242,7 +242,7 @@ test.describe('FEATURE: profile picture upload', () => {
 | Clear and replace | `attachmentsPage.clearSelection()` then `attachmentsPage.select(NEW_PDF)` | below |
 
 ```ts
-// e2e/attachments/attachments-replace.spec.ts
+// e2e/attachments/attachments-replace.e2e.ts
 import { test } from './attachments.fixture';
 import { PDF_FILE_STUB } from './test/stubs/attachments.stub';
 
@@ -308,7 +308,7 @@ export const dropFile = async (page: Page, zone: Locator, file: UploadFile): Pro
 ```
 
 ```ts
-// e2e/attachments/drop-event.spec.ts
+// e2e/attachments/drop-event.e2e.ts
 import { expect, test } from './attachments.fixture';
 import { PDF_FILE_STUB } from './test/stubs/attachments.stub';
 import { dropFile } from './test/utils/drop-file.spec.util';
@@ -424,7 +424,7 @@ export const readJsonPayload = async (download: Download): Promise<ExportPayload
 ```
 
 ```ts
-// e2e/exports/exports-formats.spec.ts
+// e2e/exports/exports-formats.e2e.ts
 import type { Download } from '@playwright/test';
 
 import { expect, test } from './exports.fixture';
