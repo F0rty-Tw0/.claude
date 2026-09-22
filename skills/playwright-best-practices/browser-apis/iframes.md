@@ -458,31 +458,20 @@ Prefer one web-first assertion with the timeout the frame needs (`expectPaymentF
 
 ### Mocking iFrame Content
 
-A route mock fulfils the iframe's `src` request with a static document. The document is static sample content the subject reads, so it is an on-disk fixture at `e2e/checkout/test/fixtures/widget/index.html`, not a string in the mock. A spec util resolves and reads it; the mock only intercepts.
-
-```ts
-// e2e/checkout/test/utils/widget-fixture.spec.util.ts
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const WIDGET_PATH = resolve(import.meta.dirname, '../fixtures/widget/index.html');
-
-export const readWidgetHtml = (): string => {
-  const html = readFileSync(WIDGET_PATH, 'utf-8');
-
-  return html;
-};
-```
+A route mock fulfils the iframe's `src` request with a static document. The document is static sample content, so it is an on-disk fixture at `e2e/checkout/test/fixtures/widget/index.html`, never a string in the mock. `route.fulfill` reads the file itself when given a `path` and infers `Content-Type` from the extension, so there is no read helper and no `contentType` to keep in sync.
 
 ```ts
 // e2e/checkout/test/mocks/widget.mock.ts
+import { resolve } from 'node:path';
+
 import type { Route } from '@playwright/test';
 
 import type { RouteHandler } from '../../../common/playwright.type';
-import { readWidgetHtml } from '../utils/widget-fixture.spec.util';
 
-export const widgetMock = (body: string = readWidgetHtml()): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ body, contentType: 'text/html' });
+const WIDGET_PATH = resolve(import.meta.dirname, '../fixtures/widget/index.html');
+
+export const widgetMock = (path: string = WIDGET_PATH): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ path });
 };
 ```
 

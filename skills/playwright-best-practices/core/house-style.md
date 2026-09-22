@@ -319,6 +319,7 @@ export const sessionMock = (session: Session = SESSION_STUB): RouteHandler => {
 | Mock data | None. Every body the factory fulfills arrives as a parameter or is imported from `test/stubs/`. A `const <X>_BODY = { … }` in a `.mock.ts` is a stub in the wrong file. |
 | Mock parameters | The payload first, with the stub as its default. Status, headers, and delay follow as further parameters with their own defaults. A parameter is never an inline object type; name it in `common/`. |
 | Error payloads | An error body is its own typed stub (`SESSION_ERROR_STUB`), not a literal inside the handler. A mock that can fail takes both stubs or a separate `<name>ErrorMock`. |
+| On-disk bodies | A body that is a whole document or binary is a file under `test/fixtures/`, served with `route.fulfill({ path })`. Playwright reads it and infers `Content-Type` from the extension; do not read it yourself or pass `contentType`. |
 | Recorded calls | A factory that records what it served returns a named type from `test/common/<feature>.type.ts` holding the handler plus the recorded array. It still takes its payload as a stub-defaulted parameter. |
 | Builder | Randomised or sequenced data (faker, counters) is a function in `test/utils/<feature>-builder.spec.util.ts`. Never in `stubs/`. |
 | Upload files | Real files under `test/fixtures/`. Never a `.ts` module exporting base64. |
@@ -417,7 +418,7 @@ Stop and re-check this file when reasoning includes:
 - "should" in a test title.
 - `interface`, `as SomeType`, `any`, or `// ...` inside a sample.
 - An object literal inside `route.fulfill({ json: … })`.
-- A `const <X>_BODY` or any other value declaration inside a `.mock.ts`.
+- A response payload declared inside a `.mock.ts`: a `const <X>_BODY`, or an object literal the factory fulfills. Helpers, counters, caches, and resolved fixture paths are the mock's own wiring and stay.
 - `type RouteHandler = (route: Route) => Promise<void>;` declared anywhere but `e2e/common/playwright.type.ts`.
 - A stub declared without a type annotation, or annotated with an inline object type.
 - `page.route` in a spec with the handler written inline.
