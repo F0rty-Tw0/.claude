@@ -52,11 +52,11 @@ export class PreferencesPage {
   }
 
   public async expectDarkMode(): Promise<void> {
-    await test.step('html carries the dark-mode class', (): Promise<void> => expect(this.root).toHaveClass(/dark-mode/), { box: true });
+    await test.step('THEN html carries the dark-mode class', (): Promise<void> => expect(this.root).toHaveClass(/dark-mode/), { box: true });
   }
 
   public async expectLightMode(): Promise<void> {
-    await test.step('html has no dark-mode class', (): Promise<void> => expect(this.root).not.toHaveClass(/dark-mode/), { box: true });
+    await test.step('THEN html has no dark-mode class', (): Promise<void> => expect(this.root).not.toHaveClass(/dark-mode/), { box: true });
   }
 }
 ```
@@ -142,7 +142,7 @@ export class HomePage {
   }
 
   public async expectSpaSessionKept(): Promise<void> {
-    await test.step('spa marker survives navigation', (): Promise<void> => expect(this.root).toHaveAttribute(SPA_MARKER, 'on'), { box: true });
+    await test.step('THEN spa marker survives navigation', (): Promise<void> => expect(this.root).toHaveAttribute(SPA_MARKER, 'on'), { box: true });
   }
 }
 ```
@@ -327,11 +327,11 @@ export class SignupPage {
   }
 
   public async expectError(message: string): Promise<void> {
-    await test.step(`error "${message}" is shown`, (): Promise<void> => expect(this.page.getByText(message)).toBeVisible(), { box: true });
+    await test.step(`THEN error "${message}" is shown`, (): Promise<void> => expect(this.page.getByText(message)).toBeVisible(), { box: true });
   }
 
   public async expectSubmitting(): Promise<void> {
-    await test.step('register button is disabled while submitting', (): Promise<void> => expect(this.page.getByRole('button', { name: /Registering|Loading/ })).toBeDisabled(), { box: true });
+    await test.step('THEN register button is disabled while submitting', (): Promise<void> => expect(this.page.getByRole('button', { name: /Registering|Loading/ })).toBeDisabled(), { box: true });
   }
 }
 ```

@@ -232,7 +232,7 @@ export class FilesPage {
   }
 
   public async expectContextMenu(): Promise<void> {
-    await test.step('context menu is open', (): Promise<void> => expect(this.contextMenu).toBeVisible(), { box: true });
+    await test.step('THEN context menu is open', (): Promise<void> => expect(this.contextMenu).toBeVisible(), { box: true });
   }
 }
 ```
@@ -267,7 +267,7 @@ export class MapPage {
   }
 
   public async expectZoomLevel(level: number): Promise<void> {
-    await test.step(`map is at zoom level ${level}`, (): Promise<void> => expect(this.map).toHaveAttribute('data-zoom', String(level)), { box: true });
+    await test.step(`THEN map is at zoom level ${level}`, (): Promise<void> => expect(this.map).toHaveAttribute('data-zoom', String(level)), { box: true });
   }
 }
 ```
@@ -421,11 +421,11 @@ export class ProductPage {
   }
 
   public async expectSheetOpen(): Promise<void> {
-    await test.step('bottom sheet is open', (): Promise<void> => expect(this.sheet).toBeVisible(), { box: true });
+    await test.step('THEN bottom sheet is open', (): Promise<void> => expect(this.sheet).toBeVisible(), { box: true });
   }
 
   public async expectAddedToast(): Promise<void> {
-    await test.step('added-to-cart toast is shown', (): Promise<void> => expect(this.toast).toHaveText('Added to cart'), { box: true });
+    await test.step('THEN added-to-cart toast is shown', (): Promise<void> => expect(this.toast).toHaveText('Added to cart'), { box: true });
   }
 }
 ```
@@ -465,9 +465,9 @@ export class FeedPage {
   }
 
   public async expectRefreshed(): Promise<void> {
-    await test.step('refresh indicator appears', (): Promise<void> => expect(this.loading).toBeVisible(), { box: true });
+    await test.step('THEN refresh indicator appears', (): Promise<void> => expect(this.loading).toBeVisible(), { box: true });
 
-    await test.step('refresh indicator disappears', (): Promise<void> => expect(this.loading).toBeHidden(), { box: true });
+    await test.step('AND refresh indicator disappears', (): Promise<void> => expect(this.loading).toBeHidden(), { box: true });
   }
 }
 ```

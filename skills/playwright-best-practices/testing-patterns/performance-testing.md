@@ -262,7 +262,7 @@ export class WebVitalsPage {
   public async expectVital(name: string, ceiling: number): Promise<void> {
     const read = (): number | undefined => this.reports.get(name);
 
-    await test.step(`${name} is under ${ceiling}`, (): Promise<void> => expect.poll(read).toBeLessThan(ceiling), { box: true });
+    await test.step(`THEN ${name} is under ${ceiling}`, (): Promise<void> => expect.poll(read).toBeLessThan(ceiling), { box: true });
   }
 }
 ```
@@ -433,19 +433,19 @@ export class BudgetPage {
     const timing = await this.performancePage.navigationTiming();
     const summary = summarizeResources(await this.performancePage.resourceEntries());
 
-    await test.step('LCP is inside the budget', (): void => expect(vitals.lcp).toBeLessThan(budget.lcp), { box: true });
+    await test.step('THEN LCP is inside the budget', (): void => expect(vitals.lcp).toBeLessThan(budget.lcp), { box: true });
 
-    await test.step('CLS is inside the budget', (): void => expect(vitals.cls).toBeLessThan(budget.cls), { box: true });
+    await test.step('AND CLS is inside the budget', (): void => expect(vitals.cls).toBeLessThan(budget.cls), { box: true });
 
-    await test.step('FCP is inside the budget', (): void => expect(vitals.fcp).toBeLessThan(budget.fcp), { box: true });
+    await test.step('AND FCP is inside the budget', (): void => expect(vitals.fcp).toBeLessThan(budget.fcp), { box: true });
 
-    await test.step('TTFB is inside the budget', (): void => expect(timing.ttfb).toBeLessThan(budget.ttfb), { box: true });
+    await test.step('AND TTFB is inside the budget', (): void => expect(timing.ttfb).toBeLessThan(budget.ttfb), { box: true });
 
-    await test.step('total transfer size is inside the budget', (): void => expect(summary.totalSize).toBeLessThan(budget.totalSize), { box: true });
+    await test.step('AND total transfer size is inside the budget', (): void => expect(summary.totalSize).toBeLessThan(budget.totalSize), { box: true });
 
-    await test.step('script transfer size is inside the budget', (): void => expect(summary.jsSize).toBeLessThan(budget.jsSize), { box: true });
+    await test.step('AND script transfer size is inside the budget', (): void => expect(summary.jsSize).toBeLessThan(budget.jsSize), { box: true });
 
-    await test.step('image count is inside the budget', (): void => expect(summary.imageCount).toBeLessThanOrEqual(budget.imageCount), { box: true });
+    await test.step('AND image count is inside the budget', (): void => expect(summary.imageCount).toBeLessThanOrEqual(budget.imageCount), { box: true });
   }
 }
 ```

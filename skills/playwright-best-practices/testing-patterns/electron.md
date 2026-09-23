@@ -165,7 +165,7 @@ export class MainWindowPage {
   }
 
   public async expectText(text: string): Promise<void> {
-    await test.step(`window shows "${text}"`, (): Promise<void> => expect(this.page.getByText(text)).toBeVisible(), { box: true });
+    await test.step(`THEN window shows "${text}"`, (): Promise<void> => expect(this.page.getByText(text)).toBeVisible(), { box: true });
   }
 }
 ```

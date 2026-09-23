@@ -297,11 +297,11 @@ export class CheckoutPage {
   }
 
   public async expectSuccess(): Promise<void> {
-    await test.step('success message is shown', (): Promise<void> => expect(this.successMessage).toBeVisible(), { box: true });
+    await test.step('THEN success message is shown', (): Promise<void> => expect(this.successMessage).toBeVisible(), { box: true });
   }
 
   public async expectHelpOpen(): Promise<void> {
-    await test.step('help dialog is open', (): Promise<void> => expect(this.helpDialog).toBeVisible(), { box: true });
+    await test.step('THEN help dialog is open', (): Promise<void> => expect(this.helpDialog).toBeVisible(), { box: true });
   }
 }
 ```

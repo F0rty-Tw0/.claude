@@ -158,15 +158,15 @@ export class ChatPage {
   }
 
   public async expectAlert(text: string): Promise<void> {
-    await test.step(`alert reads "${text}"`, (): Promise<void> => expect(this.alert).toContainText(text), { box: true });
+    await test.step(`THEN alert reads "${text}"`, (): Promise<void> => expect(this.alert).toContainText(text), { box: true });
   }
 
   public async expectMessage(text: string): Promise<void> {
-    await test.step(`message list shows "${text}"`, (): Promise<void> => expect(this.messageList).toContainText(text), { box: true });
+    await test.step(`THEN message list shows "${text}"`, (): Promise<void> => expect(this.messageList).toContainText(text), { box: true });
   }
 
   public async expectStatus(text: string): Promise<void> {
-    await test.step(`status reads "${text}"`, (): Promise<void> => expect(this.status).toHaveText(text), { box: true });
+    await test.step(`THEN status reads "${text}"`, (): Promise<void> => expect(this.status).toHaveText(text), { box: true });
   }
 }
 ```

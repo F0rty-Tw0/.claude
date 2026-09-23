@@ -243,11 +243,11 @@ export class SearchPage {
   }
 
   public async expectResultsHidden(): Promise<void> {
-    await test.step('results are hidden', (): Promise<void> => expect(this.results).toBeHidden(), { box: true });
+    await test.step('THEN results are hidden', (): Promise<void> => expect(this.results).toBeHidden(), { box: true });
   }
 
   public async expectResultsVisible(): Promise<void> {
-    await test.step('results are visible', (): Promise<void> => expect(this.results).toBeVisible(), { box: true });
+    await test.step('THEN results are visible', (): Promise<void> => expect(this.results).toBeVisible(), { box: true });
   }
 }
 ```

@@ -418,7 +418,7 @@ export class ContentPage {
   }
 
   public async expectWidgetResult(text: string): Promise<void> {
-    await test.step(`widget result reads "${text}"`, (): Promise<void> => expect(this.widgetResult).toHaveText(text), { box: true });
+    await test.step(`THEN widget result reads "${text}"`, (): Promise<void> => expect(this.widgetResult).toHaveText(text), { box: true });
   }
 }
 ```

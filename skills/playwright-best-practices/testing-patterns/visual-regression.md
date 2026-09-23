@@ -161,7 +161,7 @@ export class HeroPage {
   }
 
   public async expectSettled(): Promise<void> {
-    await test.step('hero banner is visible and no longer animating', async (): Promise<void> => {
+    await test.step('THEN hero banner is visible and no longer animating', async (): Promise<void> => {
       await expect(this.heroBanner).toBeVisible();
       await expect(this.heroBanner).not.toHaveClass(/animating/);
     }, { box: true });

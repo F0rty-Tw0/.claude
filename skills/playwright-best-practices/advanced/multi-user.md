@@ -420,11 +420,11 @@ export class RecordPage {
   }
 
   public async expectSaved(): Promise<void> {
-    await test.step('saved message is shown', (): Promise<void> => expect(this.savedMessage).toBeVisible(), { box: true });
+    await test.step('THEN saved message is shown', (): Promise<void> => expect(this.savedMessage).toBeVisible(), { box: true });
   }
 
   public async expectStaleConflict(): Promise<void> {
-    await test.step('stale version conflict is shown with a reload button', async (): Promise<void> => {
+    await test.step('THEN stale version conflict is shown with a reload button', async (): Promise<void> => {
       await expect(this.conflictMessage).toBeVisible();
       await expect(this.reloadButton).toBeVisible();
     }, { box: true });

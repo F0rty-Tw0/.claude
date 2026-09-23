@@ -151,7 +151,7 @@ export class StepperComponent {
   }
 
   public async expectValue(value: number): Promise<void> {
-    await test.step(`value reads ${value}`, (): Promise<void> => expect(this.root.getByText(`Value: ${value}`)).toBeVisible(), { box: true });
+    await test.step(`THEN value reads ${value}`, (): Promise<void> => expect(this.root.getByText(`Value: ${value}`)).toBeVisible(), { box: true });
   }
 }
 ```
@@ -261,7 +261,7 @@ export class ShopPage {
   }
 
   public async expectBadge(count: number): Promise<void> {
-    await test.step(`cart badge reads ${count}`, (): Promise<void> => expect(this.cartBadge).toHaveText(String(count)), { box: true });
+    await test.step(`THEN cart badge reads ${count}`, (): Promise<void> => expect(this.cartBadge).toHaveText(String(count)), { box: true });
   }
 }
 ```
@@ -385,7 +385,7 @@ export class HomePage {
   }
 
   public async expectSpaSessionKept(): Promise<void> {
-    await test.step('spa marker survives navigation', (): Promise<void> => expect(this.root).toHaveAttribute(SPA_MARKER, 'on'), { box: true });
+    await test.step('THEN spa marker survives navigation', (): Promise<void> => expect(this.root).toHaveAttribute(SPA_MARKER, 'on'), { box: true });
   }
 }
 ```
@@ -483,11 +483,11 @@ export class ItemsPage {
   }
 
   public async expectDialogOpen(): Promise<void> {
-    await test.step('confirm dialog is visible', (): Promise<void> => expect(this.confirmDialog).toBeVisible(), { box: true });
+    await test.step('THEN confirm dialog is visible', (): Promise<void> => expect(this.confirmDialog).toBeVisible(), { box: true });
   }
 
   public async expectDialogClosed(): Promise<void> {
-    await test.step('confirm dialog is hidden', (): Promise<void> => expect(this.confirmDialog).toBeHidden(), { box: true });
+    await test.step('THEN confirm dialog is hidden', (): Promise<void> => expect(this.confirmDialog).toBeHidden(), { box: true });
   }
 }
 ```

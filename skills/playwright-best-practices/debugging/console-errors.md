@@ -72,7 +72,7 @@ export class DashboardPage {
   }
 
   public async expectFallback(): Promise<void> {
-    await test.step('error boundary fallback is shown', (): Promise<void> => expect(this.fallback).toBeVisible(), { box: true });
+    await test.step('THEN error boundary fallback is shown', (): Promise<void> => expect(this.fallback).toBeVisible(), { box: true });
   }
 }
 ```

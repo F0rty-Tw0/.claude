@@ -41,23 +41,23 @@ export class ProfilePage {
   }
 
   public async expectHeading(text: string): Promise<void> {
-    await test.step(`heading reads "${text}"`, (): Promise<void> => expect(this.heading).toHaveText(text), { box: true });
+    await test.step(`THEN heading reads "${text}"`, (): Promise<void> => expect(this.heading).toHaveText(text), { box: true });
   }
 
   public async expectEmail(email: string): Promise<void> {
-    await test.step(`email field holds ${email}`, (): Promise<void> => expect(this.emailInput).toHaveValue(email), { box: true });
+    await test.step(`THEN email field holds ${email}`, (): Promise<void> => expect(this.emailInput).toHaveValue(email), { box: true });
   }
 
   public async expectSaveEnabled(): Promise<void> {
-    await test.step('save button is enabled', (): Promise<void> => expect(this.saveButton).toBeEnabled(), { box: true });
+    await test.step('THEN save button is enabled', (): Promise<void> => expect(this.saveButton).toBeEnabled(), { box: true });
   }
 
   public async expectNewsletterChecked(): Promise<void> {
-    await test.step('newsletter box is checked', (): Promise<void> => expect(this.newsletterCheckbox).toBeChecked(), { box: true });
+    await test.step('THEN newsletter box is checked', (): Promise<void> => expect(this.newsletterCheckbox).toBeChecked(), { box: true });
   }
 
   public async expectHomeLink(): Promise<void> {
-    await test.step('home link points at /home', (): Promise<void> => expect(this.homeLink).toHaveAttribute('href', '/home'), { box: true });
+    await test.step('THEN home link points at /home', (): Promise<void> => expect(this.homeLink).toHaveAttribute('href', '/home'), { box: true });
   }
 }
 ```
@@ -189,11 +189,11 @@ export class DashboardPage {
   }
 
   public async expectHeaderSoft(): Promise<void> {
-    await test.step('heading reads Dashboard', (): Promise<void> => expect.soft(this.heading).toHaveText('Dashboard'), { box: true });
+    await test.step('THEN heading reads Dashboard', (): Promise<void> => expect.soft(this.heading).toHaveText('Dashboard'), { box: true });
 
-    await test.step('save button is enabled', (): Promise<void> => expect.soft(this.saveButton).toBeEnabled(), { box: true });
+    await test.step('AND save button is enabled', (): Promise<void> => expect.soft(this.saveButton).toBeEnabled(), { box: true });
 
-    await test.step('welcome text is visible', (): Promise<void> => expect.soft(this.welcomeText).toBeVisible(), { box: true });
+    await test.step('AND welcome text is visible', (): Promise<void> => expect.soft(this.welcomeText).toBeVisible(), { box: true });
   }
 }
 ```
@@ -222,15 +222,15 @@ export class SignupPage {
   }
 
   public async expectFormFieldsSoft(): Promise<void> {
-    await test.step('form is visible', (): Promise<void> => expect.soft(this.form).toBeVisible(), { box: true });
+    await test.step('THEN form is visible', (): Promise<void> => expect.soft(this.form).toBeVisible(), { box: true });
 
     const hasFailures = test.info().errors.length > 0;
 
     if (hasFailures) return;
 
-    await test.step('name field is visible', (): Promise<void> => expect.soft(this.nameInput).toBeVisible(), { box: true });
+    await test.step('AND name field is visible', (): Promise<void> => expect.soft(this.nameInput).toBeVisible(), { box: true });
 
-    await test.step('email field is visible', (): Promise<void> => expect.soft(this.emailInput).toBeVisible(), { box: true });
+    await test.step('AND email field is visible', (): Promise<void> => expect.soft(this.emailInput).toBeVisible(), { box: true });
   }
 }
 ```
@@ -467,7 +467,7 @@ export const test = base.extend<DashboardFixtures>({
 export const expect = baseExpect.extend({ toHaveDataLoaded });
 ```
 
-The spec imports `expect` from this file and asserts in one step: `await test.step('data is loaded', (): Promise<void> => expect(dashboardPage).toHaveDataLoaded());`.
+The spec imports `expect` from this file and asserts in one step: `await test.step('THEN data is loaded', (): Promise<void> => expect(dashboardPage).toHaveDataLoaded());`.
 
 ## Timeouts
 

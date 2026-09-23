@@ -181,11 +181,11 @@ export class SearchPage {
   public async expectPayloadEscaped(): Promise<void> {
     const content = await this.page.content();
 
-    await test.step('served html has no raw script or handler', (): void => expect(content).not.toMatch(/<script>alert|onerror=/), { box: true });
+    await test.step('THEN served html has no raw script or handler', (): void => expect(content).not.toMatch(/<script>alert|onerror=/), { box: true });
   }
 
   public async expectNoDatabaseError(): Promise<void> {
-    await test.step('no database error is shown', (): Promise<void> => expect(this.databaseError).not.toBeVisible(), { box: true });
+    await test.step('THEN no database error is shown', (): Promise<void> => expect(this.databaseError).not.toBeVisible(), { box: true });
   }
 }
 ```

@@ -361,9 +361,9 @@ export class RegisterPage {
   }
 
   public async fillForm(registration: Registration): Promise<void> {
-    await test.step('fill personal info', (): Promise<void> => this.fillPersonalInfo(registration));
+    await test.step('WHEN personal info is filled', (): Promise<void> => this.fillPersonalInfo(registration));
 
-    await test.step('fill security', (): Promise<void> => this.fillSecurity(registration));
+    await test.step('AND security details are filled', (): Promise<void> => this.fillSecurity(registration));
   }
 
   public async submit(): Promise<void> {
@@ -371,7 +371,7 @@ export class RegisterPage {
   }
 
   public async expectWelcome(): Promise<void> {
-    await test.step('welcome message is visible', (): Promise<void> => expect(this.welcomeText).toBeVisible(), { box: true });
+    await test.step('THEN welcome message is visible', (): Promise<void> => expect(this.welcomeText).toBeVisible(), { box: true });
   }
 
   private async fillPersonalInfo(registration: Registration): Promise<void> {

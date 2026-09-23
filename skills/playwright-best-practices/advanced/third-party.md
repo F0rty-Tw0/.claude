@@ -131,7 +131,7 @@ export class LoginPage {
   }
 
   public async expectWelcome(name: string): Promise<void> {
-    await test.step(`welcome banner names ${name}`, (): Promise<void> => expect(this.welcomeBanner).toContainText(`Welcome, ${name}`), { box: true });
+    await test.step(`THEN welcome banner names ${name}`, (): Promise<void> => expect(this.welcomeBanner).toContainText(`Welcome, ${name}`), { box: true });
   }
 }
 ```
