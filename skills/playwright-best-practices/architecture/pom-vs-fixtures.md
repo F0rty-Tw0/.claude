@@ -127,11 +127,11 @@ export class BookingPage {
   }
 
   public async expectConfirmed(): Promise<void> {
-    await test.step('confirmation message is shown', (): Promise<void> => expect(this.confirmationText).toBeVisible(), { box: true });
+    await test.step('THEN confirmation message is shown', (): Promise<void> => expect(this.confirmationText).toBeVisible(), { box: true });
   }
 
   public async expectPrice(amount: string): Promise<void> {
-    await test.step(`total price reads ${amount}`, (): Promise<void> => expect(this.totalPrice).toHaveText(amount), { box: true });
+    await test.step(`THEN total price reads ${amount}`, (): Promise<void> => expect(this.totalPrice).toHaveText(amount), { box: true });
   }
 }
 ```
@@ -298,7 +298,7 @@ export class NotificationComponent {
   public async expectMessage(message: string): Promise<void> {
     const notification = this.root.filter({ hasText: message });
 
-    await test.step(`notification reads "${message}" and dismisses`, async (): Promise<void> => {
+    await test.step(`THEN notification reads "${message}" and dismisses`, async (): Promise<void> => {
       await expect(notification).toBeVisible();
       await expect(notification).toBeHidden({ timeout: 10_000 });
     }, { box: true });

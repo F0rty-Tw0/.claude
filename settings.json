@@ -98,5 +98,11 @@
   "skipWorkflowUsageWarning": true,
   "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true,
-  "defaultMode": "auto"
+  "defaultMode": "auto",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    }
+  }
 }
+

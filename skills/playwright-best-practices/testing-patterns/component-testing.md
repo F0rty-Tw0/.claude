@@ -100,15 +100,15 @@ export class ButtonComponent {
   }
 
   public async expectText(text: string): Promise<void> {
-    await test.step(`button reads ${text}`, (): Promise<void> => expect(this.root).toContainText(text), { box: true });
+    await test.step(`THEN button reads ${text}`, (): Promise<void> => expect(this.root).toContainText(text), { box: true });
   }
 
   public async expectVariant(variant: string): Promise<void> {
-    await test.step(`button has the ${variant} class`, (): Promise<void> => expect(this.root).toHaveClass(new RegExp(variant)), { box: true });
+    await test.step(`THEN button has the ${variant} class`, (): Promise<void> => expect(this.root).toHaveClass(new RegExp(variant)), { box: true });
   }
 
   public async expectIcon(): Promise<void> {
-    await test.step('icon is visible', (): Promise<void> => expect(this.icon).toBeVisible(), { box: true });
+    await test.step('THEN icon is visible', (): Promise<void> => expect(this.icon).toBeVisible(), { box: true });
   }
 }
 ```
@@ -277,7 +277,7 @@ export class CounterComponent {
   }
 
   public async expectCount(count: number): Promise<void> {
-    await test.step(`count reads ${count}`, (): Promise<void> => expect(this.count).toHaveText(String(count)), { box: true });
+    await test.step(`THEN count reads ${count}`, (): Promise<void> => expect(this.count).toHaveText(String(count)), { box: true });
   }
 }
 ```

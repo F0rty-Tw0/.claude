@@ -57,7 +57,7 @@ export class LoginPage {
   }
 
   public async expectError(message: string): Promise<void> {
-    await test.step(`error message contains "${message}"`, (): Promise<void> => expect(this.errorMessage).toContainText(message), { box: true });
+    await test.step(`THEN error message contains "${message}"`, (): Promise<void> => expect(this.errorMessage).toContainText(message), { box: true });
   }
 }
 ```
@@ -127,11 +127,11 @@ export class ModalComponent {
   }
 
   public async expectTitle(title: string): Promise<void> {
-    await test.step(`modal title reads "${title}"`, (): Promise<void> => expect(this.title).toHaveText(title), { box: true });
+    await test.step(`THEN modal title reads "${title}"`, (): Promise<void> => expect(this.title).toHaveText(title), { box: true });
   }
 
   public async expectOpen(): Promise<void> {
-    await test.step('modal is open', (): Promise<void> => expect(this.root).toBeVisible(), { box: true });
+    await test.step('THEN modal is open', (): Promise<void> => expect(this.root).toBeVisible(), { box: true });
   }
 }
 ```

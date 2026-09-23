@@ -284,7 +284,7 @@ export class DashboardPage {
     const mask = [this.avatar, this.timestamp];
     const options: PageAssertionsToHaveScreenshotOptions = { ...SCREENSHOT_OPTIONS, mask };
 
-    await test.step(`page matches ${name}`, (): Promise<void> => expect(this.page).toHaveScreenshot(name, options), { box: true });
+    await test.step(`THEN page matches ${name}`, (): Promise<void> => expect(this.page).toHaveScreenshot(name, options), { box: true });
   }
 }
 ```

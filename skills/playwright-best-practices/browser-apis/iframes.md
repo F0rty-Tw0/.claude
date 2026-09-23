@@ -57,15 +57,15 @@ export class CheckoutPage {
   }
 
   public async expectConfirmed(): Promise<void> {
-    await test.step('payment confirmation is shown', (): Promise<void> => expect(this.confirmationText).toBeVisible(), { box: true });
+    await test.step('THEN payment confirmation is shown', (): Promise<void> => expect(this.confirmationText).toBeVisible(), { box: true });
   }
 
   public async expectPaymentFrameReady(): Promise<void> {
-    await test.step('payment frame is ready', (): Promise<void> => expect(this.payButton).toBeVisible({ timeout: 15_000 }), { box: true });
+    await test.step('THEN payment frame is ready', (): Promise<void> => expect(this.payButton).toBeVisible({ timeout: 15_000 }), { box: true });
   }
 
   public async expectPaymentFrameLoaded(): Promise<void> {
-    await test.step('payment frame src reports loaded', (): Promise<void> => expect(this.paymentFrameElement).toHaveAttribute('src', /loaded/), { box: true });
+    await test.step('THEN payment frame src reports loaded', (): Promise<void> => expect(this.paymentFrameElement).toHaveAttribute('src', /loaded/), { box: true });
   }
 }
 ```
@@ -164,7 +164,7 @@ export class StripeCardComponent {
   }
 
   public async expectReady(): Promise<void> {
-    await test.step('Stripe card frame is ready', (): Promise<void> => expect(this.cardNumberInput).toBeVisible({ timeout: 15_000 }), { box: true });
+    await test.step('THEN Stripe card frame is ready', (): Promise<void> => expect(this.cardNumberInput).toBeVisible({ timeout: 15_000 }), { box: true });
   }
 }
 ```
@@ -237,7 +237,7 @@ export class WidgetPage {
   }
 
   public async expectWidgetLoaded(): Promise<void> {
-    await test.step('widget frame shows Widget Loaded', (): Promise<void> => expect(this.widgetLoadedText).toBeVisible(), { box: true });
+    await test.step('THEN widget frame shows Widget Loaded', (): Promise<void> => expect(this.widgetLoadedText).toBeVisible(), { box: true });
   }
 }
 ```
@@ -348,7 +348,7 @@ export class ContentFramePage {
     const frame = this.contentFrame();
     const heading = frame.getByRole('heading');
 
-    await test.step(`frame heading reads ${text}`, (): Promise<void> => expect(heading).toHaveText(text), { box: true });
+    await test.step(`THEN frame heading reads ${text}`, (): Promise<void> => expect(heading).toHaveText(text), { box: true });
   }
 }
 ```

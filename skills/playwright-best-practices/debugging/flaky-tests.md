@@ -101,7 +101,7 @@ test.afterEach(async (): Promise<void> => {
 
 ### Event Logging for Race Conditions
 
-Log console output, page errors, and failed requests to expose timing issues. Call it from a `beforeEach` step: `await test.step('log page events', (): void => logPageEvents(page));`.
+Log console output, page errors, and failed requests to expose timing issues. Call it from a `beforeEach` step: `await test.step('GIVEN page events are logged', (): void => logPageEvents(page));`.
 
 ```ts
 // e2e/checkout/test/utils/page-events.spec.util.ts
@@ -199,7 +199,7 @@ export class CheckoutPage {
   }
 
   public async expectDashboard(): Promise<void> {
-    await test.step('dashboard heading is visible', (): Promise<void> => expect(this.dashboardHeading).toBeVisible(), { box: true });
+    await test.step('THEN dashboard heading is visible', (): Promise<void> => expect(this.dashboardHeading).toBeVisible(), { box: true });
   }
 }
 ```
@@ -254,7 +254,7 @@ export class DashboardPage {
   }
 
   public async expectRows(count: number): Promise<void> {
-    await test.step(`${count} data rows are shown`, (): Promise<void> => expect(this.dataRows).toHaveCount(count), { box: true });
+    await test.step(`THEN ${count} data rows are shown`, (): Promise<void> => expect(this.dataRows).toHaveCount(count), { box: true });
   }
 }
 ```
@@ -648,7 +648,7 @@ export class CatalogPage {
   }
 
   public async expectItems(count: number): Promise<void> {
-    await test.step(`${count} items are listed`, async (): Promise<void> => {
+    await test.step(`THEN ${count} items are listed`, async (): Promise<void> => {
       await expect(this.itemsContainer).toBeVisible();
       await expect(this.loading).toBeHidden();
       await expect(this.items).toHaveCount(count);

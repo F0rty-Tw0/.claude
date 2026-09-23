@@ -166,7 +166,7 @@ export class SignupPage {
   }
 
   public async expectTabOrder(): Promise<void> {
-    await test.step('tab visits email, password, sign up in order', (): Promise<void> => this.walkTabOrder(), { box: true });
+    await test.step('THEN tab visits email, password, sign up in order', (): Promise<void> => this.walkTabOrder(), { box: true });
   }
 
   private async walkTabOrder(): Promise<void> {
@@ -304,7 +304,7 @@ export class DashboardPage {
   }
 
   public async expectLandmarks(): Promise<void> {
-    await test.step('navigation, main, footer, and search are visible', async (): Promise<void> => {
+    await test.step('THEN navigation, main, footer, and search are visible', async (): Promise<void> => {
       await expect(this.navigation).toBeVisible();
       await expect(this.main).toBeVisible();
       await expect(this.footer).toBeVisible();
@@ -370,7 +370,7 @@ export class DialogComponent {
   }
 
   public async expectFocusTrapped(): Promise<void> {
-    await test.step('tab cycles inside the dialog', (): Promise<void> => this.cycleFocus(), { box: true });
+    await test.step('THEN tab cycles inside the dialog', (): Promise<void> => this.cycleFocus(), { box: true });
   }
 
   private async cycleFocus(): Promise<void> {

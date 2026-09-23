@@ -265,7 +265,7 @@ export class DashboardPage {
 }
 ```
 
-The spec reads it as `const response = await test.step('load data', (): Promise<Response> => dashboardPage.loadData());` and logs `response.status()` in the next step.
+The spec reads it as `const response = await test.step('WHEN data is loaded', (): Promise<Response> => dashboardPage.loadData());` and logs `response.status()` in the next step.
 
 > **For comprehensive waiting patterns** (navigation, element state, network, polling), see [assertions-waiting.md](../core/assertions-waiting.md#waiting-strategies).
 
@@ -289,7 +289,7 @@ export const logSlowRequests = (page: Page, thresholdMs: number): void => {
 };
 ```
 
-Call it before navigation: `await test.step('log requests over 1s', (): void => logSlowRequests(page, 1_000));`.
+Call it before navigation: `await test.step('GIVEN requests over 1s are logged', (): void => logSlowRequests(page, 1_000));`.
 
 ## Debugging in CI
 
@@ -350,7 +350,7 @@ export const logEnvironment = (page: Page, testInfo: TestInfo): void => {
 };
 ```
 
-Call it as `await test.step('print the environment', (): void => logEnvironment(page, test.info()));`.
+Call it as `await test.step('GIVEN the environment is printed', (): void => logEnvironment(page, test.info()));`.
 
 ## Debugging Authentication
 
@@ -496,7 +496,7 @@ export const logLocatorState = async (locator: Locator): Promise<void> => {
 export const screenshotBeforeAction = (page: Page): Promise<Buffer> => page.screenshot({ path: 'debug.png' });
 ```
 
-Call it on the page-object locator: `await test.step('print the button state', (): Promise<void> => logLocatorState(dashboardPage.loadButton));`.
+Call it on the page-object locator: `await test.step('AND the button state is printed', (): Promise<void> => logLocatorState(dashboardPage.loadButton));`.
 
 ### Timeout Issues
 
@@ -573,7 +573,7 @@ export const attachDebugArtifacts = async (page: Page, testInfo: TestInfo): Prom
 };
 ```
 
-Call it as `await test.step('attach debug artifacts', (): Promise<void> => attachDebugArtifacts(page, test.info()));`.
+Call it as `await test.step('AND debug artifacts are attached', (): Promise<void> => attachDebugArtifacts(page, test.info()));`.
 
 ## Troubleshooting Checklist
 
@@ -620,11 +620,11 @@ Call it as `await test.step('attach debug artifacts', (): Promise<void> => attac
 
    ```ts
    // e2e/dashboard/dashboard.e2e.ts
-   await test.step('pause for the inspector', (): Promise<void> => page.pause());
+   await test.step('GIVEN the inspector is paused', (): Promise<void> => page.pause());
 
-   await test.step('print the button state', (): Promise<void> => logLocatorState(dashboardPage.loadButton));
+   await test.step('AND the button state is printed', (): Promise<void> => logLocatorState(dashboardPage.loadButton));
 
-   await test.step('screenshot before the action', (): Promise<Buffer> => screenshotBeforeAction(page));
+   await test.step('AND a screenshot is taken before the action', (): Promise<Buffer> => screenshotBeforeAction(page));
    ```
 
 4. **Check related areas**

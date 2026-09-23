@@ -52,14 +52,14 @@ export class DashboardPage {
   }
 
   public async expectErrorFallback(): Promise<void> {
-    await test.step('fallback offers a retry', async (): Promise<void> => {
+    await test.step('THEN fallback offers a retry', async (): Promise<void> => {
       await expect(this.fallbackMessage).toBeVisible();
       await expect(this.tryAgainButton).toBeVisible();
     }, { box: true });
   }
 
   public async expectText(text: string): Promise<void> {
-    await test.step(`"${text}" is visible`, (): Promise<void> => expect(this.page.getByText(text)).toBeVisible(), { box: true });
+    await test.step(`THEN "${text}" is visible`, (): Promise<void> => expect(this.page.getByText(text)).toBeVisible(), { box: true });
   }
 }
 ```

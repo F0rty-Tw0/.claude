@@ -211,18 +211,18 @@ export class ProductsPage {
   }
 
   public async expectLoaded(): Promise<void> {
-    await test.step('loading indicator is gone', (): Promise<void> => expect(this.loadingText).toBeHidden(), { box: true });
+    await test.step('THEN loading indicator is gone', (): Promise<void> => expect(this.loadingText).toBeHidden(), { box: true });
   }
 
   public async expectItemCount(count: number): Promise<void> {
-    await test.step(`${count} items are listed`, (): Promise<void> => expect(this.productItems).toHaveCount(count), { box: true });
+    await test.step(`THEN ${count} items are listed`, (): Promise<void> => expect(this.productItems).toHaveCount(count), { box: true });
   }
 
   public async expectAllItemsVisible(): Promise<void> {
     const items = await this.productItems.all();
 
     for (const item of items) {
-      await test.step('item is visible', (): Promise<void> => expect(item).toBeVisible(), { box: true });
+      await test.step('THEN item is visible', (): Promise<void> => expect(item).toBeVisible(), { box: true });
     }
   }
 }

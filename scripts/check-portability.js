@@ -10,8 +10,9 @@ const { execSync } = require('child_process');
 const REPO = path.join(require('os').homedir(), '.claude');
 const SCAN_DIRS = ['settings.json', 'settings.local.json', 'CLAUDE.md', 'AGENTS.md', 'skills', 'agents', 'copilot', '.omp', 'hooks', 'scripts'];
 const PATTERNS = [
-  [/\/home\/[a-z0-9_-]+\//i, 'hardcoded Linux home path'],
-  [/\/Users\/[a-z0-9_-]+\//i, 'hardcoded macOS home path'],
+  // Lookbehind: only a path root counts, so relative segments like `e2e/home/` or `../users/` pass.
+  [/(?<![\w.-])\/home\/[a-z0-9_-]+\//i, 'hardcoded Linux home path'],
+  [/(?<![\w.-])\/Users\/[A-Za-z0-9_-]+\//, 'hardcoded macOS home path'], // case-sensitive: `/users/` is an app route
   [/[A-Z]:\\+Users\\+[a-z0-9_-]+/i, 'hardcoded Windows home path'],
   [/\.nvm\/versions\/node\/v\d+\.\d+\.\d+/, 'pinned nvm node version'],
 ];

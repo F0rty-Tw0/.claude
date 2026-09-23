@@ -200,11 +200,11 @@ export class AttachmentsPage {
   }
 
   public async expectListed(text: string | RegExp): Promise<void> {
-    await test.step(`${text} is listed`, (): Promise<void> => expect(this.page.getByText(text)).toBeVisible(), { box: true });
+    await test.step(`THEN ${text} is listed`, (): Promise<void> => expect(this.page.getByText(text)).toBeVisible(), { box: true });
   }
 
   public async expectNotListed(text: string | RegExp): Promise<void> {
-    await test.step(`${text} is not listed`, (): Promise<void> => expect(this.page.getByText(text)).not.toBeVisible(), { box: true });
+    await test.step(`THEN ${text} is not listed`, (): Promise<void> => expect(this.page.getByText(text)).not.toBeVisible(), { box: true });
   }
 }
 ```
@@ -367,14 +367,14 @@ export class DropZoneComponent {
   }
 
   public async expectActive(): Promise<void> {
-    await test.step('drop zone highlights the drag', async (): Promise<void> => {
+    await test.step('THEN drop zone highlights the drag', async (): Promise<void> => {
       await expect(this.root).toHaveClass(ACTIVE_CLASS);
       await expect(this.root).toContainText(/release|drop now/i);
     }, { box: true });
   }
 
   public async expectIdle(): Promise<void> {
-    await test.step('drop zone highlight is gone', (): Promise<void> => expect(this.root).not.toHaveClass(ACTIVE_CLASS), { box: true });
+    await test.step('THEN drop zone highlight is gone', (): Promise<void> => expect(this.root).not.toHaveClass(ACTIVE_CLASS), { box: true });
   }
 }
 ```
@@ -448,11 +448,11 @@ export class AvatarPage {
   }
 
   public async expectListed(name: string): Promise<void> {
-    await test.step(`${name} is listed`, (): Promise<void> => expect(this.page.getByText(name)).toBeVisible(), { box: true });
+    await test.step(`THEN ${name} is listed`, (): Promise<void> => expect(this.page.getByText(name)).toBeVisible(), { box: true });
   }
 
   public async expectPreviewRendered(): Promise<void> {
-    await test.step('preview shows a blob or data image', async (): Promise<void> => {
+    await test.step('THEN preview shows a blob or data image', async (): Promise<void> => {
       await expect(this.preview).toBeVisible();
       await expect(this.preview).toHaveAttribute('src', /^(blob:|data:image)/);
     }, { box: true });
@@ -532,18 +532,18 @@ export class UploadProgressComponent {
   }
 
   public async expectStarted(): Promise<void> {
-    await test.step('progress bar is visible and moving', async (): Promise<void> => {
+    await test.step('THEN progress bar is visible and moving', async (): Promise<void> => {
       await expect(this.progressBar).toBeVisible();
       await expect(this.progressBar).toHaveAttribute('aria-valuenow', /^[1-9]\d*$/, { timeout: 10_000 });
     }, { box: true });
   }
 
   public async expectFinished(): Promise<void> {
-    await test.step('progress bar is gone', (): Promise<void> => expect(this.progressBar).not.toBeVisible({ timeout: UPLOAD_TIMEOUT }), { box: true });
+    await test.step('THEN progress bar is gone', (): Promise<void> => expect(this.progressBar).not.toBeVisible({ timeout: UPLOAD_TIMEOUT }), { box: true });
   }
 
   public async expectCancelled(): Promise<void> {
-    await test.step('upload reports cancelled', async (): Promise<void> => {
+    await test.step('THEN upload reports cancelled', async (): Promise<void> => {
       await expect(this.progressBar).not.toBeVisible();
       await expect(this.root.getByText(/cancelled|aborted/i)).toBeVisible();
     }, { box: true });

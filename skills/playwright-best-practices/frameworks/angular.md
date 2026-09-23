@@ -139,11 +139,11 @@ export class ProjectsPage {
   }
 
   public async expectCreateForm(): Promise<void> {
-    await test.step('create heading is shown', (): Promise<void> => expect(this.createHeading).toBeVisible(), { box: true });
+    await test.step('THEN create heading is shown', (): Promise<void> => expect(this.createHeading).toBeVisible(), { box: true });
   }
 
   public async expectChart(): Promise<void> {
-    await test.step('metrics chart is shown', (): Promise<void> => expect(this.chart).toBeVisible(), { box: true });
+    await test.step('THEN metrics chart is shown', (): Promise<void> => expect(this.chart).toBeVisible(), { box: true });
   }
 }
 ```
@@ -202,11 +202,11 @@ export class SignupPage {
   }
 
   public async expectError(message: string): Promise<void> {
-    await test.step(`error "${message}" is shown`, (): Promise<void> => expect(this.page.getByText(message)).toBeVisible(), { box: true });
+    await test.step(`THEN error "${message}" is shown`, (): Promise<void> => expect(this.page.getByText(message)).toBeVisible(), { box: true });
   }
 
   public async expectRegisterEnabled(enabled: boolean): Promise<void> {
-    await test.step(`register button enabled is ${enabled}`, (): Promise<void> => expect(this.registerButton).toBeEnabled({ enabled }), { box: true });
+    await test.step(`THEN register button enabled is ${enabled}`, (): Promise<void> => expect(this.registerButton).toBeEnabled({ enabled }), { box: true });
   }
 }
 ```
@@ -339,7 +339,7 @@ export class PreferencesPage {
   }
 
   public async expectLanguage(language: string): Promise<void> {
-    await test.step(`language select reads ${language}`, (): Promise<void> => expect(this.languageSelect).toContainText(language), { box: true });
+    await test.step(`THEN language select reads ${language}`, (): Promise<void> => expect(this.languageSelect).toContainText(language), { box: true });
   }
 }
 ```
@@ -397,7 +397,7 @@ export class ItemPage {
   }
 
   public async expectHeading(text: string): Promise<void> {
-    await test.step(`heading contains ${text}`, (): Promise<void> => expect(this.heading).toContainText(text), { box: true });
+    await test.step(`THEN heading contains ${text}`, (): Promise<void> => expect(this.heading).toContainText(text), { box: true });
   }
 }
 ```
@@ -546,7 +546,7 @@ export class CounterPage {
   }
 
   public async expectValue(value: number): Promise<void> {
-    await test.step(`value reads ${value}`, (): Promise<void> => expect(this.value).toHaveText(String(value)), { box: true });
+    await test.step(`THEN value reads ${value}`, (): Promise<void> => expect(this.value).toHaveText(String(value)), { box: true });
   }
 }
 ```

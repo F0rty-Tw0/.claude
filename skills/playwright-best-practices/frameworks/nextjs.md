@@ -182,14 +182,14 @@ export class PostPage {
   }
 
   public async expectPost(title: string): Promise<void> {
-    await test.step(`post "${title}" is shown`, async (): Promise<void> => {
+    await test.step(`THEN post "${title}" is shown`, async (): Promise<void> => {
       await expect(this.heading).toContainText(title);
       await expect(this.notFoundText).toBeHidden();
     }, { box: true });
   }
 
   public async expectNotFound(): Promise<void> {
-    await test.step('404 heading is shown', (): Promise<void> => expect(this.notFoundHeading).toBeVisible(), { box: true });
+    await test.step('THEN 404 heading is shown', (): Promise<void> => expect(this.notFoundHeading).toBeVisible(), { box: true });
   }
 }
 ```
@@ -394,14 +394,14 @@ import { expect, test } from '@playwright/test';
 export const expectSecurityHeaders = async (response: Response | null): Promise<void> => {
   const headers = response?.headers() ?? {};
 
-  await test.step('security headers are set', (): void => {
+  await test.step('THEN security headers are set', (): void => {
     expect(headers['x-frame-options']).toBe('DENY');
     expect(headers['x-content-type-options']).toBe('nosniff');
   }, { box: true });
 };
 ```
 
-The spec reads `const response = await test.step('open the home page', (): Promise<Response | null> => page.goto('/'));` then `await test.step('security headers are set', (): Promise<void> => expectSecurityHeaders(response));`.
+The spec reads `const response = await test.step('WHEN the home page is opened', (): Promise<Response | null> => page.goto('/'));` then `await test.step('THEN security headers are set', (): Promise<void> => expectSecurityHeaders(response));`.
 
 ### Locale Rewrites
 
@@ -507,7 +507,7 @@ export class GalleryPage {
   }
 
   public async expectHeroEager(): Promise<void> {
-    await test.step('hero image is visible, has a srcset, and is not lazy', async (): Promise<void> => {
+    await test.step('THEN hero image is visible, has a srcset, and is not lazy', async (): Promise<void> => {
       await expect(this.heroImage).toBeVisible();
       await expect(this.heroImage).toHaveAttribute('srcset', /w=/);
       await expect(this.heroImage).not.toHaveAttribute('loading', 'lazy');

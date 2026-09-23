@@ -129,7 +129,7 @@ export class HomePage {
   }
 
   public async expectHeading(): Promise<void> {
-    await test.step('home heading is visible', (): Promise<void> => expect(this.heading).toBeVisible(), { box: true });
+    await test.step('THEN home heading is visible', (): Promise<void> => expect(this.heading).toBeVisible(), { box: true });
   }
 }
 ```
@@ -832,11 +832,11 @@ export class LoginPage {
   }
 
   public async expectError(message: string | RegExp): Promise<void> {
-    await test.step(`error message reads ${String(message)}`, (): Promise<void> => expect(this.errorMessage).toContainText(message), { box: true });
+    await test.step(`THEN error message reads ${String(message)}`, (): Promise<void> => expect(this.errorMessage).toContainText(message), { box: true });
   }
 
   public async expectFieldError(field: Locator, message: string): Promise<void> {
-    await test.step(`field reports ${message}`, (): Promise<void> => expect(field).toHaveAccessibleDescription(message), { box: true });
+    await test.step(`THEN field reports ${message}`, (): Promise<void> => expect(field).toHaveAccessibleDescription(message), { box: true });
   }
 }
 ```

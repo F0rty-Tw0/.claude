@@ -111,26 +111,26 @@ export class PwaPage {
   }
 
   public async expectDashboard(): Promise<void> {
-    await test.step('dashboard heading is shown', (): Promise<void> => expect(this.heading).toBeVisible(), { box: true });
+    await test.step('THEN dashboard heading is shown', (): Promise<void> => expect(this.heading).toBeVisible(), { box: true });
   }
 
   public async expectOfflineBadge(): Promise<void> {
-    await test.step('offline badge is shown', (): Promise<void> => expect(this.offlineBadge).toBeVisible(), { box: true });
+    await test.step('THEN offline badge is shown', (): Promise<void> => expect(this.offlineBadge).toBeVisible(), { box: true });
   }
 
   public async expectOnline(): Promise<void> {
-    await test.step('offline badge is hidden', (): Promise<void> => expect(this.offlineBadge).toBeHidden(), { box: true });
+    await test.step('THEN offline badge is hidden', (): Promise<void> => expect(this.offlineBadge).toBeHidden(), { box: true });
   }
 
   public async expectOfflineFallback(): Promise<void> {
-    await test.step('offline fallback page is shown', async (): Promise<void> => {
+    await test.step('THEN offline fallback page is shown', async (): Promise<void> => {
       await expect(this.page.getByText('You are offline')).toBeVisible();
       await expect(this.retryButton).toBeVisible();
     }, { box: true });
   }
 
   public async expectStatus(text: string): Promise<void> {
-    await test.step(`status reads "${text}"`, (): Promise<void> => expect(this.statusText).toHaveText(text), { box: true });
+    await test.step(`THEN status reads "${text}"`, (): Promise<void> => expect(this.statusText).toHaveText(text), { box: true });
   }
 }
 ```

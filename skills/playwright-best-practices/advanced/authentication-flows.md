@@ -62,11 +62,11 @@ export class ResetPasswordPage {
   }
 
   public async expectUpdated(): Promise<void> {
-    await test.step('password updated message is shown', (): Promise<void> => expect(this.successMessage).toBeVisible(), { box: true });
+    await test.step('THEN password updated message is shown', (): Promise<void> => expect(this.successMessage).toBeVisible(), { box: true });
   }
 
   public async expectError(message: RegExp): Promise<void> {
-    await test.step(`error reads ${String(message)}`, (): Promise<void> => expect(this.errorMessage).toContainText(message), { box: true });
+    await test.step(`THEN error reads ${String(message)}`, (): Promise<void> => expect(this.errorMessage).toContainText(message), { box: true });
   }
 }
 ```

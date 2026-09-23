@@ -133,14 +133,14 @@ export class LoanApplicationPage {
   }
 
   public async expectBusinessFieldsVisible(): Promise<void> {
-    await test.step('business fields are visible', async (): Promise<void> => {
+    await test.step('THEN business fields are visible', async (): Promise<void> => {
       await expect(this.businessName).toBeVisible();
       await expect(this.ein).toBeVisible();
     }, { box: true });
   }
 
   public async expectBusinessFieldsHidden(): Promise<void> {
-    await test.step('business fields are hidden', async (): Promise<void> => {
+    await test.step('THEN business fields are hidden', async (): Promise<void> => {
       await expect(this.businessName).not.toBeVisible();
       await expect(this.ein).not.toBeVisible();
     }, { box: true });
@@ -233,11 +233,11 @@ export class BookingWizardPage {
   }
 
   public async expectStep(heading: string): Promise<void> {
-    await test.step(`wizard shows ${heading}`, (): Promise<void> => expect(this.page.getByRole('heading', { name: heading })).toBeVisible(), { box: true });
+    await test.step(`THEN wizard shows ${heading}`, (): Promise<void> => expect(this.page.getByRole('heading', { name: heading })).toBeVisible(), { box: true });
   }
 
   public async expectSummary(guest: Guest, room: Room): Promise<void> {
-    await test.step('summary repeats the entries', async (): Promise<void> => {
+    await test.step('THEN summary repeats the entries', async (): Promise<void> => {
       await expect(this.page.getByText(guest.fullName)).toBeVisible();
       await expect(this.page.getByText(room.type)).toBeVisible();
     }, { box: true });
@@ -345,14 +345,14 @@ export class FeedbackPage {
   }
 
   public async expectSubmitting(): Promise<void> {
-    await test.step('submit button shows Submitting and is disabled', async (): Promise<void> => {
+    await test.step('THEN submit button shows Submitting and is disabled', async (): Promise<void> => {
       await expect(this.submitButton).toHaveText(/Submitting/);
       await expect(this.submitButton).toBeDisabled();
     }, { box: true });
   }
 
   public async expectReady(): Promise<void> {
-    await test.step('submit button is enabled again', async (): Promise<void> => {
+    await test.step('THEN submit button is enabled again', async (): Promise<void> => {
       await expect(this.submitButton).toHaveText('Submit feedback');
       await expect(this.submitButton).toBeEnabled();
     }, { box: true });
@@ -672,7 +672,7 @@ A reset guarded by a confirm dialog registers the handler before the click, insi
 | Date input (native) | `fill()` with ISO format | `this.date.fill('2025-03-15')` |
 | Date picker (third-party) | Click to open, navigate, select day | `this.page.getByRole('gridcell', { name: '15' }).click()` |
 | Validation errors | Submit, then assert error text | boxed `expectRequiredErrors()` |
-| Multi-step wizard | One page-object method per wizard step, `expectStep(heading)` between | `test.step('enter guest information', (): Promise<void> => wizard.fillGuestInfo(GUEST_STUB))` |
+| Multi-step wizard | One page-object method per wizard step, `expectStep(heading)` between | `test.step('WHEN guest information is entered', (): Promise<void> => wizard.fillGuestInfo(GUEST_STUB))` |
 | Conditional/dynamic fields | Change trigger field, assert new field visibility | `expect(locator).toBeVisible()` / `.not.toBeVisible()` |
 | Form submission | `waitForResponse` registered before the click, inside `submit()` | `submit(): Promise<Response>` |
 | Auto-complete | `pressSequentially()`, wait for listbox, select option | `pickSuggestion(name)` |

@@ -147,11 +147,11 @@ export class BoardColumn {
   }
 
   public async expectCard(title: string): Promise<void> {
-    await test.step(`column shows "${title}"`, (): Promise<void> => expect(this.card(title)).toBeVisible(), { box: true });
+    await test.step(`THEN column shows "${title}"`, (): Promise<void> => expect(this.card(title)).toBeVisible(), { box: true });
   }
 
   public async expectNoCard(title: string): Promise<void> {
-    await test.step(`column hides "${title}"`, (): Promise<void> => expect(this.card(title)).toBeHidden(), { box: true });
+    await test.step(`THEN column hides "${title}"`, (): Promise<void> => expect(this.card(title)).toBeHidden(), { box: true });
   }
 }
 ```
@@ -223,7 +223,7 @@ export class BoardPage {
   }
 
   public async expectTicketDragging(id: string): Promise<void> {
-    await test.step(`ticket ${id} shows its dragging state`, (): Promise<void> => expect(this.ticket(id)).toHaveClass(/dragging|placeholder/), { box: true });
+    await test.step(`THEN ticket ${id} shows its dragging state`, (): Promise<void> => expect(this.ticket(id)).toHaveClass(/dragging|placeholder/), { box: true });
   }
 }
 ```
@@ -327,7 +327,7 @@ export class PrioritiesPage {
   }
 
   public async expectOrder(names: string[]): Promise<void> {
-    await test.step(`list reads ${names.join(', ')}`, (): Promise<void> => expect(this.items).toContainText(names), { box: true });
+    await test.step(`THEN list reads ${names.join(', ')}`, (): Promise<void> => expect(this.items).toContainText(names), { box: true });
   }
 }
 ```
@@ -384,15 +384,15 @@ export class DropArea {
   }
 
   public async expectItem(text: string): Promise<void> {
-    await test.step(`area lists "${text}"`, (): Promise<void> => expect(this.root).toContainText(text), { box: true });
+    await test.step(`THEN area lists "${text}"`, (): Promise<void> => expect(this.root).toContainText(text), { box: true });
   }
 
   public async expectHighlighted(): Promise<void> {
-    await test.step('area shows the drag-over highlight', (): Promise<void> => expect(this.root).toHaveClass(/drag-over|highlight/), { box: true });
+    await test.step('THEN area shows the drag-over highlight', (): Promise<void> => expect(this.root).toHaveClass(/drag-over|highlight/), { box: true });
   }
 
   public async expectIdle(): Promise<void> {
-    await test.step('area shows no highlight', (): Promise<void> => expect(this.root).not.toHaveClass(/drag-over|highlight/), { box: true });
+    await test.step('THEN area shows no highlight', (): Promise<void> => expect(this.root).not.toHaveClass(/drag-over|highlight/), { box: true });
   }
 }
 ```
@@ -508,15 +508,15 @@ export class Shape {
     const box = await this.box();
     const center = centerOf(box);
 
-    await test.step(`shape center x is near ${target.x}`, (): void => expect(center.x).toBeCloseTo(target.x, -1), { box: true });
-    await test.step(`shape center y is near ${target.y}`, (): void => expect(center.y).toBeCloseTo(target.y, -1), { box: true });
+    await test.step(`THEN shape center x is near ${target.x}`, (): void => expect(center.x).toBeCloseTo(target.x, -1), { box: true });
+    await test.step(`AND shape center y is near ${target.y}`, (): void => expect(center.y).toBeCloseTo(target.y, -1), { box: true });
   }
 
   public async expectSize(width: number, height: number): Promise<void> {
     const box = await this.box();
 
-    await test.step(`shape width is near ${width}`, (): void => expect(box.width).toBeCloseTo(width, -1), { box: true });
-    await test.step(`shape height is near ${height}`, (): void => expect(box.height).toBeCloseTo(height, -1), { box: true });
+    await test.step(`THEN shape width is near ${width}`, (): void => expect(box.width).toBeCloseTo(width, -1), { box: true });
+    await test.step(`AND shape height is near ${height}`, (): void => expect(box.height).toBeCloseTo(height, -1), { box: true });
   }
 }
 ```
@@ -619,11 +619,11 @@ export class DragPreview {
   }
 
   public async expectVisible(): Promise<void> {
-    await test.step('drag preview is shown', (): Promise<void> => expect(this.root).toBeVisible(), { box: true });
+    await test.step('THEN drag preview is shown', (): Promise<void> => expect(this.root).toBeVisible(), { box: true });
   }
 
   public async expectHidden(): Promise<void> {
-    await test.step('drag preview is gone', (): Promise<void> => expect(this.root).toBeHidden(), { box: true });
+    await test.step('THEN drag preview is gone', (): Promise<void> => expect(this.root).toBeHidden(), { box: true });
   }
 }
 ```
@@ -717,7 +717,7 @@ export class ComposerPage {
   }
 
   public async expectPreviewShows(text: string): Promise<void> {
-    await test.step(`preview frame shows "${text}"`, (): Promise<void> => expect(this.preview.getByText(text)).toBeVisible(), { box: true });
+    await test.step(`THEN preview frame shows "${text}"`, (): Promise<void> => expect(this.preview.getByText(text)).toBeVisible(), { box: true });
   }
 }
 ```

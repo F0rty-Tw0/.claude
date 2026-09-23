@@ -28,11 +28,11 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 
 | Concern | Rule |
 |---|---|
-| Naming tree | `test.describe('FEATURE: <name>')` → `test.describe('GIVEN <state>')` → `test('SCENARIO: <flow>')`. Steps carry `GIVEN` / `WHEN` / `THEN` / `AND`. Every level carries its keyword; a title without one is not house style. Never a `WHEN` describe; the step owns it. |
+| Naming tree | `test.describe('FEATURE: <name>')` → `test.describe('GIVEN <state>')` → `test('SCENARIO: <flow>')`. Every `test.step`, in a spec, page object, component object, or fixture, carries `GIVEN` / `WHEN` / `THEN` / `AND`. Every level carries its keyword; a title without one is not house style. Never a `WHEN` describe; the step owns it. |
 | Test body | Every statement inside `test(...)` is `await test.step('<prose>', ...)`. No bare `page.*`, `expect(...)`, or page-object call outside a step. |
 | Step body | One call. `(): Promise<void> => loginPage.submit(user)`. Two or more statements mean a page-object or fixture method is missing. |
-| Step naming | Upper-case Gherkin keyword, then present-tense prose: `'WHEN wrong credentials are submitted'`, `'THEN the error names invalid credentials'`. `GIVEN` for arrange, `WHEN` for action, `THEN` for assertion, `AND` for a consecutive step of the same kind. |
-| Boxed steps | Page-object methods that assert use `test.step(name, body, { box: true })` so a failure points at the spec line, not the page object. |
+| Step naming | Upper-case Gherkin keyword, then present-tense prose: `'WHEN wrong credentials are submitted'`, `'THEN the error names invalid credentials'`. `GIVEN` for arrange, `WHEN` for action, `THEN` for assertion, `AND` for a consecutive step of the same kind. Applies to page-object and component-object steps too; see Steps. |
+| Boxed steps | Page-object methods that assert use `test.step('THEN <what is now true>', body, { box: true })` so a failure points at the spec line, not the page object. |
 | One owner per file | One page object, one component object, one fixture file, one route-mock file, one stub file per `.ts`. One `FEATURE:` per spec. |
 | File size | Source `.ts` under 150 lines, spec under 300, blank and comment lines skipped. Over means split by concern per `module-size.md`. |
 | Page object | `class` with `private readonly page: Page`, `public readonly` locators assigned in the constructor, `public async` methods returning `Promise<void>`. No parameter properties. No `expect` outside a boxed step. |
@@ -149,10 +149,10 @@ A step is the unit of the trace and the unit of the spec. Rules:
 |---|---|
 | Body | One expression. `(): Promise<void> => loginPage.submit(user)`. |
 | Assertion step | One `expect` call or one page-object `expect*` method. Two related assertions on one state go in one page-object method wrapped in a boxed step. |
-| Naming | Keyword plus what the user does or what is now true: `'WHEN the item is added to the cart'`, `'THEN the cart badge shows one item'`. Nested steps inside page objects carry no keyword; they are sub-steps of the spec's `THEN` or `WHEN`. |
+| Naming | Keyword plus what the user does or what is now true: `'WHEN the item is added to the cart'`, `'THEN the cart badge shows one item'`. Steps inside page objects and component objects carry a keyword by kind: action method `WHEN`, assertion (boxed) method `THEN`, each further step inside the same method `AND`. No step anywhere is keyword-free. |
 | Nesting | A page-object method may open its own `test.step` for a multi-action flow. Nesting depth two, never three. |
 | Boxed | `{ box: true }` on every step that asserts inside a page object, so the reported location is the spec line. |
-| Return value | A step may return a value: `const orderId = await test.step('place the order', (): Promise<string> => checkoutPage.placeOrder());`. |
+| Return value | A step may return a value: `const orderId = await test.step('WHEN the order is placed', (): Promise<string> => checkoutPage.placeOrder());`. |
 | Sync `expect` | `expect(value).toBe(…)` on a plain value is synchronous: the step callback is `(): void =>`. Only `expect(locator)` / `expect(page)` matchers and `expect.poll` return promises and take `(): Promise<void> =>`. |
 | Non-void calls | `page.goto` / `reload` / `goBack` return `Promise<Response \| null>`; `route`, `addInitScript`, `exposeFunction`, `exposeBinding` return `Promise<Disposable>` since Playwright 1.63. An expression body cannot be typed `Promise<void>`, so use a block body with one `await`: `async (): Promise<void> => { await page.route('**/api/x', xMock()); }`. Still one call. Same for a util or mock arrow that wraps one of these. |
 
@@ -217,7 +217,7 @@ export class LoginPage {
   }
 
   public async expectError(message: string): Promise<void> {
-    await test.step(`error banner reads "${message}"`, (): Promise<void> => expect(this.errorBanner).toHaveText(message), { box: true });
+    await test.step(`THEN error banner reads "${message}"`, (): Promise<void> => expect(this.errorBanner).toHaveText(message), { box: true });
   }
 }
 ```
@@ -414,7 +414,7 @@ Stop and re-check this file when reasoning includes:
 - `page.getBy` or `page.locator` inside a `.e2e.ts` or `.test.ts`.
 - `test.describe('Login', ...)` or any describe text with no Gherkin keyword.
 - `test.describe('WHEN …')` or a test title starting with `WHEN` / `THEN`.
-- A spec step whose name has no `GIVEN` / `WHEN` / `THEN` / `AND`.
+- A step, in a spec, page object, or component object, whose name has no `GIVEN` / `WHEN` / `THEN` / `AND`.
 - "should" in a test title.
 - `interface`, `as SomeType`, `any`, or `// ...` inside a sample.
 - An object literal inside `route.fulfill({ json: … })`.
@@ -436,8 +436,9 @@ Stop and re-check this file when reasoning includes:
 | `test('WHEN the order is placed THEN the confirmation page opens', ...)` | `test('SCENARIO: placing the order opens the confirmation page', ...)` with `WHEN` / `THEN` steps inside. |
 | `test('placing the order opens the confirmation page', ...)` | Same, with `SCENARIO:` in front. No keyword, no place in the tree. |
 | `test.describe('WHEN the order is placed', ...)` | Delete the describe; `'WHEN the order is placed'` is a step. |
-| `test.step('submit credentials', ...)` in a spec | `test.step('WHEN credentials are submitted', ...)`. |
+| `test.step('submit credentials', ...)` in a spec or page object | `test.step('WHEN credentials are submitted', ...)`. |
 | Step with `async () => { await a(); await b(); }` | Add `checkoutPage.placeOrder()` and call it. |
+| `test.step('modal is open', …, { box: true })` in a page object | `test.step('THEN modal is open', …, { box: true })`. |
 | Step named `'Step 1'` or `'Arrange'` | Keyword plus the action: `'GIVEN the checkout page is open'`. |
 | `readonly page: Page` with no accessibility | `private readonly page: Page`. |
 | `constructor(private readonly page: Page)` | Field declaration plus assignment in the body. |
