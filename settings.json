@@ -96,16 +96,17 @@
     }
   },
   "effortLevel": "high",
-  "dialogExpiry": "never",
-  "autoUpdatesChannel": "latest",
-  "skipWorkflowUsageWarning": true,
-  "remoteControlAtStartup": true,
-  "skipAutoPermissionPrompt": true,
-  "defaultMode": "auto",
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "high"
     }
-  }
+  },
+  "promptSuggestionEnabled": false,
+  "dialogExpiry": "never",
+  "autoUpdatesChannel": "latest",
+  "skipWorkflowUsageWarning": true,
+  "autoContinueAtUsageLimit": true,
+  "remoteControlAtStartup": true,
+  "skipAutoPermissionPrompt": true,
+  "defaultMode": "auto"
 }
-
