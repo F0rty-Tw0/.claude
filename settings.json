@@ -108,5 +108,6 @@
   "autoContinueAtUsageLimit": true,
   "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true,
-  "defaultMode": "auto"
+  "defaultMode": "auto",
+  "awaySummaryEnabled": false
 }
