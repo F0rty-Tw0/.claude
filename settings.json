@@ -104,10 +104,12 @@
   "promptSuggestionEnabled": false,
   "dialogExpiry": "never",
   "autoUpdatesChannel": "latest",
-  "skipWorkflowUsageWarning": true,
+  "skipWorkflowUsageWarning": false,
   "autoContinueAtUsageLimit": true,
   "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true,
   "defaultMode": "auto",
-  "awaySummaryEnabled": false
+  "awaySummaryEnabled": false,
+  "precomputeCompactionEnabled": false,
+  "autoDreamEnabled": false
 }
