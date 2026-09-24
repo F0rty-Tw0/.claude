@@ -15,9 +15,9 @@ try { raw = fs.readFileSync(0, 'utf8'); } catch { process.exit(0); }
 let cmd = '';
 try { cmd = (JSON.parse(raw).tool_input || {}).command || ''; } catch { process.exit(0); }
 
-// matches `git commit`, `git push`, `rtk git commit`, `git -C x push`, etc.
+// matches `git commit`, `git push`, `rtk git commit`, `/usr/bin/git commit`, `git -c k=v commit`, `git -C x push`, etc.
 // deliberately NOT matching commit-ish read ops (log/show/diff) or `commit` in prose args after -m
-const isGuarded = /(^|[;&|]\s*|\s)(rtk\s+)?git(\s+-[A-Za-z]\S*|\s+--\S+|\s+-C\s+\S+)*\s+(commit|push)\b/.test(cmd);
+const isGuarded = /(^|[;&|]\s*|\s)(rtk\s+)?(\S*\/)?git(\s+-[Cc]\s+\S+|\s+-[A-Za-z]\S*|\s+--\S+)*\s+(commit|push)\b/.test(cmd);
 if (!isGuarded) process.exit(0);
 
 const flag = path.join(os.homedir(), '.claude', '.allow-commit');
@@ -27,6 +27,7 @@ if (fs.existsSync(flag)) {
 }
 process.stderr.write(
   'commit-guard: git commit/push blocked. If the USER explicitly asked for this in the current request, ' +
+  'load the meaningful-commits skill (commit) or pr-description skill (PR), then ' +
   'run `touch ~/.claude/.allow-commit` and retry (flag is one-shot). If they did not ask, do not commit.'
 );
 process.exit(2);

@@ -74,6 +74,8 @@ The user has dyslexia + ADHD and stops reading long/dense replies. Format EVERY 
 ## Workflow Discipline
 
 - **NEVER `git commit` or `git push` unless the user explicitly asks in the current request.** Skill/workflow steps that say "commit" do not count. Enforced mechanically by `hooks/commit-guard.js` — when the user HAS asked, `touch ~/.claude/.allow-commit` (one-shot) then commit.
+- **User asks to commit → load `/meaningful-commits` first** and follow it; re-touch the flag before each commit. Delegating? Pass "user authorized commits" + the skill name in the subagent prompt — it can't see the user's message.
+- **User asks to open/update a PR → load `/pr-description` first**, then `gh pr create`/`gh pr edit` with its title + body. No attribution lines.
 - Enter plan mode for any non-trivial task (3+ steps or architectural decisions).
 - Something goes sideways → STOP and re-plan; don't keep pushing.
 - Never mark a task complete without proof (tests, logs, output). For behavior changes, diff against main first.

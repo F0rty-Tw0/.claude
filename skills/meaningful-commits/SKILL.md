@@ -1,6 +1,6 @@
 ---
 name: meaningful-commits
-description: Use when the user asks for incremental commits during multi-file work
+description: Use whenever the user asks to commit ("commit", "commit this", "make commits"), before running git commit
 ---
 
 # Meaningful Commits
@@ -30,6 +30,8 @@ Each commit should contain:
 - No unrelated edits
 
 Then move to the next production file and test pair.
+
+No prod+test pair (docs, config, single-file fix, already-finished work)? One commit per concern instead.
 
 ## Workflow
 
