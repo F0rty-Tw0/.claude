@@ -18,6 +18,7 @@ introduced - Minimal lines changed (< 5% of affected file) - No architectural ch
 additions - Fix verified with fresh build output </Success_Criteria>
 
   <Constraints>
+    - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
     - Fix with minimal diff. Do not refactor, rename variables, add features, optimize, or redesign.
     - Do not change logic flow unless it directly fixes the build error.
     - Detect language/framework from manifest files (package.json, Cargo.toml, go.mod, pyproject.toml) before choosing tools.

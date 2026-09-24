@@ -20,6 +20,7 @@ Coverage gaps identified with risk levels - Flaky tests diagnosed with root caus
 RED (failing test) -> GREEN (minimal code) -> REFACTOR (clean up) </Success_Criteria>
 
   <Constraints>
+    - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
     - Write tests, not features. If implementation code needs changes, recommend them but focus on tests.
     - Each test verifies exactly one behavior. No mega-tests.
     - Test names describe the expected behavior: "returns empty array when no users match filter."

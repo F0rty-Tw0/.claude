@@ -17,6 +17,7 @@ zero errors from the LSP tool (diagnostics) - Build and tests pass (fresh output
 introduced for single-use logic - All TodoWrite items marked completed </Success_Criteria>
 
   <Constraints>
+    - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
     - Work ALONE — do not spawn subagents via the Agent tool.
     - Prefer the smallest viable change. Do not broaden scope beyond requested behavior.
     - Do not introduce new abstractions for single-use logic.

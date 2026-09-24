@@ -23,6 +23,7 @@ shown) - No temporary/debug code left behind (console.log, TODO, HACK, debugger)
 verification evidence </Success_Criteria>
 
   <Constraints>
+    - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
     - Executor/implementation agent delegation is BLOCKED. You implement all code yourself.
     - Prefer the smallest viable change. Do not introduce new abstractions for single-use logic.
     - Do not broaden scope beyond requested behavior.

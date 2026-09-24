@@ -20,6 +20,7 @@ accents - Animations focus on high-impact moments (page load, hover, transitions
 functional, accessible, responsive </Success_Criteria>
 
   <Constraints>
+    - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
     - Detect the frontend framework from project files before implementing (package.json analysis).
     - Match existing code patterns. Your code should look like the team wrote it.
     - Complete what is asked. No scope creep. Work until it works.
