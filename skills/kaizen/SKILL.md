@@ -19,7 +19,7 @@ Applied to all code work: implementation, refactoring, architecture, error handl
 
 | Pillar                         | Core Question                          | Red Flag                       |
 | ------------------------------ | -------------------------------------- | ------------------------------ |
-| **Continuous Improvement**     | Can I make this better while I'm here? | "I'll refactor it later"       |
+| **Continuous Improvement**     | Can I make the code I'm changing better? | "I'll refactor it later"     |
 | **Poka-Yoke (Error Proofing)** | How can I make this error impossible?  | "Users should just be careful" |
 | **Standardized Work**          | What pattern does the codebase use?    | "I prefer to do it my way"     |
 | **Just-In-Time (JIT)**         | Is this needed now?                    | "We might need this someday"   |
@@ -35,10 +35,10 @@ Small, frequent improvements compound into major gains.
 - Smallest viable change that improves quality
 - One improvement at a time, verify before next
 
-**Always leave code better (boy scout rule):**
+**Leave the code you touch better (boy scout rule, inside the task's scope):**
 
-- Fix code smells, dead code, outdated comments as encountered
-- Refactor while working (within scope)
+- Fix smells, dead code, and outdated comments in the lines the task already changes
+- Smells elsewhere: note them as a one-line follow-up instead of fixing them unasked
 
 **Iterative refinement:**
 

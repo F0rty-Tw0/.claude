@@ -30,9 +30,9 @@ starts from a solid foundation. The consensus mode adds multi-perspective valida
 <Execution_Policy>
 
 - Auto-detect interview vs direct mode based on request specificity
-- Ask one question at a time during interviews -- never batch multiple questions
-- Gather codebase facts via `explore` agent before asking the user about them
-- Plans must meet quality standards: 80%+ claims cite file/line, 90%+ criteria are testable
+- Ask focused questions that build on earlier answers -- at most 3 per `AskUserQuestion` call, each with a recommended default
+- Look up codebase facts yourself (Grep/Read) before asking the user about them
+- Plans cite file/line for codebase claims and give testable acceptance criteria
 - Consensus mode requires explicit user approval before proceeding to implementation </Execution_Policy>
 
 <Steps>
@@ -50,15 +50,15 @@ starts from a solid foundation. The consensus mode adds multi-perspective valida
 
 1. **Classify the request**: Broad (vague verbs, no specific files, touches 3+ areas) triggers interview mode
 2. **Ask one focused question** using `AskUserQuestion` for preferences, scope, and constraints
-3. **Gather codebase facts first**: Before asking "what patterns does your code use?", spawn an `explore` agent to find
-   out, then ask informed follow-up questions
+3. **Gather codebase facts first**: Before asking "what patterns does your code use?", look it up directly (use
+   `explore` only for a wide multi-directory sweep), then ask informed follow-up questions
 4. **Build on answers**: Each question builds on the previous answer
-5. **Consult Analyst** (Opus) for hidden requirements, edge cases, and risks
+5. **Identify hidden requirements**, edge cases, and risks before drafting
 6. **Create plan** when the user signals readiness: "create the plan", "I'm ready", "make it a work plan"
 
 ### Direct Mode (detailed requests)
 
-1. **Quick Analysis**: Optional brief Analyst consultation
+1. **Quick Analysis**: note hidden requirements and risks
 2. **Create plan**: Generate comprehensive work plan immediately
 3. **Review** (optional): Critic review if requested
 
@@ -91,9 +91,8 @@ starts from a solid foundation. The consensus mode adds multi-perspective valida
 8. User chooses via the structured `AskUserQuestion` UI (never ask for approval in plain text)
 9. On user approval:
    - **Approve and execute**: invoke `Skill("ralph")` (autonomous — parallel execution via ultrawork) **or** `Skill("subagent-driven-development")` (supervised — review-gated per task) with the approved plan path from `.claude/local/plans/`. Pick supervised for high-stakes or ambiguous work. Do NOT implement directly or edit source code files in the planning agent.
-   - **Clear context and implement**: First invoke `Skill("compact")` to compress the context window (reduces token
-     usage accumulated during planning), then invoke `Skill("ralph")` with the approved plan path from
-     `.claude/local/plans/`. This path is recommended when the context window is 50%+ full after the planning session.
+   - **Clear context and implement**: `/compact` is a built-in command only the user can run. Ask the user to run it,
+     then invoke `Skill("ralph")` with the approved plan path from `.claude/local/plans/`.
 
 ### Review Mode (`--review`)
 
@@ -118,7 +117,7 @@ Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
 - Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools
 - Use `AskUserQuestion` for preference questions (scope, priority, timeline, risk tolerance) -- provides clickable UI
 - Use plain text for questions needing specific values (port numbers, names, follow-up clarifications)
-- Use `explore` agent (Haiku, 30s timeout) to gather codebase facts before asking the user
+- Use `explore` only when a codebase question needs a wide multi-directory sweep; answer single lookups directly
 - Use `mcp__agentic-mcp__ask_codex` for planning validation on large-scope plans
 - Use `mcp__agentic-mcp__ask_codex` for requirements analysis cross-checks
 - Use `mcp__agentic-mcp__ask_codex` for plan review in consensus and review modes
@@ -127,15 +126,14 @@ Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
 - In consensus mode, **MUST** use `AskUserQuestion` for the user feedback step (step 2) and the final approval step
   (step 7) -- never ask for approval in plain text
 - In consensus mode, on user approval invoke `Skill("ralph")` (autonomous) or `Skill("subagent-driven-development")` (supervised) for execution (step 9) -- never implement directly in the planning agent
-- When user selects "Clear context and implement" in step 7: invoke `Skill("compact")` first to compress the accumulated
-  planning context, then immediately invoke `Skill("ralph")` with the plan path -- the compact step is critical to free
-  up context before the implementation loop begins </Tool_Usage>
+- "Clear context and implement" needs the user to run `/compact` first; the saved plan file carries the context
+  across </Tool_Usage>
 
 <Examples>
 <Good>
 Adaptive interview (gathering facts before asking):
 ```
-Planner: [spawns explore agent: "find authentication implementation"]
+Planner: [greps for the authentication implementation]
 Planner: [receives: "Auth is in src/auth/ using JWT with passport.js"]
 Planner: "I see you're using JWT authentication with passport.js in src/auth/.
          For this new feature, should we extend the existing auth or add a separate auth flow?"
@@ -161,23 +159,7 @@ Asking about things you could look up:
 Planner: "Where is authentication implemented in your codebase?"
 User: "Uh, somewhere in src/auth I think?"
 ```
-Why bad: The planner should spawn an explore agent to find this, not ask the user.
-</Bad>
-
-<Bad>
-Batching multiple questions:
-```
-"What's the scope? And the timeline? And who's the audience?"
-```
-Why bad: Three questions at once causes shallow answers. Ask one at a time.
-</Bad>
-
-<Bad>
-Presenting all design options at once:
-```
-"Here are 4 approaches: Option A... Option B... Option C... Option D... Which do you prefer?"
-```
-Why bad: Decision fatigue. Present one option with trade-offs, get reaction, then present the next.
+Why bad: The planner should look this up itself, not ask the user.
 </Bad>
 </Examples>
 
@@ -186,15 +168,15 @@ Why bad: Decision fatigue. Present one option with trade-offs, get reaction, the
 - Stop interviewing when requirements are clear enough to plan -- do not over-interview
 - In consensus mode, stop after 5 Planner/Architect/Critic iterations and present the best version
 - Consensus mode requires explicit user approval before any implementation begins
-- If the user says "just do it" or "skip planning", **MUST** invoke `Skill("ralph")` to transition to execution mode. Do
-  NOT implement directly in the planning agent.
+- If the user says "just do it" or "skip planning", leave planning: do a single focused fix directly, and hand
+  multi-step work to `Skill("ralph")` or `Skill("subagent-driven-development")`.
 - Escalate to the user when there are irreconcilable trade-offs that require a business decision
   </Escalation_And_Stop_Conditions>
 
 <Final_Checklist>
 
-- [ ] Plan has testable acceptance criteria (90%+ concrete)
-- [ ] Plan references specific files/lines where applicable (80%+ claims)
+- [ ] Acceptance criteria are testable
+- [ ] Codebase claims reference specific files/lines
 - [ ] All risks have mitigations identified
 - [ ] No vague terms without metrics ("fast" -> "p99 < 200ms")
 - [ ] Plan saved to `.claude/local/plans/`
@@ -203,25 +185,8 @@ Why bad: Decision fatigue. Present one option with trade-offs, get reaction, the
 <Advanced>
 ## Design Option Presentation
 
-When presenting design choices during interviews, chunk them:
-
-1. **Overview** (2-3 sentences)
-2. **Option A** with trade-offs
-3. [Wait for user reaction]
-4. **Option B** with trade-offs
-5. [Wait for user reaction]
-6. **Recommendation** (only after options discussed)
-
-Format for each option:
-
-```
-### Option A: [Name]
-**Approach:** [1 sentence]
-**Pros:** [bullets]
-**Cons:** [bullets]
-
-What's your reaction to this approach?
-```
+Present 2-3 options (including "do nothing" where it applies) with effort, risk, and maintenance trade-offs and an
+opinionated recommendation, then wait for the user's pick.
 
 ## Question Classification
 
@@ -238,12 +203,8 @@ Before asking any interview question, classify it:
 
 | Criterion    | Standard                   |
 | ------------ | -------------------------- |
-| Clarity      | 80%+ claims cite file/line |
-| Testability  | 90%+ criteria are concrete |
+| Clarity      | Codebase claims cite file/line |
+| Testability  | Criteria are concrete and testable |
 | Verification | All file refs exist        |
 | Specificity  | No vague terms             |
-
-## Deprecation Notice
-
-The separate `/planner`, `/ralplan`, and `/review` skills have been merged into `/plan`. All workflows (interview,
-direct, consensus, review) are available through `/plan`. </Advanced>
+</Advanced>

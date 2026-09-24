@@ -133,7 +133,7 @@ Push back when:
 When feedback IS correct:
 ```
 ✅ "Fixed. [Brief description of what changed]"
-✅ "Good catch - [specific issue]. Fixed in [location]."
+✅ "[Specific issue] - fixed in [location]."
 ✅ [Just fix it and show in the code]
 
 ❌ "You're absolutely right!"

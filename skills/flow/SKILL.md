@@ -12,7 +12,7 @@ Flow is the single front door for taking work from idea to merged, verified code
 
 ```
 IDEATE   ->   PLAN   ->   EXECUTE          ->   REVIEW    ->   VERIFY        ->   FINISH
-brainstorm    plan        auto | supervised     code-review   verify | ultraqa    finish-branch
+brainstorm    plan        auto | supervised     code-review   verify              finish-branch
 ```
 
 ## Usage
@@ -30,10 +30,10 @@ flow --plan-only "<idea>"      # stop after a plan is produced
 1. **IDEATE** — If the request is a vague idea, an open design question, or "build me X" with unclear shape, invoke `Skill("brainstorming")` to explore approaches and write a spec. Skip when the task is already concrete and scoped.
 2. **PLAN** — `Skill("plan")` turns the idea/spec into a work plan (interview by default, or `--consensus` for a Planner -> Architect -> Critic loop on high-stakes work). Produces a plan file under `.claude/local/plans/`.
 3. **EXECUTE** — Branch on mode (see Mode Selection):
-   - **Autonomous** -> `Skill("ralph")` with the plan path (ralph drives `ultrawork` parallel agents). For full idea-to-code in one shot use `autopilot`; for native multi-agent use `team`; for conflict-free parallel file ownership use `ultrapilot`.
+   - **Autonomous** -> `Skill("ralph")` with the plan path (ralph drives `ultrawork` parallel agents). For native multi-agent use `team`; for conflict-free parallel file ownership use `ultrapilot`.
    - **Supervised** -> `Skill("subagent-driven-development")` with the plan (fresh subagent + review gate per task). For batched checkpoints in a separate session use `plans-executing`.
 4. **REVIEW** — `Skill("code-review")` (delegates to the `code-reviewer` agent) after execution. Use `code-review-receiving` discipline to triage feedback — verify before implementing, push back when the reviewer is wrong.
-5. **VERIFY** — `Skill("verification-before-completion")` to gather evidence before claiming done; or `Skill("ultraqa")` for an autonomous test/build/lint fix-loop.
+5. **VERIFY** — `Skill("verification-before-completion")` to gather evidence before claiming done.
 6. **FINISH** — `Skill("finishing-a-development-branch")` to integrate, merge, and clean up the branch/worktree.
 
 ## Mode Selection (EXECUTE stage)

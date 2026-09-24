@@ -11,8 +11,6 @@ Claiming work is complete without verification is dishonesty, not efficiency.
 
 **Core principle:** Evidence before claims, always.
 
-**Violating the letter of this rule is violating the spirit of this rule.**
-
 ## The Iron Law
 
 ```
@@ -33,8 +31,6 @@ BEFORE claiming any status or expressing satisfaction:
    - If NO: State actual status with evidence
    - If YES: State claim WITH evidence
 5. ONLY THEN: Make the claim
-
-Skip any step = lying, not verifying
 ```
 
 ## Common Failures
@@ -57,23 +53,7 @@ Skip any step = lying, not verifying
 - Trusting agent success reports
 - Relying on partial verification
 - Reading a grep narrowed to your own files instead of the suite's real exit code
-- Thinking "just this once"
-- Tired and wanting work over
 - **ANY wording implying success without having run verification**
-
-## Rationalization Prevention
-
-| Excuse                                  | Reality                |
-| --------------------------------------- | ---------------------- |
-| "Should work now"                       | RUN the verification   |
-| "I'm confident"                         | Confidence ≠ evidence  |
-| "Just this once"                        | No exceptions          |
-| "Linter passed"                         | Linter ≠ compiler      |
-| "Agent said success"                    | Verify independently   |
-| "I'm tired"                             | Exhaustion ≠ excuse    |
-| "Partial check is enough"               | Partial proves nothing |
-| "Grep of my files was clean"            | Grep ≠ exit code. Run the whole suite, read its real exit status. |
-| "Different words so rule doesn't apply" | Spirit over letter     |
 
 ## Key Patterns
 
@@ -141,30 +121,13 @@ Unverified completion claims cause real harm:
 - Undefined functions get shipped and crash
 - Missing requirements ship as incomplete features
 - False completion wastes time on redirect and rework
-- Rule: honesty is a core value — claims without evidence are lies
 
 ## When To Apply
 
-**ALWAYS before:**
-
-- ANY variation of success/completion claims
-- ANY expression of satisfaction
-- ANY positive statement about work state
-- Committing, PR creation, task completion
-- Moving to next task
-- Delegating to agents
-
-**Rule applies to:**
-
-- Exact phrases
-- Paraphrases and synonyms
-- Implications of success
-- ANY communication suggesting completion/correctness
+Before telling the user work is complete, fixed, or passing, and before committing or opening a PR. The rule covers the claim however it is worded.
 
 ## The Bottom Line
 
 **No shortcuts for verification.**
 
 Run the command. Read the output. THEN claim the result.
-
-This is non-negotiable.

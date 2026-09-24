@@ -126,17 +126,9 @@ git branch -d <feature-branch>
 ```bash
 # Push branch
 git push -u origin <feature-branch>
-
-# Create PR
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-<2-3 bullets of what changed>
-
-## Test Plan
-- [ ] <verification steps>
-EOF
-)"
 ```
+
+Then load pr-description for the title and body, and run gh pr create --title "<title>" --body "<body>".
 
 **Do NOT clean up worktree** — user needs it alive to iterate on PR feedback.
 
@@ -258,8 +250,8 @@ git worktree prune  # Self-healing: clean up any stale registrations
 
 **Called by:**
 
-- **subagent-driven-development** (Step 7) - After all tasks complete
-- **plans-executing** (Step 5) - After all batches complete
+- **subagent-driven-development** - After all tasks complete
+- **plans-executing** - After all batches complete
 
 **Pairs with:**
 

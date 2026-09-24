@@ -45,6 +45,7 @@ digraph when_to_use {
 - Failures are related (fix one might fix others)
 - Need to understand full system state
 - Agents would interfere with each other
+- Each problem is small enough to fix yourself in a handful of tool calls -- a subagent re-establishes context, re-explores, and reports back, which costs more than the fix
 
 ## The Pattern
 
@@ -82,7 +83,7 @@ Agent(subagent_type="debugger", description="Fix race condition failures",
 
 Pick the specific agent for the domain (`debugger`/`executor`/`test-engineer`) over `general-purpose` when one fits.
 
-**Match the model tier to each task's complexity** (don't run one tier for the whole batch): `executor` with `model="haiku"` for lookups/trivial edits, `executor` with `model="sonnet"` for standard implementation, `deep-executor` with `model="opus"` for complex analysis or multi-file refactors. Opus on a one-line fix is wasted cost; haiku on a hard refactor stalls.
+**Match the agent to each task's complexity**: `executor` for well-scoped edits, `deep-executor` for complex or cross-system work; pass `model="haiku"` only for pure lookups. Let each agent's own model default stand unless a task is exceptionally hard.
 
 ### 4. Review and Integrate
 
@@ -170,15 +171,6 @@ Agent 3 → Fix tool-approval-race-conditions.test.ts
 - Agent 3: Added wait for async tool execution to complete
 
 **Integration:** All fixes independent, no conflicts, full suite green
-
-**Impact:** 6 failures across 3 files, 3 agents dispatched in parallel, all investigations completed concurrently, all fixes integrated with zero conflicts between agent changes.
-
-## Key Benefits
-
-1. **Parallelization** - Multiple investigations happen simultaneously
-2. **Focus** - Each agent has narrow scope, less context to track
-3. **Independence** - Agents don't interfere with each other
-4. **Speed** - 3 problems solved in time of 1
 
 ## Verification
 

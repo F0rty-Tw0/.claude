@@ -22,7 +22,7 @@ team ralph "task description"
 
 ### Parameters
 
-- **N** - Number of teammate agents (1-20). Optional; defaults to auto-sizing based on task decomposition.
+- **N** - Number of teammate agents (1-20). Optional; defaults to the fewest workers that cover the genuinely independent subtasks.
 - **agent-type** - agent to spawn for the `team-exec` stage (e.g., executor, build-fixer, designer). Optional; defaults
   to stage-aware routing (see Stage Agent Routing below).
 - **task** - High-level task to decompose and distribute among teammates
@@ -48,7 +48,7 @@ User: "/team 3:executor fix all TypeScript errors"
       [TEAM ORCHESTRATOR (Lead)]
               |
               +-- TeamCreate("fix-ts-errors") -> lead becomes team-lead@fix-ts-errors
-              +-- Analyze & decompose task into subtasks (explore/architect)
+              +-- Lead analyzes & decomposes task into subtasks          
               +-- TaskCreate x N (one per subtask, with dependencies)
               +-- TaskUpdate x N (pre-assign owners)
               +-- Task(team_name="fix-ts-errors", name="worker-1") x N -> spawns teammates
@@ -72,17 +72,17 @@ task characteristics.
 
 | Stage           | Required Agents                     | Optional Agents                                                                                                                              | Selection Criteria                                                                                                                                                                           |
 | --------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **team-plan**   | `explore` (haiku), `architect` (opus) | `critic` (opus)                                                                                                         | Use `architect` for systems with complex boundaries.                                                                                                 |
-| **team-prd**    | `critic` (opus)                     | `architect` (opus)                                                                                                  | Use `critic` to challenge scope.                                                                                                             |
-| **team-exec**   | `executor` (sonnet)                 | `deep-executor` (opus), `build-fixer` (sonnet), `designer` (sonnet), `writer` (haiku), `test-engineer` (sonnet)                              | Match agent to subtask type. Use `deep-executor` for complex autonomous work, `designer` for UI, `build-fixer` for compilation issues, `writer` for docs, `test-engineer` for test creation. |
-| **team-verify** | `verifier` (sonnet)                 | `test-engineer` (sonnet), `security-reviewer` (sonnet), `code-reviewer` (opus), `quality-reviewer` (sonnet), `performance-reviewer` (sonnet) | Always run `verifier`. Add `security-reviewer` for auth/crypto changes. Add `code-reviewer` for >20 files or architectural changes. Add `performance-reviewer` for latency-sensitive code.   |
-| **team-fix**    | `executor` (sonnet)                 | `build-fixer` (sonnet), `debugger` (sonnet), `deep-executor` (opus)                                                                          | Use `build-fixer` for type/build errors. Use `debugger` for regression isolation. Use `deep-executor` for complex multi-file fixes.                                                          |
+| **team-plan**   | lead (itself) | `explore`, `architect`, `critic` | Decompose yourself; use `architect` for systems with complex boundaries. |
+| **team-prd**    | `critic` | `architect` | Use `critic` to challenge scope. |
+| **team-exec**   | `executor` | `deep-executor`, `build-fixer`, `designer`, `writer`, `test-engineer` | Match agent to subtask type. Use `deep-executor` for complex autonomous work, `designer` for UI, `build-fixer` for compilation issues, `writer` for docs, `test-engineer` for test creation. |
+| **team-verify** | lead runs build/tests itself | `verifier`, `test-engineer`, `security-reviewer`, `code-reviewer`, `quality-reviewer`, `performance-reviewer` | Add `security-reviewer` for auth/crypto changes, `code-reviewer` for >20 files or architectural changes, `performance-reviewer` for latency-sensitive code. |
+| **team-fix**    | `executor` | `build-fixer`, `debugger`, `deep-executor` | Use `build-fixer` for type/build errors. Use `debugger` for regression isolation. Use `deep-executor` for complex multi-file fixes. |
 
 **Routing rules:** the lead picks agents per stage -- the user's `N:agent-type` only overrides `team-exec`'s worker
 type. Route analysis/review to an external model via agentic-mcp (`mcp__agentic-mcp__ask_codex`) when available; MCP workers are one-shot and don't participate
-in team communication. In cost-downgrade mode, drop `opus` to `sonnet` and `sonnet` to `haiku` where quality permits,
-but `team-verify` always uses at least `sonnet`. Security-sensitive or >20-file changes must add `security-reviewer` +
-`code-reviewer` (opus) to `team-verify`.
+in team communication. Each agent's model comes from its definition in `~/.claude/agents/`; override `model` only for an
+exceptionally hard subtask. Security-sensitive or >20-file changes must add `security-reviewer` + `code-reviewer` to
+`team-verify`.
 
 Each stage exits when its work reaches a terminal state for the current pass: `team-plan` exits once a runnable task
 graph exists; `team-prd` exits once acceptance criteria are explicit; `team-exec` exits once execution tasks are
@@ -114,7 +114,7 @@ Extract **N** (1-20), **agent-type** (validate against known subagents), and **t
 
 ### Phase 2: Analyze & Decompose
 
-Use `explore` or `architect` to analyze the codebase and break the task into N subtasks. Each subtask should be
+Analyze the codebase and break the task into subtasks yourself (bring in `architect` only for complex boundaries). Each subtask should be
 **file-scoped** or **module-scoped** to avoid conflicts, be independent or have clear dependency ordering, and need a
 concise `subject` + detailed `description`. Identify dependencies (e.g., "shared types must be fixed before
 consumers").
@@ -140,7 +140,7 @@ Agent Preamble below) plus their specific assignment.
 `metadata._internal: true`) is auto-created tracking the agent's lifecycle -- filter these out of `TaskList` when
 counting real task progress.
 
-**IMPORTANT:** Spawn all teammates in parallel -- do NOT wait for one to finish before spawning the next.
+Spawn all teammates in one message so they run concurrently.
 
 ### Phase 6: Monitor
 

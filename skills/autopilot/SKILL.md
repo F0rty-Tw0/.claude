@@ -5,18 +5,18 @@ description: Use when the user wants end-to-end autonomous execution from an ide
 
 # Autopilot (alias -> flow, autonomous mode)
 
-Autopilot is now a thin router. The full idea-to-code lifecycle it used to hand-roll (expand -> plan -> execute -> QA -> validate -> finish) is exactly what `flow` runs in autonomous mode, driven by the native Workflow tool for deterministic phase fan-out, budgets, and resume.
+Autopilot is an alias for `flow` in autonomous mode, which runs the full idea-to-code lifecycle (brainstorm -> plan -> execute -> review -> verify -> finish).
 
 ## Route
 
 - Invoke `Skill("flow")` with `--auto` and the user's idea:
   `flow --auto "<the idea>"`
-- `flow --auto` runs the whole pipeline hands-off: brainstorm/spec -> plan -> autonomous execution (ralph + parallel agents) -> code-review -> verify (ultraqa) -> finish-branch.
+- `flow --auto` runs the whole pipeline hands-off: brainstorm/spec -> plan -> autonomous execution (ralph + parallel agents) -> code-review -> verify -> finish-branch.
 - For plan-only or supervised variants, use `flow --plan-only` / `flow --supervised`.
 
 ## Phase gates (already covered by flow)
 
-Autopilot's old Phase_Gates map 1:1 onto flow's **Stage Gates** table (flow/SKILL.md), so they are NOT duplicated here:
+Flow's **Stage Gates** table (flow/SKILL.md) enforces these gates:
 
 - spec exists + testable requirements -> flow IDEATE + PLAN
 - plan validated (critic/consensus) -> flow PLAN (`--consensus`)
@@ -26,4 +26,4 @@ Autopilot's old Phase_Gates map 1:1 onto flow's **Stage Gates** table (flow/SKIL
 
 Do not advance a stage until flow's gate observation holds; if a gate can't be met, stop and report -- never fake it.
 
-This skill is an alias; the machinery lives in flow + the Workflow tool.
+This skill is an alias; the machinery lives in flow.

@@ -19,7 +19,6 @@ Thin wrapper around the `build-fixer` agent -- delegates the whole task instead 
 ```
 Agent(
   subagent_type="build-fixer",
-  model="sonnet",
   prompt="Fix all build and TypeScript errors with minimal changes. Run the project's type check / build command to collect errors, fix them one at a time, verify each fix doesn't introduce new errors, and stop when the build passes. Fix import/export and config errors before type errors -- a single bad import or missing dependency often cascades into dozens of downstream type errors that disappear once the root import is fixed, so front-loading them shrinks the real error count before round two. No refactoring, no architectural changes."
 )
 ```
@@ -30,6 +29,5 @@ doesn't specify. Report back the errors fixed, files touched, and final build st
 
 ## Use with Other Skills
 
-- **Ultrawork**: spawn multiple `build-fixer` agents in parallel for different files
 - **Ralph**: keep retrying `build-fixer` until the build passes
 - **Pipeline**: `explore` -> `architect` -> `build-fixer` for root-cause-first debugging

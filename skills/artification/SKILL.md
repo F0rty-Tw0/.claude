@@ -1,6 +1,6 @@
 ---
 name: artification
-description: Use when writing or refactoring TypeScript, especially when organizing exported types, object shapes, nested configuration, readonly fields, array contracts, return statements, guard clauses, if conditions, calls inside conditions, spread expressions, ternaries, call chains, callbacks, arrow bodies, nested object values, `as` casts, comments, returned object literals, imports, return types, derived types (`ReturnType<typeof>`), class members, naming, blank lines, dead conditions, switch exhaustiveness, erasable syntax, pure functions, deterministic helpers, utility folders, `.util.ts` files, stubs, mocks, fixtures, spec utils, `test/` folders, spec structure, `describe` / `it` naming, Gherkin (`GIVEN` / `WHEN` / `THEN`), branch coverage, Wallaby yellow lines, or `TestBed` provider overrides
+description: Use when writing, refactoring, reviewing, or testing TypeScript (including Angular specs and `TestBed` setup) — covers type and object-shape organization, function-body shape (returns, guards, conditions, ternaries, chains, callbacks, casts, comments), imports, naming and class members, utility placement and purity, module size, and spec structure (`describe` / `it`, Gherkin, branch coverage, stubs, mocks, fixtures, `test/` folders).
 ---
 
 # Artification

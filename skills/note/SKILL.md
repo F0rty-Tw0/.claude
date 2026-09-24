@@ -72,4 +72,4 @@ note --prune
 
 ## Integration
 
-Notepad content is not auto-loaded on session start -- there is no hook wired up for it (checked `.claude/settings.json`, no `notepad`-related hook exists). To bring it back into context, read it back manually with `note --show` or `Read .claude/local/notepad.md`, or invoke `/note --show` at the start of a session. This still helps survive conversation compaction: content written here persists in the file even after older turns are summarized away, as long as you read it back.
+Notepad content is not auto-loaded; read it back with `note --show` (or `Read .claude/local/notepad.md`) at the start of a session or after compaction. The file persists after older turns are summarized away, so anything written here survives compaction once read back.

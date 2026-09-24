@@ -15,7 +15,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Context:** If working in an isolated worktree, it should have been created via the `using-git-worktrees` skill at execution time.
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+**Save plans to:** `.claude/local/plans/YYYY-MM-DD-<feature-name>.md` (the directory `plan` and `flow` use)
 - (User preferences for plan location override this default)
 
 ## Scope Check
@@ -49,7 +49,7 @@ This structure informs the task decomposition. Each task should produce self-con
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use skill:subagent-driven-development (supervised, recommended), skill:plans-executing (checkpointed), or skill:ralph (autonomous) to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use skill:plans-executing (inline, checkpointed), skill:subagent-driven-development (per-task subagents, for large plans with independent tasks), or skill:ralph (autonomous) to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -137,9 +137,9 @@ If you find issues, fix them inline. No need to re-review — just fix and move 
 
 After saving the plan, offer execution choice:
 
-**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+**"Plan complete and saved to `.claude/local/plans/<filename>.md`. Three execution options:**
 
-**1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
+**1. Subagent-Driven** - a fresh subagent per task with review between tasks; worth the overhead for large plans whose tasks are independent and sizeable
 
 **2. Inline Execution** - Execute tasks in this session using plans-executing, batch execution with checkpoints
 **3. Autonomous** - Hand the plan to `ralph` for parallel, persistence-looped execution with architect verification (fire-and-forget; best for well-scoped, low-risk work)

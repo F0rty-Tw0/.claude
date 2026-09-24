@@ -23,7 +23,7 @@ A skill to search for specific web development use cases and retrieve their corr
 
 ## When to use
 
-Must use this skill:
+Use this skill:
 - At the **start** of implementing any web feature.
 - Before creating a new component, to check if a standardized pattern already exists.
 - To avoid implementing ad-hoc solutions or loading large dependencies unnecessarily.
@@ -81,7 +81,7 @@ npx -y modern-web-guidance@latest retrieve "<id>"
 
 ## Using npx
 
--   IMPORTANT: on Windows, using `npx` may fail. Use `npx.cmd ...` instead.
+-   On Windows, `npx` may fail; use `npx.cmd ...` instead.
 -   Network access is required for fetching npm packages needed by the task.
 -   If the `npx -y modern-web-guidance…` command hangs, you may be offline. Try running again in offline
     mode: `npx --offline …`.
@@ -90,7 +90,7 @@ npx -y modern-web-guidance@latest retrieve "<id>"
 
 ## Guidelines
 
--   Always search **first** to find the most relevant guides.
+-   Search before writing the feature, because trained web patterns may be obsolete.
 -   These guides are usually framework-agnostic; adapt them correctly to your setup.
 -   Do not hallucinate guides or ignore them; they represent the preferred local standard for the user's project.
 

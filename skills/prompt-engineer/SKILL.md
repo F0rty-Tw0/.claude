@@ -53,34 +53,32 @@ Include examples of desired behavior
 
 ### Chain-of-Thought
 
-Request step-by-step reasoning -- but check whether the target model already reasons internally first.
+Check whether the target model already reasons internally before asking for step-by-step reasoning.
 
 ```javascript
 - Non-reasoning models: ask explicitly to think step by step, provide reasoning structure
-- Reasoning models (Claude Fable 5 / Opus 4.x / o-series with extended thinking): do NOT force a visible
-  "think step by step" preamble -- the model already reasons in a separate thinking block. Forcing prose CoT
-  on top of it wastes tokens and can shorten the model's own reasoning.
-- For reasoning models, instead: state the goal and constraints clearly, give it room (don't cap output
-  tokens tight), and let extended thinking do the step-by-step work. Set an explicit thinking token budget
-  when the API/SDK exposes one, and raise it for harder problems.
+- Reasoning models (current Claude models, where thinking is adaptive or always on; o-series): skip the visible
+  "think step by step" preamble -- the model already reasons in a separate thinking block, and prose CoT on top
+  wastes tokens. Asking newer Claude models to reproduce their reasoning in the answer can be declined.
+- For reasoning models, state the goal and constraints clearly, leave `max_tokens` room for thinking plus the
+  reply, and control depth with `effort`, not prose ("think harder") or `budget_tokens` (a 400 on current Claude).
 - Parse reasoning separately from answer either way -- thinking blocks are structurally separate from the
   final response, prose CoT is not.
-- Use for debugging model failures: read the thinking block/CoT trace, not just the final answer.
+- Use for debugging model failures: read the thinking block/CoT trace (on Claude, request `display: "summarized"`;
+  the default returns empty thinking text), not just the final answer.
 ```
 
-### Claude-Specific Patterns (4.5/5-era)
+### Claude-Specific Patterns (current models)
 
-- **Structured output via tool-forcing**: for machine-parsed output, define a tool with the exact JSON schema
-  and force it (`tool_choice: {"type": "tool", "name": "..."}` or the SDK's forced-tool-use option) instead of
-  asking for JSON in prose. Forced tool-use is schema-validated and doesn't drift under paraphrase; prose "return
-  JSON" instructions do.
-- **Prefilling**: seed the start of the assistant turn (e.g. `{` for JSON, or a fixed opening line) to skip
-  preamble and lock the output format. Not compatible with extended thinking turned on for that turn -- prefill
-  only on non-thinking calls, or prefill after the thinking block completes.
-- **Extended thinking**: when thinking is enabled, `temperature` is fixed by the API (not freely tunable) and
-  prefill of the final text is restricted -- budget thinking tokens instead of fighting temperature for
-  determinism. Use interleaved thinking (reasoning between tool calls, not just before the first one) for
-  multi-step agentic prompts.
+- **Structured output**: use structured outputs (`output_config.format` with a JSON schema) for machine-parsed
+  output. Forced tool use (`tool_choice` `any`/`tool`) returns a 400 on current Claude models; to steer toward a
+  tool, name it in the prompt under `tool_choice: auto` with `strict: true` on the tool, and check the call happened.
+- **No prefill**: a trailing assistant-turn prefill returns a 400 on current Claude models. Lock format with
+  structured outputs or a system-prompt instruction.
+- **Thinking and sampling**: thinking is adaptive (always on for the newest models); control depth, latency, and
+  cost with `effort`. Non-default `temperature`/`top_p`/`top_k` are rejected -- steer tone and variety in the
+  prompt. Interleaved thinking between tool calls is automatic.
+- Before writing request code, load the `claude-api` skill for per-model specifics.
 
 ## Anti-Patterns
 
@@ -92,9 +90,13 @@ Imprecise language leads to unpredictable outputs. Be explicit about format, ton
 
 Cramming irrelevant context wastes tokens and confuses the model. Curate context ruthlessly.
 
-### ❌ No Negative Instructions
+### ❌ Prompt Text Tuned for Older Models
 
-Only saying what to do, without saying what NOT to do, leaves room for unwanted behavior.
+Current Claude models follow instructions closely and literally. `CRITICAL`/`MUST` emphasis causes over-triggering; "verify your work" or "use a subagent to verify" causes over-verification; "delegate more" causes over-delegation; "only report high-severity issues" lowers review recall (ask for every finding with confidence and severity, filter downstream); numeric word caps starve reasoning on hard problems. Say what you mean at normal volume and re-test on each model release.
+
+### ❌ Prohibition Lists Without Reasons
+
+Long "never X / don't Y" lists anchor the model toward the failures they name. State the desired behavior positively; keep a prohibition only for a failure that actually reproduces, with its reason beside it.
 
 ## ⚠️ Sharp Edges
 
@@ -102,15 +104,15 @@ Only saying what to do, without saying what NOT to do, leaves room for unwanted 
 | ----------------------------------------------- | -------- | ----------------------------------------------------------- |
 | Using imprecise language in prompts             | high     | Be explicit about format, constraints, and expected output  |
 | Expecting specific format without specifying it | high     | Specify format explicitly with examples                     |
-| Only saying what to do, not what to avoid       | medium   | Include explicit constraints and negative instructions      |
+| Unreasoned prohibition lists                    | medium   | State desired behavior positively; keep reasoned constraints only |
 | Changing prompts without measuring impact       | medium   | Systematic evaluation with before/after comparison          |
 | Including irrelevant context 'just in case'     | medium   | Curate context to only include relevant information         |
 | Biased or unrepresentative examples             | medium   | Diverse, representative examples covering edge cases        |
-| Using default temperature for all tasks         | medium   | Task-appropriate temperature (0 for factual, 0.7+ for creative); fixed when extended thinking is on |
+| Tuning `temperature` for tone or determinism    | medium   | Current Claude models reject non-default sampling params; steer in the prompt (other providers: task-appropriate temperature) |
 | Not considering prompt injection in user input  | high     | Defend against injection with input validation and delimiters |
-| Prompting for JSON in prose instead of forcing a tool | medium | Use tool-forcing with a JSON-schema tool for structured output |
+| Prompting for JSON in prose instead of structured outputs | medium | Use structured outputs (`output_config.format`) with a JSON schema |
 | Forcing "think step by step" on a reasoning model | medium | Let extended thinking reason internally; don't stack prose CoT on top |
 
 ## Related Skills
 
-Works well with: `ai-agents-architect`, `rag-engineer`, `backend`
+Works well with: `claude-api` (per-model API and prompting specifics)

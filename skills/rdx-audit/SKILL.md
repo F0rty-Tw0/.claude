@@ -53,6 +53,6 @@ N findings: X code, Y prose. Est. removable: ~A lines code, ~B lines prose.
 Biggest win: <the single highest-impact cut>.
 ```
 
-Be honest about uncertainty — mark a finding `(check)` if cutting it might lose
-behavior you can't verify from the snippet. Lean toward fewer, high-confidence
-findings over a long speculative list.
+Report every candidate you find, including uncertain ones. Mark a finding `(check)`
+if cutting it might lose behavior you can't verify from the snippet, so the reader
+can filter by confidence.

@@ -17,7 +17,7 @@ Use this skill when the goal is a working outcome: get a real answer from the pr
 - Resuming or inspecting multi-turn provider sessions
 - Reviewing usage, latency, and success metrics
 
-Do NOT use for: general skill authoring (`skills-writing`), non-agentic-mcp MCP servers.
+Do NOT use for: general skill authoring (`skills-creating`), non-agentic-mcp MCP servers.
 
 ## Command Selection
 
@@ -102,7 +102,7 @@ Examples:
 npx agentic-mcp ask_all "Explain this architecture" --providers claude,gemini
 npx agentic-mcp ask_all "Compare bugfix approaches" --providers claude codex --context "Optimize for smallest safe diff"
 npx agentic-mcp ask_all "Compare providers" --providers gemini codex
-npx agentic-mcp ask_all "Use one shared model" --providers claude,gemini --model claude-sonnet-4
+npx agentic-mcp ask_all "Use one shared model" --providers claude,gemini --model claude-sonnet-5
 ```
 
 ## Sessions and Metrics

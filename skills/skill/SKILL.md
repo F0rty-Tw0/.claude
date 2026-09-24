@@ -16,19 +16,19 @@ Show all local skills organized by scope.
 
 **Behavior:**
 
-1. Scan user skills at `~/.claude/skills/learned/`
-2. Scan project skills at `.claude/local/skills/`
+1. Scan user skills at `~/.claude/skills/`
+2. Scan project skills at `.claude/skills/`
 3. Parse YAML frontmatter for metadata
 4. Display in organized table format:
 
 ```
-USER SKILLS (~/.claude/skills/learned/):
+USER SKILLS (~/.claude/skills/):
 | Name              | Triggers           | Quality | Usage | Scope |
 |-------------------|--------------------|---------|-------|-------|
 | error-handler     | fix, error         | 95%     | 42    | user  |
 | api-builder       | api, endpoint      | 88%     | 23    | user  |
 
-PROJECT SKILLS (.claude/local/skills/):
+PROJECT SKILLS (.claude/skills/):
 | Name              | Triggers           | Quality | Usage | Scope   |
 |-------------------|--------------------|---------|-------|---------|
 | test-runner       | test, run          | 92%     | 15    | project |
@@ -53,17 +53,14 @@ Interactive wizard for creating a new skill.
 4. **Ask for argument hint** (optional)
    - Example: "<file> [options]"
 5. **Ask for scope:**
-   - `user` → `~/.claude/skills/learned/<name>/SKILL.md`
-   - `project` → `.claude/local/skills/<name>/SKILL.md`
+   - `user` → `~/.claude/skills/<name>/SKILL.md`
+   - `project` → `.claude/skills/<name>/SKILL.md`
 6. **Create skill file** with template:
 
 ```yaml
 ---
 name: <name>
 description: <description>
-triggers:
-  - <trigger1>
-  - <trigger2>
 argument-hint: "<args>"
 ---
 
@@ -110,7 +107,7 @@ Triggers (comma-separated): log, logger, logging
 Argument hint (optional): <level> [message]
 Scope (user/project): user
 
-✓ Created skill at ~/.claude/skills/learned/custom-logger/SKILL.md
+✓ Created skill at ~/.claude/skills/custom-logger/SKILL.md
 → Edit with: /skill edit custom-logger
 ```
 
@@ -123,13 +120,13 @@ Remove a skill by name.
 **Behavior:**
 
 1. **Search for skill** in both scopes:
-   - `~/.claude/skills/learned/<name>/SKILL.md`
-   - `.claude/local/skills/<name>/SKILL.md`
+   - `~/.claude/skills/<name>/SKILL.md`
+   - `.claude/skills/<name>/SKILL.md`
 2. **If found:**
    - Display skill info (name, description, scope)
    - **Ask for confirmation:** "Delete '<name>' skill from <scope>? (yes/no)"
 3. **If confirmed:**
-   - Delete entire skill directory (e.g., `~/.claude/skills/learned/<name>/`)
+   - Delete entire skill directory (e.g., `~/.claude/skills/<name>/`)
    - Report: "✓ Removed skill '<name>' from <scope>"
 4. **If not found:**
    - Report: "✗ Skill '<name>' not found in user or project scope"
@@ -142,7 +139,7 @@ Remove a skill by name.
 User: /skill remove old-logger
 Assistant: Found skill 'old-logger' in user scope:
   Description: Legacy logging utility
-  Scope: user (~/.claude/skills/learned/)
+  Scope: user (~/.claude/skills/)
 
 Delete 'old-logger' skill? (yes/no)
 
@@ -263,13 +260,13 @@ Show detailed information about a skill.
 
 ```
 Skill: custom-logger
-Scope: user (~/.claude/skills/learned/custom-logger/)
+Scope: user (~/.claude/skills/custom-logger/)
 Description: Enhanced logging with structured output
 Triggers: log, logger, logging
 Argument Hint: <level> [message]
 Quality: 95% (if available)
 Usage Count: 42 times (if available)
-File Path: ~/.claude/skills/learned/custom-logger/SKILL.md
+File Path: ~/.claude/skills/custom-logger/SKILL.md
 
 --- FULL CONTENT ---
 [entire markdown content]
@@ -285,7 +282,7 @@ Assistant: Skill: custom-logger
 Scope: user
 Description: Enhanced logging with structured output
 Triggers: log, logger, logging
-File: ~/.claude/skills/learned/custom-logger/SKILL.md
+File: ~/.claude/skills/custom-logger/SKILL.md
 
 --- CONTENT ---
 # Custom Logger Skill
@@ -304,8 +301,8 @@ Sync skills between user and project scopes.
 **Behavior:**
 
 1. **Scan both scopes:**
-   - User skills: `~/.claude/skills/learned/`
-   - Project skills: `.claude/local/skills/`
+   - User skills: `~/.claude/skills/`
+   - Project skills: `.claude/skills/`
 2. **Compare and categorize:**
    - User-only skills (not in project)
    - Project-only skills (not in user)
@@ -354,7 +351,7 @@ Assistant: Found 5 user-only skills and 2 project-only skills.
 
 Copy 'error-handler' from user to project? (yes/no/skip)
 User: yes
-Assistant: ✓ Copied 'error-handler' to .claude/local/skills/
+Assistant: ✓ Copied 'error-handler' to .claude/skills/
 
 Copy 'api-builder' from user to project? (yes/no/skip)
 User: skip
@@ -375,7 +372,7 @@ First, check if skill directories exist and create them if needed:
 
 ```bash
 # Check and create user-level skills directory
-USER_SKILLS_DIR="$HOME/.claude/skills/learned"
+USER_SKILLS_DIR="$HOME/.claude/skills"
 if [ -d "$USER_SKILLS_DIR" ]; then
   echo "User skills directory exists: $USER_SKILLS_DIR"
 else
@@ -384,7 +381,7 @@ else
 fi
 
 # Check and create project-level skills directory
-PROJECT_SKILLS_DIR=".claude/local/skills"
+PROJECT_SKILLS_DIR=".claude/skills"
 if [ -d "$PROJECT_SKILLS_DIR" ]; then
   echo "Project skills directory exists: $PROJECT_SKILLS_DIR"
 else
@@ -399,15 +396,15 @@ Scan both directories and show a comprehensive inventory:
 
 ```bash
 # Scan user-level skills
-echo "=== USER-LEVEL SKILLS (~/.claude/skills/learned/) ==="
-if [ -d "$HOME/.claude/skills/learned" ]; then
-  USER_COUNT=$(find "$HOME/.claude/skills/learned" -name "*.md" 2>/dev/null | wc -l)
+echo "=== USER-LEVEL SKILLS (~/.claude/skills/) ==="
+if [ -d "$HOME/.claude/skills" ]; then
+  USER_COUNT=$(find "$HOME/.claude/skills" -name "*.md" 2>/dev/null | wc -l)
   echo "Total skills: $USER_COUNT"
 
   if [ $USER_COUNT -gt 0 ]; then
     echo ""
     echo "Skills found:"
-    find "$HOME/.claude/skills/learned" -name "*.md" -type f -exec sh -c '
+    find "$HOME/.claude/skills" -name "*.md" -type f -exec sh -c '
       FILE="$1"
       NAME=$(grep -m1 "^name:" "$FILE" 2>/dev/null | sed "s/name: //")
       DESC=$(grep -m1 "^description:" "$FILE" 2>/dev/null | sed "s/description: //")
@@ -423,15 +420,15 @@ else
 fi
 
 echo ""
-echo "=== PROJECT-LEVEL SKILLS (.claude/local/skills/) ==="
-if [ -d ".claude/local/skills" ]; then
-  PROJECT_COUNT=$(find ".claude/local/skills" -name "*.md" 2>/dev/null | wc -l)
+echo "=== PROJECT-LEVEL SKILLS (.claude/skills/) ==="
+if [ -d ".claude/skills" ]; then
+  PROJECT_COUNT=$(find ".claude/skills" -name "*.md" 2>/dev/null | wc -l)
   echo "Total skills: $PROJECT_COUNT"
 
   if [ $PROJECT_COUNT -gt 0 ]; then
     echo ""
     echo "Skills found:"
-    find ".claude/local/skills" -name "*.md" -type f -exec sh -c '
+    find ".claude/skills" -name "*.md" -type f -exec sh -c '
       FILE="$1"
       NAME=$(grep -m1 "^name:" "$FILE" 2>/dev/null | sed "s/name: //")
       DESC=$(grep -m1 "^description:" "$FILE" 2>/dev/null | sed "s/description: //")
@@ -486,8 +483,8 @@ Ask user to provide either:
 
 Then ask for scope:
 
-- **User-level** (~/.claude/skills/learned/) - Available across all projects
-- **Project-level** (.claude/local/skills/) - Only for this project
+- **User-level** (~/.claude/skills/) - Available across all projects
+- **Project-level** (.claude/skills/) - Only for this project
 
 Validate the skill format and save to the chosen location.
 
@@ -518,7 +515,6 @@ id: [type-prefix][unique-id]
 name: [Name]
 description: [description phrasing from table above]
 source: conversation
-triggers: ["trigger1", "trigger2", "trigger3"]
 quality: high
 ---
 
@@ -618,7 +614,7 @@ How do you know this applies? What are the signs?
 When invoked with an argument, skip the interactive wizard:
 
 - `skill list` - Show detailed skill inventory
-- `skill add` - Start skill creation (invoke learner)
+- `skill add` - Start skill creation (use `skills-creating`)
 - `skill scan` - Scan both skill directories
 
 ### Interactive Mode
@@ -629,10 +625,10 @@ When invoked without arguments, run the full guided wizard.
 
 ## Benefits of Local Skills
 
-**Automatic Application**: Claude detects triggers and applies skills automatically - no need to remember or search for
-solutions.
+**Automatic Application**: Claude matches each skill's `description` against the task and loads it - no need to remember
+or search for solutions.
 
-**Version Control**: Project-level skills (.claude/local/skills/) are committed with your code, so the whole team
+**Version Control**: Project-level skills (.claude/skills/) are committed with your code, so the whole team
 benefits.
 
 **Evolving Knowledge**: Skills improve over time as you discover better approaches and refine triggers.
@@ -677,8 +673,8 @@ Good skills are:
 > skill list
 
 Checking skill directories...
-✓ User skills directory exists: ~/.claude/skills/learned/
-✓ Project skills directory exists: .claude/local/skills/
+✓ User skills directory exists: ~/.claude/skills/
+✓ Project skills directory exists: .claude/skills/
 
 Scanning for skills...
 
@@ -718,7 +714,7 @@ What would you like to do?
 ## Tips for Users
 
 - Run `skill list` periodically to review your skill library
-- After solving a tricky bug, immediately run learner to capture it
+- After solving a tricky bug, capture it with `skills-creating`
 - Use project-level skills for codebase-specific knowledge
 - Use user-level skills for general patterns that apply everywhere
 - Review and refine triggers over time to improve matching accuracy

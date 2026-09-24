@@ -4,7 +4,7 @@ Audit and rewrite text to remove signs of AI-generated writing.
 
 ## Modes
 
-- **`rewrite`** (default) — flag AI-isms and rewrite the text to fix them, with a second-pass audit of the rewrite itself.
+- **`rewrite`** (default) — flag AI-isms and rewrite the text to fix them.
 - **`detect`** — flag only, no rewriting. Triggered by "detect," "flag only," "audit only," "just flag," "scan," or "what AI patterns are in this."
 
 ## What It Does

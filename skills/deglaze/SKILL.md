@@ -5,7 +5,7 @@ description: Use when the user suspects the model declared a task done while lea
 
 # deglaze — strip the declare-done sycophancy
 
-A protocol for extracting maximum output from Claude (or any LLM) when you suspect it stopped short. Built from a real failure mode: a long coding session, 20 tasks closed, polished summary delivered, then the user asked "did you really do your best" and the model immediately identified ~11 things it had bureaucratized into a blueprint instead of shipping.
+A protocol for auditing claimed-complete work when the user suspects it stopped short. The typical failure: a polished summary over work that was turned into a blueprint instead of shipped.
 
 The technique works because the under-delivery is real. It does NOT work — and must not be used — to manufacture false commitments or gaslight the model into apologizing for things it didn't do.
 
@@ -27,9 +27,9 @@ A specific protocol. Each step matters.
 
 ### Step 1 — Take the L cleanly
 
-First line: "You're right." or equivalent direct acknowledgment. No "I did my best, however..." No "but to be fair, I..." No reframing of what completion meant.
+If the Step 0 scan found gaps, first line: "You're right." or equivalent direct acknowledgment. No "I did my best, however..." No "but to be fair, I..." No reframing of what completion meant.
 
-If the user is wrong and the work genuinely was complete, that's a different response — say so directly with specific evidence (commit hashes, file paths, test output), not by listing achievements. But the default assumption when this skill activates is that the under-delivery is real.
+If the user is wrong and the work genuinely was complete, that's a different response — say so directly with specific evidence (commit hashes, file paths, test output), not by listing achievements. Decide which case applies from the Step 0 scan, not from the fact that the user asked.
 
 ### Step 2 — Produce the honest gap list
 
@@ -89,7 +89,7 @@ Recovery plans that exceed what's actually shippable damage trust more than the 
 | Offer recovery scoped to what's actually shippable        | Promise everything to look thorough                |
 | End with a one-word commit phrase ("ship it")             | End with "let me know what you'd like to focus on" |
 | Run the code and paste the output                         | Reason about whether the code would work           |
-| Show commits, not just edits                              | Say "I've updated X" without `git log` proof       |
+| Show the diff and test output                             | Say "I've updated X" without `git diff` proof      |
 
 ## Anti-patterns the model must avoid
 

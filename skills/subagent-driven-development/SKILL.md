@@ -5,11 +5,11 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Subagent-Driven Development
 
-Execute a plan by dispatching a fresh subagent per task, with two-stage review after each: spec compliance first, then code quality.
+Execute a plan by dispatching a fresh implementer subagent per task. You check each task's diff against its spec yourself; one code-quality review covers the whole implementation at the end.
 
 **Why subagents:** You delegate tasks to specialized agents with isolated context. By crafting their instructions precisely, you keep them focused and preserve your own context for coordination. They never inherit your session history — you construct exactly what they need.
 
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration.
+**Core principle:** Fresh subagent per task + your own spec check per task + one final review = high quality without per-task review overhead.
 
 **Continuous execution:** Do not check in with your human partner between tasks. Execute all tasks without stopping. Only stop for: a BLOCKED status you cannot resolve, genuine blocking ambiguity, or all tasks complete. "Should I continue?" prompts waste their time — they asked you to execute the plan.
 
@@ -40,10 +40,9 @@ Otherwise:
 
 1. Dispatch implementer subagent (`./implementer-prompt.md`) with full task text + scene-setting context.
 2. If it asks questions, answer completely, then re-dispatch. Never rush it into implementation.
-3. Implementer implements, tests, commits, self-reviews.
-4. Dispatch spec reviewer (`./spec-reviewer-prompt.md`). If gaps found → implementer fixes → re-review. Loop until ✅.
-5. Only then dispatch code quality reviewer (`./code-quality-reviewer-prompt.md`). If issues found → implementer fixes → re-review. Loop until ✅.
-6. Mark task complete with `TaskUpdate`. Move to next task.
+3. Implementer implements, tests, commits.
+4. Read the task's diff against the task text (missing requirements, unrequested extras). Fix small gaps yourself; re-dispatch the implementer for task-sized ones. Dispatch the spec reviewer (`./spec-reviewer-prompt.md`) only when the diff is too large to check in a handful of reads.
+5. Mark task complete with `TaskUpdate`. Move to next task.
 
 ## Model Selection
 
@@ -57,8 +56,8 @@ Use the least powerful model that can handle each role.
 
 Implementers report one of four statuses:
 
-- **DONE:** proceed to spec review.
-- **DONE_WITH_CONCERNS:** read the concerns first. Correctness/scope concerns → address before review. Observations ("file getting large") → note and proceed.
+- **DONE:** proceed to the spec check.
+- **DONE_WITH_CONCERNS:** read the concerns first. Correctness/scope concerns → address before the spec check. Observations ("file getting large") → note and proceed.
 - **NEEDS_CONTEXT:** provide the missing context and re-dispatch.
 - **BLOCKED:** assess the blocker — context problem → add context, same model; needs more reasoning → more capable model; too large → break into pieces; plan is wrong → escalate to human.
 
@@ -79,32 +78,25 @@ Task 1: Hook installation script
 
 Implementer: "Should the hook install at user or system level?"
 You: "User level (~/.config/worktrees/hooks/)"
-Implementer: [implements install-hook, 5/5 tests passing, self-review caught
-              missing --force flag and added it, committed]
+Implementer: [implements install-hook, 5/5 tests passing, committed]
 
-[Dispatch spec reviewer]
-Spec reviewer: ✅ All requirements met, nothing extra
-
-[Dispatch code quality reviewer]
-Code reviewer: Clean, good coverage. Approved.
+[Read Task 1 diff against task text: all requirements met, nothing extra]
 
 [Mark Task 1 complete, move to Task 2]
 ```
 
-When a spec reviewer finds issues (e.g. "missing progress reporting; extra --json flag not requested"), the implementer removes the extra and adds the missing, then the reviewer re-reviews before quality review begins.
+When the spec check finds gaps (e.g. "missing progress reporting; extra --json flag not requested"), fix them or re-dispatch the implementer, then re-check the diff.
 
 ## Rules — Never
 
 - Start implementation on main/master without explicit user consent.
-- Skip either review, or start code quality review before spec compliance is ✅ (wrong order).
+- Skip the per-task spec check or the final code review.
 - Proceed to the next task with open review issues, or accept "close enough" on spec.
 - Dispatch multiple implementer subagents in parallel (conflicts). If tasks are truly independent and you want parallelism, that is a different skill: use **ultrapilot** or **team** with per-worker `isolation: "worktree"`, not this sequential-review loop.
 - Make a subagent read the plan file — provide full text instead.
 - Skip scene-setting context, or ignore subagent questions.
-- Let self-review replace actual review — both are needed.
-- Fix a failed task manually — dispatch a fix subagent (avoids context pollution).
 
-These gates are the whole point: self-review catches issues before handoff, spec review prevents over/under-building, quality review ensures it's well-built, and re-review loops confirm fixes actually work. The cost (three subagent invocations per task plus loops) buys catching issues early, which is cheaper than debugging later.
+These gates are the point: the per-task spec check prevents over/under-building, and the final review ensures the whole is well-built. Per-task verification belongs in your own loop, not in extra reviewer subagents.
 
 ## Integration
 

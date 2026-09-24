@@ -6,7 +6,7 @@ The single front door for taking a feature from idea to merged, verified code. F
 
 ```
 IDEATE   ->   PLAN   ->   EXECUTE          ->   REVIEW    ->   VERIFY        ->   FINISH
-brainstorm    plan        auto | supervised     code-review   verify | ultraqa    finish-branch
+brainstorm    plan        auto | supervised     code-review   verify              finish-branch
 ```
 
 | Stage | Routes to |

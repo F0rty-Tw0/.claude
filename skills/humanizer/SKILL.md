@@ -30,7 +30,7 @@ Technical documentation where precision matters more than voice; code comments (
 
 ## Your Task
 
-In **rewrite** mode: (1) audit — identify every AI-ism, citing the specific text; (2) rewrite — return a clean version with all AI-isms removed; (3) diff summary — briefly list what changed and why; (4) second-pass audit — re-read the rewrite and fix anything that survived.
+In **rewrite** mode: (1) audit — identify every AI-ism, citing the specific text; (2) rewrite — return a clean version with all AI-isms removed; (3) diff summary — briefly list what changed and why.
 
 In **detect** mode: (1) audit; (2) assess — note which flags are clear problems vs. patterns that may be intentional.
 
@@ -194,7 +194,7 @@ If the text has **5+ flagged vocabulary hits across multiple categories**, **3+ 
 
 ## Calibration
 
-Not every instance is AI-generated. Humans write in threes and say "Additionally." A single match means nothing. (Exception: em dashes are always replaced.)
+Not every instance is AI-generated. Humans write in threes and say "Additionally." A single match means nothing. (Exception: em dashes follow their own target in Style and Formatting.)
 
 Look for: **clusters** (multiple patterns in one paragraph); **density** (the same pattern across a document); **context** ("delve" in a casual blog is suspicious; in an archaeology paper it's fine).
 
@@ -209,21 +209,6 @@ Do NOT: remove all structure chasing "naturalness"; flatten text into monotone n
 3. **Applying patterns mechanically.** "Not only X but Y" is sometimes the best phrasing. Use judgment.
 4. **Ignoring context.** Technical, legal, and academic writing have legitimate reasons for formal structure.
 5. **Treating the replacement tables as mandates.** They're defaults. If a flagged word is right in context, preserve it.
-
----
-
-## Process
-
-1. Read the input carefully.
-2. Detect or apply the context profile.
-3. Identify all AI pattern instances, looking for clusters over isolated matches.
-4. Decide: patch in place, or full rewrite (see threshold above).
-5. Rewrite each problematic section, preserving all factual content.
-6. Check: does it preserve the original meaning?
-7. Check: does it sound natural read aloud?
-8. Check: did you introduce any new facts, sources, or claims?
-9. Run a second-pass audit on the rewrite.
-10. Present the humanized version with a summary of changes.
 
 ---
 
@@ -245,7 +230,7 @@ If the original is already strong, say so and make only the necessary cuts.
 
 ### Rewrite mode (default)
 
-Four sections: **(1) Issues found** — bulleted list of every AI-ism with offending text quoted, tagged by severity (P0/P1/P2); **(2) Rewritten version** — full content, original structure and technical details preserved, changing only what the guidelines require; **(3) What changed** — brief summary of major edits; **(4) Second-pass audit** — re-read section 2, fix any surviving tells, return corrected text inline and note what changed. If clean, say so.
+Three sections: **(1) Issues found** — bulleted list of every AI-ism with offending text quoted, tagged by severity (P0/P1/P2); **(2) Rewritten version** — full content, original structure and technical details preserved, changing only what the guidelines require; **(3) What changed** — brief summary of major edits. If clean, say so.
 
 ### Detect mode
 

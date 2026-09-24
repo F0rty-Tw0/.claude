@@ -6,7 +6,7 @@
 
 Local agents live in `~/.claude/agents/` — invoke by bare name (`executor`, `architect`, …). The full roster + descriptions are injected every session; don't duplicate the list here (it drifts).
 
-- **Delegate code edits.** Route source-code changes (`.ts`, `.py`, `.go`, etc.) through `executor` / `deep-executor`. Edit config/orchestration files (`~/.claude/**`, `CLAUDE.md`) directly.
+- **Delegate sizeable code work.** Send source-code changes that are large, or that split into independent parallel tracks, to `executor` / `deep-executor`. Make small edits (a handful of tool calls) yourself — a subagent re-reads context and costs more than the edit. Edit config/orchestration files (`~/.claude/**`, `CLAUDE.md`) directly.
 - **Model is per-agent.** Use `haiku` for lookup/extraction, `opus` for routine implementation and bounded specialist work, and `inherit` for complex implementation and high-risk analysis/review. `inherit` follows the parent model, not a fixed Fable version; select the stronger parent model before using those agents. Model selection does not set reasoning effort. Override a specialist's model for exceptionally difficult tasks instead of promoting its default.
 
 ## Picking between overlapping agents
@@ -22,8 +22,8 @@ Descriptions don't disambiguate these — the tie-breaks do:
 
 Workflow recipes — not discoverable at runtime, kept here on purpose.
 
-- **Feature Development:** `/plan` -> `executor` -> `test-engineer` -> `quality-reviewer` -> `verifier`
-- **Bug Investigation:** `explore` + `debugger` + `executor` + `test-engineer` + `verifier`
+- **Feature Development:** `/plan` -> `executor` -> `test-engineer` -> `quality-reviewer` (run the final build/tests yourself)
+- **Bug Investigation:** `explore` + `debugger` + `executor` + `test-engineer`
 - **Code Review:** `quality-reviewer` + `security-reviewer` + `performance-reviewer`
 
 @AGENTS.md
@@ -36,14 +36,13 @@ Workflow recipes — not discoverable at runtime, kept here on purpose.
 
 @skills/ponytail/SKILL.md
 
-# When you are about to read any terminal output, use:
+# Terminal output
 
-@RTK.md
+A PreToolUse hook rewrites Bash commands through `rtk`, so their output arrives compressed. Use `rtk proxy <cmd>` when you need raw, unfiltered output.
 
 # RDX — supplement to Caveman + Ponytail
 
 Keep both always-on; layer rdx on demand (stricter rule wins on overlap):
 
 - `/rdx` — adds evidence-before-minimalism + risk-matched brevity on top of caveman/ponytail.
-- Automatic: before presenting any diff >150 lines, run `/rdx-audit` on it and cut what it flags.
 - `/rdx-review` — code-only over-engineering gate before a merge.

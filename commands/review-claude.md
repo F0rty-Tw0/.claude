@@ -10,7 +10,7 @@ Please apply the following rules to rewrite the file:
 4. **Focus Exclusively on "Band-Aids" (Behavioral Corrections):** The ONLY things that should remain in this file are specific overrides for mistakes you (the LLM) consistently make in this specific project.
    - _Example:_ "If you get stuck on Step 2 of the video pipeline, skip to Step 3 to unblock yourself."
    - _Example:_ "This is a greenfield project with no active users; you are free to completely overwrite schemas without writing migration scripts."
-   - _Example:_ "Always include type checking when generating a new component, as you tend to forget this."
+   - _Example:_ "New components need explicit prop types; CI rejects untyped components."
 5. **Keep it Extremely Short:** If the information exists somewhere in the actual code (like `package.json` for scripts, or `schema.ts` for database shapes), delete it from this file. The final output should ideally be a short list of highly specific "gotchas."
 
 Here is my current file. Please output the newly refactored, ultra-minimalist version:

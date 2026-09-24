@@ -14,7 +14,7 @@ execution.
 Research is a multi-stage workflow that decomposes complex research goals into parallel investigations:
 
 1. **Decomposition** - Break research goal into independent stages/hypotheses
-2. **Execution** - Run parallel scientist agents on each stage
+2. **Execution** - Investigate small stages directly; run scientist agents in parallel only on sizeable, independent stages
 3. **Verification** - Cross-validate findings, check consistency
 4. **Synthesis** - Aggregate results into comprehensive report
 
@@ -44,7 +44,8 @@ research How does the error handling work across the API layer?
 
 ### Stage Decomposition Pattern
 
-When given a research goal, decompose into 3-7 independent stages:
+When given a research goal, decompose it into as many independent stages as it genuinely has. LOW-tier stages
+(enumerating files, counting usages, single lookups) you do yourself; only MEDIUM/HIGH stages go to scientist agents:
 
 ```markdown
 ## Research Decomposition
@@ -68,25 +69,14 @@ When given a research goal, decompose into 3-7 independent stages:
 Fire independent stages in parallel via the Agent tool:
 
 ```
-// Stage 1 - Simple data gathering
-Agent(subagent_type="scientist", model="haiku", prompt="[RESEARCH_STAGE:1] Investigate...")
-
-// Stage 2 - Standard analysis
-Agent(subagent_type="scientist", model="sonnet", prompt="[RESEARCH_STAGE:2] Analyze...")
-
-// Stage 3 - Complex reasoning
-Agent(subagent_type="scientist", model="opus", prompt="[RESEARCH_STAGE:3] Deep analysis of...")
+// Sizeable, independent stages only - all in one message
+Agent(subagent_type="scientist", prompt="[RESEARCH_STAGE:2] Analyze...")
+Agent(subagent_type="scientist", prompt="[RESEARCH_STAGE:3] Deep analysis of...")
 ```
 
-### Smart Model Routing
+### Model Routing
 
-**CRITICAL: Always pass `model` parameter explicitly!**
-
-| Task Complexity   | Agent                     | Model  | Use For                                                              |
-| ----------------- | ------------------------- | ------ | --------------------------------------------------------------------- |
-| Data gathering    | `scientist` (model=haiku) | haiku  | File enumeration, pattern counting, simple lookups                   |
-| Standard analysis | `scientist`               | sonnet | Code analysis, pattern detection, documentation review               |
-| Complex reasoning | `scientist` (model=opus)  | opus   | Architecture analysis, cross-cutting concerns, hypothesis validation |
+`scientist` runs on the model its agent frontmatter sets. Override `model` only for an exceptionally hard stage.
 
 ### Routing Decision Guide
 
@@ -101,45 +91,15 @@ Agent(subagent_type="scientist", model="opus", prompt="[RESEARCH_STAGE:3] Deep a
 
 ### Verification Loop
 
-After parallel execution completes, verify findings:
-
-```
-// Cross-validation stage
-Agent(subagent_type="scientist", model="sonnet", prompt="
-[RESEARCH_VERIFICATION]
-Cross-validate these findings for consistency:
-
-Stage 1 findings: <summary>
-Stage 2 findings: <summary>
-Stage 3 findings: <summary>
-
-Check for:
-1. Contradictions between stages
-2. Missing connections
-3. Gaps in coverage
-4. Evidence quality
-
-Output: [VERIFIED] or [CONFLICTS:<list>]
-")
-```
+After the stages report, cross-check their findings yourself while synthesizing (contradictions between stages,
+missing connections, gaps in coverage, evidence quality) and mark the result `[VERIFIED]` or `[CONFLICTS:<list>]`.
+Don't spawn a separate agent to re-check findings you are already reading.
 
 **On `[CONFLICTS]`:** re-run only the conflicting stages once with sharper scope. If they still disagree, report both findings with their evidence and let the user adjudicate -- never silently pick one or loop.
 
 ## AUTO Mode
 
 AUTO mode runs the complete research workflow autonomously with loop control.
-
-### Loop Control Protocol
-
-```
-[RESEARCH + AUTO - ITERATION {{ITERATION}}/{{MAX}}]
-
-Your previous attempt did not output the completion promise. Continue working.
-
-Current state: {{STATE}}
-Completed stages: {{COMPLETED_STAGES}}
-Pending stages: {{PENDING_STAGES}}
-```
 
 ### Promise Tags
 
@@ -189,9 +149,9 @@ When stages analyze different data sources:
 
 ```
 // All fire simultaneously
-Agent(subagent_type="scientist", model="haiku", prompt="[STAGE:1] Analyze src/api/...")
-Agent(subagent_type="scientist", model="haiku", prompt="[STAGE:2] Analyze src/utils/...")
-Agent(subagent_type="scientist", model="haiku", prompt="[STAGE:3] Analyze src/components/...")
+Agent(subagent_type="scientist", prompt="[STAGE:1] Analyze src/api/...")
+Agent(subagent_type="scientist", prompt="[STAGE:2] Analyze src/utils/...")
+Agent(subagent_type="scientist", prompt="[STAGE:3] Analyze src/components/...")
 ```
 
 ### Hypothesis Battery (Parallel)
@@ -200,27 +160,9 @@ When testing multiple hypotheses:
 
 ```
 // Test hypotheses simultaneously
-Agent(subagent_type="scientist", model="sonnet", prompt="[HYPOTHESIS:A] Test if caching improves...")
-Agent(subagent_type="scientist", model="sonnet", prompt="[HYPOTHESIS:B] Test if batching reduces...")
-Agent(subagent_type="scientist", model="sonnet", prompt="[HYPOTHESIS:C] Test if lazy loading helps...")
-```
-
-### Cross-Validation (Sequential)
-
-When verification depends on all findings:
-
-```
-// Wait for all parallel stages
-[stages complete]
-
-// Then sequential verification
-Agent(subagent_type="scientist", model="opus", prompt="
-[CROSS_VALIDATION]
-Validate consistency across all findings:
-- Finding 1: ...
-- Finding 2: ...
-- Finding 3: ...
-")
+Agent(subagent_type="scientist", prompt="[HYPOTHESIS:A] Test if caching improves...")
+Agent(subagent_type="scientist", prompt="[HYPOTHESIS:B] Test if batching reduces...")
+Agent(subagent_type="scientist", prompt="[HYPOTHESIS:C] Test if lazy loading helps...")
 ```
 
 ### Concurrency Limit

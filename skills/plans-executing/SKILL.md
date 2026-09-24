@@ -11,7 +11,7 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **Announce at start:** "I'm using the plans-executing skill to implement this plan."
 
-**Note:** This skill works significantly better with subagent support. If subagents are available, use `subagent-driven-development` instead of this skill.
+**Note:** For large plans whose tasks are independent and sizeable, `subagent-driven-development` may fit better; otherwise execute inline here.
 
 ## The Process
 

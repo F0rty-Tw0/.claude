@@ -71,7 +71,7 @@ This skill operates through conversational analysis. When the user presents a pr
 - If a `.claude/plans/` directory exists in the repository, write the plan there as `<repo-name>-value-green-plan.md`
 - Do not wait for a second prompt to create the plan once improvement guidance has been requested
 
-**Self-check before presenting a remediation plan** (all must hold, or revise):
+**A remediation plan meets these requirements:**
 - Every prescribed change traces back to a specific 🔴/🟡 dimension from the analysis, not a generic improvement
 - Each phase has a measurable exit criterion ("40% of new users mention X in support tickets"), not a vague goal ("improve messaging")
 - Comparable-product claims are grounded in the research step, not invented from memory

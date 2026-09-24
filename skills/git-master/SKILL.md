@@ -16,7 +16,7 @@ git-master <git task>
 ## Routing
 
 ```
-Agent(subagent_type="git-master", model="sonnet", prompt="<git task>")
+Agent(subagent_type="git-master", prompt="<git task>")
 ```
 
 ## When to Route Here

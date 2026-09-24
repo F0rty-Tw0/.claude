@@ -15,10 +15,11 @@ Ultrawork is now a thin router. The harness runs parallel Agent calls natively, 
 ## Ultrawork's distinctions (carry these into whichever route)
 
 - **DO** fire all independent agent calls in ONE message -- never serialize independent work.
-- **DO** match model tier to task complexity: `executor` haiku for lookups/trivial edits, `executor` sonnet for standard implementation, `deep-executor` opus for complex analysis/refactor.
+- **DO** fan out only for sizeable independent tracks; a few reads or edits are faster done directly than delegated (each agent re-explores and you re-read its report).
+- **DO** match agent to task: `explore` for lookups, `executor` for scoped implementation, `deep-executor` for complex or cross-system work. Each agent's model comes from its definition; override `model` only for exceptionally hard tasks.
 - **DO** give each agent `isolation: "worktree"` when parallel tasks would touch the same files, then merge after -- don't serialize them.
 - **DO** use `run_in_background: true` for operations over ~30s (installs, builds, test suites); keep quick checks foreground.
-- **DON'T** use opus for a trivial fix, and don't spawn `general-purpose` when a specific agent fits.
+- **DON'T** spawn `general-purpose` when a specific agent fits.
 - **DON'T** expect persistence or verification here -- for guaranteed completion use `ralph`, for the full autonomous pipeline use `autopilot`/`flow`.
 
 This skill is an alias; the machinery lives in dispatching-parallel-agents + the Workflow tool.

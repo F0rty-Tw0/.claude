@@ -19,12 +19,12 @@ frontend-ui-ux <design task>
 
 ### Preferred: MCP Direct
 
-Before first MCP tool use, call `ToolSearch("select:mcp__agentic-mcp__ask_codex")` to load the deferred tool. Use `mcp__agentic-mcp__ask_codex` (or `ask_claude`) with the design task, passing relevant component/style files via `--file`. If agentic-mcp is unavailable, use the Claude agent fallback below.
+Before first MCP tool use, call `ToolSearch("select:mcp__agentic-mcp__ask_codex")` to load the deferred tool. Use `mcp__agentic-mcp__ask_codex` (or `ask_claude`) with the design task, passing relevant component/style files in the `files` parameter. If agentic-mcp is unavailable, use the Claude agent fallback below.
 
 ### Fallback: Claude Agent
 
 ```
-Agent(subagent_type="designer", model="sonnet", prompt="<design task>")
+Agent(subagent_type="designer", prompt="<design task>")
 ```
 
 ## Capabilities

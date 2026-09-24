@@ -33,13 +33,12 @@ Task tool (general-purpose):
     2. Write tests (following TDD if task says to)
     3. Verify implementation works (e.g. pnpm test)
     4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+    5. Report back
 
     Work from: [directory]
 
-    **While you work:** If you encounter something unexpected or unclear, **ask questions**.
-    It's always OK to pause and clarify. Don't guess or make assumptions.
+    **While you work:** Make routine judgment calls yourself and note them in your report.
+    Stop and ask only when different readings of the task would lead to materially different work.
 
     ## Code Organization
 
@@ -62,7 +61,6 @@ Task tool (general-purpose):
     **STOP and escalate when:**
     - The task requires architectural decisions with multiple valid approaches
     - You need to understand code beyond what was provided and can't find clarity
-    - You feel uncertain about whether your approach is correct
     - The task involves restructuring existing code in ways the plan didn't anticipate
     - You've been reading file after file trying to understand the system without progress
 
@@ -71,31 +69,11 @@ Task tool (general-purpose):
     The controller can provide more context, re-dispatch with a more capable model,
     or break the task into smaller pieces.
 
-    ## Before Reporting Back: Self-Review
+    ## Requirements Your Work Meets
 
-    Review your work with fresh eyes. Ask yourself:
-
-    **Completeness:**
-    - Did I fully implement everything in the spec?
-    - Did I miss any requirements?
-    - Are there edge cases I didn't handle?
-
-    **Quality:**
-    - Is this my best work?
-    - Are names clear and accurate (match what things do, not how they work)?
-    - Is the code clean and maintainable?
-
-    **Discipline:**
-    - Did I avoid overbuilding (YAGNI)?
-    - Did I only build what was requested?
-    - Did I follow existing patterns in the codebase?
-
-    **Testing:**
-    - Do tests actually verify behavior (not just mock behavior)?
-    - Did I follow TDD if required?
-    - Are tests comprehensive?
-
-    If you find issues during self-review, fix them now before reporting.
+    - Everything in the spec is implemented, and nothing beyond it (YAGNI).
+    - Names say what things do; code follows existing codebase patterns.
+    - Tests verify real behavior, not mock behavior; TDD if the task requires it.
 
     ## Report Format
 
@@ -104,7 +82,6 @@ Task tool (general-purpose):
     - What you implemented (or what you attempted, if blocked)
     - What you tested and test results
     - Files changed
-    - Self-review findings (if any)
     - Any issues or concerns
 
     Use DONE_WITH_CONCERNS if you completed the work but have doubts about correctness.

@@ -6,6 +6,8 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 
 **Research foundation:** Meincke et al. (2025) tested 7 persuasion principles with N=28,000 AI conversations. Persuasion techniques more than doubled compliance rates (33% → 72%, p < .001).
 
+**Calibration for current Claude models:** these models follow instructions closely, and heavy authority language ("YOU MUST", "No exceptions") over-applies — rigid behavior in gray areas, hedging output. Use emphasis only on a rule a baseline test shows being ignored. The Meincke et al. study measured compliance with objectionable requests, not instruction-following in skills.
+
 ## The Seven Principles
 
 ### 1. Authority

@@ -20,7 +20,7 @@ This skill activates when:
 
 ## What It Does
 
-Delegates to the `security-reviewer` agent (Opus model) for deep security analysis:
+Delegates to the `security-reviewer` agent for deep security analysis:
 
 1. **OWASP Top 10 Scan**
    - A01: Broken Access Control
@@ -64,7 +64,6 @@ Delegates to the `security-reviewer` agent (Opus model) for deep security analys
 ```
 Agent(
   subagent_type="security-reviewer",
-  model="opus",
   prompt="SECURITY REVIEW TASK
 
 Conduct comprehensive security audit of codebase.

@@ -11,10 +11,10 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 
 ## When to Request Review
 
-**Mandatory:**
-- After each task in subagent-driven development
-- After completing major feature
+**Request review:**
+- After completing a major feature
 - Before merge to main
+- After a subagent-driven-development task with a non-trivial diff (small mechanical tasks: check in your own loop)
 
 **Optional but valuable:**
 - When stuck (fresh perspective)
@@ -31,7 +31,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 **2. Dispatch code reviewer subagent:**
 
-Use Task tool with the `code-reviewer` agent — it carries the review rubric (cross-boundary integration checks, P0-P3 severity tiers). Pass the scoped context below.
+Use the Agent tool with `subagent_type="code-reviewer"` — it carries the review rubric (cross-boundary integration checks, P0-P3 severity tiers). Fill the prompt from `code-reviewer.md` with the scoped context below.
 
 **Placeholders:**
 - `{DESCRIPTION}` - Brief summary of what you built
@@ -85,7 +85,7 @@ Don't over-review trivial changes. A typo fix doesn't need architecture analysis
 ## Integration with Workflows
 
 **Subagent-Driven Development:**
-- Review after EACH task
+- Review after each non-trivial task
 - Catch issues before they compound
 - Fix before moving to next task
 
@@ -100,7 +100,6 @@ Don't over-review trivial changes. A typo fix doesn't need architecture analysis
 ## Red Flags
 
 **Never:**
-- Skip review because "it's simple"
 - Ignore Critical issues
 - Proceed with unfixed Important issues
 - Argue with valid technical feedback

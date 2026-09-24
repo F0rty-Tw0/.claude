@@ -6,15 +6,14 @@ argument-hint: <search query or topic>
 
 # External Context Skill
 
-Invoke parallel external-researcher agents to search the web for external documentation, references, and context.
+Search the web for external documentation, references, and context.
 
 ## Overview
 
-External Context decomposes a query into parallel web search facets, each handled by an independent external-researcher
-agent:
+External Context decomposes a query into web search facets, each handled by a search pass:
 
-1. **Decomposition** - Break query into 2-5 independent search facets
-2. **Parallel Search** - Spawn external-researcher agents for each facet
+1. **Decomposition** - Identify the independent search facets (often just one)
+2. **Search** - See Parallel Agent Invocation
 3. **Synthesis** - Aggregate findings into structured context
 
 ## Usage
@@ -35,7 +34,7 @@ external-context Latest React Server Components patterns and conventions
 
 ### Facet Decomposition
 
-Given a query, decompose into 2-5 independent search facets:
+Given a query, decompose into independent search facets (at most 5):
 
 ```markdown
 ## Search Decomposition
@@ -54,12 +53,12 @@ Given a query, decompose into 2-5 independent search facets:
 
 ### Parallel Agent Invocation
 
-Fire independent facets in parallel via the Agent tool (send all calls in one message so they run concurrently):
+One facet, or lookups a few searches settle: run WebSearch/WebFetch yourself — a subagent re-establishes context and costs more than the search. Several independent facets that each need real digging: fire them in parallel via the Agent tool (send all calls in one message so they run concurrently):
 
 ```
-Agent(subagent_type="external-researcher", model="sonnet", prompt="Search for: <facet 1 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
+Agent(subagent_type="general-purpose", prompt="Search for: <facet 1 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
 
-Agent(subagent_type="external-researcher", model="sonnet", prompt="Search for: <facet 2 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
+Agent(subagent_type="general-purpose", prompt="Search for: <facet 2 description>. Use WebSearch and WebFetch to find official documentation and examples. Cite all sources with URLs.")
 ```
 
 ### Synthesis
@@ -92,7 +91,7 @@ After all agents complete, synthesize findings:
 
 ## Configuration
 
-- Maximum 5 parallel external-researcher agents
+- Maximum 5 parallel search agents
 - Each agent uses WebSearch and WebFetch tools
 - No magic keyword trigger - explicit invocation only
 

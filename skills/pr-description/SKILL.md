@@ -25,8 +25,7 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 5. Write description → proportional to change size
 6. Add ticket link   → extract ticket number from branch name, append "Closes #<number>"
 7. Humanize          → run output through humanizer patterns
-8. Self-check        → verify format matches size rules
-9. Present           → show to user, ready for gh pr create
+8. Present           → show to user, ready for gh pr create
 ```
 
 ### Step 1: Gather Changes
@@ -58,8 +57,8 @@ Mention impact only when it's real and non-obvious. Don't manufacture significan
 
 | Size   | Criteria                             | Output length         |
 | ------ | ------------------------------------ | --------------------- |
-| Small  | 1-3 files, <50 lines, single concern | 1-2 sentences         |
-| Medium | 4-10 files, one feature or theme     | 3-5 bullet points     |
+| Small  | 1-3 files, <50 lines, single concern | Plain sentences, no sections |
+| Medium | 4-10 files, one feature or theme     | Short bullet list     |
 | Large  | 10+ files, multiple concerns         | Sections with bullets |
 
 **This is the most important step.** A 1-line bugfix does NOT get Problem/Solution/Impact sections. A 15-file feature does NOT get a 2-sentence summary. Match output to change size.
@@ -116,7 +115,7 @@ That's it. No sections. No headers. No test plan for obvious changes.
 
 1. `## What changed` — what was added/modified
 2. `## Impact on existing code` — how this affects the rest of the codebase (callers, dependencies, config, deployment). Reviewers need this most.
-3. `## Test plan` — non-obvious verification steps only (max 5 items)
+3. `## Test plan` — non-obvious verification steps only
 
 Skipping the impact section is the most common mistake. If the change touches 10+ files, it affects something — say what.
 
@@ -139,16 +138,9 @@ Skipping the impact section is the most common mistake. If the change touches 10
 - Rate limiting: hit login 10 times rapidly, confirm 429 response
 ```
 
-**What to NEVER include:**
-
-- Obvious test steps ("verify the endpoint returns 200")
-- Promotional adjectives ("robust", "scalable", "comprehensive", "seamless")
-- Motivation/justification sections for self-evident changes
-- Tables restating what the bullets already say
-- Horizontal rules between sections
-- Bold-header bullet lists (`**Speed:** it's faster`)
-- "No behavior changes" repeated multiple times
-- Significance inflation ("pivotal", "crucial", "critical improvement")
+**Keep it plain:** state what changed in factual words, include only non-obvious test steps, explain motivation only
+when it isn't self-evident, and use plain bullets and headings; say "no behavior changes" once if it applies.
+Red Flags below lists the specific tells to rewrite.
 
 ### Step 6: Add Ticket Link
 
@@ -172,20 +164,7 @@ If the branch has no recognizable ticket number, skip this step silently — don
 
 Run the final title and description through `skill:humanizer` to remove AI-sounding language before presenting.
 
-### Step 8: Self-Check
-
-Before presenting, verify:
-
-- Small change → no sections, just sentences? ✓
-- Medium change → bullets with optional "Worth noting"? ✓
-- Large change → has all 3 required sections (What changed, Impact, Test plan)? ✓
-- Title under 60 chars and lowercase? ✓
-- No red flag words (comprehensive, robust, seamless, leverage, pivotal, crucial)? ✓
-- No bold-header bullets or horizontal rules? ✓
-
-If any check fails, rewrite before presenting.
-
-### Step 9: Present
+### Step 8: Present
 
 Output the title and description as two separate markdown code blocks so the user can easily copy each one:
 
@@ -231,6 +210,6 @@ If your PR description has any of these, rewrite it:
 - More than 2 sections for a change under 5 files
 - Any bullet starting with a bold header followed by a colon
 - The word "comprehensive", "robust", "seamless", or "leverage"
-- A test plan with more than 5 items
+- A test plan padded with obvious steps
 - A title over 60 characters
 - Horizontal rules (`---`) between sections

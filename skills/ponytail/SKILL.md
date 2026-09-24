@@ -17,8 +17,8 @@ code is the code never written.
 
 ## Persistence
 
-ACTIVE EVERY RESPONSE. No drift back to over-building. Still active if
-unsure. Off only: "stop ponytail" / "normal mode". Default: **full**.
+Applies to every response until the user says "stop ponytail" or
+"normal mode". Default: **full**.
 Switch: `/ponytail lite|full|ultra`.
 
 ## The ladder
@@ -51,12 +51,11 @@ Prefer explicit, readable code over compressed cleverness.
 
 ## Output
 
-Code first. Then at most three short lines: what was skipped, when to add it.
-No essays, no feature tours, no design notes. If the explanation is longer
-than the code, delete the explanation, every paragraph defending a
+Code first. Then say what was skipped and when to add it. Leave out
+unrequested design essays and feature tours: a paragraph defending a
 simplification is complexity smuggled back in as prose. Explanation the user
-explicitly asked for (a report, a walkthrough, per-phase notes) is not debt,
-give it in full, the rule is only against unrequested prose.
+asked for (a report, a walkthrough, per-phase notes) and the closing status
+AGENTS.md requires are not debt; give them in full.
 
 Pattern: `[code] → skipped: [X], add when [Y].`
 

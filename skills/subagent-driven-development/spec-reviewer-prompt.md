@@ -18,10 +18,10 @@ Task tool (general-purpose):
 
     [From implementer's report]
 
-    ## CRITICAL: Do Not Trust the Report
+    ## Verify Against the Code
 
-    The implementer finished suspiciously quickly. Their report may be incomplete,
-    inaccurate, or optimistic. You MUST verify everything independently.
+    The implementer's report is a summary, not evidence: it may be incomplete or
+    optimistic. Check each claim against the code itself.
 
     **DO NOT:**
     - Take their word for what they implemented

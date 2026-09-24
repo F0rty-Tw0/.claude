@@ -140,10 +140,6 @@ Without `failOnFlakyTests`, a re-passing flake silently turns green and the unde
 - **Category 6 mistaken as flake.** AuthFailure / missing creds is a 100%-fail bug, not a flake. Don't retry it.
 - **Treating `expect.poll` and `page.waitForTimeout` as interchangeable.** They are opposites — one is condition-based, the other is wall-clock.
 
-## Real-world impact
-
-Audit on a Playwright suite (765 runs): 18 distinct flakes (94.4% pass rate). After categorization: 9 categories represented, 7 of 11 tests fixed by category-specific patches, 5 surfaced as 5/5-broken environment issues, residual cat-8 third-party variance tracked separately. No assertions loosened, no global timeouts bumped.
-
 ## See also
 
 - skill:systematic-debugging — for non-flaky bugs (consistent failure)

@@ -101,7 +101,7 @@ skills/
 
 **Frontmatter (YAML):**
 
-- Only two fields supported: `name` and `description`
+- Required fields: `name` and `description`. Optional Claude Code fields (e.g. `argument-hint`, `allowed-tools`) only when the skill needs them
 - Max 1024 characters total
 - `name`: Use letters, numbers, and hyphens only (no parentheses, special chars)
 - `description`: Third-person, describes ONLY when to use (NOT what it does)
@@ -165,9 +165,9 @@ Concrete results
 
 The description should ONLY describe triggering conditions. Do NOT summarize the skill's process or workflow in the description.
 
-**Why this matters:** Testing revealed that when a description summarizes the skill's workflow, Claude may follow the description instead of reading the full skill content. A description saying "code review between tasks" caused Claude to do ONE review, even though the skill's flowchart clearly showed TWO reviews (spec compliance then code quality).
+**Why this matters:** Testing revealed that when a description summarizes the skill's workflow, Claude may follow the description instead of reading the full skill content. In an earlier version of subagent-driven-development, a description saying "code review between tasks" caused Claude to do ONE review, even though that version's flowchart showed TWO reviews per task (spec compliance then code quality).
 
-When the description was changed to just "Use when executing implementation plans with independent tasks" (no workflow summary), Claude correctly read the flowchart and followed the two-stage review process.
+When the description was changed to just "Use when executing implementation plans with independent tasks" (no workflow summary), Claude correctly read the flowchart and followed the review process it defined. (The skill now uses your own per-task spec check plus one final code review; the lesson about descriptions still holds.)
 
 **The trap:** Descriptions that summarize workflow create a shortcut Claude will take. The skill body becomes documentation Claude skips.
 
@@ -259,7 +259,7 @@ When searching, dispatch subagent with template...
 
 # ✅ GOOD: Reference other skill
 
-Always use subagents (50-100x context savings). REQUIRED: Use [other-skill-name] for workflow.
+REQUIRED: Use [other-skill-name] for the search workflow.
 ```
 
 **Compress examples:**
@@ -371,27 +371,11 @@ pptx/
 
 When: Reference material too large for inline
 
-## The Iron Law (Same as TDD)
+## Test First (Same as TDD)
 
-```
-NO SKILL WITHOUT A FAILING TEST FIRST
-```
+New skills and edits that change behavior get a baseline run without the change first, then a run with it. Wording, formatting, and factual corrections that don't change behavior don't need a pressure run.
 
-This applies to NEW skills AND EDITS to existing skills.
-
-Write skill before testing? Delete it. Start over.
-Edit skill without testing? Same violation.
-
-**No exceptions:**
-
-- Not for "simple additions"
-- Not for "just adding a section"
-- Not for "documentation updates"
-- Don't keep untested changes as "reference"
-- Don't "adapt" while running tests
-- Delete means delete
-
-**REQUIRED BACKGROUND:** The skill:test-driven-development skill explains why this matters. Same principles apply to documentation.
+See skill:test-driven-development for why watching the baseline fail matters.
 
 ## Testing All Skill Types
 
@@ -406,7 +390,7 @@ Different skill types need different test approaches. See [testing-skills-with-s
 
 ## Bulletproofing Against Rationalization
 
-Skills enforcing discipline need to resist rationalization. See [bulletproofing.md](bulletproofing.md) for techniques including: closing loopholes explicitly, addressing "spirit vs letter" arguments, building rationalization tables, and creating red flags lists
+Current Claude models follow instructions closely and over-apply absolute language, so add a counter only for a violation your baseline run actually reproduced on the current model, stated plainly with its reason. See [bulletproofing.md](bulletproofing.md) for loophole-closing techniques; use them per reproduced failure, not as default structure.
 
 ## RED-GREEN-REFACTOR for Skills
 
@@ -414,7 +398,7 @@ Skills enforcing discipline need to resist rationalization. See [bulletproofing.
 
 **GREEN:** Write skill addressing those specific failures. Run scenarios WITH skill - agents should comply.
 
-**REFACTOR:** New rationalization found? Add counter. Re-test until bulletproof.
+**REFACTOR:** New violation reproduced? Add one plain counter for it, with the reason. Re-test.
 
 See testing-skills-with-subagents.md for complete methodology (pressure scenarios, pressure types, plugging holes systematically).
 
@@ -485,7 +469,7 @@ After writing ANY skill, STOP and complete deployment. Don't batch create, don't
 **GREEN Phase - Write Minimal Skill:**
 
 - [ ] Name uses only letters, numbers, hyphens (no parentheses/special chars)
-- [ ] YAML frontmatter with only name and description (max 1024 chars; see [spec](https://agentskills.io/specification))
+- [ ] YAML frontmatter has name and description (max 1024 chars; see [spec](https://agentskills.io/specification)); optional fields only if needed
 - [ ] Description starts with "Use when..." and includes specific triggers/symptoms
 - [ ] Description written in third person
 - [ ] Keywords throughout for search (errors, symptoms, tools)
@@ -497,11 +481,9 @@ After writing ANY skill, STOP and complete deployment. Don't batch create, don't
 
 **REFACTOR Phase - Close Loopholes:**
 
-- [ ] Identify NEW rationalizations from testing
-- [ ] Add explicit counters (if discipline skill)
-- [ ] Build rationalization table from all test iterations
-- [ ] Create red flags list
-- [ ] Re-test until bulletproof
+- [ ] Identify NEW violations reproduced in testing
+- [ ] Add a plain counter, with its reason, for each reproduced violation only
+- [ ] Re-test
 
 **Quality Checks:**
 
@@ -528,4 +510,4 @@ Future Claude: encounters problem → finds skill (description matches) → scan
 
 ## The Bottom Line
 
-Creating skills IS TDD for process documentation. Same Iron Law: no skill without failing test first. Same cycle: RED → GREEN → REFACTOR. Same benefits: better quality, bulletproof results.
+Creating skills IS TDD for process documentation. Same rule: a behavior-changing skill gets a failing baseline test first (see Test First). Same cycle: RED → GREEN → REFACTOR. Same benefits: better quality, bulletproof results.

@@ -90,7 +90,7 @@ Follow this priority order. Explicit user preference always beats observed files
 git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
 ```
 
-**If NOT ignored:** Rule: fix broken things immediately. Add to `.gitignore`, commit the change, then proceed.
+**If NOT ignored:** Add it to `.gitignore` and tell the user; commit that change only if they ask. Then proceed.
 
 **Why critical:** Prevents accidentally committing worktree contents to repository.
 
@@ -168,7 +168,7 @@ Ready to implement <feature-name>
 | Both exist | Use `.worktrees/` |
 | Neither exists | Check instruction file, then default `.worktrees/` |
 | Global path exists | Use it (backward compat) |
-| Directory not ignored | Add to .gitignore + commit |
+| Directory not ignored | Add to .gitignore, tell user |
 | Permission error on create | Sandbox fallback, work in place |
 | Tests fail during baseline | Report failures + ask |
 | No package.json/Cargo.toml | Skip dependency install |
@@ -193,7 +193,7 @@ Ready to implement <feature-name>
 ### Assuming directory location
 
 - **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow priority: existing > global legacy > instruction file > default
+- **Fix:** Follow priority: instruction file > existing project-local > global legacy > default
 
 ### Proceeding with failing tests
 
@@ -213,7 +213,7 @@ Ready to implement <feature-name>
 **Always:**
 - Run Step 0 detection first
 - Prefer native tools over git fallback
-- Follow directory priority: existing > global legacy > instruction file > default
+- Follow directory priority: instruction file > existing project-local > global legacy > default
 - Verify directory is ignored for project-local
 - Auto-detect and run project setup
 - Verify clean test baseline

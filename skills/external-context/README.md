@@ -1,6 +1,6 @@
 # External Context
 
-Invokes parallel external-researcher agents to search the web for documentation, references, and context outside the codebase, then synthesizes the findings into a single structured report with citations.
+Searches the web for documentation, references, and context outside the codebase, then synthesizes the findings into a single structured report with citations.
 
 ## When to Use
 

@@ -40,15 +40,15 @@ Deep investigation requires a different approach than quick lookups or code chan
 1. **Identify the analysis type**: Architecture, bug investigation, performance, or dependency analysis
 2. **Gather relevant context**: Read or identify the key files involved
 3. **Route to analyzer**:
-   - Preferred: `mcp__agentic-mcp__ask_codex` with the investigation question, passing each relevant source file via `--file`
-   - Fallback: `Agent(subagent_type="architect", model="opus", prompt="Analyze: ...")`
+   - Preferred: `mcp__agentic-mcp__ask_codex` with the investigation question, passing relevant source file paths in the `files` array
+   - Fallback: `Agent(subagent_type="architect", prompt="Analyze: ...")`
 4. **Return structured findings**: Present the analysis with evidence, file references, and actionable recommendations
 
 ## Tool Usage
 
 - Before first MCP tool use, call `ToolSearch("select:mcp__agentic-mcp__ask_codex")` to load the deferred tool
-- Use `mcp__agentic-mcp__ask_codex` with relevant files passed via `--file` as the preferred analysis route
-- Use `Agent(subagent_type="architect", model="opus", ...)` as fallback when agentic-mcp is unavailable
+- Use `mcp__agentic-mcp__ask_codex` with relevant files in the `files` parameter as the preferred analysis route
+- Use `Agent(subagent_type="architect", ...)` as fallback when agentic-mcp is unavailable
 - For broad analysis, use the `explore` agent first to identify relevant files before routing to architect
 
 ## Parallel Investigation
@@ -62,6 +62,8 @@ Deep investigation requires a different approach than quick lookups or code chan
   each other.
 - **Single-hypothesis or single-file bugs**: stay serial (`explore` -> `architect`) -- fan-out adds coordination
   overhead without a payoff when there's only one thread to pull.
+- **Hypotheses a few greps or reads can settle**: check them yourself -- each subagent re-establishes context and
+  re-explores, which costs more than the check.
 
 ## Examples
 
