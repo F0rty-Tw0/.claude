@@ -122,10 +122,10 @@ export const dropOn = async (page: Page, target: Locator): Promise<void> => {
 
 ## Kanban Board (Cross-Column Movement)
 
-Each column is a component object scoped to its `[data-column]` root. Card assertions are boxed steps on the column; the drag itself is `dragTo()` from the card to the target column root.
+Each column is a helper object scoped to its `[data-column]` root. Card assertions are boxed steps on the column; the drag itself is `dragTo()` from the card to the target column root.
 
 ```ts
-// e2e/board/components/board-column.component.ts
+// e2e/board/helpers/board-column.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
@@ -175,8 +175,8 @@ import type { Locator, Page, Response } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 import type { Ticket } from '../common/board.type';
-import { BoardColumn } from '../components/board-column.component';
-import { DragPreview } from '../components/drag-preview.component';
+import { BoardColumn } from '../helpers/board-column.helper';
+import { DragPreview } from '../helpers/drag-preview.helper';
 
 const isTicketSaved = (response: Response): boolean => {
   const isTicketUrl = response.url().includes('/api/tickets');
@@ -372,7 +372,7 @@ Every other way of moving C onto A is the same spec with one different `WHEN` bo
 A `DropArea` component wraps every target zone, so the same assertions serve the target zone and the swap areas; `expect(root).not.toContainText(text)` covers the source area. `holdElementOverZone` presses and moves without releasing so the spec can assert the highlight, then `releaseElement` completes the drop.
 
 ```ts
-// e2e/drag-example/components/drop-area.component.ts
+// e2e/drag-example/helpers/drop-area.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
@@ -402,7 +402,7 @@ export class DropArea {
 import type { Locator, Page } from '@playwright/test';
 
 import { boundingBoxOf, centerOf } from '../../test/utils/bounding-box.spec.util';
-import { DropArea } from '../components/drop-area.component';
+import { DropArea } from '../helpers/drop-area.helper';
 
 export class DragExamplePage {
   public readonly areaB: DropArea;
@@ -484,7 +484,7 @@ A file drop zone wraps a hidden `<input type="file">`, so `setInputFiles` on tha
 A canvas editor has no drop target; the page object computes the target point from the canvas bounding box and drags with `dragToPoint`. Geometry assertions read `boundingBox()` once and compare with `toBeCloseTo(value, -1)`, which tolerates five pixels. `dragShapeToCanvasOffset` returns the absolute target point and `resizeShapeBy` returns the box before the resize, so each assertion step receives the value it compares against.
 
 ```ts
-// e2e/design-tool/components/shape.component.ts
+// e2e/design-tool/helpers/shape.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
@@ -528,7 +528,7 @@ import type { Locator, Page } from '@playwright/test';
 import type { BoundingBox, Point } from '../../common/drag.type';
 import { boundingBoxOf, offsetOf } from '../../test/utils/bounding-box.spec.util';
 import { dragToPoint } from '../../test/utils/drag.spec.util';
-import { Shape } from '../components/shape.component';
+import { Shape } from '../helpers/shape.helper';
 
 export class DesignToolPage {
   public readonly canvas: Locator;
@@ -604,10 +604,10 @@ Other geometry checks are one more `Shape` method each, built from the same `box
 
 ## Custom Drag Preview
 
-The preview is a component object on `.drag-preview`. The spec holds a card between columns with `holdBetween`, asserts the preview and the card's dragging class, then finishes with `dropOn`.
+The preview is a helper object on `.drag-preview`. The spec holds a card between columns with `holdBetween`, asserts the preview and the card's dragging class, then finishes with `dropOn`.
 
 ```ts
-// e2e/board/components/drag-preview.component.ts
+// e2e/board/helpers/drag-preview.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 

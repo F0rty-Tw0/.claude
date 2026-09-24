@@ -180,7 +180,7 @@ export { expect } from '@playwright/test';
 **Use when**: You need authenticated tests and want to avoid logging in before every test.
 **Avoid when**: Tests require completely fresh sessions, or you are testing the login flow itself.
 
-`storageState` serializes cookies and localStorage to a JSON file. Load it in any browser context to start authenticated instantly. The save helpers below also guard against the empty-state failure described under [Troubleshooting](#storagestate-file-is-empty-or-contains-no-cookies).
+`storageState` serializes cookies and localStorage to a JSON file. Load it in any browser context to start authenticated instantly. The save utils below also guard against the empty-state failure described under [Troubleshooting](#storagestate-file-is-empty-or-contains-no-cookies).
 
 ```ts
 // e2e/auth/test/utils/session.spec.util.ts
@@ -655,7 +655,7 @@ test.describe('FEATURE: oauth session injection', () => {
 **Use when**: Your app requires two-factor authentication (TOTP, SMS, email codes).
 **Avoid when**: MFA is optional and you can disable it for test accounts.
 
-**Strategy 1**: Generate real TOTP codes from a shared secret. The generator is a pure helper, so it lives in `utils/`, not `test/utils/`.
+**Strategy 1**: Generate real TOTP codes from a shared secret. The generator is a pure util, so it lives in `utils/`, not `test/utils/`.
 
 ```ts
 // e2e/auth/utils/totp.util.ts

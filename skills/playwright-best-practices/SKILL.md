@@ -22,13 +22,13 @@ Reference set for Playwright test development, rewritten to house style: `FEATUR
 | Situation | Read |
 |---|---|
 | New spec, any kind | `core/test-suite-structure.md`, `core/locators.md`, `core/assertions-waiting.md` |
-| Page object, component object | `core/page-object-model.md`, `architecture/pom-vs-fixtures.md` |
+| Page object, helper object | `core/page-object-model.md`, `architecture/pom-vs-fixtures.md` |
 | Fixture, hook, `test.extend`, `mergeTests` | `core/fixtures-hooks.md` |
 | Stubs, builders, seeding, cleanup | `core/test-data.md` |
 | Route mock payload, intercepted body, stubbing your own API | `core/house-style.md` (Test Data and Mocks), `core/test-data.md` |
 | `playwright.config`, projects, dependencies | `core/configuration.md`, `core/projects-dependencies.md` |
 | Global setup, storage state, auth once per run | `core/global-setup.md`, `advanced/authentication.md` |
-| Skip, fixme, slow, conditional runs, steps | `core/annotations.md` |
+| Skip, fixme, slow, conditional runs, steps, requirement IDs | `core/annotations.md` |
 | Tags, `--grep`, PR vs nightly subsets | `core/test-tags.md` |
 | Login, OAuth, SSO, MFA, password reset | `advanced/authentication.md`, `advanced/authentication-flows.md` |
 | Two users, roles, real-time collaboration | `advanced/multi-user.md`, `browser-apis/websockets.md` |

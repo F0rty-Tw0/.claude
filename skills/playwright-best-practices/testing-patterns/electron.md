@@ -268,7 +268,7 @@ test.describe('FEATURE: desktop main process', () => {
 
 ### Standard Page Testing
 
-The first window is a `Page`; every Playwright interaction and web-first assertion applies. `RendererPage` wraps the `evaluate` calls into the renderer's globals so a spec never touches `window.*` directly. Each read declares `const scope: RendererGlobals = window` instead of a cast, and stays a standalone function because `page.evaluate` serialises it and cannot close over module helpers.
+The first window is a `Page`; every Playwright interaction and web-first assertion applies. `RendererPage` wraps the `evaluate` calls into the renderer's globals so a spec never touches `window.*` directly. Each read declares `const scope: RendererGlobals = window` instead of a cast, and stays a standalone function because `page.evaluate` serialises it and cannot close over module functions.
 
 ```ts
 // e2e/desktop/pages/renderer.page.ts

@@ -28,15 +28,15 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 
 | Concern | Rule |
 |---|---|
-| Naming tree | `test.describe('FEATURE: <name>')` → `test.describe('GIVEN <state>')` → `test('SCENARIO: <flow>')`. Every `test.step`, in a spec, page object, component object, or fixture, carries `GIVEN` / `WHEN` / `THEN` / `AND`. Every level carries its keyword; a title without one is not house style. Never a `WHEN` describe; the step owns it. |
+| Naming tree | `test.describe('FEATURE: <name>')` → `test.describe('GIVEN <state>')` → `test('SCENARIO: <flow>')`. Every `test.step`, in a spec, page object, helper object, or fixture, carries `GIVEN` / `WHEN` / `THEN` / `AND`. Every level carries its keyword; a title without one is not house style. Never a `WHEN` describe; the step owns it. |
 | Test body | Every statement inside `test(...)` is `await test.step('<prose>', ...)`. No bare `page.*`, `expect(...)`, or page-object call outside a step. |
 | Step body | One call. `(): Promise<void> => loginPage.submit(user)`. Two or more statements mean a page-object or fixture method is missing. |
-| Step naming | Upper-case Gherkin keyword, then present-tense prose: `'WHEN wrong credentials are submitted'`, `'THEN the error names invalid credentials'`. `GIVEN` for arrange, `WHEN` for action, `THEN` for assertion, `AND` for a consecutive step of the same kind. Applies to page-object and component-object steps too; see Steps. |
+| Step naming | Upper-case Gherkin keyword, then present-tense prose: `'WHEN wrong credentials are submitted'`, `'THEN the error names invalid credentials'`. `GIVEN` for arrange, `WHEN` for action, `THEN` for assertion, `AND` for a consecutive step of the same kind. Applies to page-object and helper-object steps too; see Steps. |
 | Boxed steps | Page-object methods that assert use `test.step('THEN <what is now true>', body, { box: true })` so a failure points at the spec line, not the page object. |
-| One owner per file | One page object, one component object, one fixture file, one route-mock file, one stub file per `.ts`. One `FEATURE:` per spec. |
+| One owner per file | One page object, one helper object, one fixture file, one route-mock file, one stub file per `.ts`. One `FEATURE:` per spec. |
 | File size | Source `.ts` under 150 lines, spec under 300, blank and comment lines skipped. Over means split by concern per `module-size.md`. |
 | Page object | `class` with `private readonly page: Page`, `public readonly` locators assigned in the constructor, `public async` methods returning `Promise<void>`. No parameter properties. No `expect` outside a boxed step. |
-| Locator access | Specs never call `page.getBy*` or `page.locator`. Every locator is a page-object or component-object field. |
+| Locator access | Specs never call `page.getBy*` or `page.locator`. Every locator is a page-object or helper-object field. |
 | Spec name | `<feature>.test.ts` when the spec, or a fixture, page object, or mock it imports, routes your own origin: `**/api/**`, `**/graphql`, `**/ws/**`, own assets, `routeFromHAR`. `<feature>.e2e.ts` otherwise, including specs that only stub third-party hosts (payment gateway, analytics, OAuth provider). Component specs are `<feature>.test.tsx`. Never `.spec.ts`; that suffix is the artification unit-test name. |
 | Fixtures | One `test.extend` per feature in `<feature>.fixture.ts`. Fixture shape is a named `type <Feature>Fixtures` with `readonly` members. Specs import `test` and `expect` from the fixture file, never from `@playwright/test` when a fixture exists. |
 | Types | `type` never `interface`. Every property `readonly`. Arrays `T[]`. No inline object type literals. Cross-file types in `common/<feature>.type.ts`; types every feature shares in `e2e/common/playwright.type.ts`. |
@@ -47,7 +47,7 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 | Casts | No `as` except `as const`. A `page.evaluate` result gets a generic argument, not a cast. |
 | Comments | None inside samples except a first-line path comment `// e2e/login/pages/login.page.ts`. Explanation lives in the prose above the block. |
 | Waits | No `waitForTimeout`. No `waitForSelector` when a web-first `expect` covers it. No manual retry loops around `expect`. |
-| Data | Base values are typed stubs in `test/stubs/`, spread and overridden per case. Route handlers are factories in `test/mocks/`. Builders and helpers are functions in `test/utils/*.spec.util.ts`. |
+| Data | Base values are typed stubs in `test/stubs/`, spread and overridden per case. Route handlers are factories in `test/mocks/`. Builders and utils are functions in `test/utils/*.spec.util.ts`. |
 | Intercepted payload | Every body a mock fulfills is a typed stub imported from `test/stubs/`. A mock declares no payload of its own: no inline literal in `route.fulfill`, no `const <X>_BODY` in the mock file. |
 | Mock signature | `export const <name>Mock = (<payload>: <Type> = <TYPE>_STUB): RouteHandler => …`. The default serves the happy path; a fixture or spec passes a spread of the stub to override one field. |
 | Payload type | The response contract is a named type in `common/<feature>.type.ts`, or `test/common/<feature>.type.ts` when production never imports it. An untyped stub is not a stub. |
@@ -70,8 +70,8 @@ e2e/
     common/
       <feature>.type.ts                 types the feature exports
       <feature>.const.ts                shared runtime constants, optional
-    components/
-      <name>.component.ts               reusable widget scoped to a Locator
+    helpers/
+      <name>.helper.ts                  reusable widget scoped to a Locator
     pages/
       <name>.page.ts                    one page object
     test/
@@ -81,9 +81,9 @@ e2e/
       stubs/
         <feature>.stub.ts               typed base values
       utils/
-        <behavior>.spec.util.ts         test-only builders and helpers
+        <behavior>.spec.util.ts         test-only builders and utils
     utils/
-      <behavior>.util.ts                pure, production-grade helpers
+      <behavior>.util.ts                pure, production-grade utils
 ```
 
 Two words collide here and stay distinct:
@@ -135,11 +135,12 @@ test.describe('FEATURE: login', () => {
 | `test` text | `SCENARIO:` then the flow as one lower-case present-tense sentence naming the outcome: `'SCENARIO: wrong password shows the error banner'`. `WHEN` / `THEN` never appear in the title; they are steps. No "should". |
 | Step keywords | Every step in a spec starts with `GIVEN`, `WHEN`, `THEN`, or `AND`. A test holds at least one `WHEN` and one `THEN`. `beforeEach` steps are `GIVEN` / `AND`. |
 | Step order | `GIVEN`? → `WHEN` → `THEN`, then only `AND` and `THEN` repeat. One `GIVEN` and one `WHEN` per test; a further arrange or action step is `AND` (`AND 5 more minutes pass`). Independent phases are separate tests. |
-| Arrange | Shared arrange for every test in a `GIVEN` goes in that `GIVEN`'s `beforeEach`, itself expressed as a step. Case-specific arrange is a `const` above the first step, blank line after. |
+| Arrange | Shared arrange for every test in a `GIVEN` goes in that `GIVEN`'s `beforeEach`, itself expressed as a step. When that arrange is API seeding, a fixture seeds, opens the page, and hands over the ready page object instead; see [Requirement Annotation](annotations.md#requirement-annotation). Case-specific arrange is a `const` above the first step, blank line after. |
 | Steps | One step per action or per assertion group. Blank line between steps. |
 | Fixtures in signature | Destructure only what the test uses, alphabetical. |
 | Tags | `test('SCENARIO: <flow>', { tag: ['@smoke'] }, async …)`. Tags are the second argument, never in the title. |
 | Annotations | `test.skip`, `test.fixme`, `test.slow` carry a reason string. |
+| Requirement link | A scenario that covers a written requirement declares its ID in the details object: `test('SCENARIO: <flow>', { annotation: { description: 'CHK-2', type: 'requirement' } }, async …)`. One ID per scenario. See [annotations.md](annotations.md#requirement-annotation). |
 
 ## Steps
 
@@ -149,7 +150,7 @@ A step is the unit of the trace and the unit of the spec. Rules:
 |---|---|
 | Body | One expression. `(): Promise<void> => loginPage.submit(user)`. |
 | Assertion step | One `expect` call or one page-object `expect*` method. Two related assertions on one state go in one page-object method wrapped in a boxed step. |
-| Naming | Keyword plus what the user does or what is now true: `'WHEN the item is added to the cart'`, `'THEN the cart badge shows one item'`. Steps inside page objects and component objects carry a keyword by kind: action method `WHEN`, assertion (boxed) method `THEN`, each further step inside the same method `AND`. No step anywhere is keyword-free. |
+| Naming | Keyword plus what the user does or what is now true: `'WHEN the item is added to the cart'`, `'THEN the cart badge shows one item'`. Steps inside page objects and helper objects carry a keyword by kind: action method `WHEN`, assertion (boxed) method `THEN`, each further step inside the same method `AND`. No step anywhere is keyword-free. |
 | Nesting | A page-object method may open its own `test.step` for a multi-action flow. Nesting depth two, never three. |
 | Boxed | `{ box: true }` on every step that asserts inside a page object, so the reported location is the spec line. |
 | Return value | A step may return a value: `const orderId = await test.step('WHEN the order is placed', (): Promise<string> => checkoutPage.placeOrder());`. |
@@ -228,10 +229,10 @@ export class LoginPage {
 | Constructor | `public constructor(page: Page)`. Assign every field here. No parameter properties. |
 | Methods | `public async <verb>(): Promise<void>`. One user intent per method. A method that decides (`if`) is doing two intents; split it. |
 | Assertions | Only inside `expect*` methods, each a boxed step. Action methods never assert. |
-| Components | A widget that appears on several pages is a component object taking a `Locator` root, in `components/`. Pages expose it as a `public readonly` field. |
-| Composition | A page object holds other page or component objects as fields. It never extends another page object. |
+| Helpers | A widget that appears on several pages is a helper object taking a `Locator` root, in `helpers/`. Pages expose it as a `public readonly` field. |
+| Composition | A page object holds other page or helper objects as fields. It never extends another page object. |
 | Return values | A method that reads state returns a typed value: `public async orderId(): Promise<string>`. |
-| Size | A page object over 150 lines is two page objects or a page plus a component. |
+| Size | A page object over 150 lines is two page objects or a page plus a helper. |
 
 ## Fixtures
 
@@ -414,11 +415,11 @@ Stop and re-check this file when reasoning includes:
 - `page.getBy` or `page.locator` inside a `.e2e.ts` or `.test.ts`.
 - `test.describe('Login', ...)` or any describe text with no Gherkin keyword.
 - `test.describe('WHEN …')` or a test title starting with `WHEN` / `THEN`.
-- A step, in a spec, page object, or component object, whose name has no `GIVEN` / `WHEN` / `THEN` / `AND`.
+- A step, in a spec, page object, or helper object, whose name has no `GIVEN` / `WHEN` / `THEN` / `AND`.
 - "should" in a test title.
 - `interface`, `as SomeType`, `any`, or `// ...` inside a sample.
 - An object literal inside `route.fulfill({ json: … })`.
-- A response payload declared inside a `.mock.ts`: a `const <X>_BODY`, or an object literal the factory fulfills. Helpers, counters, caches, and resolved fixture paths are the mock's own wiring and stay.
+- A response payload declared inside a `.mock.ts`: a `const <X>_BODY`, or an object literal the factory fulfills. Util functions, counters, caches, and resolved fixture paths are the mock's own wiring and stay.
 - `type RouteHandler = (route: Route) => Promise<void>;` declared anywhere but `e2e/common/playwright.type.ts`.
 - A stub declared without a type annotation, or annotated with an inline object type.
 - `page.route` in a spec with the handler written inline.

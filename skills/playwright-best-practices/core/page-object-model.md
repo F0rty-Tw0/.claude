@@ -4,7 +4,7 @@
 
 1. [Overview](#overview)
 2. [Basic Structure](#basic-structure)
-3. [Component Objects](#component-objects)
+3. [Helper Objects](#helper-objects)
 4. [Composition Patterns](#composition-patterns)
 5. [Factory Functions](#factory-functions)
 6. [Best Practices](#best-practices)
@@ -95,16 +95,16 @@ test.describe('FEATURE: login', () => {
 });
 ```
 
-## Component Objects
+## Helper Objects
 
-A widget that appears on several pages is a component object. It takes a `Locator` root, never `page`, so the same class serves any container. Members follow the page-object rules: locators first, root last, assertions boxed.
+A widget that appears on several pages is a helper object. It takes a `Locator` root, never `page`, so the same class serves any container. Members follow the page-object rules: locators first, root last, assertions boxed.
 
 ```ts
-// e2e/dashboard/components/modal.component.ts
+// e2e/dashboard/helpers/modal.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-export class ModalComponent {
+export class ModalHelper {
   public readonly closeButton: Locator;
   public readonly confirmButton: Locator;
   public readonly title: Locator;
@@ -136,33 +136,33 @@ export class ModalComponent {
 }
 ```
 
-A `NavbarComponent` is built the same way from `page.getByRole('navigation')`: `logo`, `searchInput`, `userMenu` locators scoped to the root, plus `search(query)` (fill, press `Enter`) and `openUserMenu()` actions.
+A `NavbarHelper` is built the same way from `page.getByRole('navigation')`: `logo`, `searchInput`, `userMenu` locators scoped to the root, plus `search(query)` (fill, press `Enter`) and `openUserMenu()` actions.
 
 ## Composition Patterns
 
-### Page with Components
+### Page with Helpers
 
-A page object holds component objects as `public readonly` fields and passes each one its root locator in the constructor. A page never extends another page.
+A page object holds helper objects as `public readonly` fields and passes each one its root locator in the constructor. A page never extends another page.
 
 ```ts
 // e2e/dashboard/pages/dashboard.page.ts
 import type { Locator, Page } from '@playwright/test';
 
-import { ModalComponent } from '../components/modal.component';
-import { NavbarComponent } from '../components/navbar.component';
+import { ModalHelper } from '../helpers/modal.helper';
+import { NavbarHelper } from '../helpers/navbar.helper';
 
 export class DashboardPage {
-  public readonly navbar: NavbarComponent;
+  public readonly navbar: NavbarHelper;
   public readonly newProjectButton: Locator;
-  public readonly projectModal: ModalComponent;
+  public readonly projectModal: ModalHelper;
 
   private readonly page: Page;
 
   public constructor(page: Page) {
     this.page = page;
-    this.navbar = new NavbarComponent(page.getByRole('navigation'));
+    this.navbar = new NavbarHelper(page.getByRole('navigation'));
     this.newProjectButton = page.getByRole('button', { name: 'New Project' });
-    this.projectModal = new ModalComponent(page.getByRole('dialog'));
+    this.projectModal = new ModalHelper(page.getByRole('dialog'));
   }
 
   public async goto(): Promise<void> {
@@ -175,11 +175,11 @@ export class DashboardPage {
 }
 ```
 
-The spec reaches the component through the page: `dashboardPage.projectModal.expectTitle('New Project')`.
+The spec reaches the helper through the page: `dashboardPage.projectModal.expectTitle('New Project')`.
 
 ### Page Navigation
 
-A navigation method returns `Promise<void>`. The destination page object is a separate fixture, so the next step names it directly instead of receiving it as a return value. No `BasePage`; pages share behaviour through components and utils, not inheritance.
+A navigation method returns `Promise<void>`. The destination page object is a separate fixture, so the next step names it directly instead of receiving it as a return value. No `BasePage`; pages share behaviour through helpers and utils, not inheritance.
 
 | Upstream pattern | House shape |
 |---|---|
@@ -204,7 +204,7 @@ Not used. A factory returning an object literal of closures cannot follow the me
 
 - **Don't assert in action methods** - Assertions only in `expect*` methods, each a boxed step
 - **Don't expose implementation details** - Hide complex interactions
-- **Don't make page objects too large** - Over 150 lines, split into a page plus components
+- **Don't make page objects too large** - Over 150 lines, split into a page plus helpers
 - **Don't share state** between page object instances
 - **Don't extend** another page object
 
@@ -220,10 +220,10 @@ e2e/
   dashboard/
     dashboard.e2e.ts
     dashboard.fixture.ts
-    components/
-      modal.component.ts
-      navbar.component.ts
-      table.component.ts
+    helpers/
+      modal.helper.ts
+      navbar.helper.ts
+      table.helper.ts
     pages/
       dashboard.page.ts
       settings.page.ts

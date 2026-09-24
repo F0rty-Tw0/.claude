@@ -9,7 +9,7 @@
 > **When to use**: Testing GraphQL APIs — queries, mutations, variables, and error handling.
 > **See also**: [api-testing.md](api-testing.md) for the API-object shape this file builds on.
 
-A GraphQL API object is the page object of a schema: it owns the `APIRequestContext`, the endpoint, and the operation documents, and every method posts one operation and returns the `APIResponse`. Specs read the body through `readGraphql` ([GraphQL Helper Function](#graphql-helper-function)), which returns `data` and `errors` together because a GraphQL server answers 200 even when the operation failed.
+A GraphQL API object is the page object of a schema: it owns the `APIRequestContext`, the endpoint, and the operation documents, and every method posts one operation and returns the `APIResponse`. Specs read the body through `readGraphql` ([GraphQL Util Function](#graphql-util-function)), which returns `data` and `errors` together because a GraphQL server answers 200 even when the operation failed.
 
 ## Patterns
 
@@ -347,7 +347,7 @@ export const test = base.extend<CatalogFixtures>({
 export { expect } from '@playwright/test';
 ```
 
-### GraphQL Helper Function
+### GraphQL Util Function
 
 One reader serves queries and mutations alike; a separate `gqlMutation` would only forward to it. `readGraphql` throws with the status and raw body when the transport failed, and otherwise returns the envelope untouched so the spec decides what `errors` means for the case.
 

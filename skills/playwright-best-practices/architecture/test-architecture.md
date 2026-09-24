@@ -154,13 +154,13 @@ Body assertions follow the same shape: read the body in a step typed with the re
 - Third-party iframe interactions
 - Anything requiring multiple pages or browser contexts
 
-`mount` returns a `Locator`; a component object in `components/` owns every child locator and assertion. The mount util wraps the JSX so a step stays one call. `Mount` is `(component: JSX.Element) => Promise<MountResult>` in `common/contact-form.type.ts`.
+`mount` returns a `Locator`; a helper object in `helpers/` owns every child locator and assertion. The mount util wraps the JSX so a step stays one call. `Mount` is `(component: JSX.Element) => Promise<MountResult>` in `common/contact-form.type.ts`.
 
 ```tsx
 // e2e/contact-form/test/utils/mount.spec.util.tsx
 import { ContactForm } from '../../../../src/components/ContactForm';
 import type { ContactMessage, Mount, SubmitHandler } from '../../common/contact-form.type';
-import { ContactFormComponent } from '../../components/contact-form.component';
+import { ContactFormHelper } from '../../helpers/contact-form.helper';
 
 export const noop = (): void => {};
 
@@ -170,10 +170,10 @@ export const recordInto = (submissions: ContactMessage[]): SubmitHandler => {
   };
 };
 
-export const mountContactForm = async (mount: Mount, onSubmit: SubmitHandler = noop, submitting = false): Promise<ContactFormComponent> => {
+export const mountContactForm = async (mount: Mount, onSubmit: SubmitHandler = noop, submitting = false): Promise<ContactFormHelper> => {
   const root = await mount(<ContactForm onSubmit={onSubmit} submitting={submitting} />);
 
-  return new ContactFormComponent(root);
+  return new ContactFormHelper(root);
 };
 ```
 
@@ -182,14 +182,14 @@ export const mountContactForm = async (mount: Mount, onSubmit: SubmitHandler = n
 import { expect, test } from '@playwright/experimental-ct-react';
 
 import type { ContactMessage } from './common/contact-form.type';
-import type { ContactFormComponent } from './components/contact-form.component';
+import type { ContactFormHelper } from './helpers/contact-form.helper';
 import { MESSAGE_STUB } from './test/stubs/message.stub';
 import { mountContactForm, recordInto } from './test/utils/mount.spec.util';
 
 test.describe('FEATURE: contact form', () => {
   test.describe('GIVEN an empty form', () => {
     test('SCENARIO: submitting shows both required-field errors', async ({ mount }): Promise<void> => {
-      const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormComponent> => mountContactForm(mount));
+      const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount));
 
       await test.step('WHEN the empty form is submitted', (): Promise<void> => form.submit());
 
@@ -198,7 +198,7 @@ test.describe('FEATURE: contact form', () => {
 
     test('SCENARIO: submitting a malformed email shows the email error', async ({ mount }): Promise<void> => {
       const message: ContactMessage = { ...MESSAGE_STUB, email: 'invalid-email' };
-      const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormComponent> => mountContactForm(mount));
+      const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount));
 
       await test.step('WHEN the form is filled and submitted', (): Promise<void> => form.send(message));
 
@@ -207,7 +207,7 @@ test.describe('FEATURE: contact form', () => {
 
     test('SCENARIO: submitting valid data calls onSubmit once', async ({ mount }): Promise<void> => {
       const submissions: ContactMessage[] = [];
-      const form = await test.step('GIVEN the form is mounted with a recording handler', (): Promise<ContactFormComponent> => mountContactForm(mount, recordInto(submissions)));
+      const form = await test.step('GIVEN the form is mounted with a recording handler', (): Promise<ContactFormHelper> => mountContactForm(mount, recordInto(submissions)));
 
       await test.step('WHEN the form is filled and submitted', (): Promise<void> => form.send(MESSAGE_STUB));
 
@@ -217,7 +217,7 @@ test.describe('FEATURE: contact form', () => {
 
   test.describe('GIVEN a form that is submitting', () => {
     test('SCENARIO: rendering disables the send button', async ({ mount }): Promise<void> => {
-      const form = await test.step('WHEN the submitting form is mounted', (): Promise<ContactFormComponent> => mountContactForm(mount, noop, true));
+      const form = await test.step('WHEN the submitting form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount, noop, true));
 
       await test.step('THEN the send button is disabled', (): Promise<void> => form.expectSubmitting());
     });
@@ -225,7 +225,7 @@ test.describe('FEATURE: contact form', () => {
 });
 ```
 
-| Further case | Component-object method |
+| Further case | Helper-object method |
 | --- | --- |
 | Labels are associated with inputs | `expectLabelledInputs()` asserts `getByRole('textbox', { name })` for `Name` and `Email`. |
 | Visual states (hover, focus, disabled) | One `expect*` method per state, one `GIVEN` per prop set. |
@@ -250,15 +250,15 @@ test.describe('FEATURE: contact form', () => {
 - Responsive layout at every breakpoint
 - Edge cases that only affect the backend
 
-Seed data through the API in `beforeEach`, never through the UI. The third-party payment iframe is a component object scoped to a `FrameLocator`; `UpgradePage` exposes it as `paymentFrame`, built from `page.frameLocator('iframe[title="Secure Payment"]')`.
+Seed data through the API in `beforeEach`, never through the UI. The third-party payment iframe is a helper object scoped to a `FrameLocator`; `UpgradePage` exposes it as `paymentFrame`, built from `page.frameLocator('iframe[title="Secure Payment"]')`.
 
 ```ts
-// e2e/subscription/components/payment-frame.component.ts
+// e2e/subscription/helpers/payment-frame.helper.ts
 import type { FrameLocator, Locator } from '@playwright/test';
 
 import type { Card } from '../common/subscription.type';
 
-export class PaymentFrameComponent {
+export class PaymentFrameHelper {
   public readonly cardNumberInput: Locator;
   public readonly cvvInput: Locator;
   public readonly expiryInput: Locator;

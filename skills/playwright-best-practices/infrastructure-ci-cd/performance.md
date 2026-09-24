@@ -462,7 +462,7 @@ export default defineConfig({
 
 ### Measure Test Duration
 
-The page object times its own navigation and returns the milliseconds; a `test/utils` helper pushes the number onto `testInfo.annotations` so it appears in the report.
+The page object times its own navigation and returns the milliseconds; a `test/utils` util pushes the number onto `testInfo.annotations` so it appears in the report.
 
 ```ts
 // e2e/home/pages/home.page.ts
@@ -559,7 +559,7 @@ export type PageMetrics = {
 
 ### Lighthouse Integration
 
-`playAudit` from `playwright-lighthouse` audits the current page over the Chrome DevTools port. Chromium must be launched with `--remote-debugging-port=9222` for the `port` option to connect. Thresholds are a named const; the helper returns the performance score as a percentage.
+`playAudit` from `playwright-lighthouse` audits the current page over the Chrome DevTools port. Chromium must be launched with `--remote-debugging-port=9222` for the `port` option to connect. Thresholds are a named const; the util returns the performance score as a percentage.
 
 ```ts
 // e2e/home/test/utils/lighthouse.spec.util.ts

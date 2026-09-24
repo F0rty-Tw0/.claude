@@ -19,7 +19,7 @@ Use locators in this order of preference:
 4. **Test IDs** (when semantic locators aren't possible): `getByTestId`
 5. **CSS/XPath** (last resort): `locator('css=...')`, `locator('xpath=...')`
 
-Every locator is a `public readonly` field of a page object or component object, assigned in the constructor. A spec never calls `page.getBy*` or `page.locator`; see [page-object-model.md](page-object-model.md).
+Every locator is a `public readonly` field of a page object or helper object, assigned in the constructor. A spec never calls `page.getBy*` or `page.locator`; see [page-object-model.md](page-object-model.md).
 
 ## User-Facing Locators
 

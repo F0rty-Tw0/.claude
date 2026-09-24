@@ -349,16 +349,16 @@ Every ARIA check is the shape of `settings-dialog.e2e.ts`: a `GIVEN` step opens 
 
 ### Focus Trap in Modal
 
-A dialog is a component object scoped to its root locator. Tabbing one past the focusable count proves focus wrapped instead of leaving the dialog.
+A dialog is a helper object scoped to its root locator. Tabbing one past the focusable count proves focus wrapped instead of leaving the dialog.
 
 ```ts
-// e2e/accessibility/components/dialog.component.ts
+// e2e/accessibility/helpers/dialog.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-export class DialogComponent {
+export class DialogHelper {
   public readonly focusable: Locator;
   public readonly focused: Locator;
   public readonly root: Locator;
@@ -384,7 +384,7 @@ export class DialogComponent {
 }
 ```
 
-`ItemsPage` follows `DashboardPage`: `goto()` opens `/items`, `openDialog()` clicks `getByRole('button', { name: 'Open Modal' })`, and `dialog` is `new DialogComponent(page.getByRole('dialog'))`.
+`ItemsPage` follows `DashboardPage`: `goto()` opens `/items`, `openDialog()` clicks `getByRole('button', { name: 'Open Modal' })`, and `dialog` is `new DialogHelper(page.getByRole('dialog'))`.
 
 ```ts
 // e2e/accessibility/items-focus.e2e.ts

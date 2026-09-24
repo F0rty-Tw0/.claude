@@ -89,7 +89,7 @@ test.describe('FEATURE: theme context', () => {
 | Global state | Action | Assertion |
 |---|---|---|
 | Cart count (Redux, Zustand) | `catalogPage.addToCart('Wireless Headphones')` then `catalogPage.openContact()` | `expectBadge(1)` before and after navigation |
-| Auth context | `loginPage.submit(USER_STUB)` | `headerComponent.expectLoginLinkHidden()` and `headerComponent.expectUserName('testuser')` |
+| Auth context | `loginPage.submit(USER_STUB)` | `headerHelper.expectLoginLinkHidden()` and `headerHelper.expectUserName('testuser')` |
 
 ### React Router Navigation
 
@@ -559,14 +559,14 @@ import { createElement } from 'react';
 import type { StepperProps } from '@/components/Stepper';
 import { Stepper } from '@/components/Stepper';
 
-import { StepperComponent } from '../../components/stepper.component';
+import { StepperHelper } from '../../helpers/stepper.helper';
 
 type Mount = ComponentFixtures['mount'];
 
-export const mountStepper = async (mount: Mount, props: StepperProps): Promise<StepperComponent> => {
+export const mountStepper = async (mount: Mount, props: StepperProps): Promise<StepperHelper> => {
   const root = await mount(createElement(Stepper, props));
 
-  return new StepperComponent(root);
+  return new StepperHelper(root);
 };
 ```
 
@@ -574,13 +574,13 @@ export const mountStepper = async (mount: Mount, props: StepperProps): Promise<S
 // e2e/stepper/stepper.ct.ts
 import { expect, test } from '@playwright/experimental-ct-react';
 
-import type { StepperComponent } from './components/stepper.component';
+import type { StepperHelper } from './helpers/stepper.helper';
 import { mountStepper } from './test/utils/stepper-mount.spec.util';
 
 test.describe('FEATURE: stepper', () => {
   test.describe('GIVEN a stepper mounted at 0', () => {
     test('SCENARIO: clicking + reads 1', async ({ mount }): Promise<void> => {
-      const stepper = await test.step('GIVEN the stepper is mounted at 0', (): Promise<StepperComponent> => mountStepper(mount, { initial: 0 }));
+      const stepper = await test.step('GIVEN the stepper is mounted at 0', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0 }));
 
       await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
 
@@ -590,7 +590,7 @@ test.describe('FEATURE: stepper', () => {
     test('SCENARIO: clicking + twice passes each value to onChange', async ({ mount }): Promise<void> => {
       const values: number[] = [];
       const onChange = (value: number): number => values.push(value);
-      const stepper = await test.step('GIVEN the stepper is mounted at 0 with onChange', (): Promise<StepperComponent> => mountStepper(mount, { initial: 0, onChange }));
+      const stepper = await test.step('GIVEN the stepper is mounted at 0 with onChange', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, onChange }));
 
       await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
 
@@ -600,7 +600,7 @@ test.describe('FEATURE: stepper', () => {
     });
 
     test('SCENARIO: a value at min disables -', async ({ mount }): Promise<void> => {
-      const stepper = await test.step('GIVEN the stepper is mounted at 0 with min 0', (): Promise<StepperComponent> => mountStepper(mount, { initial: 0, min: 0 }));
+      const stepper = await test.step('GIVEN the stepper is mounted at 0 with min 0', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, min: 0 }));
 
       await test.step('THEN - is disabled', (): Promise<void> => stepper.expectDecrementDisabled());
     });
@@ -608,7 +608,7 @@ test.describe('FEATURE: stepper', () => {
 });
 ```
 
-`StepperComponent` in `components/stepper.component.ts` takes the mounted `Locator` root, exposes `incrementButton` and `decrementButton`, and wraps `expectValue` / `expectDecrementDisabled` in boxed steps. The Vue version in [vue.md](vue.md#component-testing-with-experimental-ct) shows the full class.
+`StepperHelper` in `helpers/stepper.helper.ts` takes the mounted `Locator` root, exposes `incrementButton` and `decrementButton`, and wraps `expectValue` / `expectDecrementDisabled` in boxed steps. The Vue version in [vue.md](vue.md#component-testing-with-experimental-ct) shows the full class.
 
 ## Setup
 

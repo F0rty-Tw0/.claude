@@ -162,14 +162,14 @@ import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 import type { UploadSelection } from '../common/attachments.type';
-import { DropZoneComponent } from '../components/drop-zone.component';
-import { UploadProgressComponent } from '../components/upload-progress.component';
+import { DropZoneHelper } from '../helpers/drop-zone.helper';
+import { UploadProgressHelper } from '../helpers/upload-progress.helper';
 
 export class AttachmentsPage {
   public readonly alert: Locator;
-  public readonly dropZone: DropZoneComponent;
+  public readonly dropZone: DropZoneHelper;
   public readonly fileInput: Locator;
-  public readonly progress: UploadProgressComponent;
+  public readonly progress: UploadProgressHelper;
   public readonly uploadButton: Locator;
 
   private readonly page: Page;
@@ -177,9 +177,9 @@ export class AttachmentsPage {
   public constructor(page: Page) {
     this.page = page;
     this.alert = page.getByRole('alert');
-    this.dropZone = new DropZoneComponent(page.getByTestId('drop-zone'));
+    this.dropZone = new DropZoneHelper(page.getByTestId('drop-zone'));
     this.fileInput = page.locator('input[type="file"]');
-    this.progress = new UploadProgressComponent(page.getByTestId('upload-status'));
+    this.progress = new UploadProgressHelper(page.getByTestId('upload-status'));
     this.uploadButton = page.getByRole('button', { name: /^Upload/ });
   }
 
@@ -345,13 +345,13 @@ test.describe('FEATURE: attachments multiple upload', () => {
 Drop zones always have an underlying `input[type="file"]`, so a drop is `select()` on that input and the upload spec above covers it; never simulate OS-level drag events. Drag-over feedback is tested by dispatching `dragenter` and `dragleave` on the zone with a `dataTransfer` whose `types` include `Files`.
 
 ```ts
-// e2e/attachments/components/drop-zone.component.ts
+// e2e/attachments/helpers/drop-zone.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 const ACTIVE_CLASS = /active|highlight|drag-over/;
 
-export class DropZoneComponent {
+export class DropZoneHelper {
   public readonly root: Locator;
 
   public constructor(root: Locator) {
@@ -504,13 +504,13 @@ test.describe('FEATURE: avatar upload', () => {
 The progress component is scoped to the region that wraps the progress bar and the cancel / retry buttons. `expectStarted()` asserts `aria-valuenow` moved above zero with a web-first matcher instead of a polling loop. The happy path is `select(LARGE_FILE_STUB)`, `upload()`, `progress.expectStarted()`, `progress.expectFinished()`, then the alert.
 
 ```ts
-// e2e/attachments/components/upload-progress.component.ts
+// e2e/attachments/helpers/upload-progress.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 const UPLOAD_TIMEOUT = 60_000;
 
-export class UploadProgressComponent {
+export class UploadProgressHelper {
   public readonly cancelButton: Locator;
   public readonly progressBar: Locator;
   public readonly retryButton: Locator;

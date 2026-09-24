@@ -128,22 +128,22 @@ Wait for an element inside the frame, not for the `<iframe>` element. `expectPay
 
 ### Accessing Cross-Origin Content
 
-`frameLocator` works the same across origins; the only difference is timing, so the readiness assertion stays explicit. A third-party form is a component object scoped to its `FrameLocator`.
+`frameLocator` works the same across origins; the only difference is timing, so the readiness assertion stays explicit. A third-party form is a helper object scoped to its `FrameLocator`.
 
-`ThirdPartyFormComponent` has the shape of `StripeCardComponent` below: the constructor takes the `FrameLocator`, fields are `body = frame.locator('body')`, `emailInput = frame.getByRole('textbox')`, and `submitButton = frame.getByRole('button', { name: 'Submit' })`, `submitEmail(email)` fills and clicks, and `expectReady()` is a boxed `toBeVisible` on `body`. `CheckoutPage` exposes it as `public readonly thirdPartyForm = new ThirdPartyFormComponent(page.frameLocator('iframe[src*="third-party.com"]'))`, assigned in the constructor.
+`ThirdPartyFormHelper` has the shape of `StripeCardHelper` below: the constructor takes the `FrameLocator`, fields are `body = frame.locator('body')`, `emailInput = frame.getByRole('textbox')`, and `submitButton = frame.getByRole('button', { name: 'Submit' })`, `submitEmail(email)` fills and clicks, and `expectReady()` is a boxed `toBeVisible` on `body`. `CheckoutPage` exposes it as `public readonly thirdPartyForm = new ThirdPartyFormHelper(page.frameLocator('iframe[src*="third-party.com"]'))`, assigned in the constructor.
 
 ### Payment Provider iFrames (Stripe, PayPal)
 
-Stripe renders one iframe per field, all named `__privateStripeFrame…`, so the component takes `.first()` and locates by placeholder. Initialisation is slow; the readiness step carries a 15 s timeout.
+Stripe renders one iframe per field, all named `__privateStripeFrame…`, so the helper takes `.first()` and locates by placeholder. Initialisation is slow; the readiness step carries a 15 s timeout.
 
 ```ts
-// e2e/checkout/components/stripe-card.component.ts
+// e2e/checkout/helpers/stripe-card.helper.ts
 import type { FrameLocator, Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 import type { CardDetails } from '../common/checkout.type';
 
-export class StripeCardComponent {
+export class StripeCardHelper {
   public readonly cardNumberInput: Locator;
   public readonly cvcInput: Locator;
   public readonly expiryInput: Locator;
@@ -169,7 +169,7 @@ export class StripeCardComponent {
 }
 ```
 
-`CARD_STUB` in `test/stubs/card.stub.ts` holds the `4242 4242 4242 4242` test card. The page wires `this.stripeCard = new StripeCardComponent(page.frameLocator('iframe[name*="__privateStripeFrame"]').first())`; the component also exposes `expectCardNumber(value)` as a boxed `toHaveValue` step, and a Stripe spec calls `checkoutPage.stripeCard.expectReady()`, `.fill(CARD_STUB)`, then `.expectCardNumber(CARD_STUB.number)`. `paymentReadyPage` is the fixture from [iFrame Fixture](#iframe-fixture): it opens checkout and asserts the payment frame is ready before the test starts.
+`CARD_STUB` in `test/stubs/card.stub.ts` holds the `4242 4242 4242 4242` test card. The page wires `this.stripeCard = new StripeCardHelper(page.frameLocator('iframe[name*="__privateStripeFrame"]').first())`; the helper also exposes `expectCardNumber(value)` as a boxed `toHaveValue` step, and a Stripe spec calls `checkoutPage.stripeCard.expectReady()`, `.fill(CARD_STUB)`, then `.expectCardNumber(CARD_STUB.number)`. `paymentReadyPage` is the fixture from [iFrame Fixture](#iframe-fixture): it opens checkout and asserts the payment frame is ready before the test starts.
 
 ```ts
 // e2e/checkout/checkout.e2e.ts
@@ -458,7 +458,7 @@ Prefer one web-first assertion with the timeout the frame needs (`expectPaymentF
 
 ### Mocking iFrame Content
 
-A route mock fulfils the iframe's `src` request with a static document. The document is static sample content, so it is an on-disk fixture at `e2e/checkout/test/fixtures/widget/index.html`, never a string in the mock. `route.fulfill` reads the file itself when given a `path` and infers `Content-Type` from the extension, so there is no read helper and no `contentType` to keep in sync.
+A route mock fulfils the iframe's `src` request with a static document. The document is static sample content, so it is an on-disk fixture at `e2e/checkout/test/fixtures/widget/index.html`, never a string in the mock. `route.fulfill` reads the file itself when given a `path` and infers `Content-Type` from the extension, so there is no read util and no `contentType` to keep in sync.
 
 ```ts
 // e2e/checkout/test/mocks/widget.mock.ts

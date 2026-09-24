@@ -127,14 +127,14 @@ export default defineConfig({
 
 **Avoid when**: Component depends heavily on Pinia stores, Vue Router, or backend data. Use E2E tests instead.
 
-`mount` returns a `Locator` rooted at the component. A component object wraps that root so the spec never queries it directly.
+`mount` returns a `Locator` rooted at the component. A helper object wraps that root so the spec never queries it directly.
 
 ```ts
-// e2e/stepper/components/stepper.component.ts
+// e2e/stepper/helpers/stepper.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/experimental-ct-vue';
 
-export class StepperComponent {
+export class StepperHelper {
   public readonly decrementButton: Locator;
   public readonly incrementButton: Locator;
 
@@ -165,14 +165,14 @@ import type { ComponentFixtures } from '@playwright/experimental-ct-vue';
 import Stepper from '@/components/Stepper.vue';
 
 import type { StepperListeners, StepperProps } from '../../common/stepper.type';
-import { StepperComponent } from '../../components/stepper.component';
+import { StepperHelper } from '../../helpers/stepper.helper';
 
 type Mount = ComponentFixtures['mount'];
 
-export const mountStepper = async (mount: Mount, props: StepperProps, on?: StepperListeners): Promise<StepperComponent> => {
+export const mountStepper = async (mount: Mount, props: StepperProps, on?: StepperListeners): Promise<StepperHelper> => {
   const root = await mount(Stepper, { on, props });
 
-  return new StepperComponent(root);
+  return new StepperHelper(root);
 };
 ```
 
@@ -181,13 +181,13 @@ export const mountStepper = async (mount: Mount, props: StepperProps, on?: Stepp
 import { expect, test } from '@playwright/experimental-ct-vue';
 
 import type { StepperListeners } from './common/stepper.type';
-import type { StepperComponent } from './components/stepper.component';
+import type { StepperHelper } from './helpers/stepper.helper';
 import { mountStepper } from './test/utils/stepper-mount.spec.util';
 
 test.describe('FEATURE: stepper', () => {
   test.describe('GIVEN a mounted stepper', () => {
     test('SCENARIO: clicking + increments the value', async ({ mount }): Promise<void> => {
-      const stepper = await test.step('GIVEN a stepper mounted at 0', (): Promise<StepperComponent> => mountStepper(mount, { value: 0 }));
+      const stepper = await test.step('GIVEN a stepper mounted at 0', (): Promise<StepperHelper> => mountStepper(mount, { value: 0 }));
 
       await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
 
@@ -197,7 +197,7 @@ test.describe('FEATURE: stepper', () => {
     test('SCENARIO: clicking + twice emits change with each value', async ({ mount }): Promise<void> => {
       const changes: number[] = [];
       const listeners: StepperListeners = { change: (value: number): number => changes.push(value) };
-      const stepper = await test.step('GIVEN a stepper mounted at 10 with a change listener', (): Promise<StepperComponent> => mountStepper(mount, { value: 10 }, listeners));
+      const stepper = await test.step('GIVEN a stepper mounted at 10 with a change listener', (): Promise<StepperHelper> => mountStepper(mount, { value: 10 }, listeners));
 
       await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
 

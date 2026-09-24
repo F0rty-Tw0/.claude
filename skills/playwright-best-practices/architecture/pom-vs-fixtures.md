@@ -6,7 +6,7 @@
 2. [Selection Flowchart](#selection-flowchart)
 3. [Page Objects](#page-objects)
 4. [Custom Fixtures](#custom-fixtures)
-5. [Helper Functions](#helper-functions)
+5. [Util Functions](#util-functions)
 6. [Combined Project Structure](#combined-project-structure)
 7. [Anti-Patterns](#anti-patterns)
 
@@ -14,7 +14,7 @@ Use all three patterns together. Most projects benefit from a hybrid approach:
 
 - **Page objects** for UI interaction (pages/components with 5+ interactions)
 - **Custom fixtures** for test infrastructure (auth state, database, API clients, anything with lifecycle)
-- **Helper functions** for stateless utilities (generate data, format values, build URLs)
+- **Util functions** for stateless utilities (generate data, format values, build URLs)
 
 If only using one pattern, choose **custom fixtures**. They handle setup/teardown, compose well, and Playwright is built around them.
 
@@ -22,12 +22,12 @@ Every sample below belongs to the `booking` feature and follows the layout in `c
 
 ## Pattern Comparison
 
-| Aspect | Page Objects | Custom Fixtures | Helper Functions |
+| Aspect | Page Objects | Custom Fixtures | Util Functions |
 |---|---|---|---|
 | **Purpose** | Encapsulate UI interactions | Provide resources with setup/teardown | Stateless utilities |
 | **Lifecycle** | Manual (constructor/methods) | Built-in (`use()` with automatic teardown) | None |
 | **Composability** | Constructor injection or fixture wiring | Depend on other fixtures | Call other functions |
-| **Location** | `pages/`, `components/` | `<feature>.fixture.ts` | `test/utils/*.spec.util.ts`, `utils/*.util.ts` |
+| **Location** | `pages/`, `helpers/` | `<feature>.fixture.ts` | `test/utils/*.spec.util.ts`, `utils/*.util.ts` |
 | **Best for** | Pages with many reused interactions | Resources needing setup AND teardown | Simple logic with no side effects |
 
 ## Selection Flowchart
@@ -40,12 +40,12 @@ What kind of reusable code?
 |   +-- Has 5+ interactions (fill, click, navigate, assert)?
 |   |   +-- YES: Used in 3+ test files?
 |   |   |   +-- YES --> PAGE OBJECT
-|   |   |   +-- NO --> Inline or small helper
-|   |   +-- NO --> HELPER FUNCTION
+|   |   |   +-- NO --> Inline or small util
+|   |   +-- NO --> UTIL FUNCTION
 |   |
 |   +-- Needs setup before AND cleanup after test?
 |       +-- YES --> CUSTOM FIXTURE
-|       +-- NO --> PAGE OBJECT method or HELPER
+|       +-- NO --> PAGE OBJECT method or UTIL
 |
 +-- Manages resource with lifecycle (create/destroy)?
 |   +-- Examples: auth state, DB connection, API client, test user
@@ -53,10 +53,10 @@ What kind of reusable code?
 |
 +-- Stateless utility? (no browser, no side effects)
 |   +-- Examples: random email, format date, build URL, parse response
-|   +-- YES --> HELPER FUNCTION
+|   +-- YES --> UTIL FUNCTION
 |
 +-- Not sure?
-    +-- Start with HELPER FUNCTION
+    +-- Start with UTIL FUNCTION
     +-- Promote to PAGE OBJECT when interactions grow
     +-- Promote to FIXTURE when lifecycle needed
 ```
@@ -253,9 +253,9 @@ test.describe('FEATURE: dashboard', () => {
 - Wrap page objects in fixtures for lifecycle management; a fixture that logs in returns the page object of the landing page, never a raw `Page`
 - Re-export `expect` so specs have one import source
 
-## Helper Functions
+## Util Functions
 
-Best for stateless utilities: generating test data, formatting values, building URLs, parsing responses. Randomised builders live in `test/utils/<feature>-builder.spec.util.ts`; production-grade pure helpers such as a price formatter live in `utils/<behavior>.util.ts`.
+Best for stateless utilities: generating test data, formatting values, building URLs, parsing responses. Randomised builders live in `test/utils/<feature>-builder.spec.util.ts`; production-grade pure util functions such as a price formatter live in `utils/<behavior>.util.ts`.
 
 ```ts
 // e2e/booking/test/utils/member-builder.spec.util.ts
@@ -281,14 +281,14 @@ export const memberDraft = (overrides: Partial<MemberDraft> = {}): MemberDraft =
 };
 ```
 
-An assertion helper that takes `page` is a page-object concern in disguise. A notification that appears on several pages becomes a component object scoped to its root locator, exposed by each page as a `public readonly` field.
+An assertion util that takes `page` is a page-object concern in disguise. A notification that appears on several pages becomes a helper object scoped to its root locator, exposed by each page as a `public readonly` field.
 
 ```ts
-// e2e/booking/components/notification.component.ts
+// e2e/booking/helpers/notification.helper.ts
 import type { Locator } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-export class NotificationComponent {
+export class NotificationHelper {
   public readonly root: Locator;
 
   public constructor(root: Locator) {
@@ -306,7 +306,7 @@ export class NotificationComponent {
 }
 ```
 
-`AccountPage` wires `this.notification = new NotificationComponent(page.getByRole('alert'))` in its constructor and exposes `updateEmail(email)` and `expectEmail(email)`.
+`AccountPage` wires `this.notification = new NotificationHelper(page.getByRole('alert'))` in its constructor and exposes `updateEmail(email)` and `expectEmail(email)`.
 
 ```ts
 // e2e/booking/account.e2e.ts
@@ -332,9 +332,9 @@ test.describe('FEATURE: account settings', () => {
 });
 ```
 
-**Helper principles:**
+**Util principles:**
 - Pure functions with no side effects
-- No browser state; a helper that needs `page` is a page-object or component method
+- No browser state; a util function that needs `page` belongs on a page object or helper object
 - Promote to fixture if setup/teardown needed
 - Promote to page object if many page interactions grow
 - Keep small and focused
@@ -352,8 +352,8 @@ e2e/
     booking.fixture.ts
     common/
       booking.type.ts
-    components/
-      notification.component.ts
+    helpers/
+      notification.helper.ts
     pages/
       account.page.ts
       booking.page.ts
@@ -374,8 +374,8 @@ e2e/
 |---|---|---|
 | **Spec file** | `test()` with `test.step` | Describes behavior, orchestrates layers |
 | **Fixtures** | `test.extend()` | Resource lifecycle: setup, provide, teardown |
-| **Page objects** | Classes in `pages/`, `components/` | UI interaction: navigation, actions, locators, boxed assertions |
-| **Helpers** | Functions in `test/utils/`, `utils/` | Utilities: data generation, formatting |
+| **Page objects** | Classes in `pages/`, `helpers/` | UI interaction: navigation, actions, locators, boxed assertions |
+| **Utils** | Functions in `test/utils/`, `utils/` | Utilities: data generation, formatting |
 
 ## Anti-Patterns
 
@@ -426,7 +426,7 @@ test.extend({
 
 Prefer: small, composable fixtures (`member`, `loggedInPage`, `bookingPage`). Each fixture does one thing and depends on the others by name.
 
-### Helpers with side effects
+### Utils with side effects
 
 Avoid module-level state:
 
@@ -445,7 +445,7 @@ Prefer: module-level state leaks between parallel tests. If it has side effects 
 
 ### Over-abstracting simple operations
 
-Avoid a helper for a one-liner:
+Avoid a util for a one-liner:
 
 ```ts avoid
 export async function clickButton(page: Page, name: string) {

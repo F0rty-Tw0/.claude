@@ -53,7 +53,7 @@ export default defineConfig({
 
 ### Project Structure
 
-`playwright/index.html` and `playwright/index.ts` are the CT entry point and setup (providers, styles, hooks). Each component gets a feature folder: the spec, a component object in `components/`, and a mount util in `test/utils/`.
+`playwright/index.html` and `playwright/index.ts` are the CT entry point and setup (providers, styles, hooks). Each component gets a feature folder: the spec, a helper object in `helpers/`, and a mount util in `test/utils/`.
 
 ```text
 src/
@@ -64,8 +64,8 @@ e2e/
   playwright-ct.config.ts
   button/
     button.ct.ts
-    components/
-      button.component.ts
+    helpers/
+      button.helper.ts
     test/
       utils/
         button-mount.spec.util.ts
@@ -78,14 +78,14 @@ playwright/
 
 ### Basic Mount
 
-`mount` returns a `MountResult`: a `Locator` with `update` and `unmount`. A component object in `components/` takes that root, owns every child locator, and wraps each assertion in a boxed step. A mount util in `test/utils/` builds the element with `createElement`, so the file stays `.ts` and the mount step is one call. `ButtonProps` is the component's exported props type.
+`mount` returns a `MountResult`: a `Locator` with `update` and `unmount`. A helper object in `helpers/` takes that root, owns every child locator, and wraps each assertion in a boxed step. A mount util in `test/utils/` builds the element with `createElement`, so the file stays `.ts` and the mount step is one call. `ButtonProps` is the component's exported props type.
 
 ```ts
-// e2e/button/components/button.component.ts
+// e2e/button/helpers/button.helper.ts
 import { expect, test } from '@playwright/experimental-ct-react';
 import type { Locator } from '@playwright/test';
 
-export class ButtonComponent {
+export class ButtonHelper {
   public readonly icon: Locator;
 
   private readonly root: Locator;
@@ -121,14 +121,14 @@ import { createElement } from 'react';
 import type { ButtonProps } from '@/components/Button';
 import { Button } from '@/components/Button';
 
-import { ButtonComponent } from '../../components/button.component';
+import { ButtonHelper } from '../../helpers/button.helper';
 
 type Mount = ComponentFixtures['mount'];
 
-export const mountButton = async (mount: Mount, props: ButtonProps, label: string): Promise<ButtonComponent> => {
+export const mountButton = async (mount: Mount, props: ButtonProps, label: string): Promise<ButtonHelper> => {
   const root = await mount(createElement(Button, props, label));
 
-  return new ButtonComponent(root);
+  return new ButtonHelper(root);
 };
 ```
 
@@ -142,13 +142,13 @@ import { test } from '@playwright/experimental-ct-react';
 
 import type { ButtonProps } from '@/components/Button';
 
-import type { ButtonComponent } from './components/button.component';
+import type { ButtonHelper } from './helpers/button.helper';
 import { mountButton } from './test/utils/button-mount.spec.util';
 
 test.describe('FEATURE: button', () => {
   test.describe('GIVEN default props', () => {
     test('SCENARIO: mounting renders the label', async ({ mount }): Promise<void> => {
-      const button = await test.step('WHEN the button is mounted', (): Promise<ButtonComponent> => mountButton(mount, {}, 'Click me'));
+      const button = await test.step('WHEN the button is mounted', (): Promise<ButtonHelper> => mountButton(mount, {}, 'Click me'));
 
       await test.step('THEN the label reads Click me', (): Promise<void> => button.expectText('Click me'));
     });
@@ -157,7 +157,7 @@ test.describe('FEATURE: button', () => {
   test.describe('GIVEN a primary large button with an icon', () => {
     test('SCENARIO: mounting renders the variant classes and the icon', async ({ mount }): Promise<void> => {
       const props: ButtonProps = { icon: 'check', size: 'large', variant: 'primary' };
-      const button = await test.step('WHEN the button is mounted', (): Promise<ButtonComponent> => mountButton(mount, props, 'Submit'));
+      const button = await test.step('WHEN the button is mounted', (): Promise<ButtonHelper> => mountButton(mount, props, 'Submit'));
 
       await test.step('THEN the primary class is applied', (): Promise<void> => button.expectVariant('primary'));
 
@@ -224,7 +224,7 @@ A `for` loop over an `as const` tuple generates one `test` per variant. The titl
 // e2e/button/button-variants.ct.ts
 import { test } from '@playwright/experimental-ct-react';
 
-import type { ButtonComponent } from './components/button.component';
+import type { ButtonHelper } from './helpers/button.helper';
 import { mountButton } from './test/utils/button-mount.spec.util';
 
 const VARIANTS = ['danger', 'ghost', 'primary', 'secondary'] as const;
@@ -233,7 +233,7 @@ test.describe('FEATURE: button variants', () => {
   test.describe('GIVEN each variant', () => {
     for (const variant of VARIANTS) {
       test(`SCENARIO: mounting the ${variant} variant applies the ${variant} class`, async ({ mount }): Promise<void> => {
-        const button = await test.step(`WHEN the ${variant} button is mounted`, (): Promise<ButtonComponent> => mountButton(mount, { variant }, 'Button'));
+        const button = await test.step(`WHEN the ${variant} button is mounted`, (): Promise<ButtonHelper> => mountButton(mount, { variant }, 'Button'));
 
         await test.step(`THEN the ${variant} class is applied`, (): Promise<void> => button.expectVariant(variant));
       });
@@ -244,10 +244,10 @@ test.describe('FEATURE: button variants', () => {
 
 ### Updating Props and Internal State
 
-`MountResult.update` re-renders with new props. The component object keeps the root as `MountResult` and owns `update`, so the spec step stays one call. Internal state is asserted through the DOM (`aria-checked`, text), never through the instance.
+`MountResult.update` re-renders with new props. The helper object keeps the root as `MountResult` and owns `update`, so the spec step stays one call. Internal state is asserted through the DOM (`aria-checked`, text), never through the instance.
 
 ```ts
-// e2e/counter/components/counter.component.ts
+// e2e/counter/helpers/counter.helper.ts
 import type { MountResult } from '@playwright/experimental-ct-react';
 import { expect, test } from '@playwright/experimental-ct-react';
 import type { Locator } from '@playwright/test';
@@ -256,7 +256,7 @@ import { createElement } from 'react';
 import type { CounterProps } from '@/components/Counter';
 import { Counter } from '@/components/Counter';
 
-export class CounterComponent {
+export class CounterHelper {
   public readonly count: Locator;
   public readonly incrementButton: Locator;
 
@@ -286,13 +286,13 @@ export class CounterComponent {
 // e2e/counter/counter.ct.ts
 import { test } from '@playwright/experimental-ct-react';
 
-import type { CounterComponent } from './components/counter.component';
+import type { CounterHelper } from './helpers/counter.helper';
 import { mountCounter } from './test/utils/counter-mount.spec.util';
 
 test.describe('FEATURE: counter', () => {
   test.describe('GIVEN a counter mounted at 0', () => {
     test('SCENARIO: updating initialCount to 10 makes the count read 10', async ({ mount }): Promise<void> => {
-      const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterComponent> => mountCounter(mount, { initialCount: 0 }));
+      const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterHelper> => mountCounter(mount, { initialCount: 0 }));
 
       await test.step('AND the count reads 0', (): Promise<void> => counter.expectCount(0));
 
@@ -302,7 +302,7 @@ test.describe('FEATURE: counter', () => {
     });
 
     test('SCENARIO: clicking + makes the count read 1', async ({ mount }): Promise<void> => {
-      const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterComponent> => mountCounter(mount, { initialCount: 0 }));
+      const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterHelper> => mountCounter(mount, { initialCount: 0 }));
 
       await test.step('WHEN + is clicked', (): Promise<void> => counter.increment());
 
@@ -312,7 +312,7 @@ test.describe('FEATURE: counter', () => {
 });
 ```
 
-| Variant | Component-object method body |
+| Variant | Helper-object method body |
 |---|---|
 | Controlled input | `fill('hello')` on the input, then `update` with `value: 'hello'`; the spec asserts `toHaveValue('hello')` through `expectValue`. |
 | Toggle with `role="switch"` | `click()` on the root; `expectChecked(true)` asserts `toHaveAttribute('aria-checked', 'true')` on `root.getByRole('switch')`. |
@@ -324,12 +324,12 @@ test.describe('FEATURE: counter', () => {
 Callback props are recorded into a typed array the spec owns. `recordInto` in the mount util returns a handler that pushes each payload; the assertion step compares the array. `Credentials` and `SubmitHandler` are named in `common/login-form.type.ts`; `CREDENTIALS_STUB` is in `test/stubs/login-form.stub.ts`.
 
 ```ts
-// e2e/login-form/components/login-form.component.ts
+// e2e/login-form/helpers/login-form.helper.ts
 import type { Locator } from '@playwright/test';
 
 import type { Credentials } from '../common/login-form.type';
 
-export class LoginFormComponent {
+export class LoginFormHelper {
   public readonly emailInput: Locator;
   public readonly passwordInput: Locator;
   public readonly submitButton: Locator;
@@ -359,7 +359,7 @@ import { createElement } from 'react';
 import { LoginForm } from '@/components/LoginForm';
 
 import type { Credentials, SubmitHandler } from '../../common/login-form.type';
-import { LoginFormComponent } from '../../components/login-form.component';
+import { LoginFormHelper } from '../../helpers/login-form.helper';
 
 type Mount = ComponentFixtures['mount'];
 
@@ -369,10 +369,10 @@ export const recordInto = (submissions: Credentials[]): SubmitHandler => {
   };
 };
 
-export const mountLoginForm = async (mount: Mount, onSubmit: SubmitHandler): Promise<LoginFormComponent> => {
+export const mountLoginForm = async (mount: Mount, onSubmit: SubmitHandler): Promise<LoginFormHelper> => {
   const root = await mount(createElement(LoginForm, { onSubmit }));
 
-  return new LoginFormComponent(root);
+  return new LoginFormHelper(root);
 };
 ```
 
@@ -381,7 +381,7 @@ export const mountLoginForm = async (mount: Mount, onSubmit: SubmitHandler): Pro
 import { expect, test } from '@playwright/experimental-ct-react';
 
 import type { Credentials } from './common/login-form.type';
-import type { LoginFormComponent } from './components/login-form.component';
+import type { LoginFormHelper } from './helpers/login-form.helper';
 import { CREDENTIALS_STUB } from './test/stubs/login-form.stub';
 import { mountLoginForm, recordInto } from './test/utils/login-form-mount.spec.util';
 
@@ -389,7 +389,7 @@ test.describe('FEATURE: login form', () => {
   test.describe('GIVEN a form with a recording onSubmit', () => {
     test('SCENARIO: submitting credentials passes them to onSubmit once', async ({ mount }): Promise<void> => {
       const submissions: Credentials[] = [];
-      const form = await test.step('GIVEN the form is mounted', (): Promise<LoginFormComponent> => mountLoginForm(mount, recordInto(submissions)));
+      const form = await test.step('GIVEN the form is mounted', (): Promise<LoginFormHelper> => mountLoginForm(mount, recordInto(submissions)));
 
       await test.step('WHEN credentials are submitted', (): Promise<void> => form.submit(CREDENTIALS_STUB));
 
@@ -399,7 +399,7 @@ test.describe('FEATURE: login form', () => {
 });
 ```
 
-| Interaction | Component-object method body | Spec assertion |
+| Interaction | Helper-object method body | Spec assertion |
 |---|---|---|
 | Click event | `this.root.click()` with `onClick` recorded through `recordInto` | `expect(clicks).toHaveLength(1)` |
 | Select payload | `this.root.getByRole('combobox').click()` then `this.root.getByRole('option', { name }).click()` | `expect(values).toEqual(['b'])` |
@@ -429,14 +429,14 @@ import type { ComponentFixtures } from '@playwright/experimental-ct-vue';
 import Modal from '@/components/Modal.vue';
 
 import type { ModalSlots } from '../../common/modal.type';
-import { ModalComponent } from '../../components/modal.component';
+import { ModalHelper } from '../../helpers/modal.helper';
 
 type Mount = ComponentFixtures['mount'];
 
-export const mountModal = async (mount: Mount, slots: ModalSlots): Promise<ModalComponent> => {
+export const mountModal = async (mount: Mount, slots: ModalSlots): Promise<ModalHelper> => {
   const root = await mount(Modal, { slots });
 
-  return new ModalComponent(root);
+  return new ModalHelper(root);
 };
 ```
 
@@ -444,14 +444,14 @@ export const mountModal = async (mount: Mount, slots: ModalSlots): Promise<Modal
 // e2e/modal/modal.ct.ts
 import { test } from '@playwright/experimental-ct-vue';
 
-import type { ModalComponent } from './components/modal.component';
+import type { ModalHelper } from './helpers/modal.helper';
 import { MODAL_SLOTS_STUB } from './test/stubs/modal.stub';
 import { mountModal } from './test/utils/modal-mount.spec.util';
 
 test.describe('FEATURE: modal slots', () => {
   test.describe('GIVEN header, default, and footer slots', () => {
     test('SCENARIO: mounting renders each slot', async ({ mount }): Promise<void> => {
-      const modal = await test.step('WHEN the modal is mounted with all slots', (): Promise<ModalComponent> => mountModal(mount, MODAL_SLOTS_STUB));
+      const modal = await test.step('WHEN the modal is mounted with all slots', (): Promise<ModalHelper> => mountModal(mount, MODAL_SLOTS_STUB));
 
       await test.step('THEN the heading reads Modal Title', (): Promise<void> => modal.expectHeading('Modal Title'));
 
@@ -461,11 +461,11 @@ test.describe('FEATURE: modal slots', () => {
 });
 ```
 
-`ModalComponent` exposes `heading` (`root.getByRole('heading')`) and `closeButton` (`root.getByRole('button')`) and wraps `expectHeading` / `expectButton` in boxed steps.
+`ModalHelper` exposes `heading` (`root.getByRole('heading')`) and `closeButton` (`root.getByRole('button')`) and wraps `expectHeading` / `expectButton` in boxed steps.
 
 | Variant | Mount util body |
 |---|---|
-| React children | `createElement(Card, null, createElement('h2', null, 'Title'), createElement('p', null, 'Description'))`; the component object asserts `getByRole('heading')` and `getByText('Description')`. |
+| React children | `createElement(Card, null, createElement('h2', null, 'Title'), createElement('p', null, 'Description'))`; the helper object asserts `getByRole('heading')` and `getByText('Description')`. |
 | Render prop | Pass a function child: `createElement(DataFetcher, { url }, renderUser)` where `renderUser` returns a `Loading...` span while `loading` and the name span after; assert `Loading...` visible, then the name visible. |
 
 ## Mocking Dependencies
@@ -482,14 +482,14 @@ import { createElement } from 'react';
 import { FeatureBanner } from '@/components/FeatureBanner';
 
 import type { HooksConfig } from '../../../common/hooks-config.type';
-import { FeatureBannerComponent } from '../../components/feature-banner.component';
+import { FeatureBannerHelper } from '../../helpers/feature-banner.helper';
 
 type Mount = ComponentFixtures['mount'];
 
-export const mountFeatureBanner = async (mount: Mount, hooksConfig: HooksConfig): Promise<FeatureBannerComponent> => {
+export const mountFeatureBanner = async (mount: Mount, hooksConfig: HooksConfig): Promise<FeatureBannerHelper> => {
   const root = await mount<HooksConfig>(createElement(FeatureBanner), { hooksConfig });
 
-  return new FeatureBannerComponent(root);
+  return new FeatureBannerHelper(root);
 };
 ```
 
@@ -498,7 +498,7 @@ export const mountFeatureBanner = async (mount: Mount, hooksConfig: HooksConfig)
 import { test } from '@playwright/experimental-ct-react';
 
 import type { FeatureFlags, HooksConfig } from '../common/hooks-config.type';
-import type { FeatureBannerComponent } from './components/feature-banner.component';
+import type { FeatureBannerHelper } from './helpers/feature-banner.helper';
 import { mountFeatureBanner } from './test/utils/feature-banner-mount.spec.util';
 
 test.describe('FEATURE: feature banner', () => {
@@ -506,7 +506,7 @@ test.describe('FEATURE: feature banner', () => {
     test('SCENARIO: mounting shows the new feature text', async ({ mount }): Promise<void> => {
       const featureFlags: FeatureFlags = { newFeature: true };
       const hooksConfig: HooksConfig = { featureFlags };
-      const banner = await test.step('WHEN the banner is mounted with the flag on', (): Promise<FeatureBannerComponent> => mountFeatureBanner(mount, hooksConfig));
+      const banner = await test.step('WHEN the banner is mounted with the flag on', (): Promise<FeatureBannerHelper> => mountFeatureBanner(mount, hooksConfig));
 
       await test.step('THEN the new feature text is shown', (): Promise<void> => banner.expectText('New Feature'));
     });
@@ -535,7 +535,7 @@ export const userMock = (user: User = USER_STUB): RouteHandler => {
 // e2e/user-profile/user-profile.ct.ts
 import { test } from '@playwright/experimental-ct-react';
 
-import type { UserProfileComponent } from './components/user-profile.component';
+import type { UserProfileHelper } from './helpers/user-profile.helper';
 import { userMock } from './test/mocks/user.mock';
 import { USER_STUB } from './test/stubs/user.stub';
 import { mountUserProfile } from './test/utils/user-profile-mount.spec.util';
@@ -549,7 +549,7 @@ test.describe('FEATURE: user profile', () => {
     });
 
     test('SCENARIO: mounting shows the user name', async ({ mount }): Promise<void> => {
-      const profile = await test.step('WHEN the profile is mounted', (): Promise<UserProfileComponent> => mountUserProfile(mount, USER_STUB.id));
+      const profile = await test.step('WHEN the profile is mounted', (): Promise<UserProfileHelper> => mountUserProfile(mount, USER_STUB.id));
 
       await test.step('THEN the user name is shown', (): Promise<void> => profile.expectName(USER_STUB.name));
     });
@@ -567,7 +567,7 @@ A custom hook that reads a global is mocked the same way as a feature flag: add 
 |---|---|---|---|
 | React | `@playwright/experimental-ct-react` | `mount(createElement(Comp, props, ...children))` | Refs: pass a callback ref that stores the element in a spec-owned variable. Context: the mount util nests `createElement(UserContext.Provider, { value }, createElement(UserGreeting))`. |
 | Vue | `@playwright/experimental-ct-vue` | `mount(Comp, { props, slots, on })` | `v-model` binds through `modelValue` plus an `'onUpdate:modelValue'` listener in `props`. |
-| Svelte | `@playwright/experimental-ct-svelte` | `mount(Comp, { props })` | Same component-object and mount-util shape; `on` carries event listeners. |
+| Svelte | `@playwright/experimental-ct-svelte` | `mount(Comp, { props })` | Same helper-object and mount-util shape; `on` carries event listeners. |
 | Solid | `@playwright/experimental-ct-solid` | `mount(createComponent(Comp, props))` | Same shape as React with Solid's `createComponent`. |
 
 ### Vue v-model
@@ -581,15 +581,15 @@ import type { ComponentFixtures } from '@playwright/experimental-ct-vue';
 import TextInput from '@/components/TextInput.vue';
 
 import type { ModelListener } from '../../common/text-input.type';
-import { TextInputComponent } from '../../components/text-input.component';
+import { TextInputHelper } from '../../helpers/text-input.helper';
 
 type Mount = ComponentFixtures['mount'];
 
-export const mountTextInput = async (mount: Mount, modelValue: string, onUpdate: ModelListener): Promise<TextInputComponent> => {
+export const mountTextInput = async (mount: Mount, modelValue: string, onUpdate: ModelListener): Promise<TextInputHelper> => {
   const props = { modelValue, 'onUpdate:modelValue': onUpdate };
   const root = await mount(TextInput, { props });
 
-  return new TextInputComponent(root);
+  return new TextInputHelper(root);
 };
 ```
 
@@ -597,7 +597,7 @@ export const mountTextInput = async (mount: Mount, modelValue: string, onUpdate:
 // e2e/text-input/text-input.ct.ts
 import { expect, test } from '@playwright/experimental-ct-vue';
 
-import type { TextInputComponent } from './components/text-input.component';
+import type { TextInputHelper } from './helpers/text-input.helper';
 import { mountTextInput } from './test/utils/text-input-mount.spec.util';
 
 test.describe('FEATURE: text input v-model', () => {
@@ -605,7 +605,7 @@ test.describe('FEATURE: text input v-model', () => {
     test('SCENARIO: typing text emits update:modelValue with the text', async ({ mount }): Promise<void> => {
       const values: string[] = [];
       const onUpdate = (value: string): number => values.push(value);
-      const input = await test.step('GIVEN the input is mounted with an empty model', (): Promise<TextInputComponent> => mountTextInput(mount, '', onUpdate));
+      const input = await test.step('GIVEN the input is mounted with an empty model', (): Promise<TextInputHelper> => mountTextInput(mount, '', onUpdate));
 
       await test.step('WHEN test is typed', (): Promise<void> => input.fill('test'));
 
@@ -630,4 +630,4 @@ test.describe('FEATURE: text input v-model', () => {
 
 - **Accessibility**: See [accessibility.md](accessibility.md) for a11y testing in components
 - **Fixtures**: See [fixtures-hooks.md](../core/fixtures-hooks.md) for shared test setup
-- **React / Vue**: See [react.md](../frameworks/react.md) and [vue.md](../frameworks/vue.md) for full component-object classes
+- **React / Vue**: See [react.md](../frameworks/react.md) and [vue.md](../frameworks/vue.md) for full helper-object classes

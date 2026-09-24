@@ -677,13 +677,13 @@ The `-s` flag on `http-server` enables SPA fallback for Angular Router.
 
 ## CDK Overlay Container
 
-Angular Material and CDK render overlays (dialogs, menus, selects) in a special container outside the component tree. Playwright sees these as regular DOM elements, so a component object holds them by role.
+Angular Material and CDK render overlays (dialogs, menus, selects) in a special container outside the component tree. Playwright sees these as regular DOM elements, so a helper object holds them by role.
 
 ```ts
-// e2e/preferences/components/overlay.component.ts
+// e2e/preferences/helpers/overlay.helper.ts
 import type { Locator, Page } from '@playwright/test';
 
-export class OverlayComponent {
+export class OverlayHelper {
   public readonly dialog: Locator;
   public readonly listbox: Locator;
   public readonly menu: Locator;

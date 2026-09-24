@@ -388,6 +388,50 @@ export class RegisterPage {
 
 ## Custom Annotations
 
+### Requirement Annotation
+
+A scenario that covers a written requirement declares the requirement ID in its details object, next to any tags. A declared annotation exists before the body runs, so the HTML report shows it on skipped and fixme tests too; `testInfo.annotations.push` only lands once the body runs. One ID per scenario: a scenario that needs two IDs is two scenarios. The `annotation` detail needs Playwright 1.42+. `--grep` matches titles and tags, not annotations; add a tag when a requirement must run on its own.
+
+A feature spec then reads as the requirement list: `FEATURE` names the feature, each `GIVEN` describe names a starting state, and each `SCENARIO` is one requirement with its ID.
+
+```ts
+// e2e/checkout/checkout.e2e.ts
+import { test } from './checkout.fixture';
+import { CARD_STUB, DECLINED_CARD_STUB } from './test/stubs/card.stub';
+
+test.describe('FEATURE: checkout', () => {
+  test.describe('GIVEN a signed-in user with two items in the cart', () => {
+    test('SCENARIO: a valid card places the order', { annotation: { description: 'CHK-1', type: 'requirement' } }, async ({ confirmationPage, filledCartPage }): Promise<void> => {
+      await test.step('WHEN the order is paid with a valid card', (): Promise<void> => filledCartPage.payWith(CARD_STUB));
+
+      await test.step('THEN the confirmation shows an order number', (): Promise<void> => confirmationPage.expectOrderNumber());
+
+      await test.step('AND the cart badge is empty', (): Promise<void> => confirmationPage.header.expectCartCount(0));
+    });
+
+    test('SCENARIO: a declined card keeps the cart', { annotation: { description: 'CHK-2', type: 'requirement' } }, async ({ filledCartPage }): Promise<void> => {
+      await test.step('WHEN the order is paid with a declined card', (): Promise<void> => filledCartPage.payWith(DECLINED_CARD_STUB));
+
+      await test.step('THEN the error banner reports the decline', (): Promise<void> => filledCartPage.expectError('Card declined'));
+
+      await test.step('AND the cart still holds two items', (): Promise<void> => filledCartPage.header.expectCartCount(2));
+    });
+  });
+
+  test.describe('GIVEN a guest user', () => {
+    test('SCENARIO: starting checkout asks for sign-in', { annotation: { description: 'CHK-3', type: 'requirement' } }, async ({ cartPage, signInPage }): Promise<void> => {
+      await test.step('GIVEN the cart page is open', (): Promise<void> => cartPage.goto());
+
+      await test.step('WHEN checkout is started', (): Promise<void> => cartPage.startCheckout());
+
+      await test.step('THEN the sign-in page is shown', (): Promise<void> => signInPage.expectShown());
+    });
+  });
+});
+```
+
+`filledCartPage` has the ready-page shape of `paymentReadyPage` in [iframes.md](../browser-apis/iframes.md#iframe-fixture): it signs a user in and seeds two cart items through `request`, opens the cart, and hands over the `CartPage`. The shared arrange lives in that fixture, not in the UI, so the signed-in `GIVEN` needs no `beforeEach`. `cartPage` alone carries no session, which makes the second `GIVEN` a guest. `header` is a helper object both pages expose. `DECLINED_CARD_STUB` spreads `CARD_STUB` with the gateway's decline test number. The final `THEN` asserts the sign-in page rendered through its page object, not only that the URL changed.
+
 ### Add Annotations
 
 `testInfo.annotations` is a mutable list of `{ type, description }`. Pushes sit with the other annotation calls above the first step.
@@ -487,7 +531,7 @@ export default AnnotationReporter;
 
 ## Conditional Annotations
 
-### Annotation Helper
+### Annotation Util
 
 Repeated conditions become functions in a test util so the reason string is written once.
 
