@@ -4,6 +4,8 @@
 # Except settings, agents and skills
 !.omp
 !.omp/**
+!.claude-plugin/
+!.claude-plugin/**
 !agents/
 !agents/**
 !archive/

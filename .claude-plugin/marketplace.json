@@ -1,0 +1,7 @@
+{
+  "name": "f42",
+  "owner": { "name": "F0rty-Tw0" },
+  "plugins": [
+    { "name": "f42", "source": "./", "description": "Personal skills, agents and commands" }
+  ]
+}
