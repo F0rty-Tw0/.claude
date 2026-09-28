@@ -58,7 +58,7 @@ export const currentUserMock = (user: OAuthUser): RouteHandler => {
 
 ### OAuth Fixture
 
-The fixture installs all three routes for one provider and one user. A spec calls `mockOAuth` in the `GIVEN` hook and then drives the real login button.
+The fixture installs all three routes for one provider and one user. A spec calls `mockOAuth` in the test's `GIVEN` step and then drives the real login button.
 
 ```ts
 // e2e/login/login.fixture.ts
@@ -142,18 +142,14 @@ import { test } from './login.fixture';
 import { OAUTH_USER_STUB } from './test/stubs/oauth.stub';
 
 test.describe('FEATURE: login', () => {
-  test.describe('GIVEN the GitHub provider is mocked', () => {
-    test.beforeEach(async ({ mockOAuth }): Promise<void> => {
-      await test.step('GIVEN the GitHub OAuth endpoints are mocked', (): Promise<void> => mockOAuth('github', OAUTH_USER_STUB));
-    });
+  test('SCENARIO: signing in with a mocked GitHub provider names the user in the welcome banner', async ({ loginPage, mockOAuth }): Promise<void> => {
+    await test.step('GIVEN the GitHub OAuth endpoints are mocked', (): Promise<void> => mockOAuth('github', OAUTH_USER_STUB));
 
-    test('SCENARIO: signing in with GitHub names the user in the welcome banner', async ({ loginPage }): Promise<void> => {
-      await test.step('AND the login page is open', (): Promise<void> => loginPage.goto());
+    await test.step('AND the login page is open', (): Promise<void> => loginPage.goto());
 
-      await test.step('WHEN the user signs in with GitHub', (): Promise<void> => loginPage.signInWithGithub());
+    await test.step('WHEN the user signs in with GitHub', (): Promise<void> => loginPage.signInWithGithub());
 
-      await test.step('THEN the welcome banner names the user', (): Promise<void> => loginPage.expectWelcome(OAUTH_USER_STUB.name));
-    });
+    await test.step('THEN the welcome banner names the user', (): Promise<void> => loginPage.expectWelcome(OAUTH_USER_STUB.name));
   });
 });
 ```
@@ -329,7 +325,7 @@ export const paypalOrderMock = (order: PayPalOrder = PAYPAL_ORDER_STUB): RouteHa
 
 ### Payment Fixture
 
-`mockStripe` takes the failure flag, installs the init script and the backend routes, and is called in the `GIVEN` hook. Declined and succeeded cases differ only in the flag.
+`mockStripe` takes the failure flag, installs the init script and the backend routes, and is called in each test's `GIVEN` step. Declined and succeeded cases differ only in the flag.
 
 ```ts
 // e2e/checkout/checkout.fixture.ts
@@ -379,32 +375,24 @@ export { expect } from '@playwright/test';
 import { test } from './checkout.fixture';
 
 test.describe('FEATURE: checkout', () => {
-  test.describe('GIVEN Stripe declines the card', () => {
-    test.beforeEach(async ({ mockStripe }): Promise<void> => {
-      await test.step('GIVEN Stripe is mocked with a declined card', (): Promise<void> => mockStripe(true));
-    });
+  test('SCENARIO: paying with a declined card shows the declined message', async ({ checkoutPage, mockStripe }): Promise<void> => {
+    await test.step('GIVEN Stripe is mocked with a declined card', (): Promise<void> => mockStripe(true));
 
-    test('SCENARIO: paying shows the declined message', async ({ checkoutPage }): Promise<void> => {
-      await test.step('AND the checkout is open', (): Promise<void> => checkoutPage.goto());
+    await test.step('AND the checkout is open', (): Promise<void> => checkoutPage.goto());
 
-      await test.step('WHEN the user pays', (): Promise<void> => checkoutPage.pay());
+    await test.step('WHEN the user pays', (): Promise<void> => checkoutPage.pay());
 
-      await test.step('THEN the status reads card declined', (): Promise<void> => checkoutPage.expectStatus('Card declined'));
-    });
+    await test.step('THEN the status reads card declined', (): Promise<void> => checkoutPage.expectStatus('Card declined'));
   });
 
-  test.describe('GIVEN Stripe accepts the card', () => {
-    test.beforeEach(async ({ mockStripe }): Promise<void> => {
-      await test.step('GIVEN Stripe is mocked with a succeeding card', (): Promise<void> => mockStripe(false));
-    });
+  test('SCENARIO: paying with an accepted card shows the success message', async ({ checkoutPage, mockStripe }): Promise<void> => {
+    await test.step('GIVEN Stripe is mocked with a succeeding card', (): Promise<void> => mockStripe(false));
 
-    test('SCENARIO: paying shows the success message', async ({ checkoutPage }): Promise<void> => {
-      await test.step('AND the checkout is open', (): Promise<void> => checkoutPage.goto());
+    await test.step('AND the checkout is open', (): Promise<void> => checkoutPage.goto());
 
-      await test.step('WHEN the user pays', (): Promise<void> => checkoutPage.pay());
+    await test.step('WHEN the user pays', (): Promise<void> => checkoutPage.pay());
 
-      await test.step('THEN the status reads payment successful', (): Promise<void> => checkoutPage.expectStatus('Payment successful'));
-    });
+    await test.step('THEN the status reads payment successful', (): Promise<void> => checkoutPage.expectStatus('Payment successful'));
   });
 });
 ```

@@ -75,19 +75,17 @@ import { SupportChatPage } from './pages/support-chat.page';
 import { test } from './support.fixture';
 
 test.describe('FEATURE: support chat popup', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: sending a message in the chat popup shows the confirmation', async ({ homePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('SCENARIO: sending a message in the chat popup shows the confirmation', async ({ homePage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      const popup = await test.step('WHEN the support chat popup is opened', (): Promise<Page> => homePage.openSupportChat());
-      const chat = new SupportChatPage(popup);
+    const popup = await test.step('WHEN the support chat popup is opened', (): Promise<Page> => homePage.openSupportChat());
+    const chat = new SupportChatPage(popup);
 
-      await test.step('AND a message is sent', (): Promise<void> => chat.send('Need help'));
+    await test.step('AND a message is sent', (): Promise<void> => chat.send('Need help'));
 
-      await test.step('THEN the message sent confirmation is shown', (): Promise<void> => chat.expectSent());
+    await test.step('THEN the message sent confirmation is shown', (): Promise<void> => chat.expectSent());
 
-      await test.step('AND the popup is closed', (): Promise<void> => popup.close());
-    });
+    await test.step('AND the popup is closed', (): Promise<void> => popup.close());
   });
 });
 ```
@@ -105,26 +103,24 @@ import { test } from './integrations.fixture';
 import { ProviderLoginPage } from './pages/provider-login.page';
 
 test.describe('FEATURE: connect account', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: completing the provider login in the popup connects the account', async ({ dashboardPage }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  test('SCENARIO: completing the provider login in the popup connects the account', async ({ dashboardPage }): Promise<void> => {
+    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
-      const popup = await test.step('WHEN the connect account popup is opened', (): Promise<Page> => dashboardPage.openConnectAccount());
-      const providerLogin = new ProviderLoginPage(popup);
+    const popup = await test.step('WHEN the connect account popup is opened', (): Promise<Page> => dashboardPage.openConnectAccount());
+    const providerLogin = new ProviderLoginPage(popup);
 
-      await test.step('AND the login is submitted inside the popup', (): Promise<void> => providerLogin.submit(TEST_USER));
+    await test.step('AND the login is submitted inside the popup', (): Promise<void> => providerLogin.submit(TEST_USER));
 
-      await test.step('THEN the popup closes after login', (): Promise<Page> => popup.waitForEvent('close'));
+    await test.step('THEN the popup closes after login', (): Promise<Page> => popup.waitForEvent('close'));
 
-      await test.step('AND the account connected message is shown', (): Promise<void> => dashboardPage.expectAccountConnected());
-    });
+    await test.step('AND the account connected message is shown', (): Promise<void> => dashboardPage.expectAccountConnected());
   });
 });
 ```
 
 ### Handle Blocked Popups
 
-A blocked popup is a distinct `GIVEN`, made deterministic by stubbing `window.open` in an init script rather than racing a `waitForEvent('popup')` against a timeout. If you cannot stub `window.open`, race `page.waitForEvent('popup', { timeout })` with `.catch` against the fallback text and branch in a util, not in the spec.
+A blocked popup is its own scenario whose `GIVEN` step blocks it, made deterministic by stubbing `window.open` in an init script rather than racing a `waitForEvent('popup')` against a timeout. If you cannot stub `window.open`, race `page.waitForEvent('popup', { timeout })` with `.catch` against the fallback text and branch in a util, not in the spec.
 
 ```ts
 // e2e/share/test/utils/popup-blocker.spec.util.ts
@@ -145,23 +141,19 @@ import { test } from './share.fixture';
 import { blockPopups } from './test/utils/popup-blocker.spec.util';
 
 test.describe('FEATURE: share to twitter', () => {
-  test.describe('GIVEN popups are blocked', () => {
-    test.beforeEach(async ({ page }): Promise<void> => {
-      await test.step('GIVEN window.open is stubbed to return null', (): Promise<void> => blockPopups(page));
-    });
+  test('SCENARIO: a blocked popup falls back to the copy link', async ({ page, sharePage }): Promise<void> => {
+    await test.step('GIVEN window.open is stubbed to return null', (): Promise<void> => blockPopups(page));
 
-    test('SCENARIO: clicking share to twitter shows the copy link fallback', async ({ sharePage }): Promise<void> => {
-      await test.step('GIVEN the share page is open', (): Promise<void> => sharePage.goto());
+    await test.step('AND the share page is open', (): Promise<void> => sharePage.goto());
 
-      await test.step('WHEN share to twitter is clicked', (): Promise<void> => sharePage.shareToTwitter());
+    await test.step('WHEN share to twitter is clicked', (): Promise<void> => sharePage.shareToTwitter());
 
-      await test.step('THEN the copy share link fallback is shown', (): Promise<void> => sharePage.expectCopyLinkFallback());
-    });
+    await test.step('THEN the copy share link fallback is shown', (): Promise<void> => sharePage.expectCopyLinkFallback());
   });
 });
 ```
 
-`SharePage` has two methods on the same button: `openTwitterShare()` waits for the popup and returns it; `shareToTwitter()` only clicks. The `GIVEN popups are allowed` describe is the Basic Popup shape: `openTwitterShare()`, `expect(popup).toHaveURL(/twitter\.com/)`, `popup.close()`.
+`SharePage` has two methods on the same button: `openTwitterShare()` waits for the popup and returns it; `shareToTwitter()` only clicks. The allowed-popup scenario, `'SCENARIO: an allowed popup opens the twitter share'`, is the Basic Popup shape in the same `FEATURE`: `openTwitterShare()`, `expect(popup).toHaveURL(/twitter\.com/)`, `popup.close()`.
 
 ## New Tab Navigation
 
@@ -177,21 +169,19 @@ import { DocsPage } from './pages/docs.page';
 import { expect, test } from './resources.fixture';
 
 test.describe('FEATURE: documentation link', () => {
-  test.describe('GIVEN the resources page', () => {
-    test('SCENARIO: clicking the documentation link opens the docs in a new tab', async ({ page, resourcesPage }): Promise<void> => {
-      await test.step('GIVEN the resources page is open', (): Promise<void> => resourcesPage.goto());
+  test('SCENARIO: clicking the documentation link opens the docs in a new tab', async ({ page, resourcesPage }): Promise<void> => {
+    await test.step('GIVEN the resources page is open', (): Promise<void> => resourcesPage.goto());
 
-      const docsTab = await test.step('WHEN the documentation link is clicked', (): Promise<Page> => resourcesPage.openDocumentation());
-      const docsPage = new DocsPage(docsTab);
+    const docsTab = await test.step('WHEN the documentation link is clicked', (): Promise<Page> => resourcesPage.openDocumentation());
+    const docsPage = new DocsPage(docsTab);
 
-      await test.step('THEN the new tab url is on the docs host', (): Promise<void> => expect(docsTab).toHaveURL(/docs\.example\.com/));
+    await test.step('THEN the new tab url is on the docs host', (): Promise<void> => expect(docsTab).toHaveURL(/docs\.example\.com/));
 
-      await test.step('AND the docs heading is shown', (): Promise<void> => docsPage.expectHeading());
+    await test.step('AND the docs heading is shown', (): Promise<void> => docsPage.expectHeading());
 
-      await test.step('AND the original tab is still on resources', (): Promise<void> => expect(page).toHaveURL(/\/resources/));
+    await test.step('AND the original tab is still on resources', (): Promise<void> => expect(page).toHaveURL(/\/resources/));
 
-      await test.step('AND the docs tab is closed', (): Promise<void> => docsTab.close());
-    });
+    await test.step('AND the docs tab is closed', (): Promise<void> => docsTab.close());
   });
 });
 ```
@@ -229,7 +219,7 @@ Driving the real provider popup: slow, needs real credentials, and the provider'
 
 ### Mock OAuth (Recommended)
 
-Two routes replace the provider: the callback answers with a `302` to the dashboard, and the token exchange answers with a stub user. Both are factories registered in `beforeEach` before any navigation.
+Two routes replace the provider: the callback answers with a `302` to the dashboard, and the token exchange answers with a stub user. Both are factories registered in the test's opening `GIVEN` and `AND` steps, before any navigation.
 
 ```ts
 // e2e/auth/test/stubs/callback.stub.ts
@@ -263,26 +253,22 @@ import { tokenMock } from './test/mocks/token.mock';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: google sign in', () => {
-  test.describe('GIVEN the callback and token exchange are mocked', () => {
-    test.beforeEach(async ({ page }): Promise<void> => {
-      await test.step('GIVEN the oauth callback redirects to the dashboard', async (): Promise<void> => {
-        await page.route('**/auth/callback**', callbackRedirectMock());
-      });
-
-      await test.step('AND the token exchange is mocked', async (): Promise<void> => {
-        await page.route('**/api/auth/token', tokenMock());
-      });
+  test('SCENARIO: a mocked callback and token exchange sign in with google without the provider', async ({ homePage, loginPage, page }): Promise<void> => {
+    await test.step('GIVEN the oauth callback redirects to the dashboard', async (): Promise<void> => {
+      await page.route('**/auth/callback**', callbackRedirectMock());
     });
 
-    test('SCENARIO: clicking sign in with google opens the dashboard without the provider', async ({ homePage, loginPage, page }): Promise<void> => {
-      await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
-
-      await test.step('WHEN sign in with google is clicked', (): Promise<void> => loginPage.signInWithGoogle());
-
-      await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
-
-      await test.step('AND the welcome names the user', (): Promise<void> => homePage.expectWelcome('Test User'));
+    await test.step('AND the token exchange is mocked', async (): Promise<void> => {
+      await page.route('**/api/auth/token', tokenMock());
     });
+
+    await test.step('AND the login page is open', (): Promise<void> => loginPage.goto());
+
+    await test.step('WHEN sign in with google is clicked', (): Promise<void> => loginPage.signInWithGoogle());
+
+    await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+
+    await test.step('AND the welcome names the user', (): Promise<void> => homePage.expectWelcome('Test User'));
   });
 });
 ```
@@ -305,21 +291,19 @@ import { test } from './dashboard.fixture';
 import { SyncDashboardPage } from './pages/dashboard.page';
 
 test.describe('FEATURE: dashboard window sync', () => {
-  test.describe('GIVEN two windows on the dashboard', () => {
-    test('SCENARIO: adding an item in one window shows it in the other', async ({ context }): Promise<void> => {
-      const firstTab = await test.step('GIVEN a first window is open', (): Promise<Page> => context.newPage());
-      const secondTab = await test.step('AND a second window is open', (): Promise<Page> => context.newPage());
-      const firstDashboard = new SyncDashboardPage(firstTab);
-      const secondDashboard = new SyncDashboardPage(secondTab);
+  test('SCENARIO: adding an item in one window shows it in the other', async ({ context }): Promise<void> => {
+    const firstTab = await test.step('GIVEN a first window is open', (): Promise<Page> => context.newPage());
+    const secondTab = await test.step('AND a second window is open', (): Promise<Page> => context.newPage());
+    const firstDashboard = new SyncDashboardPage(firstTab);
+    const secondDashboard = new SyncDashboardPage(secondTab);
 
-      await test.step('AND the dashboard is open in the first window', (): Promise<void> => firstDashboard.goto());
+    await test.step('AND the dashboard is open in the first window', (): Promise<void> => firstDashboard.goto());
 
-      await test.step('AND the dashboard is open in the second window', (): Promise<void> => secondDashboard.goto());
+    await test.step('AND the dashboard is open in the second window', (): Promise<void> => secondDashboard.goto());
 
-      await test.step('WHEN an item is added in the first window', (): Promise<void> => firstDashboard.addItem('New Item'));
+    await test.step('WHEN an item is added in the first window', (): Promise<void> => firstDashboard.addItem('New Item'));
 
-      await test.step('THEN the second window shows the item', (): Promise<void> => secondDashboard.expectItem('New Item'));
-    });
+    await test.step('THEN the second window shows the item', (): Promise<void> => secondDashboard.expectItem('New Item'));
   });
 });
 ```

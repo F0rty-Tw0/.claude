@@ -67,28 +67,18 @@ test.describe('FEATURE: home on a custom device', () => {
 
 ### Test Across Multiple Devices
 
-To run one case on several devices inside a single project, loop over device names and give each iteration its own `describe` with `test.use`. The describe title stays constant; the device name goes in the test title so the full path is unique.
+A device is fixed when the context is created, and a spec is flat, so one case on several devices is one project per device, as in [Use Built-in Devices](#use-built-in-devices), not a loop of describes with `test.use`. The spec stays flat and device-free; the report prefixes each result with the project name, so the device never goes in the title. Run it on the phones only with `--project='Mobile Safari' --project='Mobile Chrome'`, or give those projects a `testMatch`.
 
 ```ts
 // e2e/checkout/checkout-devices.e2e.ts
-import { devices } from '@playwright/test';
-
 import { test } from './checkout.fixture';
 
-const MOBILE_DEVICES = ['iPhone 14', 'Pixel 7', 'Galaxy S21'];
-
 test.describe('FEATURE: checkout on mobile devices', () => {
-  for (const deviceName of MOBILE_DEVICES) {
-    test.describe('GIVEN a mobile device', () => {
-      test.use({ ...devices[deviceName] });
+  test('SCENARIO: opening the checkout shows the pay button', async ({ checkoutPage }): Promise<void> => {
+    await test.step('WHEN the checkout opens', (): Promise<void> => checkoutPage.goto());
 
-      test(`SCENARIO: opening the checkout on ${deviceName} shows the pay button`, async ({ checkoutPage }): Promise<void> => {
-        await test.step('WHEN the checkout opens', (): Promise<void> => checkoutPage.goto());
-
-        await test.step('THEN the pay button is visible', (): Promise<void> => checkoutPage.expectPayButton());
-      });
-    });
-  }
+    await test.step('THEN the pay button is visible', (): Promise<void> => checkoutPage.expectPayButton());
+  });
 });
 ```
 
@@ -276,7 +266,7 @@ export class MapPage {
 
 ### Test Different Sizes
 
-Viewports are named consts in `common/home.const.ts`. A branch on width inside a test is two cases, so the spec splits them into two `GIVEN` groups and loops inside each.
+Viewports are named consts in `common/home.const.ts`. A branch on width inside a test is two cases, so the spec has two loops, one per layout. Each test's `GIVEN` step sets the viewport at runtime with `page.setViewportSize`, and its title names the viewport.
 
 ```ts
 // e2e/home/common/home.const.ts
@@ -296,29 +286,25 @@ import { test } from './home.fixture';
 import { NARROW_VIEWPORTS, WIDE_VIEWPORTS } from './common/home.const';
 
 test.describe('FEATURE: navigation', () => {
-  test.describe('GIVEN a viewport under 768px', () => {
-    for (const viewport of NARROW_VIEWPORTS) {
-      test(`SCENARIO: opening the home page at ${viewport.name} shows the menu button`, async ({ homePage, page }): Promise<void> => {
-        await test.step(`GIVEN the viewport is ${viewport.name}`, (): Promise<void> => page.setViewportSize(viewport));
+  for (const viewport of NARROW_VIEWPORTS) {
+    test(`SCENARIO: opening the home page at ${viewport.name} shows the menu button`, async ({ homePage, page }): Promise<void> => {
+      await test.step(`GIVEN the viewport is ${viewport.name}`, (): Promise<void> => page.setViewportSize(viewport));
 
-        await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
+      await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
 
-        await test.step('THEN the menu button is visible', (): Promise<void> => homePage.expectMenuButton());
-      });
-    }
-  });
+      await test.step('THEN the menu button is visible', (): Promise<void> => homePage.expectMenuButton());
+    });
+  }
 
-  test.describe('GIVEN a viewport of 768px or wider', () => {
-    for (const viewport of WIDE_VIEWPORTS) {
-      test(`SCENARIO: opening the home page at ${viewport.name} shows the nav links`, async ({ homePage, page }): Promise<void> => {
-        await test.step(`GIVEN the viewport is ${viewport.name}`, (): Promise<void> => page.setViewportSize(viewport));
+  for (const viewport of WIDE_VIEWPORTS) {
+    test(`SCENARIO: opening the home page at ${viewport.name} shows the nav links`, async ({ homePage, page }): Promise<void> => {
+      await test.step(`GIVEN the viewport is ${viewport.name}`, (): Promise<void> => page.setViewportSize(viewport));
 
-        await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
+      await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
 
-        await test.step('THEN the products link is visible', (): Promise<void> => homePage.expectProductsLink());
-      });
-    }
-  });
+      await test.step('THEN the products link is visible', (): Promise<void> => homePage.expectProductsLink());
+    });
+  }
 });
 ```
 
@@ -489,8 +475,8 @@ export const WIDE_BREAKPOINTS: Record<string, number> = { '2xl': 1536, lg: 1024,
 
 | Spec | Loop | `GIVEN` | `THEN` |
 |---|---|---|---|
-| `header.e2e.ts`, `GIVEN a breakpoint under md` | `Object.entries(NARROW_BREAKPOINTS)` | `page.setViewportSize({ height: HEIGHT, width })` | `headerPage.expectMobileHeader()` |
-| `header.e2e.ts`, `GIVEN a breakpoint of md or wider` | `Object.entries(WIDE_BREAKPOINTS)` | same | `headerPage.expectDesktopHeader()` |
+| `header.e2e.ts`, narrow loop, title names the breakpoint | `Object.entries(NARROW_BREAKPOINTS)` | `page.setViewportSize({ height: HEIGHT, width })` | `headerPage.expectMobileHeader()` |
+| `header.e2e.ts`, wide loop, title names the breakpoint | `Object.entries(WIDE_BREAKPOINTS)` | same | `headerPage.expectDesktopHeader()` |
 | `home-visual.e2e.ts` | `SIZES: Viewport[]` of the three viewports | `page.setViewportSize(viewport)` | `` expect(page).toHaveScreenshot(`homepage-${viewport.name}.png`) `` |
 
 ### Visual Regression at Breakpoints

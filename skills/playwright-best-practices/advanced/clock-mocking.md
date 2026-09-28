@@ -33,14 +33,12 @@ Every spec below imports `test` from its own feature fixture. Each feature fixtu
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard date', () => {
-  test.describe('GIVEN the real clock', () => {
-    test('SCENARIO: installing the clock before navigation shows the installed date', async ({ dashboardPage, page }): Promise<void> => {
-      await test.step('GIVEN the clock is installed on 15 January 2025', (): Promise<void> => page.clock.install({ time: '2025-01-15T09:00:00Z' }));
+  test('SCENARIO: installing the clock before navigation shows the installed date', async ({ dashboardPage, page }): Promise<void> => {
+    await test.step('GIVEN the clock is installed on 15 January 2025', (): Promise<void> => page.clock.install({ time: '2025-01-15T09:00:00Z' }));
 
-      await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN the date reads January 15, 2025', (): Promise<void> => dashboardPage.expectDate('January 15, 2025'));
-    });
+    await test.step('THEN the date reads January 15, 2025', (): Promise<void> => dashboardPage.expectDate('January 15, 2025'));
   });
 });
 ```
@@ -90,37 +88,25 @@ export const test = mergeTests(clockTest, billingTest);
 export { expect } from '@playwright/test';
 ```
 
-A `GIVEN` sets its time through `test.use({ frozenTime })`; see [Fixed Time Testing](#fixed-time-testing).
+`frozenTime` is fixed when the page is created, so a spec sets it once with a file-level `test.use({ frozenTime })`, and a scenario that needs another instant lives in its own spec; see [Fixed Time Testing](#fixed-time-testing).
 
 ## Fixed Time Testing
 
 ### Test Date-Dependent Features
 
-One `GIVEN` per frozen date. Each holds one test with a `WHEN` (open the page) and a `THEN` step.
+One spec per frozen date: a file-level `test.use({ frozenTime })` right after the imports, its own `FEATURE:` naming the date, and a test with a `WHEN` (open the page) and a `THEN` step.
 
 ```ts
-// e2e/billing/billing.e2e.ts
+// e2e/billing/billing-month-end.e2e.ts
 import { test } from './billing.fixture';
 
-test.describe('FEATURE: end of month billing', () => {
-  test.describe('GIVEN the clock is frozen on the last day of the month', () => {
-    test.use({ frozenTime: '2025-01-31T10:00:00Z' });
+test.use({ frozenTime: '2025-01-31T10:00:00Z' });
 
-    test('SCENARIO: opening the billing page reads payment due today', async ({ billingPage }): Promise<void> => {
-      await test.step('WHEN the billing page opens', (): Promise<void> => billingPage.goto());
+test.describe('FEATURE: billing on the last day of the month', () => {
+  test('SCENARIO: opening the billing page reads payment due today', async ({ billingPage }): Promise<void> => {
+    await test.step('WHEN the billing page opens', (): Promise<void> => billingPage.goto());
 
-      await test.step('THEN the due text reads payment due today', (): Promise<void> => billingPage.expectDue('Payment due today'));
-    });
-  });
-
-  test.describe('GIVEN the clock is frozen mid-month', () => {
-    test.use({ frozenTime: '2025-01-15T10:00:00Z' });
-
-    test('SCENARIO: opening the billing page shows the days remaining', async ({ billingPage }): Promise<void> => {
-      await test.step('WHEN the billing page opens', (): Promise<void> => billingPage.goto());
-
-      await test.step('THEN the due text reads 16 days until payment', (): Promise<void> => billingPage.expectDue('16 days until payment'));
-    });
+    await test.step('THEN the due text reads payment due today', (): Promise<void> => billingPage.expectDue('Payment due today'));
   });
 });
 ```
@@ -129,9 +115,10 @@ Other date-dependent specs keep the same shape and differ only in these three ce
 
 | Spec | `frozenTime` | Page object and assertion |
 |---|---|---|
+| `e2e/billing/billing-mid-month.e2e.ts` | `'2025-01-15T10:00:00Z'` | `BillingPage.expectDue('16 days until payment')` |
 | `e2e/subscription/subscription.e2e.ts` | `'2025-12-31T23:59:00Z'` | `SubscriptionPage.expectExpiry('Expires today')` |
-| `e2e/home/holiday-banner.e2e.ts` | `'2025-12-20T10:00:00Z'` | `HomePage.expectHolidayBanner()` (banner role, name `/holiday/i`) |
-| `e2e/home/holiday-banner.e2e.ts` | `'2025-01-15T10:00:00Z'` | `HomePage.expectNoHolidayBanner()` |
+| `e2e/home/holiday-banner-december.e2e.ts` | `'2025-12-20T10:00:00Z'` | `HomePage.expectHolidayBanner()` (banner role, name `/holiday/i`) |
+| `e2e/home/holiday-banner-january.e2e.ts` | `'2025-01-15T10:00:00Z'` | `HomePage.expectNoHolidayBanner()` |
 
 ### Test Relative Time Display
 
@@ -157,21 +144,19 @@ import { test } from './posts.fixture';
 import { postMock } from './test/mocks/post.mock';
 import { POST_STUB } from './test/stubs/post.stub';
 
+test.use({ frozenTime: '2025-06-15T14:00:00Z' });
+
 test.describe('FEATURE: relative post time', () => {
-  test.describe('GIVEN the clock is frozen on 15 June 2025 at 14:00', () => {
-    test.use({ frozenTime: '2025-06-15T14:00:00Z' });
+  test('SCENARIO: a post created at 12:00 reads 2 hours ago at 14:00', async ({ page, postPage }): Promise<void> => {
+    const post: Post = { ...POST_STUB, createdAt: '2025-06-15T12:00:00Z' };
 
-    test('SCENARIO: a post created at 12:00 reads 2 hours ago', async ({ page, postPage }): Promise<void> => {
-      const post: Post = { ...POST_STUB, createdAt: '2025-06-15T12:00:00Z' };
-
-      await test.step('GIVEN the post is served', async (): Promise<void> => {
-        await page.route('**/api/posts/1', postMock(post));
-      });
-
-      await test.step('WHEN the post opens', (): Promise<void> => postPage.goto(post.id));
-
-      await test.step('THEN the posted time reads 2 hours ago', (): Promise<void> => postPage.expectPostedAgo('2 hours ago'));
+    await test.step('GIVEN the post is served', async (): Promise<void> => {
+      await page.route('**/api/posts/1', postMock(post));
     });
+
+    await test.step('WHEN the post opens', (): Promise<void> => postPage.goto(post.id));
+
+    await test.step('THEN the posted time reads 2 hours ago', (): Promise<void> => postPage.expectPostedAgo('2 hours ago'));
   });
 });
 ```
@@ -187,18 +172,16 @@ test.describe('FEATURE: relative post time', () => {
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: session timeout notice', () => {
-  test.describe('GIVEN the clock is frozen at 09:00 and the session lasts 30 minutes', () => {
-    test('SCENARIO: the notice warns after 25 minutes and expires after 30', async ({ dashboardPage, page }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  test('SCENARIO: a 30 minute session warns after 25 minutes and expires after 30', async ({ dashboardPage, page }): Promise<void> => {
+    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('WHEN 25 minutes pass', (): Promise<void> => page.clock.fastForward('25:00'));
+    await test.step('WHEN 25 minutes pass', (): Promise<void> => page.clock.fastForward('25:00'));
 
-      await test.step('THEN the notice reads session expires in 5 minutes', (): Promise<void> => dashboardPage.expectSessionNotice('Session expires in 5 minutes'));
+    await test.step('THEN the notice reads session expires in 5 minutes', (): Promise<void> => dashboardPage.expectSessionNotice('Session expires in 5 minutes'));
 
-      await test.step('AND 5 more minutes pass', (): Promise<void> => page.clock.fastForward('05:00'));
+    await test.step('AND 5 more minutes pass', (): Promise<void> => page.clock.fastForward('05:00'));
 
-      await test.step('THEN the notice reads session expired', (): Promise<void> => dashboardPage.expectSessionNotice('Session expired'));
-    });
+    await test.step('THEN the notice reads session expired', (): Promise<void> => dashboardPage.expectSessionNotice('Session expired'));
   });
 });
 ```
@@ -257,18 +240,16 @@ export class SearchPage {
 import { test } from './search.fixture';
 
 test.describe('FEATURE: debounced search', () => {
-  test.describe('GIVEN a 300 ms debounce', () => {
-    test('SCENARIO: results appear only after the 300 ms debounce', async ({ page, searchPage }): Promise<void> => {
-      await test.step('GIVEN the search page is open', (): Promise<void> => searchPage.goto());
+  test('SCENARIO: results appear only after the 300 ms debounce', async ({ page, searchPage }): Promise<void> => {
+    await test.step('GIVEN the search page is open', (): Promise<void> => searchPage.goto());
 
-      await test.step('WHEN a term is typed', (): Promise<void> => searchPage.search('playwright'));
+    await test.step('WHEN a term is typed', (): Promise<void> => searchPage.search('playwright'));
 
-      await test.step('THEN the results are still hidden', (): Promise<void> => searchPage.expectResultsHidden());
+    await test.step('THEN the results are still hidden', (): Promise<void> => searchPage.expectResultsHidden());
 
-      await test.step('AND 300 ms pass', (): Promise<void> => page.clock.fastForward(300));
+    await test.step('AND 300 ms pass', (): Promise<void> => page.clock.fastForward(300));
 
-      await test.step('THEN the results are visible', (): Promise<void> => searchPage.expectResultsVisible());
-    });
+    await test.step('THEN the results are visible', (): Promise<void> => searchPage.expectResultsVisible());
   });
 });
 ```
@@ -277,21 +258,19 @@ test.describe('FEATURE: debounced search', () => {
 
 ### Test Different Timezones
 
-`timezoneId` is a built-in context option, so a `GIVEN` sets it with `test.use` next to `frozenTime`. 17:00 UTC is 9 AM in Los Angeles and 2 AM the next day in Tokyo.
+`timezoneId` is a built-in context option, fixed when the context is created, so the spec sets it with a file-level `test.use` next to `frozenTime`; each timezone is its own spec. 17:00 UTC is 9 AM in Los Angeles and 2 AM the next day in Tokyo.
 
 ```ts
-// e2e/schedule/timezone.e2e.ts
+// e2e/schedule/timezone-los-angeles.e2e.ts
 import { test } from './schedule.fixture';
 
-test.describe('FEATURE: schedule time display', () => {
-  test.describe('GIVEN the clock is frozen at 17:00 UTC in Los Angeles', () => {
-    test.use({ frozenTime: '2025-01-15T17:00:00Z', timezoneId: 'America/Los_Angeles' });
+test.use({ frozenTime: '2025-01-15T17:00:00Z', timezoneId: 'America/Los_Angeles' });
 
-    test('SCENARIO: opening the schedule reads 9:00 AM', async ({ schedulePage }): Promise<void> => {
-      await test.step('WHEN the schedule opens', (): Promise<void> => schedulePage.goto());
+test.describe('FEATURE: schedule time display in los angeles', () => {
+  test('SCENARIO: 17:00 UTC reads 9:00 AM', async ({ schedulePage }): Promise<void> => {
+    await test.step('WHEN the schedule opens', (): Promise<void> => schedulePage.goto());
 
-      await test.step('THEN the time reads 9:00 AM', (): Promise<void> => schedulePage.expectTime('9:00 AM'));
-    });
+    await test.step('THEN the time reads 9:00 AM', (): Promise<void> => schedulePage.expectTime('9:00 AM'));
   });
 });
 ```
@@ -376,26 +355,24 @@ import { expect, test } from './live-data.fixture';
 import { dataMock } from './test/mocks/data.mock';
 
 test.describe('FEATURE: live data auto refresh', () => {
-  test.describe('GIVEN a 30 second refresh interval', () => {
-    test('SCENARIO: two refresh intervals call the data endpoint three times', async ({ liveDataPage, page }): Promise<void> => {
-      const data = dataMock();
+  test('SCENARIO: two 30 second refresh intervals call the data endpoint three times', async ({ liveDataPage, page }): Promise<void> => {
+    const data = dataMock();
 
-      await test.step('GIVEN the data endpoint is served and recorded', async (): Promise<void> => {
-        await page.route('**/api/data', data.handler);
-      });
-
-      await test.step('AND the live data page is open', (): Promise<void> => liveDataPage.goto());
-
-      await test.step('AND the initial load called the endpoint once', (): Promise<void> => expect.poll((): number => data.calls.length).toBe(1));
-
-      await test.step('WHEN 30 seconds pass', (): Promise<void> => page.clock.fastForward('00:30'));
-
-      await test.step('THEN the first refresh called the endpoint twice', (): Promise<void> => expect.poll((): number => data.calls.length).toBe(2));
-
-      await test.step('AND another 30 seconds pass', (): Promise<void> => page.clock.fastForward('00:30'));
-
-      await test.step('THEN the second refresh called the endpoint three times', (): Promise<void> => expect.poll((): number => data.calls.length).toBe(3));
+    await test.step('GIVEN the data endpoint is served and recorded', async (): Promise<void> => {
+      await page.route('**/api/data', data.handler);
     });
+
+    await test.step('AND the live data page is open', (): Promise<void> => liveDataPage.goto());
+
+    await test.step('AND the initial load called the endpoint once', (): Promise<void> => expect.poll((): number => data.calls.length).toBe(1));
+
+    await test.step('WHEN 30 seconds pass', (): Promise<void> => page.clock.fastForward('00:30'));
+
+    await test.step('THEN the first refresh called the endpoint twice', (): Promise<void> => expect.poll((): number => data.calls.length).toBe(2));
+
+    await test.step('AND another 30 seconds pass', (): Promise<void> => page.clock.fastForward('00:30'));
+
+    await test.step('THEN the second refresh called the endpoint three times', (): Promise<void> => expect.poll((): number => data.calls.length).toBe(3));
   });
 });
 ```

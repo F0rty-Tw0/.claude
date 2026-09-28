@@ -217,16 +217,12 @@ import { test } from './dashboard.fixture';
 import { STATS_MOCK_STUB, USER_MOCK_STUB } from './test/stubs/graphql.stub';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN the stats and user queries are mocked', () => {
-    test.beforeEach(async ({ mockGraphQL }): Promise<void> => {
-      await test.step('GIVEN the dashboard queries are mocked', (): Promise<void> => mockGraphQL([STATS_MOCK_STUB, USER_MOCK_STUB]));
-    });
+  test('SCENARIO: mocked stats and user queries show the user count', async ({ dashboardPage, mockGraphQL }): Promise<void> => {
+    await test.step('GIVEN the dashboard queries are mocked', (): Promise<void> => mockGraphQL([STATS_MOCK_STUB, USER_MOCK_STUB]));
 
-    test('SCENARIO: dashboard shows the mocked user count', async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN stats card shows 100 users', (): Promise<void> => dashboardPage.expectUserCount(100));
-    });
+    await test.step('THEN stats card shows 100 users', (): Promise<void> => dashboardPage.expectUserCount(100));
   });
 });
 ```
@@ -375,23 +371,21 @@ export const searchMock = (): RouteHandler => {
 import { test } from './search.fixture';
 
 test.describe('FEATURE: search', () => {
-  test.describe('GIVEN the search endpoint is mocked by query', () => {
-    test.beforeEach(async ({ mockSearch }): Promise<void> => {
-      await test.step('GIVEN the search endpoint is mocked', (): Promise<void> => mockSearch());
-    });
+  test.beforeEach(async ({ mockSearch }): Promise<void> => {
+    await test.step('GIVEN the search endpoint is mocked by query', (): Promise<void> => mockSearch());
+  });
 
-    test('SCENARIO: error query shows the failure message', async ({ searchPage }): Promise<void> => {
-      await test.step('GIVEN the search page is open', (): Promise<void> => searchPage.goto());
+  test('SCENARIO: error query shows the failure message', async ({ searchPage }): Promise<void> => {
+    await test.step('AND the search page is open', (): Promise<void> => searchPage.goto());
 
-      await test.step('WHEN the error query is searched', (): Promise<void> => searchPage.search('error'));
+    await test.step('WHEN the error query is searched', (): Promise<void> => searchPage.search('error'));
 
-      await test.step('THEN failure message is shown', (): Promise<void> => searchPage.expectError('Search failed'));
-    });
+    await test.step('THEN failure message is shown', (): Promise<void> => searchPage.expectError('Search failed'));
   });
 });
 ```
 
-`searchPage.search(query)` fills the `Search` textbox and presses `Enter`; the `empty` and default queries are two more `test` blocks under the same `GIVEN`.
+`searchPage.search(query)` fills the `Search` textbox and presses `Enter`; the `empty` and default queries are two more `test` blocks in the same `FEATURE`, sharing its `beforeEach` mock.
 
 ### Mock Nth Request
 
@@ -456,18 +450,14 @@ export const slowDataMock = (delayMs: number, data: DashboardData = DASHBOARD_DA
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard loading state', () => {
-  test.describe('GIVEN the data endpoint answers after two seconds', () => {
-    test.beforeEach(async ({ mockSlowData }): Promise<void> => {
-      await test.step('GIVEN the data endpoint is mocked with a delay', (): Promise<void> => mockSlowData(2000));
-    });
+  test('SCENARIO: a two second data response shows the loader before the data', async ({ dashboardPage, mockSlowData }): Promise<void> => {
+    await test.step('GIVEN the data endpoint answers after two seconds', (): Promise<void> => mockSlowData(2000));
 
-    test('SCENARIO: dashboard shows the loader before the data', async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN loading indicator is shown', (): Promise<void> => dashboardPage.expectLoading());
+    await test.step('THEN loading indicator is shown', (): Promise<void> => dashboardPage.expectLoading());
 
-      await test.step('AND data is shown', (): Promise<void> => dashboardPage.expectData('loaded'));
-    });
+    await test.step('AND data is shown', (): Promise<void> => dashboardPage.expectData('loaded'));
   });
 });
 ```
