@@ -47,7 +47,7 @@ Test fails intermittently
 
 ```bash
 # Run test multiple times to confirm instability
-npx playwright test e2e/checkout/checkout.e2e.ts --repeat-each=20
+npx playwright test e2e/checkout/checkout.test.ts --repeat-each=20
 
 # Run with single worker to isolate parallelism issues
 npx playwright test --workers=1
@@ -68,6 +68,7 @@ const use = { screenshot: 'only-on-failure', trace: 'on-first-retry', video: 're
 
 export default defineConfig({
   retries: process.env.CI ? 2 : 0,
+  testMatch: '**/*.@(e2e|test).ts',
   use
 });
 ```
@@ -88,7 +89,7 @@ export const reportPassOnRetry = (testInfo: TestInfo): void => {
 ```
 
 ```ts
-// e2e/checkout/checkout.e2e.ts
+// e2e/checkout/checkout.test.ts
 import { test } from './checkout.fixture';
 import { reportPassOnRetry } from './test/utils/flaky-report.spec.util';
 
@@ -150,7 +151,7 @@ export const collectSlowRequests = (page: Page): string[] => {
 npx playwright show-trace path/to/trace.zip
 
 # Generate trace for specific test
-npx playwright test e2e/checkout/checkout.e2e.ts --trace on
+npx playwright test e2e/checkout/checkout.test.ts --trace on
 ```
 
 ## Fixing Strategies by Type
@@ -261,12 +262,14 @@ export class DashboardPage {
 // e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 
-test('GIVEN loaded data, the table shows ten rows', async ({ dashboardPage }): Promise<void> => {
-  await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+test.describe('FEATURE: dashboard data', () => {
+  test('GIVEN ten stored rows, loading the data shows all ten in the table', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-  await test.step('AND the data is loaded', (): Promise<void> => dashboardPage.loadData());
+    await test.step('AND the data is loaded', (): Promise<void> => dashboardPage.loadData());
 
-  await test.step('THEN ten rows are shown', (): Promise<void> => dashboardPage.expectRows(10));
+    await test.step('THEN ten rows are shown', (): Promise<void> => dashboardPage.expectRows(10));
+  });
 });
 ```
 
@@ -393,7 +396,7 @@ Prefer Playwright's default isolation. Each test receives a fresh context and pa
 import { test } from './profile.fixture';
 
 test.describe('FEATURE: profile', () => {
-  test('GIVEN an updated name, the header shows it', async ({ profilePage }): Promise<void> => {
+  test('GIVEN a saved profile, renaming it shows the new name in the header', async ({ profilePage }): Promise<void> => {
     await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto());
 
     await test.step('AND the name is updated', (): Promise<void> => profilePage.updateName('Ada'));
@@ -401,7 +404,7 @@ test.describe('FEATURE: profile', () => {
     await test.step('THEN header shows the new name', (): Promise<void> => profilePage.expectHeaderName('Ada'));
   });
 
-  test('GIVEN an updated email, the account shows it', async ({ profilePage }): Promise<void> => {
+  test('GIVEN a saved profile, changing the email shows it on the account', async ({ profilePage }): Promise<void> => {
     await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto());
 
     await test.step('AND the email is updated', (): Promise<void> => profilePage.updateEmail('ada@example.com'));
@@ -479,7 +482,7 @@ const viewport = { height: 720, width: 1280 };
 
 const use = { deviceScaleFactor: 1, viewport };
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ### Network Stubbing for External APIs
@@ -506,14 +509,14 @@ export const paymentMock = (result: PaymentResult = PAYMENT_RESULT_STUB): RouteH
 };
 ```
 
-Every test in the feature needs the same two stubs, so the `checkoutPage` fixture routes `**/api.analytics.com/**` to `analyticsMock()` and `**/api/payment` to `paymentMock()` before `use`. No hook and no step installs them.
+Every test in the feature needs the same two stubs, so the `checkoutPage` fixture routes `**/api.analytics.com/**` to `analyticsMock()` and `**/api/payment` to `paymentMock()` before `use`. No hook and no step installs them. `**/api/payment` is your own origin, so every checkout spec that uses this fixture is a `.test.ts`, the quarantined one included.
 
 ```ts
 // e2e/checkout/checkout.test.ts
 import { test } from './checkout.fixture';
 
 test.describe('FEATURE: checkout', () => {
-  test('GIVEN a paid order, checkout opens the confirmation', async ({ checkoutPage }): Promise<void> => {
+  test('GIVEN stubbed payment and analytics apis, paying opens the confirmation', async ({ checkoutPage }): Promise<void> => {
     await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto());
 
     await test.step('AND the order is paid', (): Promise<void> => checkoutPage.pay());
@@ -533,20 +536,20 @@ test.describe('FEATURE: checkout', () => {
 
 ### Quarantine Pattern
 
-Move known-flaky specs to a `*.flaky.e2e.ts` name and run them in their own project with more retries. The stable project ignores them so one flake never blocks the pipeline.
+Move known-flaky specs to a `*.flaky.e2e.ts` or `*.flaky.test.ts` name and run them in their own project with more retries. The stable project ignores them so one flake never blocks the pipeline.
 
 ```ts
 // e2e/playwright.config.ts
 import { defineConfig } from '@playwright/test';
 
-const FLAKY_SPECS = ['**/*.flaky.e2e.ts'];
+const FLAKY_SPECS = ['**/*.flaky.@(e2e|test).ts'];
 
 const projects = [
   { name: 'stable', testIgnore: FLAKY_SPECS },
   { name: 'quarantine', retries: 3, testMatch: FLAKY_SPECS }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Annotation-Based Quarantine
@@ -554,25 +557,29 @@ export default defineConfig({ projects });
 An annotation records why a test is under investigation and appears in the report. `test.skip(condition, reason)` skips only where the flake reproduces. `IS_CI` is a plain value exported from `common/playwright.const.ts`; specs never read `process.env`. At runtime `test.info().annotations.push(...)` adds the same annotation.
 
 ```ts
-// e2e/checkout/checkout.flaky.e2e.ts
+// e2e/checkout/checkout.flaky.test.ts
 import { IS_CI } from '../common/playwright.const';
 import { test } from './checkout.fixture';
 
 const FLAKY_ANNOTATION = { description: 'Investigating payment API timing - JIRA-1234', type: 'flaky' };
 
 test.describe('FEATURE: checkout', () => {
-  test('GIVEN a paid order, checkout opens the confirmation', { annotation: FLAKY_ANNOTATION }, async ({ checkoutPage }): Promise<void> => {
-    await test.step('WHEN the order is paid', (): Promise<void> => checkoutPage.pay());
+  test('GIVEN stubbed payment and analytics apis, paying opens the confirmation', { annotation: FLAKY_ANNOTATION }, async ({ checkoutPage }): Promise<void> => {
+    await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto());
+
+    await test.step('AND the order is paid', (): Promise<void> => checkoutPage.pay());
 
     await test.step('THEN confirmation page is shown', (): Promise<void> => checkoutPage.expectConfirmation());
   });
 
-  test('GIVEN an applied coupon, the total drops', async ({ checkoutPage }): Promise<void> => {
+  test('GIVEN a cart totalling 100, the TEN coupon drops the total to 90', async ({ checkoutPage }): Promise<void> => {
     test.skip(IS_CI, 'Flaky in CI - investigating JIRA-5678');
 
-    await test.step('WHEN the coupon is applied', (): Promise<void> => checkoutPage.applyCoupon('TEN'));
+    await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto());
 
-    await test.step('THEN total drops', (): Promise<void> => checkoutPage.expectTotal(90));
+    await test.step('AND the TEN coupon is applied', (): Promise<void> => checkoutPage.applyCoupon('TEN'));
+
+    await test.step('THEN the total drops to 90', (): Promise<void> => checkoutPage.expectTotal(90));
   });
 });
 ```
@@ -654,6 +661,7 @@ const expectOptions = { timeout: 10000 };
 export default defineConfig({
   expect: expectOptions,
   retries: process.env.CI ? 2 : 0,
+  testMatch: '**/*.@(e2e|test).ts',
   timeout: 60000
 });
 ```

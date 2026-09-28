@@ -173,7 +173,7 @@ export class StripeCardHelper {
 }
 ```
 
-`CARD_STUB` in `test/stubs/card.stub.ts` holds the `4242 4242 4242 4242` test card. The page wires `this.stripeCard = new StripeCardHelper(page.frameLocator('iframe[name*="__privateStripeFrame"]').first())`; the helper also exposes `expectCardNumber(value)` as a plain `toHaveValue` assertion, and a Stripe spec calls `checkoutPage.stripeCard.expectReady()`, `.fill(CARD_STUB)`, then `.expectCardNumber(CARD_STUB.number)`. `paymentReadyPage` is the fixture from [iFrame Fixture](#iframe-fixture): it opens checkout and asserts the payment frame is ready before the test starts.
+`CARD_STUB` in `test/stubs/card.stub.ts` holds the `4242 4242 4242 4242` test card. The page wires `this.stripeCard = new StripeCardHelper(page.frameLocator('iframe[name*="__privateStripeFrame"]').first())`; the helper also exposes `expectCardNumber(value)` as a plain `toHaveValue` assertion. A Stripe spec opens checkout, checks `checkoutPage.stripeCard.expectReady()`, then fills `CARD_STUB` with `.fill(CARD_STUB)` as a new `WHEN` and checks `.expectCardNumber(CARD_STUB.number)`. `paymentReadyPage` is the fixture from [iFrame Fixture](#iframe-fixture): it opens checkout and asserts the payment frame is ready before the test starts.
 
 ```ts
 // e2e/checkout/checkout.e2e.ts
@@ -181,7 +181,7 @@ import { test } from './checkout.fixture';
 import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: checkout', () => {
-  test('GIVEN the test card, paying shows the confirmation', async ({ paymentReadyPage }): Promise<void> => {
+  test('GIVEN a ready payment frame, paying with the test card shows the confirmation', async ({ paymentReadyPage }): Promise<void> => {
     await test.step('WHEN the test card is paid', (): Promise<void> => paymentReadyPage.pay(CARD_STUB.number));
 
     await test.step('THEN the payment confirmation is shown', (): Promise<void> => paymentReadyPage.expectConfirmed());
@@ -191,7 +191,7 @@ test.describe('FEATURE: checkout', () => {
 
 ### Handling OAuth in iFrames
 
-When a provider renders its form in an iframe instead of a popup, the login page owns the frame as `oauthFrame = page.frameLocator('iframe[src*="accounts.google.com"]')` and exposes `startGoogleSignIn()` (click the provider button), `fillOauthEmail(email)` (fill `oauthFrame.getByLabel('Email')`), and `expectOauthFormReady()` (`toBeVisible({ timeout: 10_000 })` on that label). The spec is `WHEN goto()`, `AND startGoogleSignIn()`, `THEN expectOauthFormReady()`, `AND fillOauthEmail('test@gmail.com')`.
+When a provider renders its form in an iframe instead of a popup, the login page owns the frame as `oauthFrame = page.frameLocator('iframe[src*="accounts.google.com"]')` and exposes `startGoogleSignIn()` (click the provider button), `fillOauthEmail(email)` (fill `oauthFrame.getByLabel('Email')`), `expectOauthFormReady()` (`toBeVisible({ timeout: 10_000 })` on that label), and `expectOauthEmail(email)` (`toHaveValue` on that label). The spec is `WHEN goto()`, `AND startGoogleSignIn()`, `THEN expectOauthFormReady()`, then a new phase: `WHEN fillOauthEmail('test@gmail.com')`, `THEN expectOauthEmail('test@gmail.com')`.
 
 ## Nested iFrames
 
@@ -214,6 +214,7 @@ export class WidgetPage {
   public readonly outerFrame: FrameLocator;
   public readonly submitButton: Locator;
   public readonly widgetFrame: FrameLocator;
+  public readonly widgetHeading: Locator;
   public readonly widgetLoadedText: Locator;
 
   private readonly page: Page;
@@ -226,6 +227,7 @@ export class WidgetPage {
     this.submitButton = this.innerFrame.getByRole('button', { name: 'Submit' });
     this.openWidgetButton = page.getByRole('button', { name: 'Open Widget' });
     this.widgetFrame = page.frameLocator('#widget-frame');
+    this.widgetHeading = this.widgetFrame.getByRole('heading');
     this.widgetLoadedText = this.widgetFrame.getByText('Widget Loaded');
   }
 
@@ -244,6 +246,10 @@ export class WidgetPage {
 
   public async expectWidgetLoaded(): Promise<void> {
     await expect(this.widgetLoadedText).toBeVisible();
+  }
+
+  public async expectWidgetHeading(text: string): Promise<void> {
+    await expect(this.widgetHeading).toHaveText(text);
   }
 }
 ```
@@ -293,7 +299,7 @@ Prefer a web-first assertion on content inside the frame; `frameLocator` waits f
 import { test } from './checkout.fixture';
 
 test.describe('FEATURE: dashboard widget', () => {
-  test('GIVEN the widget frame, opening the widget reports it loaded', async ({ widgetPage }): Promise<void> => {
+  test('GIVEN the live widget document, opening the widget reports it loaded', async ({ widgetPage }): Promise<void> => {
     await test.step('WHEN the dashboard is opened', (): Promise<void> => widgetPage.goto());
 
     await test.step('AND the widget is opened', (): Promise<void> => widgetPage.openWidget());
@@ -305,7 +311,7 @@ test.describe('FEATURE: dashboard widget', () => {
 
 ### iFrames with Changing src
 
-A multi-step frame reloads between steps. `MultiStepPage` exposes `goto()`, `next()` (click Next inside the frame), and `expectStep(label)` (`toBeVisible({ timeout: 10_000 })` on `frame.getByText(label)`); the spec alternates `WHEN goto()`, `THEN expectStep('Step 1')`, `AND next()`, `THEN expectStep('Step 2')`, `AND next()`, `THEN expectStep('Step 3')`.
+A multi-step frame reloads between steps. `MultiStepPage` exposes `goto()`, `next()` (click Next inside the frame), and `expectStep(label)` (`toBeVisible({ timeout: 10_000 })` on `frame.getByText(label)`); the spec alternates phases: `WHEN goto()`, `THEN expectStep('Step 1')`, `WHEN next()`, `THEN expectStep('Step 2')`, `WHEN next()`, `THEN expectStep('Step 3')`.
 
 ### Lazy-Loaded iFrames
 
@@ -381,7 +387,7 @@ export const recordFrameNavigations = (page: Page): string[] => {
 import { expect, test } from './checkout.fixture';
 
 test.describe('FEATURE: frame navigation', () => {
-  test('GIVEN the content frame, navigating inside it records the frame navigation', async ({ contentFramePage, frameNavigations }): Promise<void> => {
+  test('GIVEN a frame navigation recorder, moving the content frame to page 2 records it', async ({ contentFramePage, frameNavigations }): Promise<void> => {
     await test.step('WHEN the page with the content frame is opened', (): Promise<void> => contentFramePage.goto());
 
     await test.step('AND the frame navigates to page 2', (): Promise<void> => contentFramePage.openPage2());
@@ -477,7 +483,7 @@ export const widgetMock = (path: string = WIDGET_PATH): RouteHandler => {
 };
 ```
 
-`WidgetPage.goto({ widget: 'mocked' })` (above) routes `'**/embedded-widget**'` to `widgetMock()` before it navigates, so the spec's `'WHEN the dashboard is opened'` step serves the static document with no route step. The spec then asserts `widgetPage.expectWidgetHeading('Mocked Widget')`, a plain `toHaveText` on `widgetFrame.getByRole('heading')`.
+`WidgetPage.goto({ widget: 'mocked' })` (above) routes `'**/embedded-widget**'` to `widgetMock()` before it navigates. `#widget-frame` exists only after `openWidget()`, so the route waits in place until `'AND the widget is opened'` creates the frame and its document request hits the mock; no step routes. The mocked case keeps the steps of the widget spec above, with `'GIVEN a mocked widget document, …'` as its title, and its `THEN` is `widgetPage.expectWidgetHeading('Mocked Widget')`, a plain `toHaveText` on `widgetHeading`.
 
 ## Anti-Patterns to Avoid
 

@@ -52,13 +52,14 @@
 - Flows requiring JavaScript execution or DOM interaction
 - Third-party iframe interactions
 
-HTTP calls live in a `.spec.util.ts` so a step is one call. The `managerToken` fixture posts `MANAGER_STUB` to `/api/auth/token` once per test and reads `accessToken` from the body; `staffToken` does the same with `STAFF_STUB`. `existingProduct` posts `PRODUCT_STUB` with the manager token before `use` and hands over the created `Product`, so the conflict case starts with the sku already taken and no seeding step.
+HTTP calls live in a `.spec.util.ts` so a step is one call. The `managerToken` fixture posts `MANAGER_STUB` to `/api/auth/token` once per test and reads `accessToken` from the body; `staffToken` does the same with `STAFF_STUB`. `postProduct` posts through `createProduct` with the manager token and, after `use`, deletes every product the server created, so no case leaves a product behind for the next one. `existingProduct` posts `uniqueProduct()` through `postProduct` before `use` and hands over the created `Product`, so the conflict case starts with its sku already taken and no seeding step. `uniqueProduct()` in `test/utils/product-builder.spec.util.ts` spreads `PRODUCT_STUB` with a fresh sku, so parallel workers never post the same one. Each case checks the status first; a body check follows as an `expect*` util that reads the body itself.
 
 ```ts
 // e2e/products/test/utils/products-api.spec.util.ts
 import type { APIRequestContext, APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
 
-import type { PageQuery, Product } from '../../common/products.type';
+import type { PageQuery, Product, ProductPage } from '../../common/products.type';
 
 const authHeaders = (token: string): Record<string, string> => {
   const headers = { Authorization: `Bearer ${token}` };
@@ -77,42 +78,51 @@ export const deleteProduct = (request: APIRequestContext, token: string, id: str
 export const listProducts = (request: APIRequestContext, token: string, params: PageQuery): Promise<APIResponse> => {
   return request.get('/api/products', { headers: authHeaders(token), params });
 };
+
+export const expectItemsAtMost = async (response: APIResponse, limit: number): Promise<void> => {
+  const body: ProductPage = await response.json();
+
+  expect(body.items.length).toBeLessThanOrEqual(limit);
+};
 ```
 
 ```ts
 // e2e/products/products-api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import type { ProductPage } from './common/products.type';
+import type { Product } from './common/products.type';
 import { expect, test } from './products.fixture';
 import { PRODUCT_STUB } from './test/stubs/product.stub';
-import { createProduct, deleteProduct, listProducts } from './test/utils/products-api.spec.util';
+import { uniqueProduct } from './test/utils/product-builder.spec.util';
+import { deleteProduct, expectItemsAtMost, listProducts } from './test/utils/products-api.spec.util';
 
 test.describe('FEATURE: products API', () => {
-  test('GIVEN a valid product, posting returns 201', async ({ managerToken, request }): Promise<void> => {
-    const response = await test.step('WHEN the product is posted', (): Promise<APIResponse> => createProduct(request, managerToken, PRODUCT_STUB));
+  test('GIVEN a new sku, posting the product returns 201', async ({ postProduct }): Promise<void> => {
+    const response = await test.step('WHEN the product is posted', (): Promise<APIResponse> => postProduct(uniqueProduct()));
 
     await test.step('THEN the status is 201', (): void => expect(response.status()).toBe(201));
   });
 
-  test('GIVEN an existing sku, posting it again returns 409', async ({ existingProduct, managerToken, request }): Promise<void> => {
-    const response = await test.step('WHEN the same sku is posted again', (): Promise<APIResponse> => createProduct(request, managerToken, existingProduct));
+  test('GIVEN an existing sku, posting it again returns 409', async ({ existingProduct, postProduct }): Promise<void> => {
+    const duplicate: Partial<Product> = { ...PRODUCT_STUB, sku: existingProduct.sku };
+
+    const response = await test.step('WHEN the same sku is posted again', (): Promise<APIResponse> => postProduct(duplicate));
 
     await test.step('THEN the status is 409', (): void => expect(response.status()).toBe(409));
   });
 
-  test('GIVEN a missing sku, posting returns 422', async ({ managerToken, request }): Promise<void> => {
-    const response = await test.step('WHEN a product without a sku is posted', (): Promise<APIResponse> => createProduct(request, managerToken, { name: 'Incomplete' }));
+  test('GIVEN a missing sku, posting returns 422', async ({ postProduct }): Promise<void> => {
+    const response = await test.step('WHEN a product without a sku is posted', (): Promise<APIResponse> => postProduct({ name: 'Incomplete' }));
 
     await test.step('THEN the status is 422', (): void => expect(response.status()).toBe(422));
   });
 
-  test('GIVEN the first page, listing returns at most twenty items', async ({ managerToken, request }): Promise<void> => {
+  test('GIVEN a limit of twenty, listing the first page returns at most twenty items', async ({ managerToken, request }): Promise<void> => {
     const response = await test.step('WHEN the first page is listed', (): Promise<APIResponse> => listProducts(request, managerToken, { limit: '20', page: '1' }));
 
-    const body = await test.step('AND the body is read', (): Promise<ProductPage> => response.json());
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-    await test.step('THEN the items are capped at twenty', (): void => expect(body.items.length).toBeLessThanOrEqual(20));
+    await test.step('AND the items are capped at twenty', (): Promise<void> => expectItemsAtMost(response, 20));
   });
 
   test('GIVEN a staff token, deleting a product returns 403', async ({ request, staffToken }): Promise<void> => {
@@ -123,7 +133,7 @@ test.describe('FEATURE: products API', () => {
 });
 ```
 
-Body assertions follow the same shape: read the body in a step typed with the response type, then one `expect` per step (`toMatchObject` for echoed fields, `toContainEqual(expect.objectContaining({ field: 'sku' }))` for a 422 error list, `toHaveProperty('totalCount')` for pagination metadata).
+Body assertions follow the list case: the status check first, then an `expect*` util that reads the body typed with the response type and holds one assertion (`toMatchObject` for echoed fields, `toContainEqual(expect.objectContaining({ field: 'sku' }))` for a 422 error list, `toHaveProperty('totalCount')` for pagination metadata). No step only reads the body.
 
 ## Component Tests
 
@@ -174,7 +184,7 @@ import { expect, test } from '@playwright/experimental-ct-react';
 import type { ContactMessage } from './common/contact-form.type';
 import type { ContactFormHelper } from './helpers/contact-form.helper';
 import { MESSAGE_STUB } from './test/stubs/message.stub';
-import { mountContactForm, recordInto } from './test/utils/mount.spec.util';
+import { mountContactForm, noop, recordInto } from './test/utils/mount.spec.util';
 
 test.describe('FEATURE: contact form', () => {
   test('GIVEN an empty form, submitting shows both required-field errors', async ({ mount }): Promise<void> => {
@@ -236,7 +246,7 @@ test.describe('FEATURE: contact form', () => {
 - Responsive layout at every breakpoint
 - Edge cases that only affect the backend
 
-Seed data through the API in a fixture, never through the UI and never in a step. The `upgradePage` fixture calls `seedAccount(page.request, 'free')` before `use`, so the spec starts on a free account. The third-party payment iframe is a helper object scoped to a `FrameLocator`; `UpgradePage` exposes it as `paymentFrame`, built from `page.frameLocator('iframe[title="Secure Payment"]')`.
+Seed data through the API in a fixture, never through the UI and never in a step. The `upgradePage` fixture calls `seedAccount(page.request, 'free')` before `use`, so the spec starts on a free account and its title names that state. The third-party payment iframe is a helper object scoped to a `FrameLocator`; `UpgradePage` exposes it as `paymentFrame`, built from `page.frameLocator('iframe[title="Secure Payment"]')`.
 
 ```ts
 // e2e/subscription/helpers/payment-frame.helper.ts
@@ -270,7 +280,7 @@ import { BILLING_STUB } from './test/stubs/billing.stub';
 import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: subscription upgrade', () => {
-  test('GIVEN the premium plan, purchasing shows the subscription number on the welcome page', async ({ successPage, upgradePage }): Promise<void> => {
+  test('GIVEN a free account, buying the premium plan shows the subscription number on the welcome page', async ({ successPage, upgradePage }): Promise<void> => {
     await test.step('WHEN the upgrade page is opened', (): Promise<void> => upgradePage.goto());
 
     await test.step('AND the premium plan is selected', (): Promise<void> => upgradePage.selectPlan('Premium'));
@@ -299,17 +309,17 @@ Cover every backend logic permutation. Cheap to run and maintain.
 ```text
 e2e/inventory/inventory-api.e2e.ts
   FEATURE: inventory API
-    GIVEN a manager and a valid item, posting gets 201
-    GIVEN a manager and a duplicate sku, posting gets 409
-    GIVEN a manager and an invalid quantity format, posting gets 422
-    GIVEN a manager and missing required fields, posting gets 422
-    GIVEN a manager, listing items gets the page capped at the limit
-    GIVEN a manager and a category filter, listing gets only that category
-    GIVEN a manager and a new stock level, patching updates the item
-    GIVEN a manager, archiving an item removes it from the active list
-    GIVEN a manager and an item with pending orders, archiving gets 409
-    GIVEN a warehouse-staff token, deleting an item gets 403
-    GIVEN no token, any request gets 401
+    GIVEN a new sku, posting the item returns 201
+    GIVEN an existing sku, posting it again returns 409
+    GIVEN a non-numeric quantity, posting returns 422
+    GIVEN missing required fields, posting returns 422
+    GIVEN a limit of twenty, listing returns at most twenty items
+    GIVEN a category filter, listing returns only that category
+    GIVEN a new stock level, patching the item stores it
+    GIVEN an active item, archiving it removes it from the active list
+    GIVEN an item with pending orders, archiving it returns 409
+    GIVEN a warehouse-staff token, deleting an item returns 403
+    GIVEN no token, any request returns 401
 ```
 
 ### Component Layer (30% of tests)
@@ -319,18 +329,18 @@ Cover every visual state and interaction.
 ```text
 e2e/inventory/inventory-form.test.tsx
   FEATURE: inventory form
-    GIVEN an empty form, submitting shows validation errors
+    GIVEN an empty form, submitting shows the validation errors
     GIVEN an invalid sku, entering it shows an inline error
-    GIVEN valid data, submitting calls onSubmit
-    GIVEN a successful save, the form resets
+    GIVEN valid data, submitting calls onSubmit once
+    GIVEN a save that succeeds, submitting resets the form
     GIVEN a save in progress, the submit button is disabled
 
 e2e/inventory/inventory-table.test.tsx
   FEATURE: inventory table
-    GIVEN a list of items, the table renders one row per item
-    GIVEN a column header, clicking it sorts rows by that column
-    GIVEN a row, clicking archive opens the confirmation modal
-    GIVEN mixed stock levels, badges are coloured by level
+    GIVEN three items, the table renders one row per item
+    GIVEN unsorted rows, clicking a column header sorts by that column
+    GIVEN an active row, clicking archive opens the confirmation modal
+    GIVEN mixed stock levels, the badges are coloured by level
     GIVEN an empty list, the table shows the empty state
 ```
 

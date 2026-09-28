@@ -38,7 +38,7 @@ export type ConsoleRecord = {
 export type ConsoleFilter = () => ConsoleRecord[];
 
 export type DashboardOptions = {
-  readonly data?: 'null';
+  readonly crashOn?: 'data';
 };
 
 export type NoErrorsAssertion = (allowed?: RegExp[]) => void;
@@ -65,7 +65,7 @@ export class DashboardPage {
   }
 
   public async goto(options: DashboardOptions = {}): Promise<void> {
-    if (options.data === 'null') await this.page.route('**/api/data', brokenDataMock());
+    if (options.crashOn === 'data') await this.page.route('**/api/data', brokenDataMock());
     await this.page.goto('/dashboard');
   }
 
@@ -127,7 +127,7 @@ export const test = base.extend<ConsoleFixtures>({
 export { expect } from '@playwright/test';
 ```
 
-A spec that only wants the lines opens the dashboard and prints `consoleLogs` in a `THEN` step; see the table under [Fail Test on Any Error](#fail-test-on-any-error).
+A spec that only wants the lines attaches them to the report (see [Attach Console to Report](#attach-console-to-report)); a spec that asserts on them reads `consoleLogs` inside its `THEN`, as in the table under [Fail Test on Any Error](#fail-test-on-any-error).
 
 ### Capture by Type
 
@@ -214,12 +214,12 @@ export const expectNoConsoleErrors = (errors: string[]): void => {
 ```
 
 ```ts
-// e2e/console/console-error.test.ts
+// e2e/console/console-error.e2e.ts
 import { test } from './console.fixture';
 import { expectNoConsoleErrors } from './test/utils/console-error.spec.util';
 
 test.describe('FEATURE: console errors', () => {
-  test('GIVEN a healthy data load, the console logs no error', async ({ consoleErrors, dashboardPage }): Promise<void> => {
+  test('GIVEN a working data api, loading data logs no console error', async ({ consoleErrors, dashboardPage }): Promise<void> => {
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
     await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
@@ -233,11 +233,11 @@ Every other capture in this file is a spec of the same shape: open the dashboard
 
 | Section | Fixture member | Listener | `THEN` step body |
 |---|---|---|---|
-| Basic Console Capture | `consoleLogs: string[]` | inline `push` above | `(): void => console.log('Captured logs:', consoleLogs)` |
+| Basic Console Capture | `consoleLogs: string[]` | inline `push` above | `(): void => expect(consoleLogs).not.toContainEqual(expect.stringMatching(/^error: /))` |
 | Fail with Allowed Exceptions | `unexpectedErrors: string[]` | `collectUnexpectedError` | `(): void => expect(unexpectedErrors).toEqual([])` |
 | Catch Uncaught Exceptions | `pageErrors: Error[]` | `page.on('pageerror')` above | `(): void => expectNoPageErrors(pageErrors)` |
 | Capture Deprecation Warnings | `deprecations: string[]` | `collectDeprecation` | `(): void => expect(deprecations).toEqual([])` |
-| React Development Warnings | `reactWarnings: string[]` | `collectReactWarning` | `const critical = await test.step('AND the critical warnings are kept', (): string[] => criticalReactWarnings(reactWarnings));` then `(): void => expect(critical).toEqual([])` |
+| React Development Warnings | `reactWarnings: string[]` | `collectReactWarning` | `(): void => expect(criticalReactWarnings(reactWarnings)).toEqual([])` |
 | Comprehensive Console Fixture | `assertNoErrors: NoErrorsAssertion` | `consoleMessages` below | `(): void => assertNoErrors([/favicon/])` |
 
 ### Fail with Allowed Exceptions
@@ -335,7 +335,7 @@ Reuse the `pageErrors` fixture and print each entry with `pageErrors.forEach(log
 
 ### Test Error Boundary Triggers
 
-React error boundaries catch render errors before they become `pageerror` events, so the listener only fires for errors the boundary missed. A `null` payload makes the widget crash on render; `dashboardPage.goto({ data: 'null' })` routes `brokenDataMock()` before it navigates; the boundary shows its fallback and `pageErrors` stays empty. `null` is still a payload: `WIDGET_DATA_NULL_STUB` is typed `WidgetData | null` in `test/stubs/data.stub.ts`.
+React error boundaries catch render errors before they become `pageerror` events, so the listener only fires for errors the boundary missed. A `null` payload makes the widget crash on render; `dashboardPage.goto({ crashOn: 'data' })` routes `brokenDataMock()` before it navigates; the boundary shows its fallback and `pageErrors` stays empty. `crashOn` names the endpoint whose payload crashes its widget; it means the same on every dashboard page object in this skill. `null` is still a payload: `WIDGET_DATA_NULL_STUB` is typed `WidgetData | null` in `test/stubs/data.stub.ts`.
 
 ```ts
 // e2e/console/test/mocks/data.mock.ts
@@ -355,7 +355,7 @@ import { expect, test } from './console.fixture';
 
 test.describe('FEATURE: error boundary', () => {
   test('GIVEN a null data payload, the error boundary catches it', async ({ dashboardPage, pageErrors }): Promise<void> => {
-    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ data: 'null' }));
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ crashOn: 'data' }));
 
     await test.step('THEN the fallback is shown', (): Promise<void> => dashboardPage.expectFallback());
 
@@ -368,7 +368,7 @@ test.describe('FEATURE: error boundary', () => {
 
 ### Capture Deprecation Warnings
 
-The collector keeps `warning` messages that mention deprecation. The spec asserts the list is empty; to only report, replace the assertion step with `deprecations.forEach(...)` and a `console.warn`.
+The collector keeps `warning` messages that mention deprecation. The spec asserts the list is empty. To report deprecations without failing on them, print them with `deprecations.forEach(...)` and a `console.warn` in an `AND` step; the phase still ends with the `THEN` that proves what the test is about.
 
 ```ts
 // e2e/console/test/utils/deprecation.spec.util.ts
@@ -385,7 +385,7 @@ export const collectDeprecation = (deprecations: string[], message: ConsoleMessa
 
 ### React Development Warnings
 
-React prefixes its development warnings with `Warning:`. Only a few of them point at real bugs; the util keeps those, and the spec filters with `criticalReactWarnings` in an `AND` step before asserting.
+React prefixes its development warnings with `Warning:`. Only a few of them point at real bugs; the util keeps those, and the spec's `THEN` asserts `criticalReactWarnings(reactWarnings)` is empty, so the filter runs inside the check and no step only filters.
 
 ```ts
 // e2e/console/test/utils/react-warning.spec.util.ts

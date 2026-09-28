@@ -42,51 +42,57 @@ export type PushPayload = {
   readonly body: string;
   readonly title: string;
 };
+
+export type PwaOptions = {
+  readonly notifications?: 'granted';
+  readonly path?: string;
+};
 ```
+
+`pwaPage` hands over the page object. `cachedPwaPage` opens the app and waits until the worker has cached it, so an offline test starts from a cached app and its first `WHEN` is the first offline action. No fixture opens the app for the worker-side wrappers: they find the worker through `activeServiceWorker(context)` after the test's own `WHEN` has opened the page.
 
 ```ts
 // e2e/pwa/pwa.fixture.ts
-import type { Worker } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
 import { PwaPage } from './pages/pwa.page';
-import { activeServiceWorker } from './test/utils/service-worker.spec.util';
 
 type PwaFixtures = {
-  readonly notificationsGrantedPage: PwaPage;
+  readonly cachedPwaPage: PwaPage;
   readonly pwaPage: PwaPage;
-  readonly serviceWorker: Worker;
 };
 
 export const test = base.extend<PwaFixtures>({
-  notificationsGrantedPage: async ({ context, page }, use): Promise<void> => {
-    await context.grantPermissions(['notifications']);
-    await use(new PwaPage(page));
+  cachedPwaPage: async ({ pwaPage }, use): Promise<void> => {
+    await pwaPage.goto();
+    await pwaPage.expectAppCached();
+    await use(pwaPage);
   },
   pwaPage: async ({ page }, use): Promise<void> => {
     await use(new PwaPage(page));
-  },
-  serviceWorker: async ({ context, page }, use): Promise<void> => {
-    const workerPromise = activeServiceWorker(context);
-
-    await page.goto('/pwa-app');
-    await use(await workerPromise);
   }
 });
 
 export { expect } from '@playwright/test';
 ```
 
+`goto(options)` grants notifications before it navigates when `notifications: 'granted'` is set, then opens `path` (default `/pwa-app`); that option check is the page object's only branch. `reloadWithBlockedStylesheet()` routes `**/styles.css` to `abortMock()` and reloads, so the cache-first test has no route step. `expectAppCached()` polls the `app-cache-v1` URLs until the list is not empty. The other `expect*` methods hold one plain assertion each: `expectDashboard()` on the heading, `expectOfflineBadge()` and `expectOnline()` on the badge visible or hidden, and `expectStatus(text)` on the status text.
+
 ```ts
 // e2e/pwa/pages/pwa.page.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+
+import type { PwaOptions } from '../common/pwa.type';
+import { abortMock } from '../test/mocks/abort.mock';
+import { cachedUrls } from '../test/utils/cache.spec.util';
 
 export class PwaPage {
   public readonly heading: Locator;
   public readonly messageInput: Locator;
   public readonly offlineBadge: Locator;
   public readonly offlineMessage: Locator;
+  public readonly retryButton: Locator;
   public readonly sendButton: Locator;
   public readonly statusText: Locator;
 
@@ -98,15 +104,22 @@ export class PwaPage {
     this.messageInput = page.getByLabel('Message');
     this.offlineBadge = page.getByTestId('offline-badge');
     this.offlineMessage = page.getByText('You are offline');
+    this.retryButton = page.getByRole('button', { name: 'Retry' });
     this.sendButton = page.getByRole('button', { name: 'Send' });
     this.statusText = page.getByRole('status');
   }
 
-  public async goto(path = '/pwa-app'): Promise<void> {
-    await this.page.goto(path);
+  public async goto(options: PwaOptions = {}): Promise<void> {
+    if (options.notifications === 'granted') await this.page.context().grantPermissions(['notifications']);
+    await this.page.goto(options.path ?? '/pwa-app');
   }
 
   public async reload(): Promise<void> {
+    await this.page.reload();
+  }
+
+  public async reloadWithBlockedStylesheet(): Promise<void> {
+    await this.page.route('**/styles.css', abortMock());
     await this.page.reload();
   }
 
@@ -115,37 +128,26 @@ export class PwaPage {
     await this.sendButton.click();
   }
 
-  public async expectDashboard(): Promise<void> {
-    await expect(this.heading).toBeVisible();
-  }
-
-  public async expectOfflineBadge(): Promise<void> {
-    await expect(this.offlineBadge).toBeVisible();
-  }
-
-  public async expectOnline(): Promise<void> {
-    await expect(this.offlineBadge).toBeHidden();
+  public async expectAppCached(): Promise<void> {
+    await expect.poll((): Promise<string[]> => cachedUrls(this.page, 'app-cache-v1')).not.toEqual([]);
   }
 
   public async expectOfflineFallback(): Promise<void> {
     await expect(this.offlineMessage).toBeVisible();
-  }
-
-  public async expectStatus(text: string): Promise<void> {
-    await expect(this.statusText).toHaveText(text);
+    await expect(this.retryButton).toBeVisible();
   }
 }
 ```
 
 ### Waiting for Service Worker Registration
 
-`navigator.serviceWorker.ready` resolves once a worker is active. The wrapper returns a boolean the spec asserts on.
+`navigator.serviceWorker.ready` resolves once a worker is active. The wrapper returns a boolean, and the spec polls it inside its `THEN`, so the check reads what it asserts. `activeServiceWorker` returns the worker the context already runs, or waits for the next one; the worker-side wrappers call it, so a test opens the app in its `WHEN` and reads the worker in its `THEN`.
 
 ```ts
 // e2e/pwa/test/utils/service-worker.spec.util.ts
 import type { BrowserContext, Page, Worker } from '@playwright/test';
 
-import type { ServiceWorkerState, SwGlobals } from '../../common/pwa.type';
+import type { SwGlobals } from '../../common/pwa.type';
 
 const readActive = async (): Promise<boolean> => {
   const isSupported = 'serviceWorker' in navigator;
@@ -157,11 +159,62 @@ const readActive = async (): Promise<boolean> => {
   return registration.active !== null;
 };
 
-const readState = async (): Promise<ServiceWorkerState | null> => {
-  const registration = await navigator.serviceWorker.getRegistration();
+const readVersion = (): string => {
+  const scope: SwGlobals = self;
 
-  if (!registration) return null;
+  return scope.SW_VERSION ?? 'unknown';
+};
 
+export const activeServiceWorker = (context: BrowserContext): Promise<Worker> => {
+  const [worker] = context.serviceWorkers();
+
+  if (worker) return Promise.resolve(worker);
+
+  return context.waitForEvent('serviceworker');
+};
+
+export const isServiceWorkerActive = (page: Page): Promise<boolean> => page.evaluate(readActive);
+
+export const serviceWorkerUrl = async (context: BrowserContext): Promise<string> => {
+  const worker = await activeServiceWorker(context);
+
+  return worker.url();
+};
+
+export const serviceWorkerVersion = async (context: BrowserContext): Promise<string> => {
+  const worker = await activeServiceWorker(context);
+
+  return worker.evaluate(readVersion);
+};
+```
+
+```ts
+// e2e/pwa/pwa.e2e.ts
+import { expect, test } from './pwa.fixture';
+import { isServiceWorkerActive } from './test/utils/service-worker.spec.util';
+
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN a first visit, loading the app activates a service worker', async ({ page, pwaPage }): Promise<void> => {
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+
+    await test.step('THEN a worker is active', (): Promise<void> => expect.poll((): Promise<boolean> => isServiceWorkerActive(page)).toBe(true));
+  });
+});
+```
+
+### Getting Service Worker State
+
+`expectActiveRegistration` waits for `navigator.serviceWorker.ready`, maps the registration to a plain `ServiceWorkerState`, and asserts on its named fields: the worker is active and the page URL sits inside the registration scope. Reading through `getRegistration()` instead can return a registration that has no active worker yet.
+
+```ts
+// e2e/pwa/test/utils/registration.spec.util.ts
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import type { ServiceWorkerState } from '../../common/pwa.type';
+
+const readState = async (): Promise<ServiceWorkerState> => {
+  const registration = await navigator.serviceWorker.ready;
   const state: ServiceWorkerState = {
     active: registration.active !== null,
     installing: registration.installing !== null,
@@ -172,70 +225,43 @@ const readState = async (): Promise<ServiceWorkerState | null> => {
   return state;
 };
 
-const readVersion = (): string => {
-  const scope: SwGlobals = self;
+export const expectActiveRegistration = async (page: Page): Promise<void> => {
+  const state = await page.evaluate(readState);
 
-  return scope.SW_VERSION ?? 'unknown';
-};
-
-export const isServiceWorkerActive = (page: Page): Promise<boolean> => page.evaluate(readActive);
-
-export const serviceWorkerState = (page: Page): Promise<ServiceWorkerState | null> => page.evaluate(readState);
-
-export const serviceWorkerVersion = (worker: Worker): Promise<string> => worker.evaluate(readVersion);
-
-export const activeServiceWorker = (context: BrowserContext): Promise<Worker> => {
-  const [worker] = context.serviceWorkers();
-
-  if (worker) return Promise.resolve(worker);
-
-  return context.waitForEvent('serviceworker');
+  expect(state.active).toBe(true);
+  expect(page.url()).toContain(state.scope);
 };
 ```
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-import { expect, test } from './pwa.fixture';
-import { isServiceWorkerActive, serviceWorkerState, serviceWorkerVersion } from './test/utils/service-worker.spec.util';
+import { test } from './pwa.fixture';
+import { expectActiveRegistration } from './test/utils/registration.spec.util';
 
 test.describe('FEATURE: pwa service worker', () => {
-  test('GIVEN the app, loading it activates a service worker', async ({ page, pwaPage }): Promise<void> => {
+  test('GIVEN a first visit, the registration is active and its scope covers the app', async ({ page, pwaPage }): Promise<void> => {
     await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
 
-    const active = await test.step('AND the worker registration is awaited', (): Promise<boolean> => isServiceWorkerActive(page));
-
-    await test.step('THEN a worker is active', (): void => expect(active).toBe(true));
+    await test.step('THEN the registration is active and its scope covers the page', (): Promise<void> => expectActiveRegistration(page));
   });
-});
-```
-
-### Getting Service Worker State
-
-`serviceWorkerState` maps the registration to a plain object so the spec asserts on named fields.
-
-```ts
-// e2e/pwa/pwa.e2e.ts
-test('GIVEN a registered worker, the registration is active in the app scope', async ({ page, pwaPage }): Promise<void> => {
-  await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
-
-  const state = await test.step('AND the registration state is read', (): Promise<ServiceWorkerState | null> => serviceWorkerState(page));
-
-  await test.step('THEN the worker is active', (): void => expect(state?.active).toBe(true));
-
-  await test.step('AND the scope covers the current url', (): void => expect(state?.scope).toContain(page.url()));
 });
 ```
 
 ### Service Worker Context
 
-`context.serviceWorkers()` lists workers already running; `context.waitForEvent('serviceworker')` waits for the next one. `activeServiceWorker` (above) picks whichever applies, and the `serviceWorker` fixture starts the wait before navigating so no registration is missed.
+`context.serviceWorkers()` lists workers already running; `context.waitForEvent('serviceworker')` waits for the next one. `activeServiceWorker` (above) checks the list first and registers the wait in the same tick, so a worker that registered during `goto` is found and one still registering is caught by the event.
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN a registered worker, its script is sw.js', async ({ serviceWorker }): Promise<void> => {
-  const url = await test.step('WHEN the worker url is read', (): string => serviceWorker.url());
+import { expect, test } from './pwa.fixture';
+import { serviceWorkerUrl } from './test/utils/service-worker.spec.util';
 
-  await test.step('THEN the url ends in sw.js', (): void => expect(url).toContain('sw.js'));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN a first visit, the registered worker runs sw.js', async ({ context, pwaPage }): Promise<void> => {
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+
+    await test.step('THEN the worker script is sw.js', (): Promise<void> => expect.poll((): Promise<string> => serviceWorkerUrl(context)).toContain('sw.js'));
+  });
 });
 ```
 
@@ -245,9 +271,9 @@ test('GIVEN a registered worker, its script is sw.js', async ({ serviceWorker })
 
 Serve a new worker script, call `registration.update()`, wait for a `waiting` worker, post `SKIP_WAITING`, and wait for `controllerchange`. `expect.poll` replaces the `updatefound` listener plus timeout, and the route mock replaces the "if an update exists" branch: the test creates the update it asserts on.
 
-Worker v2 must be served after v1 has registered, or the first registration is already v2 and the update finds nothing. So the route is an `AND` action step after the page opens, not an option on the opening call.
+Worker v2 must be served after v1 has registered, or the first registration is already v2 and the update finds nothing. So publishing v2 is a new `WHEN` after the check that v1 is active, not an option on the opening call. `publishWorker(page, version)` routes `**/sw.js` to the new source and calls `registration.update()` in one call, so no step routes.
 
-The worker script is a parametrised sample, so it is a source builder in `test/utils/`, not a template literal in the mock. The mock keeps only the interception.
+The worker script is a parametrised sample, so it is a source builder in `test/utils/`, not a template literal in the mock. The mock keeps only the interception. The source installs without `skipWaiting()`, so v2 waits while v1 controls the page, and it calls `skipWaiting()` only when the page posts `SKIP_WAITING`.
 
 ```ts
 // e2e/pwa/test/utils/service-worker-source.spec.util.ts
@@ -256,7 +282,9 @@ export const serviceWorkerSource = (version: string): string => {
     const VERSION = '${version}';
     self.addEventListener('install', (event) => {
       event.waitUntil(caches.open('app-cache-' + VERSION));
-      self.skipWaiting();
+    });
+    self.addEventListener('message', (event) => {
+      if (event.data.type === 'SKIP_WAITING') self.skipWaiting();
     });
   `;
 
@@ -278,9 +306,13 @@ export const serviceWorkerMock = (version: string): RouteHandler => {
 };
 ```
 
+`activateWaitingWorker` adds the `controllerchange` listener before it posts `SKIP_WAITING`, inside one browser call, so the change cannot fire before anything listens. The listener writes a flag to `document.documentElement.dataset`, and the `THEN` polls it.
+
 ```ts
 // e2e/pwa/test/utils/service-worker-update.spec.util.ts
 import type { Page } from '@playwright/test';
+
+import { serviceWorkerMock } from '../mocks/service-worker.mock';
 
 const readUpdate = async (): Promise<void> => {
   const registration = await navigator.serviceWorker.ready;
@@ -294,62 +326,74 @@ const readHasWaiting = async (): Promise<boolean> => {
   return registration.waiting !== null;
 };
 
-const readSkipWaiting = async (): Promise<void> => {
+const postSkipWaiting = async (): Promise<void> => {
   const registration = await navigator.serviceWorker.ready;
+  const markChanged = (): void => {
+    document.documentElement.dataset.controllerChanged = 'true';
+  };
 
+  navigator.serviceWorker.addEventListener('controllerchange', markChanged, { once: true });
   registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
 };
 
-const readControllerChange = (): Promise<void> => {
-  return new Promise((resolve: () => void): void => {
-    navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true });
-  });
-};
+const readControllerChanged = (): boolean => document.documentElement.dataset.controllerChanged === 'true';
 
-export const updateServiceWorker = (page: Page): Promise<void> => page.evaluate(readUpdate);
+export const publishWorker = async (page: Page, version: string): Promise<void> => {
+  await page.route('**/sw.js', serviceWorkerMock(version));
+  await page.evaluate(readUpdate);
+};
 
 export const hasWaitingWorker = (page: Page): Promise<boolean> => page.evaluate(readHasWaiting);
 
-export const skipWaiting = (page: Page): Promise<void> => page.evaluate(readSkipWaiting);
+export const activateWaitingWorker = (page: Page): Promise<void> => page.evaluate(postSkipWaiting);
 
-export const waitForControllerChange = (page: Page): Promise<void> => page.evaluate(readControllerChange);
+export const hasControllerChanged = (page: Page): Promise<boolean> => page.evaluate(readControllerChanged);
 ```
 
 ```ts
 // e2e/pwa/pwa.test.ts
-test('GIVEN a served worker v2, a registration update lets the new worker take control', async ({ page, pwaPage }): Promise<void> => {
-  await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+import { expect, test } from './pwa.fixture';
+import { activateWaitingWorker, hasControllerChanged, hasWaitingWorker, publishWorker } from './test/utils/service-worker-update.spec.util';
+import { isServiceWorkerActive } from './test/utils/service-worker.spec.util';
 
-  await test.step('AND worker v2 is served', async (): Promise<void> => {
-    await page.route('**/sw.js', serviceWorkerMock('v2'));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN an active v1 worker, activating a published v2 hands it control', async ({ page, pwaPage }): Promise<void> => {
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+
+    await test.step('THEN worker v1 is active', (): Promise<void> => expect.poll((): Promise<boolean> => isServiceWorkerActive(page)).toBe(true));
+
+    await test.step('WHEN worker v2 is published', (): Promise<void> => publishWorker(page, 'v2'));
+
+    await test.step('THEN worker v2 is waiting', (): Promise<void> => expect.poll((): Promise<boolean> => hasWaitingWorker(page)).toBe(true));
+
+    await test.step('WHEN the waiting worker is told to skip waiting', (): Promise<void> => activateWaitingWorker(page));
+
+    await test.step('THEN the controller changes to worker v2', (): Promise<void> => expect.poll((): Promise<boolean> => hasControllerChanged(page)).toBe(true));
   });
-
-  await test.step('AND an update check is triggered', (): Promise<void> => updateServiceWorker(page));
-
-  await test.step('THEN a worker is waiting', (): Promise<void> => expect.poll((): Promise<boolean> => hasWaitingWorker(page)).toBe(true));
-
-  await test.step('AND the waiting worker is told to skip waiting', (): Promise<void> => skipWaiting(page));
-
-  await test.step('THEN the controller changes', (): Promise<void> => waitForControllerChange(page));
 });
 ```
 
 ### Testing SW Installation
 
-`worker.evaluate` runs inside the worker scope. `serviceWorkerVersion` (in `service-worker.spec.util.ts` above) reads `SW_VERSION` from `self` through the optional `SwGlobals` type.
+`worker.evaluate` runs inside the worker scope. `serviceWorkerVersion` (in `service-worker.spec.util.ts` above) finds the worker through `activeServiceWorker(context)` and reads `SW_VERSION` from `self` through the optional `SwGlobals` type.
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN an installed worker, it reports its version', async ({ serviceWorker }): Promise<void> => {
-  const version = await test.step('WHEN the worker version is read', (): Promise<string> => serviceWorkerVersion(serviceWorker));
+import { expect, test } from './pwa.fixture';
+import { serviceWorkerVersion } from './test/utils/service-worker.spec.util';
 
-  await test.step('THEN the version is 1.0.0', (): void => expect(version).toBe('1.0.0'));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN a first visit, the installed worker reports version 1.0.0', async ({ context, pwaPage }): Promise<void> => {
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+
+    await test.step('THEN the worker version is 1.0.0', (): Promise<void> => expect.poll((): Promise<string> => serviceWorkerVersion(context)).toBe('1.0.0'));
+  });
 });
 ```
 
 ### Unregistering Service Workers
 
-Unregister every worker and delete every cache before each test so tests do not share worker state. `resetServiceWorkers` does both. Where a suite needs it, the `pwaPage` fixture opens `/`, calls `resetServiceWorkers(page)`, then hands over the page object, so no hook and no step does the reset.
+Playwright gives each test a fresh browser context, and a fresh context starts with no registrations and no caches, so tests do not share worker state by default. `resetServiceWorkers` unregisters every worker and deletes every cache; it matters only when a context outlives one test (a persistent context, or a worker-scoped context fixture). Call it in that fixture after it opens a page and before `use`, so no hook and no step does the reset.
 
 ```ts
 // e2e/pwa/test/utils/service-worker-reset.spec.util.ts
@@ -370,7 +414,7 @@ export const resetServiceWorkers = (page: Page): Promise<void> => page.evaluate(
 
 ### Verifying Cached Resources
 
-The cache wrappers open a named cache and list its request URLs. `expect.poll` on the list length replaces a fixed wait for the worker to finish caching.
+The cache wrappers open a named cache and list its request URLs. `expect.poll` on the list replaces a fixed wait for the worker to finish caching; each `THEN` polls the list it asserts on.
 
 ```ts
 // e2e/pwa/test/utils/cache.spec.util.ts
@@ -400,56 +444,61 @@ export const bodyFontFamily = (page: Page): Promise<string> => page.evaluate(rea
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN a fresh worker, activation caches the app assets', async ({ page, pwaPage }): Promise<void> => {
-  await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+import { expect, test } from './pwa.fixture';
+import { cachedUrls } from './test/utils/cache.spec.util';
 
-  await test.step('THEN the cache is populated', (): Promise<void> => expect.poll((): Promise<number> => cachedUrls(page, 'app-cache-v1').then((urls: string[]): number => urls.length)).toBeGreaterThan(0));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN a first visit, the worker caches the app assets', async ({ page, pwaPage }): Promise<void> => {
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
 
-  const urls = await test.step('AND the cached urls are read', (): Promise<string[]> => cachedUrls(page, 'app-cache-v1'));
+    await test.step('THEN the cache is populated', (): Promise<void> => pwaPage.expectAppCached());
 
-  await test.step('THEN the stylesheet is cached', (): void => expect(urls).toContainEqual(expect.stringContaining('/styles.css')));
+    await test.step('AND the stylesheet is cached', (): Promise<void> => expect.poll((): Promise<string[]> => cachedUrls(page, 'app-cache-v1')).toContainEqual(expect.stringContaining('/styles.css')));
 
-  await test.step('AND the app bundle is cached', (): void => expect(urls).toContainEqual(expect.stringContaining('/app.js')));
+    await test.step('AND the app bundle is cached', (): Promise<void> => expect.poll((): Promise<string[]> => cachedUrls(page, 'app-cache-v1')).toContainEqual(expect.stringContaining('/app.js')));
+  });
 });
 ```
 
 ### Testing Cache Strategies
 
-To prove a cache-first strategy, abort the network request for a cached asset, reload, and assert the asset still applied. The abort must land after the worker has cached the stylesheet, so it is an `AND` action step, not an option on the opening call. `abortMock` is a one-line route factory in `test/mocks/abort.mock.ts` returning `(route: Route): Promise<void> => route.abort()`.
+To prove a cache-first strategy, abort the network request for a cached asset, reload, and assert the asset still applied. The abort must land after the worker has cached the stylesheet, so the test starts from `cachedPwaPage`, and `reloadWithBlockedStylesheet()` routes the stylesheet and reloads in one call. `abortMock` is a one-line route factory in `test/mocks/abort.mock.ts` returning `(route: Route): Promise<void> => route.abort()`.
 
 ```ts
 // e2e/pwa/pwa.test.ts
-test('GIVEN a blocked stylesheet request, the cached stylesheet still applies', async ({ page, pwaPage }): Promise<void> => {
-  await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+import { expect, test } from './pwa.fixture';
+import { bodyFontFamily } from './test/utils/cache.spec.util';
 
-  await test.step('THEN the cache is populated', (): Promise<void> => expect.poll((): Promise<number> => cachedUrls(page, 'app-cache-v1').then((urls: string[]): number => urls.length)).toBeGreaterThan(0));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN a cached app, a reload with the stylesheet blocked keeps the cached styles', async ({ cachedPwaPage, page }): Promise<void> => {
+    await test.step('WHEN the app is reloaded with the stylesheet blocked', (): Promise<void> => cachedPwaPage.reloadWithBlockedStylesheet());
 
-  await test.step('AND the stylesheet is blocked on the network', async (): Promise<void> => {
-    await page.route('**/styles.css', abortMock());
+    await test.step('THEN the body keeps its font family', (): Promise<void> => expect.poll((): Promise<string> => bodyFontFamily(page)).not.toBe(''));
   });
-
-  await test.step('AND the app is reloaded', (): Promise<void> => pwaPage.reload());
-
-  await test.step('THEN the body keeps its font family', (): Promise<void> => expect.poll((): Promise<string> => bodyFontFamily(page)).not.toBe(''));
 });
 ```
 
 ### Testing Cache Updates
 
-Serving `serviceWorkerMock('v2')` (above) and triggering an update creates `app-cache-v2`. `expect.poll` on `hasCache` replaces `waitForFunction`.
+Publishing worker v2 with `publishWorker` (above) creates `app-cache-v2` when v2 installs. `expect.poll` on `hasCache` replaces `waitForFunction`.
 
 ```ts
 // e2e/pwa/pwa.test.ts
-test('GIVEN worker v2, installing it creates the v2 cache', async ({ page, pwaPage }): Promise<void> => {
-  await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+import { expect, test } from './pwa.fixture';
+import { hasCache } from './test/utils/cache.spec.util';
+import { publishWorker } from './test/utils/service-worker-update.spec.util';
+import { isServiceWorkerActive } from './test/utils/service-worker.spec.util';
 
-  await test.step('AND worker v2 is served', async (): Promise<void> => {
-    await page.route('**/sw.js', serviceWorkerMock('v2'));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN an active v1 worker, publishing v2 creates the v2 cache', async ({ page, pwaPage }): Promise<void> => {
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+
+    await test.step('THEN worker v1 is active', (): Promise<void> => expect.poll((): Promise<boolean> => isServiceWorkerActive(page)).toBe(true));
+
+    await test.step('WHEN worker v2 is published', (): Promise<void> => publishWorker(page, 'v2'));
+
+    await test.step('THEN the v2 cache exists', (): Promise<void> => expect.poll((): Promise<boolean> => hasCache(page, 'app-cache-v2')).toBe(true));
   });
-
-  await test.step('AND an update check is triggered', (): Promise<void> => updateServiceWorker(page));
-
-  await test.step('THEN the v2 cache exists', (): Promise<void> => expect.poll((): Promise<boolean> => hasCache(page, 'app-cache-v2')).toBe(true));
 });
 ```
 
@@ -459,64 +508,73 @@ This section covers **offline-first apps (PWAs)** that are designed to work offl
 
 ### Simulating Offline Mode
 
-`context.setOffline(true)` cuts the network for every page in the context. The cache must be populated before going offline; `expect.poll` on the cached URL count replaces a fixed wait. Each test opens the app in its own `WHEN`. Going offline happens after the app is open and cached, so it is an `AND` action step, not an option on the opening call.
+`context.setOffline(true)` cuts the network for every page in the context. The cache must be populated before going offline, so these tests start from `cachedPwaPage`, which opens the app and polls the cache before `use`. Going offline is then the first `WHEN`; the network returning after a check starts the next phase.
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN a cached app offline, reloading shows the dashboard with the offline badge', async ({ context, page, pwaPage }): Promise<void> => {
-  await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+import { test } from './pwa.fixture';
 
-  await test.step('THEN the cache is populated', (): Promise<void> => expect.poll((): Promise<number> => cachedUrls(page, 'app-cache-v1').then((urls: string[]): number => urls.length)).toBeGreaterThan(0));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN a cached app, reloading offline shows the dashboard with the offline badge', async ({ cachedPwaPage, context }): Promise<void> => {
+    await test.step('WHEN the network goes offline', (): Promise<void> => context.setOffline(true));
 
-  await test.step('AND the network goes offline', (): Promise<void> => context.setOffline(true));
+    await test.step('AND the app is reloaded', (): Promise<void> => cachedPwaPage.reload());
 
-  await test.step('AND the app is reloaded', (): Promise<void> => pwaPage.reload());
+    await test.step('THEN the dashboard is shown', (): Promise<void> => cachedPwaPage.expectDashboard());
 
-  await test.step('THEN the dashboard is shown', (): Promise<void> => pwaPage.expectDashboard());
+    await test.step('AND the offline badge is shown', (): Promise<void> => cachedPwaPage.expectOfflineBadge());
 
-  await test.step('AND the offline badge is shown', (): Promise<void> => pwaPage.expectOfflineBadge());
+    await test.step('WHEN the network returns', (): Promise<void> => context.setOffline(false));
 
-  await test.step('AND the network returns', (): Promise<void> => context.setOffline(false));
-
-  await test.step('THEN the offline badge disappears', (): Promise<void> => pwaPage.expectOnline());
+    await test.step('THEN the offline badge disappears', (): Promise<void> => cachedPwaPage.expectOnline());
+  });
 });
 ```
 
 ### Testing Offline Fallback
 
+The fallback is the worker's answer to a navigation it has not cached, so the test also starts from `cachedPwaPage`: the worker is installed before the network goes away.
+
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN an uncached route, opening it offline shows the offline fallback', async ({ context, pwaPage }): Promise<void> => {
-  await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+import { test } from './pwa.fixture';
 
-  await test.step('AND the network goes offline', (): Promise<void> => context.setOffline(true));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN a cached app, opening an uncached route offline shows the offline fallback', async ({ cachedPwaPage, context }): Promise<void> => {
+    await test.step('WHEN the network goes offline', (): Promise<void> => context.setOffline(true));
 
-  await test.step('AND an uncached page is opened', (): Promise<void> => pwaPage.goto('/uncached-page'));
+    await test.step('AND an uncached page is opened', (): Promise<void> => cachedPwaPage.goto({ path: '/uncached-page' }));
 
-  await test.step('THEN the offline fallback is shown', (): Promise<void> => pwaPage.expectOfflineFallback());
+    await test.step('THEN the offline fallback offers a retry', (): Promise<void> => cachedPwaPage.expectOfflineFallback());
+  });
 });
 ```
 
 ### Testing Offline Form Submission
 
-The form is submitted offline, queued, then synced when the network returns. `registerSync` (see [Background Sync](#background-sync)) triggers the sync tag explicitly instead of waiting for the browser's own schedule. The final assertion allows extra time for the sync round trip.
+The form is submitted offline, queued, then synced when the network returns. `registerSync` (see [Background Sync](#background-sync)) triggers the sync tag explicitly instead of waiting for the browser's own schedule. The network returning after the queued check starts a new phase. The final assertion allows extra time for the sync round trip.
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN a message sent offline, it syncs once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
-  await test.step('WHEN the form is opened', (): Promise<void> => pwaPage.goto('/pwa-app/form'));
+import { expect, test } from './pwa.fixture';
+import { registerSync } from './test/utils/sync.spec.util';
 
-  await test.step('AND the network goes offline', (): Promise<void> => context.setOffline(true));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN an online form, a message sent offline syncs once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
+    await test.step('WHEN the form is opened', (): Promise<void> => pwaPage.goto({ path: '/pwa-app/form' }));
 
-  await test.step('AND a message is sent', (): Promise<void> => pwaPage.sendMessage('Offline message'));
+    await test.step('AND the network goes offline', (): Promise<void> => context.setOffline(true));
 
-  await test.step('THEN the message is queued', (): Promise<void> => pwaPage.expectStatus('Queued for sync'));
+    await test.step('AND a message is sent', (): Promise<void> => pwaPage.sendMessage('Offline message'));
 
-  await test.step('AND the network returns', (): Promise<void> => context.setOffline(false));
+    await test.step('THEN the message is queued', (): Promise<void> => pwaPage.expectStatus('Queued for sync'));
 
-  await test.step('AND the form sync is triggered', (): Promise<void> => registerSync(page, 'form-sync'));
+    await test.step('WHEN the network returns', (): Promise<void> => context.setOffline(false));
 
-  await test.step('THEN the message is sent', (): Promise<void> => expect(pwaPage.statusText).toHaveText('Message sent', { timeout: 10000 }));
+    await test.step('AND the form sync is triggered', (): Promise<void> => registerSync(page, 'form-sync'));
+
+    await test.step('THEN the message is sent', (): Promise<void> => expect(pwaPage.statusText).toHaveText('Message sent', { timeout: 10000 }));
+  });
 });
 ```
 
@@ -524,13 +582,14 @@ test('GIVEN a message sent offline, it syncs once the network returns', async ({
 
 ### Mocking Push Subscription
 
-`context.grantPermissions(['notifications'])` lets `pushManager.subscribe` resolve; the `notificationsGrantedPage` fixture grants it before handing over the page object, so the test opens the app already permitted. The wrapper returns `PushSubscriptionJSON` from the DOM lib.
+`context.grantPermissions(['notifications'])` lets `pushManager.subscribe` and `showNotification` resolve. `pwaPage.goto({ notifications: 'granted' })` grants it before it navigates, the same opening-call option as `alertsPage.goto({ notifications: 'granted' })` in [browser-apis.md](browser-apis.md#permissions). The page-side wrappers return DOM-lib types (`PushSubscriptionJSON`, notification titles); the worker-side wrappers find the worker through `activeServiceWorker(context)`. `clickFirstNotification` starts `context.waitForEvent('page')` before it dispatches the click and returns the page it opened, so the wait cannot miss the page and no step holds a pending promise.
 
 ```ts
 // e2e/pwa/test/utils/push.spec.util.ts
-import type { Page, Worker } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 
 import type { PushPayload } from '../../common/pwa.type';
+import { activeServiceWorker } from './service-worker.spec.util';
 
 const readSubscribe = async (): Promise<PushSubscriptionJSON> => {
   const registration = await navigator.serviceWorker.ready;
@@ -543,6 +602,13 @@ const readShowNotification = async (url: string): Promise<void> => {
   const registration = await navigator.serviceWorker.ready;
 
   await registration.showNotification('Test', { body: 'Click me', data: { url } });
+};
+
+const readNotificationTitles = async (): Promise<string[]> => {
+  const registration = await navigator.serviceWorker.ready;
+  const notifications = await registration.getNotifications();
+
+  return notifications.map((notification: Notification): string => notification.title);
 };
 
 const dispatchPush = (payload: PushPayload): void => {
@@ -559,51 +625,84 @@ export const subscribeToPush = (page: Page): Promise<PushSubscriptionJSON> => pa
 
 export const showNotification = (page: Page, url: string): Promise<void> => page.evaluate(readShowNotification, url);
 
-export const dispatchPushEvent = (worker: Worker, payload: PushPayload): Promise<void> => worker.evaluate(dispatchPush, payload);
+export const shownNotificationTitles = (page: Page): Promise<string[]> => page.evaluate(readNotificationTitles);
 
-export const clickFirstNotification = (worker: Worker): Promise<void> => worker.evaluate(dispatchNotificationClick);
+export const dispatchPushEvent = async (context: BrowserContext, payload: PushPayload): Promise<void> => {
+  const worker = await activeServiceWorker(context);
+
+  await worker.evaluate(dispatchPush, payload);
+};
+
+export const clickFirstNotification = async (context: BrowserContext): Promise<Page> => {
+  const worker = await activeServiceWorker(context);
+  const pagePromise = context.waitForEvent('page');
+
+  await worker.evaluate(dispatchNotificationClick);
+
+  return pagePromise;
+};
 ```
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN granted notifications, the push subscription has an endpoint', async ({ notificationsGrantedPage, page }): Promise<void> => {
-  await test.step('WHEN the app is opened', (): Promise<void> => notificationsGrantedPage.goto());
+import { expect, test } from './pwa.fixture';
+import { subscribeToPush } from './test/utils/push.spec.util';
 
-  const subscription = await test.step('AND the app subscribes to push', (): Promise<PushSubscriptionJSON> => subscribeToPush(page));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN granted notifications, subscribing to push returns an endpoint', async ({ page, pwaPage }): Promise<void> => {
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto({ notifications: 'granted' }));
 
-  await test.step('THEN the subscription has an endpoint', (): void => expect(subscription.endpoint).toBeDefined());
+    const subscription = await test.step('AND the app subscribes to push', (): Promise<PushSubscriptionJSON> => subscribeToPush(page));
+
+    await test.step('THEN the subscription has an endpoint', (): void => expect(subscription.endpoint).toBeDefined());
+  });
 });
 ```
 
 ### Testing Push Message Handling
 
-`PushEvent` accepts a string `data`, so no `PushMessageData` construction is needed. Playwright cannot observe the OS notification the worker shows; assert on what the worker does with the push (a cached record, a `postMessage` to the page, or a `showNotification` call the next sample clicks).
+`PushEvent` accepts a string `data`, so no `PushMessageData` construction is needed. Playwright cannot observe the OS notification the worker shows; assert on what the worker does with the push. Here the worker shows a notification titled from the payload, so the `THEN` polls `registration.getNotifications()` for that title. A worker that caches a record or posts to the page gets the same shape with a different wrapper.
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN a push event, the worker handles it', async ({ serviceWorker }): Promise<void> => {
-  const payload: PushPayload = { body: 'Push message', title: 'Test' };
+import type { PushPayload } from './common/pwa.type';
+import { expect, test } from './pwa.fixture';
+import { dispatchPushEvent, shownNotificationTitles } from './test/utils/push.spec.util';
 
-  await test.step('WHEN a push event is dispatched in the worker', (): Promise<void> => dispatchPushEvent(serviceWorker, payload));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN granted notifications, a push event shows its notification', async ({ context, page, pwaPage }): Promise<void> => {
+    const payload: PushPayload = { body: 'Push message', title: 'Test' };
+
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto({ notifications: 'granted' }));
+
+    await test.step('AND a push event is dispatched in the worker', (): Promise<void> => dispatchPushEvent(context, payload));
+
+    await test.step('THEN the worker shows the pushed notification', (): Promise<void> => expect.poll((): Promise<string[]> => shownNotificationTitles(page)).toContain(payload.title));
+  });
 });
 ```
 
 ### Testing Notification Click
 
-The worker's `notificationclick` handler opens the target URL in a new page. `context.waitForEvent('page')` is started in a step before the click and returns the new page; the last step asserts its URL. `page.waitForTimeout` is not needed.
+The worker's `notificationclick` handler opens the target URL in a new page. The click step returns that page, and the last step asserts its URL. `page.waitForTimeout` is not needed.
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN a pushed notification, clicking it opens the target page', async ({ context, page, serviceWorker }): Promise<void> => {
-  await test.step('WHEN a notification targeting a url is shown', (): Promise<void> => showNotification(page, '/notification-target'));
+import type { Page } from '@playwright/test';
 
-  const pagePromise = await test.step('AND a new page is awaited', (): Promise<Promise<Page>> => Promise.resolve(context.waitForEvent('page')));
+import { expect, test } from './pwa.fixture';
+import { clickFirstNotification, showNotification } from './test/utils/push.spec.util';
 
-  await test.step('AND the notification is clicked in the worker', (): Promise<void> => clickFirstNotification(serviceWorker));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN granted notifications, clicking a shown notification opens its target page', async ({ context, page, pwaPage }): Promise<void> => {
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto({ notifications: 'granted' }));
 
-  const opened = await test.step('AND the new page opens', (): Promise<Page> => pagePromise);
+    await test.step('AND a notification targeting a url is shown', (): Promise<void> => showNotification(page, '/notification-target'));
 
-  await test.step('THEN the new page shows the target', (): Promise<void> => expect(opened).toHaveURL(/notification-target/));
+    const opened = await test.step('AND the notification is clicked in the worker', (): Promise<Page> => clickFirstNotification(context));
+
+    await test.step('THEN the new page shows the target', (): Promise<void> => expect(opened).toHaveURL(/notification-target/));
+  });
 });
 ```
 
@@ -654,12 +753,17 @@ export const isSyncCompleted = (page: Page): Promise<boolean> => page.evaluate(r
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN a sync tag, the browser accepts its registration', async ({ page, pwaPage }): Promise<void> => {
-  await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
+import { expect, test } from './pwa.fixture';
+import { isSyncSupported } from './test/utils/sync.spec.util';
 
-  const supported = await test.step('AND a sync tag is registered', (): Promise<boolean> => isSyncSupported(page, 'my-sync'));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN a first visit, registering a sync tag reports background sync support', async ({ page, pwaPage }): Promise<void> => {
+    await test.step('WHEN the app is opened', (): Promise<void> => pwaPage.goto());
 
-  await test.step('THEN background sync is supported', (): void => expect(supported).toBe(true));
+    const supported = await test.step('AND a sync tag is registered', (): Promise<boolean> => isSyncSupported(page, 'my-sync'));
+
+    await test.step('THEN background sync is supported', (): void => expect(supported).toBe(true));
+  });
 });
 ```
 
@@ -669,20 +773,25 @@ The app queues its data (IndexedDB or the offline form above) while offline and 
 
 ```ts
 // e2e/pwa/pwa.e2e.ts
-test('GIVEN a queued sync, it completes once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
-  await test.step('WHEN the form is opened', (): Promise<void> => pwaPage.goto('/pwa-app/form'));
+import { expect, test } from './pwa.fixture';
+import { isSyncCompleted, listenForSyncComplete, registerSync } from './test/utils/sync.spec.util';
 
-  await test.step('AND the network goes offline', (): Promise<void> => context.setOffline(true));
+test.describe('FEATURE: pwa service worker', () => {
+  test('GIVEN an online form, a sync registered offline completes once the network returns', async ({ context, page, pwaPage }): Promise<void> => {
+    await test.step('WHEN the form is opened', (): Promise<void> => pwaPage.goto({ path: '/pwa-app/form' }));
 
-  await test.step('AND a message is queued', (): Promise<void> => pwaPage.sendMessage('test'));
+    await test.step('AND the network goes offline', (): Promise<void> => context.setOffline(true));
 
-  await test.step('AND the data sync tag is registered', (): Promise<void> => registerSync(page, 'data-sync'));
+    await test.step('AND a message is queued', (): Promise<void> => pwaPage.sendMessage('test'));
 
-  await test.step('AND sync completion is awaited', (): Promise<void> => listenForSyncComplete(page));
+    await test.step('AND the data sync tag is registered', (): Promise<void> => registerSync(page, 'data-sync'));
 
-  await test.step('AND the network returns', (): Promise<void> => context.setOffline(false));
+    await test.step('AND the page listens for sync completion', (): Promise<void> => listenForSyncComplete(page));
 
-  await test.step('THEN the sync completes', (): Promise<void> => expect.poll((): Promise<boolean> => isSyncCompleted(page), { timeout: 10000 }).toBe(true));
+    await test.step('AND the network returns', (): Promise<void> => context.setOffline(false));
+
+    await test.step('THEN the sync completes', (): Promise<void> => expect.poll((): Promise<boolean> => isSyncCompleted(page), { timeout: 10000 }).toBe(true));
+  });
 });
 ```
 
@@ -690,7 +799,7 @@ test('GIVEN a queued sync, it completes once the network returns', async ({ cont
 
 | Anti-Pattern                   | Problem                 | Solution                                     |
 | ------------------------------ | ----------------------- | -------------------------------------------- |
-| Not clearing SW between tests  | Tests affect each other | Unregister SW in the page fixture            |
+| Sharing one context across tests | Workers and caches leak between tests | Keep the fresh context per test; call `resetServiceWorkers` in a fixture that shares one |
 | Not waiting for SW ready       | Race conditions         | Always await `navigator.serviceWorker.ready` |
 | Testing in isolation only      | Misses real SW behavior | Test with actual caching                     |
 | Hardcoded timeouts for caching | Flaky tests             | `expect.poll` until the cache is populated   |

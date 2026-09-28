@@ -33,7 +33,7 @@ const projects = [{ name: 'chromium', use: devices['Desktop Chrome'] }];
 
 export default defineConfig({
   projects,
-  testDir: './e2e'
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -260,7 +260,7 @@ export const readJsCoverageEntries = async (dir: string): Promise<JsCoverageEntr
 
 ### Per-Test Coverage
 
-A targeted test starts coverage through the opening call, drives the page object, and asserts on one module. `checkoutPage.goto({ coverage: 'js' })` starts JS coverage before it navigates, and `{ coverage: 'css' }` starts CSS coverage; `CheckoutOptions` is `type CheckoutOptions = { readonly coverage?: 'css' | 'js' }` in `common/checkout.type.ts`. `resetOnNavigation: false` keeps entries across `goto`. The `stop` step returns the entries; a sync step derives the percent so the assertion step stays one `expect`. `checkout.fixture.ts` follows the standard fixture shape and exposes `checkoutPage`.
+A targeted test starts coverage through the opening call, drives the page object, and asserts on one module. `checkoutPage.goto({ coverage: 'js' })` starts JS coverage before it navigates, and `{ coverage: 'css' }` starts CSS coverage; `CheckoutOptions`, the checkout page's one options type in `common/checkout.type.ts`, gains `coverage?: 'css' | 'js'` here. `resetOnNavigation: false` keeps entries across `goto`. Stopping coverage is an action after the page check, so it is a new `WHEN` that returns the entries; the `THEN` computes the percent inside its one `expect`, so no step only reads a value. `checkout.fixture.ts` follows the standard fixture shape and exposes `checkoutPage`.
 
 ```ts
 // e2e/checkout/pages/checkout.page.ts
@@ -321,17 +321,16 @@ import { expect, test } from './checkout.fixture';
 const MAX_UNUSED_CSS_PERCENT = 50;
 
 test.describe('FEATURE: checkout coverage', () => {
-  test('GIVEN coverage on, submitting the payment covers the checkout module', async ({ checkoutPage, page }): Promise<void> => {
+  test('GIVEN JS coverage on, submitting the payment covers the checkout module', async ({ checkoutPage, page }): Promise<void> => {
     await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto({ coverage: 'js' }));
 
     await test.step('AND the payment is submitted', (): Promise<void> => checkoutPage.pay());
 
     await test.step('THEN the success message is shown', (): Promise<void> => checkoutPage.expectSuccess());
 
-    const entries = await test.step('AND js coverage is collected', (): Promise<JsCoverageEntry[]> => page.coverage.stopJSCoverage());
-    const percent = await test.step('AND checkout.js coverage is measured', (): number => moduleCoveragePercent(entries, 'checkout.js'));
+    const entries = await test.step('WHEN js coverage is collected', (): Promise<JsCoverageEntry[]> => page.coverage.stopJSCoverage());
 
-    await test.step('THEN the checkout module meets the minimum', (): Promise<void> => expect(percent).toBeGreaterThan(MIN_COVERAGE_PERCENT));
+    await test.step('THEN the checkout module meets the minimum', (): void => expect(moduleCoveragePercent(entries, 'checkout.js')).toBeGreaterThan(MIN_COVERAGE_PERCENT));
   });
 
   test('GIVEN CSS coverage on, opening the help dialog uses most of the stylesheet', async ({ checkoutPage, page }): Promise<void> => {
@@ -341,10 +340,9 @@ test.describe('FEATURE: checkout coverage', () => {
 
     await test.step('THEN the help dialog is open', (): Promise<void> => checkoutPage.expectHelpOpen());
 
-    const entries = await test.step('AND css coverage is collected', (): Promise<CssCoverageEntry[]> => page.coverage.stopCSSCoverage());
-    const unused = await test.step('AND app.css unused share is measured', (): number => stylesheetUnusedPercent(entries, 'app.css'));
+    const entries = await test.step('WHEN css coverage is collected', (): Promise<CssCoverageEntry[]> => page.coverage.stopCSSCoverage());
 
-    await test.step('THEN under half of the stylesheet is unused', (): Promise<void> => expect(unused).toBeLessThan(MAX_UNUSED_CSS_PERCENT));
+    await test.step('THEN under half of the stylesheet is unused', (): void => expect(stylesheetUnusedPercent(entries, 'app.css')).toBeLessThan(MAX_UNUSED_CSS_PERCENT));
   });
 });
 ```
@@ -460,7 +458,7 @@ import { defineConfig } from '@playwright/test';
 
 const reporter: ReporterDescription[] = [['list'], ['./reporters/coverage.reporter.ts']];
 
-export default defineConfig({ reporter });
+export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Coverage Thresholds

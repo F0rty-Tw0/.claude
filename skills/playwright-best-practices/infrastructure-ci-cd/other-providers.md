@@ -443,7 +443,7 @@ const ciReporter: ReporterDescription[] = [
 const localReporter: ReporterDescription[] = [['html', { open: 'on-failure' }]];
 const reporter = process.env.CI ? ciReporter : localReporter;
 
-export default defineConfig({ reporter });
+export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Platform Comparison

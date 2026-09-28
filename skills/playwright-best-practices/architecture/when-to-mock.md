@@ -17,7 +17,7 @@
 
 **Mock at the boundary, test your stack end-to-end.** Mock third-party services you don't own (payment gateways, email providers, OAuth). Never mock your own frontend-to-backend communication. Tests prove YOUR code works, not that third-party APIs are available.
 
-Every route handler is a factory in `test/mocks/<name>.mock.ts`. A fixture or the spec's opening page-object call installs it before navigating: `page.route(pattern, nameMock())`. No step only routes. Response bodies are typed constants, never inline literals. The file suffix follows the same boundary: a spec that routes your own API (directly or through a fixture, page object, or mock it imports) is `<feature>.test.ts`; a spec that hits your real API, even while stubbing a third-party host, is `<feature>.e2e.ts`.
+Every route handler is a factory in `test/mocks/<name>.mock.ts`. A fixture or the spec's opening page-object call installs it before navigating: `page.route(pattern, nameMock())`. No step routes. Response bodies are typed constants, never inline literals. The file suffix follows the same boundary: a spec is `<feature>.test.ts` when a test run routes your own origin (`**/api/**`, `**/graphql`, `**/ws/**`, own assets, `routeFromHAR`) through its own `page.route`, a fixture that routes, or an opening-call option it passes. A page object that can route but is called without that option does not count. Every other spec is `<feature>.e2e.ts`, including one that only stubs third-party hosts (payment gateway, analytics, OAuth provider).
 
 ## Decision Matrix
 
@@ -79,7 +79,7 @@ export type Inventory = {
 
 ### Blocking Unwanted Requests
 
-Block third-party scripts that slow tests and add no coverage. The mock aborts; the feature fixture routes it before handing over each page object, so every test starts with tracking blocked and no hook or step mentions it.
+Block third-party scripts that slow tests and add no coverage. The mock aborts; the feature fixture routes it before handing over each page object, so every test starts with tracking blocked and no hook or step mentions it. The blocked hosts are third-party, so a spec that only uses this fixture stays a `.e2e.ts`.
 
 ```ts
 // e2e/checkout/test/mocks/tracking.mock.ts
@@ -126,7 +126,7 @@ export { expect } from '@playwright/test';
 import { test } from './checkout.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test('GIVEN the dashboard, opening it shows the heading', async ({ dashboardPage }): Promise<void> => {
+  test('GIVEN blocked tracking scripts, opening the dashboard still shows its heading', async ({ dashboardPage }): Promise<void> => {
     await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
     await test.step('THEN the dashboard heading is visible', (): Promise<void> => dashboardPage.expectHeading());
@@ -166,7 +166,7 @@ export const chargeMock = (charge: Charge = CHARGE_STUB): RouteHandler => {
 };
 ```
 
-`OrderPage.goto(options: OrderOptions = {})` takes `type OrderOptions = { readonly charge?: 'completed' | 'declined' }`. It routes `**/api/charge` to `chargeMock()`, or to `chargeDeclinedMock()` for `'declined'`, before it navigates, so the first charge request already hits the mock and the spec never routes.
+`OrderPage.goto(options: OrderOptions = {})` takes `type OrderOptions = { readonly charge?: 'completed' | 'declined' }`. It routes `**/api/charge` to `chargeMock()` for `'completed'`, or to `chargeDeclinedMock()` for `'declined'`, before it navigates, so the first charge request already hits the mock and the spec never routes. Without the option it routes nothing, so a spec that never passes it stays a real-backend `.e2e.ts`; both tests below pass it, so theirs is a `.test.ts`.
 
 ```ts
 // e2e/checkout/checkout.test.ts
@@ -174,7 +174,7 @@ import { test } from './checkout.fixture';
 
 test.describe('FEATURE: checkout', () => {
   test('GIVEN a successful charge, paying confirms the order', async ({ orderPage }): Promise<void> => {
-    await test.step('WHEN the order page is opened', (): Promise<void> => orderPage.goto());
+    await test.step('WHEN the order page is opened', (): Promise<void> => orderPage.goto({ charge: 'completed' }));
 
     await test.step('AND the purchase is completed', (): Promise<void> => orderPage.completePurchase());
 
@@ -243,7 +243,7 @@ export const HAR_REPLAY: HarOptions = { update: false, url: '**/api/**' };
 import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin panel', () => {
-  test('GIVEN an admin, opening the admin panel shows the reports heading', async ({ adminPage }): Promise<void> => {
+  test('GIVEN replayed admin traffic, opening the admin panel shows the reports heading', async ({ adminPage }): Promise<void> => {
     await test.step('WHEN the admin panel opens', (): Promise<void> => adminPage.goto());
 
     await test.step('THEN the reports heading is visible', (): Promise<void> => adminPage.expectReportsHeading());
@@ -288,7 +288,7 @@ const webServer = {
   url: LOCAL_URL
 };
 
-export default defineConfig({ use, webServer });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use, webServer });
 ```
 
 ### Staging Environment
@@ -303,7 +303,7 @@ const baseURL = process.env.CI ? STAGING_URL : LOCAL_URL;
 
 const use = { baseURL } as const;
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ### Test Containers
@@ -321,7 +321,7 @@ const webServer = {
   url: `${LOCAL_URL}/health`
 };
 
-export default defineConfig({ globalTeardown: './e2e/global-teardown.ts', webServer });
+export default defineConfig({ globalTeardown: './global-teardown.ts', testMatch: '**/*.@(e2e|test).ts', webServer });
 ```
 
 ```ts
@@ -391,7 +391,7 @@ export { expect } from '@playwright/test';
 import { test } from './billing.fixture';
 
 test.describe('FEATURE: subscription renewal', () => {
-  test('GIVEN an active subscription, renewing shows the renewal message', async ({ billingPage }): Promise<void> => {
+  test('GIVEN a stubbed invoice api, renewing shows the renewal message', async ({ billingPage }): Promise<void> => {
     await test.step('WHEN the billing page is opened', (): Promise<void> => billingPage.goto());
 
     await test.step('AND the subscription is renewed', (): Promise<void> => billingPage.renew());
@@ -410,7 +410,7 @@ import { test } from './billing.fixture';
 test.use({ mockPayments: false });
 
 test.describe('FEATURE: subscription renewal on the real test gateway', () => {
-  test('GIVEN an active subscription, renewing shows the renewal message', async ({ billingPage }): Promise<void> => {
+  test('GIVEN the real test gateway, renewing shows the renewal message', async ({ billingPage }): Promise<void> => {
     await test.step('WHEN the billing page is opened', (): Promise<void> => billingPage.goto());
 
     await test.step('AND the subscription is renewed', (): Promise<void> => billingPage.renew());
@@ -444,7 +444,7 @@ export default defineConfig({ projects });
 
 ## Validating Mock Accuracy
 
-Guard against mock drift from real APIs. A contract spec charges through the real endpoint and compares key names and value types with the stub the mock serves. The request body is a stub too, so the contract check and the mocked tests send the identical payload; that is what makes the comparison meaningful.
+Guard against mock drift from real APIs. A contract spec charges through the real endpoint and compares key names and value types with the stub the mock serves. The request body is a stub too, so the contract check and the mocked tests send the identical payload; that is what makes the comparison meaningful. The status check comes first, and `expectBodyShape` reads the body inside the check that compares it. The spec uses `request` only, so no `page` route applies and nothing in its run routes your origin: it is a `.e2e.ts` and needs no `test.use`.
 
 ```ts
 // e2e/billing/test/stubs/charge-request.stub.ts
@@ -455,37 +455,44 @@ export const CHARGE_REQUEST_STUB: ChargeRequest = { amount: 5000, currency: 'usd
 
 ```ts
 // e2e/billing/test/utils/contract.spec.util.ts
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { ChargeRequest } from '../../common/billing.type';
 import { CHARGE_REQUEST_STUB } from '../stubs/charge-request.stub';
 
-export const chargeThroughApi = async (request: APIRequestContext, charge: ChargeRequest = CHARGE_REQUEST_STUB): Promise<Record<string, unknown>> => {
-  const response = await request.post('/api/billing/charge', { data: charge });
-
-  return response.json();
-};
-
-export const shapeOf = (body: Record<string, unknown>): string[] => {
+const shapeOf = (body: Record<string, unknown>): string[] => {
   const keys = Object.keys(body).sort();
 
   return keys.map((key: string): string => `${key}:${typeof body[key]}`);
 };
+
+export const chargeThroughApi = (request: APIRequestContext, charge: ChargeRequest = CHARGE_REQUEST_STUB): Promise<APIResponse> => {
+  return request.post('/api/billing/charge', { data: charge });
+};
+
+export const expectBodyShape = async (response: APIResponse, stub: Record<string, unknown>): Promise<void> => {
+  const body: Record<string, unknown> = await response.json();
+
+  expect(shapeOf(stub)).toEqual(shapeOf(body));
+};
 ```
 
 ```ts
-// e2e/billing/billing-contract.test.ts
+// e2e/billing/billing-contract.e2e.ts
+import type { APIResponse } from '@playwright/test';
+
 import { expect, test } from './billing.fixture';
 import { INVOICE_STUB } from './test/stubs/invoice.stub';
-import { chargeThroughApi, shapeOf } from './test/utils/contract.spec.util';
-
-test.use({ mockPayments: false });
+import { chargeThroughApi, expectBodyShape } from './test/utils/contract.spec.util';
 
 test.describe('FEATURE: billing mock contract', () => {
   test('GIVEN the real billing API, a posted charge matches the mock body shape', async ({ request }): Promise<void> => {
-    const realBody = await test.step('WHEN a charge is posted through the real API', (): Promise<Record<string, unknown>> => chargeThroughApi(request));
+    const response = await test.step('WHEN a charge is posted', (): Promise<APIResponse> => chargeThroughApi(request));
 
-    await test.step('THEN the mock keys and value types match the real body', (): void => expect(shapeOf(INVOICE_STUB)).toEqual(shapeOf(realBody)));
+    await test.step('THEN the status is ok', (): Promise<void> => expect(response).toBeOK());
+
+    await test.step('AND the mock keys and value types match the real body', (): Promise<void> => expectBodyShape(response, INVOICE_STUB));
   });
 });
 ```

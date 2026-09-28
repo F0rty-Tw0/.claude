@@ -169,7 +169,7 @@ test.describe('FEATURE: booking', () => {
 
 ## Custom Fixtures
 
-Best for resources needing setup before and teardown after tests: auth state, database connections, API clients, test users. The `member` fixture seeds through `request` and deletes after `use`; `dashboardPage` depends on `member`, logs in through the login page object, and hands the spec a page object already on the dashboard, so no locator appears in the fixture file.
+Best for resources needing setup before and teardown after tests: auth state, database connections, API clients, test users. The `member` fixture seeds through `request` and deletes after `use`; `dashboardPage` depends on `member`, signs the member in through `page.request` (it shares the page's cookies), and hands the spec the dashboard page object without opening it. Each test opens the dashboard in its own `WHEN`, so nothing navigates twice and no locator appears in the fixture file.
 
 ```ts
 // e2e/booking/booking.fixture.ts
@@ -179,7 +179,6 @@ import type { Member } from './common/booking.type';
 import { AccountPage } from './pages/account.page';
 import { BookingPage } from './pages/booking.page';
 import { DashboardPage } from './pages/dashboard.page';
-import { LoginPage } from './pages/login.page';
 import { memberDraft } from './test/utils/member-builder.spec.util';
 
 type BookingFixtures = {
@@ -197,11 +196,7 @@ export const test = base.extend<BookingFixtures>({
     await use(new BookingPage(page));
   },
   dashboardPage: async ({ member, page }, use): Promise<void> => {
-    const loginPage = new LoginPage(page);
-
-    await loginPage.goto();
-    await loginPage.submit(member);
-    await page.waitForURL('/dashboard');
+    await page.request.post('/api/login', { data: member });
     await use(new DashboardPage(page));
   },
   member: async ({ request }, use): Promise<void> => {
@@ -217,21 +212,21 @@ export const test = base.extend<BookingFixtures>({
 export { expect } from '@playwright/test';
 ```
 
-`DashboardPage` and `LoginPage` follow the page-object sample above; `DashboardPage` exposes `goto()` plus `expectWidgets()` and `expectWelcome(email)` as plain `expect*` methods.
+`DashboardPage` follows the page-object sample above and exposes `goto()` plus `expectWidgets()` and `expectWelcome(email)` as plain `expect*` methods. Both tests start from the same signed-in member, so the outcome tells them apart.
 
 ```ts
 // e2e/booking/dashboard.e2e.ts
 import { test } from './booking.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test('GIVEN the dashboard, opening it shows the widgets', async ({ dashboardPage }): Promise<void> => {
-    await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+  test('GIVEN a signed-in member, opening the dashboard shows the widgets', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
     await test.step('THEN the dashboard widgets are visible', (): Promise<void> => dashboardPage.expectWidgets());
   });
 
   test('GIVEN a signed-in member, opening the dashboard greets them by email', async ({ dashboardPage, member }): Promise<void> => {
-    await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
     await test.step('THEN the welcome prompt shows the member email', (): Promise<void> => dashboardPage.expectWelcome(member.email));
   });
@@ -244,7 +239,7 @@ test.describe('FEATURE: dashboard', () => {
 - `use()` separates setup from teardown; teardown runs even if the test fails
 - Fixtures compose: one can depend on another
 - Fixtures are lazy: created only when requested
-- Wrap page objects in fixtures for lifecycle management; a fixture that logs in returns the page object of the landing page, never a raw `Page`
+- Wrap page objects in fixtures for lifecycle management; a fixture that signs in hands over a page object, never a raw `Page`
 - Re-export `expect` so specs have one import source
 
 ## Util Functions
@@ -412,7 +407,7 @@ test.extend({
 });
 ```
 
-Prefer: small, composable fixtures (`member`, `loggedInPage`, `bookingPage`). Each fixture does one thing and depends on the others by name.
+Prefer: small, composable fixtures (`member`, `dashboardPage`, `bookingPage`). Each fixture does one thing and depends on the others by name.
 
 ### Utils with side effects
 
