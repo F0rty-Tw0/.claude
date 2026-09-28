@@ -36,6 +36,14 @@ Use a fixed 1h interval, or omit the interval to self-pace (CI usually needs 5�
 5. **New human review comments** → summarize each with a proposed response or fix. Do not post anything.
 6. **Tick summary** (one block, scannable): reviewed SHA, checks (pass/fail/pending counts), fixes applied locally (files), reruns triggered, decisions needed.
 
+## Stacks (`meaningful-prs`)
+
+Babysit the whole stack: `/loop 1h /code-review babysit <n1> <n2> <n3>`. Each tick, per PR, also check:
+
+- **Parent merged?** (`gh pr view <parent> --json state`) → the child needs retarget + restack. Don't switch branches or push — ping with the exact commands from `meaningful-prs` `references/mechanics.md` ("Parent squash-merged"). Retarget urgency: if the parent branch gets deleted first, GitHub closes the child PR.
+- **Parent got new commits?** → the child is behind its base; list it as "restack needed" in the tick summary.
+- Local fixes go only on the checked-out PR's branch. Other PRs in the stack: report, don't touch.
+
 ## Pinging
 
 Use `PushNotification` (load via `ToolSearch("select:PushNotification")`) only when a human decision is needed or the PR is ready. Everything else goes in the tick summary.

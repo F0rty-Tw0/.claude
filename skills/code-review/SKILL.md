@@ -30,6 +30,8 @@ AI tools write more code than a human can read line by line. So review effort fo
 
    No diff found → say so and stop. Never review from memory.
 
+   **Stacked PR** (base is not the default branch: `gh pr view <n> --json baseRefName`) → diff against the **parent** (`<parent>...<head>`), and pass the `## Stack` map to the reviewer.
+
 2. **Independence.** Dispatch the reviewer with `references/reviewer-prompt.md`. Always dispatch, even for small diffs: if this session wrote any of the code, it is biased and must not review it.
 
    Pass only artifacts: diff, PR text, plan. Never pass your session's rationale, opinions, or a hint list.
