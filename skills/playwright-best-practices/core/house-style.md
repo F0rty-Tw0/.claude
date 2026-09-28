@@ -28,10 +28,10 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 
 | Concern | Rule |
 |---|---|
-| Naming tree | Flat: `test.describe('FEATURE: <name>')` → `test('GIVEN <state>, <outcome>')`. One describe per spec, never nested. The title is the test's only `GIVEN`: it names the state that sets the test apart (`'GIVEN a failed create, saving warns and keeps the sheet open'`). The body is pure Gherkin after it: `WHEN` → `AND`* → `THEN` → `AND`*. Never a `GIVEN` or `WHEN` describe, no `SCENARIO:` prefix, no `GIVEN` step. |
+| Naming tree | `test.describe('FEATURE: <name>')` → optional `test.describe('JOURNEY: <user path>')` → `test('GIVEN <state>, <outcome>')`. One `FEATURE` per spec; `JOURNEY` is the only nested describe, one level deep. The title is the test's only `GIVEN`: it names the state that sets the test apart (`'GIVEN a failed create, saving warns and keeps the sheet open'`). The body is pure Gherkin after it: `WHEN` → `AND`* → `THEN` → `AND`*. Never a `GIVEN` or `WHEN` describe, no `SCENARIO:` prefix, no `GIVEN` step. |
 | Test body | Every statement inside `test(...)` is `await test.step('<prose>', ...)`. No bare `page.*`, `expect(...)`, or page-object call outside a step. |
 | Step body | One call. `(): Promise<void> => loginPage.submit(user)`. Two or more statements mean a page-object or fixture method is missing. |
-| Step naming | Upper-case keyword, then present-tense prose: `'WHEN the alerts overview is opened with deletes rejected'`, `'THEN the delete error toast is shown'`. `WHEN` for the first action, `THEN` for the first assertion, `AND` for each further step of the same kind. |
+| Step naming | Upper-case keyword, then present-tense prose: `'WHEN the alerts overview is opened'`, `'THEN the delete error toast is shown'`. `WHEN` for the first action, `THEN` for the first assertion, `AND` for each further step of the same kind. |
 | Steps only in the spec | `test.step` appears only in `.e2e.ts` / `.test.ts` bodies and their hooks. Page objects, helper objects, fixtures, and utils never open a step, so no step nests inside another and nothing is boxed. |
 | One owner per file | One page object, one helper object, one fixture file, one route-mock file, one stub file per `.ts`. One `FEATURE:` per spec. |
 | File size | Source `.ts` under 150 lines, spec under 300, blank and comment lines skipped. Over means split by concern per `module-size.md`. |
@@ -129,12 +129,13 @@ test.describe('FEATURE: login', () => {
 
 | Concern | Rule |
 |---|---|
-| `describe` text | Exactly one `test.describe('FEATURE: <name>')` per spec, wrapping every test. No nested describe, so no `GIVEN` describe: the report tree is `file → FEATURE → GIVEN <state>, <outcome>`. |
+| `describe` text | Exactly one `test.describe('FEATURE: <name>')` per spec, wrapping every test. Inside it, tests sit directly or in a `test.describe('JOURNEY: <user path>')`. No other nested describe, so no `GIVEN` describe: the report tree is `file → FEATURE → (JOURNEY →) GIVEN <state>, <outcome>`. |
+| Journey | A `JOURNEY` groups 2+ tests that follow one user path in order: `'JOURNEY: a guest buys one item'`. Each leg is independent: its title names where it starts (`'GIVEN one item in the cart, …'`), and the opening call or a fixture seeds that state instead of the leg before it. A leg that cannot be seeded (a real third-party redirect) makes that journey `test.describe.configure({ mode: 'serial' })`, with the reason in the prose above the sample. |
 | State in title | The title's `GIVEN` names the state that distinguishes the test: `'GIVEN a failed list, both lists show a load error'`. A state every test in the spec shares (`the login page is open`) is not what the title names; name the input or condition that differs instead (`'GIVEN a wrong password, submitting shows the error banner'`). |
 | `test` text | `GIVEN`, the distinguishing state, a comma, then the outcome, as one lower-case present-tense sentence: `'GIVEN a wrong password, submitting shows the error banner'`. `WHEN` / `THEN` never appear in the title; they are steps. No "should". |
 | Step keywords | Every step in a spec starts with `WHEN`, `THEN`, or `AND`; `GIVEN` belongs to the title. The first step is `WHEN`, and it is the test's only `WHEN`. A test holds at least one `THEN`. |
 | Step order | `WHEN` → `AND`* (further actions) → `THEN` → `AND`* (further assertions). Consecutive steps of one kind after the first are `AND`, never a second `WHEN` or `THEN`. Independent phases are separate tests. |
-| Arrange | There are no arrange steps. The title's `GIVEN` names the state; the code that builds it runs inside the first `WHEN` call or a fixture. A route, a permission, a clock, or a viewport is an option on the opening call, which applies it before it navigates: `alertsPage.goto({ failOn: 'delete' })` → `'WHEN the alerts overview is opened with deletes rejected'`. API seeding and anything the spec never names lives in a fixture that seeds and hands over the ready page object; see [Requirement Annotation](annotations.md#requirement-annotation). Case-specific data is a `const` above the first step, blank line after. No `beforeEach` steps: each test opens its own page in its `WHEN`, so its step list reads complete on its own. |
+| Arrange | There are no arrange steps. The title's `GIVEN` names the state; the code that builds it runs inside the first `WHEN` call or a fixture. A route, a permission, a clock, or a viewport is an option on the opening call, which applies it before it navigates: `alertsPage.goto({ failOn: 'delete' })` → `'WHEN the alerts overview is opened'`. The `WHEN` does not repeat the title's conditions; the title already names them. API seeding and anything the spec never names lives in a fixture that seeds and hands over the ready page object; see [Requirement Annotation](annotations.md#requirement-annotation). Case-specific data is a `const` above the first step, blank line after. No `beforeEach` steps: each test opens its own page in its `WHEN`, so its step list reads complete on its own. |
 | `test.use` options | `test.use` cannot run inside a test, and there is no describe to scope it. An option the browser can change at runtime is an option on the opening call, applied before it navigates: `page.setViewportSize`, `context.grantPermissions` / `clearPermissions`, `page.clock.install`. An option fixed at context creation (`locale`, `storageState`, `timezoneId`, device) that differs from the rest of the spec moves the scenarios to their own spec with a file-level `test.use` and its own `FEATURE`: `store-finder-denied.e2e.ts`. The same scenarios across several option values are a project per value in `playwright.config`, not a loop of describes. |
 | Steps | One step per action or per assertion group. Blank line between steps. |
 | Fixtures in signature | Destructure only what the test uses, alphabetical. |
@@ -389,7 +390,8 @@ Rules for the markdown files in this skill, so every reference reads the same wa
 |---|---|
 | "Steps make short tests longer." | A three-line test with three steps is still three lines. The trace now names them. |
 | "The title already says WHEN and THEN." | The title is `GIVEN <state>, <outcome>`; `WHEN` / `THEN` are steps. Saying it twice is what the rule removes. |
-| "The trace should show where the mock was set up." | A route-only step is 0 ms with nothing under it. The title names the condition; the `WHEN` step says `opened with deletes rejected`. |
+| "The trace should show where the mock was set up." | A route-only step is 0 ms with nothing under it. The title names the condition; the `WHEN` call applies it. |
+| "The `WHEN` should say which setup ran." | The title says it, directly above the steps. Repeating it in the `WHEN` doubles every condition and drifts the day one of them changes. |
 | "Opening the page is arrange, not the action." | In an e2e test, opening the page is the user's first action. The title carries the state; the one `WHEN` starts the sequence, and the outcome in the title says which part of it the test is about. |
 | "A boxed `THEN` in the page object points failures at the spec." | It also nests a second `THEN` under the spec's `THEN`. The stack trace already includes the spec line; one step level beats a prettier location. |
 | "One `page.getByRole` in the spec is fine." | The spec now knows the DOM. Move it to the page object. |
@@ -416,7 +418,8 @@ Stop and re-check this file when reasoning includes:
 - `page.getBy` or `page.locator` inside a `.e2e.ts` or `.test.ts`.
 - `test.describe('Login', ...)` or any describe text with no Gherkin keyword.
 - `test.describe('WHEN …')` or a test title starting with `WHEN` / `THEN`.
-- `test.describe('GIVEN …')`, or any describe nested inside the `FEATURE`.
+- `test.describe('GIVEN …')`, a nested describe that is not `JOURNEY:`, or a describe inside a `JOURNEY`.
+- A `JOURNEY` leg that relies on the leg before it without `mode: 'serial'` and a stated reason.
 - Two test titles in one spec that read the same.
 - A `GIVEN` step, a first step that is not `WHEN`, a second `WHEN`, or a step that only calls `page.route`.
 - A `test.step` inside `beforeEach`.
@@ -443,7 +446,7 @@ Stop and re-check this file when reasoning includes:
 | `test('WHEN the order is placed THEN the confirmation page opens', ...)` | `test('GIVEN a filled cart, placing the order opens the confirmation page', ...)` with `WHEN` / `THEN` steps inside. |
 | `test('placing the order opens the confirmation page', ...)` or `test('SCENARIO: …')` | Start with `GIVEN <state>,`. No keyword, no place in the tree; `SCENARIO:` is the old prefix. |
 | `test.describe('WHEN the order is placed', ...)` | Delete the describe; `'WHEN the order is placed'` is a step. |
-| `test.describe('GIVEN the create api fails', ...)` around tests | Delete the describe. The title names the failure, `'GIVEN a failed create, saving warns and keeps the sheet open'`, and the opening `WHEN` folds in the mock: `'WHEN the price alerts page is opened with creates rejected'`. |
+| `test.describe('GIVEN the create api fails', ...)` around tests | Delete the describe. The title names the failure, `'GIVEN a failed create, saving warns and keeps the sheet open'`, and the opening `WHEN` applies it: `priceAlertsPage.goto({ failOn: 'create' })` in `'WHEN the price alerts page is opened'`. |
 | `test.describe('GIVEN notifications are denied', () => { test.use({ permissions: [] }); … })` | Runtime-changeable: an option on the opening call (`alertsPage.goto({ notifications: 'denied' })` runs `context.clearPermissions()` before navigating). Context-fixed (`locale`, `storageState`): a separate spec with a file-level `test.use`. |
 | `test.step('submit credentials', ...)` in a spec | `test.step('WHEN credentials are submitted', ...)`. |
 | Step with `async () => { await a(); await b(); }` | Add `checkoutPage.placeOrder()` and call it. |
