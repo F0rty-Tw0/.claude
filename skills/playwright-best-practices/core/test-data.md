@@ -294,7 +294,7 @@ import { test } from './signup.fixture';
 import { buildApplicant } from './test/utils/applicant-builder.spec.util';
 
 test.describe('FEATURE: signup', () => {
-  test('SCENARIO: submitting the form with generated data opens the welcome page', async ({ fake, signupPage }): Promise<void> => {
+  test('GIVEN generated applicant data, submitting the form opens the welcome page', async ({ fake, signupPage }): Promise<void> => {
     const applicant = buildApplicant({ name: fake.person.fullName() });
 
     await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
@@ -334,7 +334,7 @@ test.describe('FEATURE: login', () => {
   });
 
   for (const scenario of LOGIN_SCENARIOS) {
-    test(`SCENARIO: ${scenario.email} signing in shows "${scenario.expected}"`, async ({ loginPage }): Promise<void> => {
+    test(`GIVEN ${scenario.email}, signing in shows "${scenario.expected}"`, async ({ loginPage }): Promise<void> => {
       await test.step('WHEN the credentials are submitted', (): Promise<void> => loginPage.submit(scenario));
 
       await test.step('THEN the expected text is visible', (): Promise<void> => loginPage.expectText(scenario.expected));
@@ -345,7 +345,7 @@ test.describe('FEATURE: login', () => {
 
 ### Parameterized Tests
 
-Larger scenario tables keep the same loop; only the stub grows. Give each row a `name` so the generated title reads as a sentence: `` test(`choosing ${scenario.name} shows the cost and ETA`, …) ``.
+Larger scenario tables keep the same loop; only the stub grows. Give each row a `name` so the generated title reads as a sentence: `` test(`GIVEN ${scenario.name}, choosing it shows the cost and ETA`, …) ``.
 
 ```ts
 // e2e/checkout/test/stubs/shipping-scenario.stub.ts
@@ -462,7 +462,7 @@ export { expect } from '@playwright/test';
 import { test } from './catalog.fixture';
 
 test.describe('FEATURE: catalog', () => {
-  test('SCENARIO: opening the catalog lists the first product', async ({ catalogPage, testProducts, testUser }): Promise<void> => {
+  test('GIVEN seeded test data, opening the catalog lists the first product', async ({ catalogPage, testProducts, testUser }): Promise<void> => {
     await test.step('WHEN the catalog is opened', (): Promise<void> => catalogPage.goto());
 
     await test.step('THEN the greeting names the user', (): Promise<void> => catalogPage.expectGreeting(testUser.name));
@@ -533,7 +533,7 @@ import type { User } from './common/users.type';
 import { test } from './users.fixture';
 
 test.describe('FEATURE: user profile', () => {
-  test('SCENARIO: opening the profile shows the name', async ({ profilePage, seedUser }): Promise<void> => {
+  test('GIVEN a seeded user, opening the profile shows the name', async ({ profilePage, seedUser }): Promise<void> => {
     const user = await test.step('GIVEN a user is seeded', (): Promise<User> => seedUser({ name: 'John Doe' }));
 
     await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto(user.id));

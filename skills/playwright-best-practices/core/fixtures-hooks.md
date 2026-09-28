@@ -51,7 +51,7 @@ import type { User } from './common/users.type';
 import { fetchUsers } from './test/utils/users-api.spec.util';
 
 test.describe('FEATURE: users api', () => {
-  test('SCENARIO: requesting users returns five users', async ({ request }): Promise<void> => {
+  test('GIVEN the users api, requesting users returns five users', async ({ request }): Promise<void> => {
     const users = await test.step('WHEN the users are requested', (): Promise<User[]> => fetchUsers(request));
 
     await test.step('THEN five users are returned', (): void => expect(users).toHaveLength(5));
@@ -295,13 +295,13 @@ test.describe('FEATURE: user management', () => {
     await test.step('GIVEN the users page is open', (): Promise<void> => usersPage.goto());
   });
 
-  test('SCENARIO: reloading the page shows the user list', async ({ usersPage }): Promise<void> => {
+  test('GIVEN the users page, reloading it shows the user list', async ({ usersPage }): Promise<void> => {
     await test.step('WHEN the page is reloaded', (): Promise<void> => usersPage.reload());
 
     await test.step('THEN the user list is shown', (): Promise<void> => usersPage.expectList());
   });
 
-  test('SCENARIO: adding a user names the user in the list', async ({ usersPage }): Promise<void> => {
+  test('GIVEN a new user, adding it names the user in the list', async ({ usersPage }): Promise<void> => {
     await test.step('WHEN a user is added', (): Promise<void> => usersPage.addUser(USER_STUB));
 
     await test.step('THEN the list names the new user', (): Promise<void> => usersPage.expectUser(USER_STUB.name));

@@ -77,13 +77,13 @@ test.describe('FEATURE: login', () => {
     await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
   });
 
-  test('SCENARIO: valid credentials open the dashboard', async ({ loginPage, page }): Promise<void> => {
+  test('GIVEN valid credentials, submitting opens the dashboard', async ({ loginPage, page }): Promise<void> => {
     await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.login(USER_STUB));
 
     await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
   });
 
-  test('SCENARIO: wrong password shows the error banner', async ({ loginPage }): Promise<void> => {
+  test('GIVEN a wrong password, submitting shows the error banner', async ({ loginPage }): Promise<void> => {
     const user: Credentials = { ...USER_STUB, password: 'wrong' };
 
     await test.step('WHEN the wrong password is submitted', (): Promise<void> => loginPage.login(user));

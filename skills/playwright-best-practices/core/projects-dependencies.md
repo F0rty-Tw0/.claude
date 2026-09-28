@@ -320,7 +320,7 @@ import type { ProjectMetadata } from '../common/playwright.type';
 import { test } from './gallery.fixture';
 
 test.describe('FEATURE: gallery', () => {
-  test('SCENARIO: hovering an image on desktop shows the caption', async ({ galleryPage }, testInfo): Promise<void> => {
+  test('GIVEN a desktop project, hovering an image shows the caption', async ({ galleryPage }, testInfo): Promise<void> => {
     const metadata: ProjectMetadata = testInfo.project.metadata;
 
     test.skip(metadata.platform !== 'desktop', 'Hover needs a pointer');
