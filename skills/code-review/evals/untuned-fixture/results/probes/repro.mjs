@@ -1,5 +1,6 @@
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os'; import { join } from 'node:path';
-const H = new URL('../../head/src/', import.meta.url).pathname;
+const H = fileURLToPath(new URL('../../head/src/', import.meta.url));
 process.env.AUDIT_LOG = join(tmpdir(), 'untuned-fixture-audit.log');
 const { handle } = await import(H + 'app.js');
 const { createSession } = await import(H + 'auth.js');

@@ -10,8 +10,8 @@ About 238 changed lines in total.
 Unchanged files a reviewer needs for context: `src/store.js`, `src/views.js`, `src/access.js`,
 `src/auth.js`, `README.md`, `migrations/001_init.sql`.
 
-Each runtime defect (items 1–9) was reproduced with a throwaway probe script (kept out of the
-fixture). The observed result is listed under each item.
+Each runtime defect (items 1–9) was reproduced by the fixture author with a throwaway script (not kept). The
+reviewer's own probes are in `results/probes/` (repro, crash, mutate, contract). The observed result is listed under each item.
 
 14 items: 12 real defects (#1–#12), 1 style nit that should NOT be raised (#13), 1 piece of
 correct code that should NOT be flagged (#14).
