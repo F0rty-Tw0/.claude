@@ -2,7 +2,7 @@
 
 A fake PR (`base/` → `head/`, diff with `git diff --no-index base head`) seeded with 13 items. `head/` tests pass (`node --test` → 2 pass, 0 fail) even though the code is broken. The tests are deliberately bad; they are part of the fixture.
 
-**Caveat:** the new skill's rules were written after seeing the baseline run on this fixture, so it is **tuned** to it. The skill is n=1 here. For a generalization check, see `../untuned-fixture/` (12/12 defects, 2/2 traps).
+**Caveat:** the new skill's rules were written after seeing the baseline run on this fixture, so it is **tuned** to it. The skill is n=1 here. For a generalization check, see `../untuned-fixture/` (11.5/12 defects, 2/2 traps).
 
 | # | Item | Where | Baseline (old skill) | New skill |
 |---|---|---|---|---|
@@ -20,7 +20,7 @@ A fake PR (`base/` → `head/`, diff with `git diff --no-index base head`) seede
 | 12 | Style bait in gated leaf must NOT be a finding | `ui/creditBadge.mjs` | ✗ LOW style finding | ✓ discarded as style |
 | 13 | Rollback path + canary metric + human deep-read list | — | ✗ | ✓ |
 
-**Score:** baseline 8/13, new skill 13/13. Raw reports: `results/baseline-old-skill.md`, `results/new-skill.md`.
+**Score:** baseline 8/13, new skill 13/13. Items 1 and 13 are output sections only the new format has, so on the 11 shared items it's 8/11 vs 11/11. Raw reports: `results/baseline-old-skill.md`, `results/new-skill.md`.
 
 After item 10 regressed from Confirmed to Inferred, `references/adversarial-inspection.md` gained "run the migration on a scratch DB".
 

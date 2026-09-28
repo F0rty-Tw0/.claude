@@ -22,7 +22,7 @@ Flow's **Stage Gates** table (flow/SKILL.md) enforces these gates:
 - plan validated (critic/consensus) -> flow PLAN (`--consensus`)
 - subtasks done + worktrees merged -> flow EXECUTE
 - build exit 0 + tests 0 failures -> flow EXECUTE + VERIFY
-- all reviewers approved -> flow REVIEW + VERIFY
+- code-review verdict not BLOCK (a TRUNK verdict stops for human sign-off, even here) -> flow REVIEW + VERIFY
 
 Do not advance a stage until flow's gate observation holds; if a gate can't be met, stop and report -- never fake it.
 
