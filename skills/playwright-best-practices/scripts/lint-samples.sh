@@ -37,10 +37,10 @@ out="$(for f in "${files[@]}"; do
       if (line ~ /^[[:space:]]+test\.describe(\.[a-z]+)?\(/ && line !~ /describe\.configure\(/) print file ":" NR ": nested describe (specs are flat: FEATURE → test)"
       if (line ~ /^[[:space:]]*test(\.skip|\.fixme)?\(['\''"`]/ && line !~ /^[[:space:]]*test(\.skip|\.fixme)?\(['\''"`]GIVEN [^,]+, /) print file ":" NR ": test title must be GIVEN <state>, <outcome> (WHEN / THEN belong to steps)"
       if (line ~ /^[[:space:]]*test\(["'\''`]/ && line ~ /[Ss]hould/) print file ":" NR ": `should` in test title"
-      if (line ~ /test\.step\(['\''`]/ && line !~ /test\.step\(['\''`](GIVEN|WHEN|THEN|AND) /) print file ":" NR ": step without GIVEN / WHEN / THEN / AND"
-      if (!spec && line ~ /test\.step\(['\''`]/ && line ~ /box: true/ && line !~ /test\.step\(['\''`](THEN|AND) /) print file ":" NR ": boxed page-object step must be THEN (or AND)"
+      if (line ~ /test\.step\(['\''`]/ && line !~ /test\.step\(['\''`](WHEN|THEN|AND) /) print file ":" NR ": step must start with WHEN / THEN / AND (GIVEN is the test title)"
+      if (!spec && line ~ /test\.step\(/) print file ":" NR ": test.step outside a spec (page objects, helpers, fixtures, utils never open steps)"
+      if (line ~ /box: true/) print file ":" NR ": boxed step (steps live only in the spec, unboxed)"
       if (line ~ /^[[:space:]]*test(\.skip|\.fixme|\.describe|\.beforeEach|\.afterEach|\.beforeAll|\.afterAll)?\(/) { givens = 0; whens = 0 }
-      if (spec && line ~ /test\.step\(['\''`]GIVEN /) { givens++; if (givens > 1) print file ":" NR ": second GIVEN step in one test (use AND)" }
       if (spec && line ~ /test\.step\(['\''`]WHEN /) { whens++; if (whens > 1) print file ":" NR ": second WHEN step in one test (use AND, or split the test)" }
       if (line ~ /async \([^)]*\) =>/) print file ":" NR ": async arrow without return type"
       if (line ~ /constructor\((private|public|protected|readonly) /) print file ":" NR ": parameter property"

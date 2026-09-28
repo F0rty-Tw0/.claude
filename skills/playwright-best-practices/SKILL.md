@@ -7,7 +7,7 @@ description: Use when writing, refactoring, or reviewing Playwright end-to-end, 
 
 ## Overview
 
-Reference set for Playwright test development, rewritten to house style: one flat `FEATURE` describe per spec, `GIVEN <state>, <outcome>` test titles, `GIVEN` / `WHEN` / `THEN` / `AND` steps with one call each, page objects that own every locator, fixtures that own every page object, and one responsibility per file.
+Reference set for Playwright test development, rewritten to house style: one flat `FEATURE` describe per spec, `GIVEN <state>, <outcome>` test titles, `WHEN` / `THEN` / `AND` steps with one call each (only the spec opens steps; the title is the one `GIVEN`), page objects that own every locator, fixtures that own every page object, and one responsibility per file.
 
 **REQUIRED BACKGROUND:** skill:artification. Its `typescript-style.md` and `spec-style.md` apply to every Playwright file unchanged.
 
