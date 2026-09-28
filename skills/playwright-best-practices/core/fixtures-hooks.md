@@ -232,7 +232,7 @@ When tests in different workers touch the same backend or DB (same user, same te
 
 ## Hooks
 
-Hook bodies follow the spec rule: every statement is a step, and a step is one call. Conditional logic (screenshot only on failure) goes into a util.
+Hooks never open a step: a hook calls its util directly, so the trace holds only the spec's own `WHEN` / `THEN` steps. A hook never opens the page either; each test opens it in its own `WHEN` step. Conditional logic (screenshot only on failure) goes into a util.
 
 ### beforeEach / afterEach
 
@@ -254,18 +254,14 @@ export const captureOnFailure = async (page: Page, testInfo: TestInfo): Promise<
 import { test } from './users.fixture';
 import { captureOnFailure } from './test/utils/failure-screenshot.spec.util';
 
-test.beforeEach(async ({ usersPage }): Promise<void> => {
-  await test.step('GIVEN the users page is open', (): Promise<void> => usersPage.goto());
-});
-
 test.afterEach(async ({ page }, testInfo): Promise<void> => {
-  await test.step('THEN a screenshot is captured when the test failed', (): Promise<void> => captureOnFailure(page, testInfo));
+  await captureOnFailure(page, testInfo);
 });
 ```
 
 ### beforeAll / afterAll
 
-`beforeAll` and `afterAll` run once per worker per file. Only worker-scoped fixtures (`browser`, `browserName`) are available; `page` is not.
+`beforeAll` and `afterAll` run once per worker per file. Only worker-scoped fixtures (`browser`, `browserName`) are available; `page` is not. The body calls the util directly. When a test reads the seeded data back, a worker-scoped fixture (see [Worker Scope](#worker-scope)) is the better home: it seeds, hands over the value, and resets after `use`.
 
 ```ts
 // e2e/catalog/catalog.e2e.ts
@@ -273,17 +269,17 @@ import { test } from './catalog.fixture';
 import { resetCatalog, seedCatalog } from './test/utils/catalog.spec.util';
 
 test.beforeAll(async (): Promise<void> => {
-  await test.step('GIVEN the catalog is seeded', (): Promise<void> => seedCatalog());
+  await seedCatalog();
 });
 
 test.afterAll(async (): Promise<void> => {
-  await test.step('THEN the catalog is reset', (): Promise<void> => resetCatalog());
+  await resetCatalog();
 });
 ```
 
 ### Feature-Level Hooks
 
-A `beforeEach` inside the `FEATURE` describe, opened as a `GIVEN` step, is the arrange shared by every test in the spec. Arrange that differs per test is that test's own `GIVEN` step instead; there is no nested describe to scope a hook.
+A `beforeEach` inside the `FEATURE` describe that only opens the page is deleted. Each test opens the page in its own `WHEN` step, so its step list reads complete on its own. A `beforeEach` that seeds moves into a fixture that seeds and hands over the ready page object, or into an option on the opening call. A hook that stays (cleanup) calls its util directly, with no step.
 
 ```ts
 // e2e/users/users.e2e.ts
@@ -291,18 +287,18 @@ import { test } from './users.fixture';
 import { USER_STUB } from './test/stubs/users.stub';
 
 test.describe('FEATURE: user management', () => {
-  test.beforeEach(async ({ usersPage }): Promise<void> => {
-    await test.step('GIVEN the users page is open', (): Promise<void> => usersPage.goto());
-  });
-
   test('GIVEN the users page, reloading it shows the user list', async ({ usersPage }): Promise<void> => {
-    await test.step('WHEN the page is reloaded', (): Promise<void> => usersPage.reload());
+    await test.step('WHEN the users page is opened', (): Promise<void> => usersPage.goto());
+
+    await test.step('AND the page is reloaded', (): Promise<void> => usersPage.reload());
 
     await test.step('THEN the user list is shown', (): Promise<void> => usersPage.expectList());
   });
 
   test('GIVEN a new user, adding it names the user in the list', async ({ usersPage }): Promise<void> => {
-    await test.step('WHEN a user is added', (): Promise<void> => usersPage.addUser(USER_STUB));
+    await test.step('WHEN the users page is opened', (): Promise<void> => usersPage.goto());
+
+    await test.step('AND a user is added', (): Promise<void> => usersPage.addUser(USER_STUB));
 
     await test.step('THEN the list names the new user', (): Promise<void> => usersPage.expectUser(USER_STUB.name));
   });
@@ -333,9 +329,9 @@ import { saveStorageState } from './test/utils/storage-state.spec.util';
 const USER_AUTH_FILE = 'e2e/.auth/user.json';
 
 setup('authenticate as the default user', async ({ dashboardPage, loginPage, page }): Promise<void> => {
-  await setup.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
+  await setup.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-  await setup.step('WHEN credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
+  await setup.step('AND credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
 
   await setup.step('THEN the dashboard heading is shown', (): Promise<void> => dashboardPage.expectHeading());
 

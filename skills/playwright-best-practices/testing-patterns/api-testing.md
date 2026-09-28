@@ -110,9 +110,9 @@ test.describe('FEATURE: admin accounts api', () => {
   test('GIVEN an admin client, listing accounts returns at least one account', async ({ adminApi }): Promise<void> => {
     const response = await test.step('WHEN accounts are listed as admin', (): Promise<APIResponse> => adminApi.get('/admin/accounts'));
 
-    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
-
     const body = await test.step('AND the body is read', (): Promise<AccountList> => readJson<AccountList>(response));
+
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
     await test.step('AND accounts are present', (): void => expect(body.accounts.length).toBeGreaterThan(0));
   });
@@ -207,7 +207,7 @@ export class ItemsApi {
 | `multipart` | `multipart/form-data` body | See [File Upload via API](#file-upload-via-api) |
 | `headers` | Per-request headers | `{ headers: { Authorization: '' } }` |
 
-The spec creates its item in a `FEATURE`-level `beforeEach` whose step is `GIVEN`, deletes it in `afterEach`, and asserts one outcome per test. `remove` returns the response instead of throwing, so the `afterEach` delete is safe after the delete test.
+The `item` fixture in `items.fixture.ts` creates `ITEM_STUB` through `itemsApi.create`, reads it with `readJson<Item>`, hands it to `use`, and calls `itemsApi.remove(item.id)` after. The spec has no hooks and asserts one outcome per test. `remove` returns the response instead of throwing, so the teardown delete is safe after the delete test.
 
 ```ts
 // e2e/items/items.api.e2e.ts
@@ -219,19 +219,7 @@ import { expect, test } from './items.fixture';
 import { ITEM_STUB } from './test/stubs/items.stub';
 
 test.describe('FEATURE: items api', () => {
-  let item: Item;
-
-  test.beforeEach(async ({ itemsApi }): Promise<void> => {
-    const response = await test.step('GIVEN the item is created', (): Promise<APIResponse> => itemsApi.create(ITEM_STUB));
-
-    item = await test.step('AND the created item is read', (): Promise<Item> => readJson<Item>(response));
-  });
-
-  test.afterEach(async ({ itemsApi }): Promise<void> => {
-    await test.step('AND the item is deleted', (): Promise<APIResponse> => itemsApi.remove(item.id));
-  });
-
-  test('GIVEN a created item, patching the price returns the new price', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a created item, patching the price returns the new price', async ({ item, itemsApi }): Promise<void> => {
     const response = await test.step('WHEN the price is patched', (): Promise<APIResponse> => itemsApi.update(item.id, { price: 22.5 }));
 
     const patched = await test.step('AND the patched item is read', (): Promise<Item> => readJson<Item>(response));
@@ -239,7 +227,7 @@ test.describe('FEATURE: items api', () => {
     await test.step('THEN the price is updated', (): void => expect(patched.price).toBe(22.5));
   });
 
-  test('GIVEN a created item, replacing it succeeds', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a created item, replacing it succeeds', async ({ item, itemsApi }): Promise<void> => {
     const replacement: NewItem = { ...ITEM_STUB, price: 24.99, title: 'Claw Hammer' };
 
     const response = await test.step('WHEN the item is replaced', (): Promise<APIResponse> => itemsApi.replace(item.id, replacement));
@@ -247,12 +235,12 @@ test.describe('FEATURE: items api', () => {
     await test.step('THEN the response is ok', (): void => expect(response.ok()).toBeTruthy());
   });
 
-  test('GIVEN a created item, deleting it makes a later read return 404', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a created item, deleting it makes a later read return 404', async ({ item, itemsApi }): Promise<void> => {
     const deleted = await test.step('WHEN the item is deleted', (): Promise<APIResponse> => itemsApi.remove(item.id));
 
-    await test.step('THEN the delete returns 204', (): void => expect(deleted.status()).toBe(204));
-
     const read = await test.step('AND the deleted item is read', (): Promise<APIResponse> => itemsApi.get(item.id));
+
+    await test.step('THEN the delete returns 204', (): void => expect(deleted.status()).toBe(204));
 
     await test.step('AND the read returns 404', (): void => expect(read.status()).toBe(404));
   });
@@ -426,7 +414,7 @@ export const test = base.extend<WorkspaceFixtures>({
 export { expect } from '@playwright/test';
 ```
 
-`LoginPage` is the one from `core/house-style.md`; `DashboardPage.expectWorkspace(name)` is a boxed step over `page.getByRole('heading', { name })`.
+`LoginPage` is the one from `core/house-style.md`; `DashboardPage.expectWorkspace(name)` is a plain `await expect(…).toBeVisible()` on `page.getByRole('heading', { name })`.
 
 ```ts
 // e2e/workspace/workspace-dashboard.e2e.ts
@@ -434,9 +422,9 @@ import { expect, test } from './workspace.fixture';
 
 test.describe('FEATURE: workspace dashboard', () => {
   test('GIVEN a seeded account and workspace, signing in lists the seeded workspace', async ({ dashboardPage, loginPage, page, seedAccount, seedWorkspace }): Promise<void> => {
-    await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
+    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-    await test.step('WHEN the seeded account signs in', (): Promise<void> => loginPage.submit(seedAccount));
+    await test.step('AND the seeded account signs in', (): Promise<void> => loginPage.submit(seedAccount));
 
     await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
 
@@ -491,9 +479,9 @@ test.describe('FEATURE: items api error responses', () => {
   test('GIVEN an invalid item, posting it returns 400 with one issue per field', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN an invalid item is posted', (): Promise<APIResponse> => itemsApi.create(INVALID_ITEM));
 
-    await test.step('THEN the status is 400', (): void => expect(response.status()).toBe(400));
-
     const body = await test.step('AND the body is read', (): Promise<ValidationError> => response.json());
+
+    await test.step('THEN the status is 400', (): void => expect(response.status()).toBe(400));
 
     await test.step('AND the error names a validation error', (): void => expect(body.error).toBe('Validation Error'));
 
@@ -581,9 +569,9 @@ test.describe('FEATURE: document upload api', () => {
   test('GIVEN a pdf, uploading it as multipart returns 201 describing the stored file', async ({ documentsApi }): Promise<void> => {
     const response = await test.step('WHEN the report is uploaded', (): Promise<APIResponse> => documentsApi.uploadFile(REPORT_PATH, 'application/pdf', REPORT_META));
 
-    await test.step('THEN the status is 201', (): void => expect(response.status()).toBe(201));
-
     const body = await test.step('AND the body is read', (): Promise<UploadedDocument> => readJson<UploadedDocument>(response));
+
+    await test.step('THEN the status is 201', (): void => expect(response.status()).toBe(201));
 
     await test.step('AND the body describes the stored file', (): void => expect(body).toMatchObject(UPLOADED_SHAPE));
   });
@@ -601,7 +589,7 @@ test.describe('FEATURE: document upload api', () => {
 **Use when**: Testing multi-step workflows — create, read, update, delete sequences; order flows; state machine transitions.
 **Avoid when**: You can test each endpoint in isolation and the interactions are trivial.
 
-A chain is a flat spec: the `FEATURE`-level `beforeEach` performs the arrange links as `GIVEN` / `AND` steps and stores the typed body in a `let`; each `test` performs the action links as `WHEN` / `AND` steps and asserts one outcome; `afterEach` deletes what was created.
+A chain is a flat spec: the `product` fixture in `orders.fixture.ts` seeds the arrange link (`shopApi.createProduct(PRODUCT_STUB)`, read with `readJson<Product>`) and deletes the product after `use`; each `test` performs the action links as `WHEN` / `AND` steps and asserts one outcome; `afterEach` deletes the order the test created, with plain calls and no step.
 
 ```ts
 // e2e/orders/api/shop.api.ts
@@ -655,29 +643,20 @@ export class ShopApi {
 import type { APIResponse } from '@playwright/test';
 
 import { readJson } from '../utils/read-json.util';
-import type { Cart, CartLine, Order, Product } from './common/orders.type';
+import type { Cart, CartLine, Order } from './common/orders.type';
 import { expect, test } from './orders.fixture';
-import { ADDRESS_STUB, PRODUCT_STUB } from './test/stubs/orders.stub';
+import { ADDRESS_STUB } from './test/stubs/orders.stub';
 
 test.describe('FEATURE: checkout api', () => {
-  let lines: CartLine[];
   let order: Order;
-  let product: Product;
-
-  test.beforeEach(async ({ shopApi }): Promise<void> => {
-    const response = await test.step('GIVEN the product is created', (): Promise<APIResponse> => shopApi.createProduct(PRODUCT_STUB));
-
-    product = await test.step('AND the product is read', (): Promise<Product> => readJson<Product>(response));
-    lines = [{ productId: product.id, quantity: 3 }];
-  });
 
   test.afterEach(async ({ shopApi }): Promise<void> => {
-    await test.step('AND the order is deleted', (): Promise<APIResponse> => shopApi.deleteOrder(order.id));
-
-    await test.step('AND the product is deleted', (): Promise<APIResponse> => shopApi.deleteProduct(product.id));
+    await shopApi.deleteOrder(order.id);
   });
 
-  test('GIVEN a filled cart, checking out totals three times the price', async ({ shopApi }): Promise<void> => {
+  test('GIVEN a filled cart, checking out totals three times the price', async ({ product, shopApi }): Promise<void> => {
+    const lines: CartLine[] = [{ productId: product.id, quantity: 3 }];
+
     const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
 
     const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
@@ -689,7 +668,9 @@ test.describe('FEATURE: checkout api', () => {
     await test.step('THEN the cart total is 149.97', (): void => expect(cart.total).toBe(149.97));
   });
 
-  test('GIVEN a filled cart, checking out creates a pending order with one line', async ({ shopApi }): Promise<void> => {
+  test('GIVEN a filled cart, checking out creates a pending order with one line', async ({ product, shopApi }): Promise<void> => {
+    const lines: CartLine[] = [{ productId: product.id, quantity: 3 }];
+
     const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
 
     const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
@@ -712,7 +693,7 @@ Two more outcomes of the same chain are one scenario each: the four checkout ste
 | GIVEN a filled cart, checking out lists the order | `shopApi.listOrders()`, read as `OrderList` | the listed ids contain `order.id` |
 | GIVEN a filled cart, checking out drops the product stock to 47 | `shopApi.product(product.id)`, read as `Product` | `stock` is 47 |
 
-A state machine is the same flat spec with one test per starting state: its `GIVEN` step sets the state, one `WHEN` step runs the transition, and the title names both (`'GIVEN an article in review, publishing it succeeds'`). For an article publish workflow through `patch('/api/articles/:id/status', { data: { status } })`:
+A state machine is the same flat spec with one test per starting state: a fixture seeds the state through the API, one `WHEN` step runs the transition, and the title names both (`'GIVEN an article in review, publishing it succeeds'`). For an article publish workflow through `patch('/api/articles/:id/status', { data: { status } })`:
 
 | GIVEN | WHEN status is set to | THEN |
 |---|---|---|
@@ -773,9 +754,9 @@ test.describe('FEATURE: items api contract', () => {
   test('GIVEN a tools query, fetching the item list matches the paginated items schema', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN the item list is fetched', (): Promise<APIResponse> => itemsApi.list(LIST_QUERY));
 
-    await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());
-
     const body = await test.step('AND the body is read', (): Promise<unknown> => response.json());
+
+    await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());
 
     await test.step('AND the body matches the schema', (): void => expect((): unknown => PAGINATED_ITEMS_SCHEMA.parse(body)).not.toThrow());
   });

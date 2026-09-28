@@ -192,14 +192,12 @@ import { test } from './import.fixture';
 const LARGE_CSV = 'e2e/import/test/fixtures/large-file.csv';
 
 test.describe('FEATURE: data import', () => {
-  test.beforeEach(async ({ importPage }): Promise<void> => {
-    await test.step('GIVEN the import page is open', (): Promise<void> => importPage.goto());
-  });
-
   test('GIVEN a large file, importing it shows the completion banner', async ({ importPage }): Promise<void> => {
     test.slow();
 
-    await test.step('WHEN the file is uploaded and imported', (): Promise<void> => importPage.importFile(LARGE_CSV));
+    await test.step('WHEN the import page is opened', (): Promise<void> => importPage.goto());
+
+    await test.step('AND the file is uploaded and imported', (): Promise<void> => importPage.importFile(LARGE_CSV));
 
     await test.step('THEN the completion banner is visible', (): Promise<void> => importPage.expectImportComplete());
   });
@@ -207,7 +205,9 @@ test.describe('FEATURE: data import', () => {
   test('GIVEN a sample video, processing it shows the preview', async ({ browserName, importPage }): Promise<void> => {
     test.slow(browserName === 'webkit', 'WebKit video processing is slow');
 
-    await test.step('WHEN the sample video is processed', (): Promise<void> => importPage.processSampleVideo());
+    await test.step('WHEN the import page is opened', (): Promise<void> => importPage.goto());
+
+    await test.step('AND the sample video is processed', (): Promise<void> => importPage.processSampleVideo());
 
     await test.step('THEN the preview is visible', (): Promise<void> => importPage.expectPreviewVisible());
   });
@@ -239,7 +239,7 @@ test.describe('FEATURE: export', () => {
 
 ### Basic Steps
 
-Every statement is a step and every step is one call. A step that would need two lines is a missing page-object method.
+Every statement is a step and every step is one call. A step that would need two lines is a missing page-object method. There are no arrange steps: the title names the state, and a fixture or the opening call builds it.
 
 ```ts
 // e2e/checkout/checkout.e2e.ts
@@ -248,23 +248,21 @@ import { ADDRESS_STUB } from './test/stubs/address.stub';
 import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: checkout', () => {
-  test('GIVEN a product in the cart, paying the order shows the confirmation', async ({ checkoutPage, productsPage }): Promise<void> => {
-    await test.step('GIVEN the first product is in the cart', (): Promise<void> => productsPage.addFirstToCart());
+  test('GIVEN a product in the cart, paying the order shows the confirmation', async ({ filledCheckoutPage }): Promise<void> => {
+    await test.step('WHEN shipping info is filled', (): Promise<void> => filledCheckoutPage.fillShipping(ADDRESS_STUB));
 
-    await test.step('AND the checkout page is open', (): Promise<void> => productsPage.gotoCheckout());
+    await test.step('AND payment is completed', (): Promise<void> => filledCheckoutPage.pay(CARD_STUB));
 
-    await test.step('WHEN shipping info is filled', (): Promise<void> => checkoutPage.fillShipping(ADDRESS_STUB));
-
-    await test.step('AND payment is completed', (): Promise<void> => checkoutPage.pay(CARD_STUB));
-
-    await test.step('THEN the order confirmation is visible', (): Promise<void> => checkoutPage.expectOrderConfirmed());
+    await test.step('THEN the order confirmation is visible', (): Promise<void> => filledCheckoutPage.expectOrderConfirmed());
   });
 });
 ```
 
+`filledCheckoutPage` is a fixture that seeds one product into the cart through `request`, opens the checkout page, and hands over the `CheckoutPage`, so the spec starts at the user's first action.
+
 ### Nested Steps
 
-A page-object method may open its own steps for a multi-part flow. The spec calls one method; the trace shows the nested steps under it. Nesting depth is two, never three.
+Steps never nest. Page objects, helper objects, fixtures, and utils never open a step; only the spec does, so the trace is one level deep. A multi-part flow is one page-object method of plain sequential awaits, and the spec names it in one step.
 
 ```ts
 // e2e/register/register.e2e.ts
@@ -272,12 +270,10 @@ import { test } from './register.fixture';
 import { REGISTRATION_STUB } from './test/stubs/registration.stub';
 
 test.describe('FEATURE: registration', () => {
-  test.beforeEach(async ({ registerPage }): Promise<void> => {
-    await test.step('GIVEN the registration page is open', (): Promise<void> => registerPage.goto());
-  });
-
   test('GIVEN the registration form, submitting it shows the welcome message', async ({ registerPage }): Promise<void> => {
-    await test.step('WHEN the registration form is filled', (): Promise<void> => registerPage.fillForm(REGISTRATION_STUB));
+    await test.step('WHEN the registration page is opened', (): Promise<void> => registerPage.goto());
+
+    await test.step('AND the registration form is filled', (): Promise<void> => registerPage.fillForm(REGISTRATION_STUB));
 
     await test.step('AND the form is submitted', (): Promise<void> => registerPage.submit());
 
@@ -307,12 +303,12 @@ test.describe('FEATURE: orders', () => {
 
 ### Step in Page Object
 
-The page object behind the nested-steps spec. `fillForm` opens two steps; each step body is one private call. The assertion method is a boxed step so a failure points at the spec line.
+The page object behind the registration spec. `fillForm` is two plain awaits of private methods, with no step of its own. `expectWelcome` is a plain `await expect(…)`; the spec's `THEN` step is the only step around it.
 
 ```ts
 // e2e/register/pages/register.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { Registration } from '../common/register.type';
 
@@ -341,9 +337,8 @@ export class RegisterPage {
   }
 
   public async fillForm(registration: Registration): Promise<void> {
-    await test.step('WHEN personal info is filled', (): Promise<void> => this.fillPersonalInfo(registration));
-
-    await test.step('AND security details are filled', (): Promise<void> => this.fillSecurity(registration));
+    await this.fillPersonalInfo(registration);
+    await this.fillSecurity(registration);
   }
 
   public async submit(): Promise<void> {
@@ -351,7 +346,7 @@ export class RegisterPage {
   }
 
   public async expectWelcome(): Promise<void> {
-    await test.step('THEN welcome message is visible', (): Promise<void> => expect(this.welcomeText).toBeVisible(), { box: true });
+    await expect(this.welcomeText).toBeVisible();
   }
 
   private async fillPersonalInfo(registration: Registration): Promise<void> {
@@ -397,16 +392,16 @@ test.describe('FEATURE: checkout', () => {
   });
 
   test('GIVEN a guest, starting checkout asks them to sign in', { annotation: { description: 'CHK-3', type: 'requirement' } }, async ({ cartPage, signInPage }): Promise<void> => {
-    await test.step('GIVEN the cart page is open', (): Promise<void> => cartPage.goto());
+    await test.step('WHEN the cart page is opened', (): Promise<void> => cartPage.goto());
 
-    await test.step('WHEN checkout is started', (): Promise<void> => cartPage.startCheckout());
+    await test.step('AND checkout is started', (): Promise<void> => cartPage.startCheckout());
 
     await test.step('THEN the sign-in page is shown', (): Promise<void> => signInPage.expectShown());
   });
 });
 ```
 
-`filledCartPage` has the ready-page shape of `paymentReadyPage` in [iframes.md](../browser-apis/iframes.md#iframe-fixture): it signs a user in and seeds two cart items through `request`, opens the cart, and hands over the `CartPage`. The shared arrange lives in that fixture, not in the UI, so the signed-in scenarios need no `GIVEN` step. `cartPage` alone carries no session, which makes the third scenario a guest; its title says so because its `GIVEN` step is hidden until expanded. `header` is a helper object both pages expose. `DECLINED_CARD_STUB` spreads `CARD_STUB` with the gateway's decline test number. The final `THEN` asserts the sign-in page rendered through its page object, not only that the URL changed.
+`filledCartPage` has the ready-page shape of `paymentReadyPage` in [iframes.md](../browser-apis/iframes.md#iframe-fixture): it signs a user in and seeds two cart items through `request`, opens the cart, and hands over the `CartPage`. The shared state is built in that fixture, not in the UI, so the signed-in scenarios start at the payment. `cartPage` alone carries no session, which makes the third scenario a guest; its title says so because none of its steps do. `header` is a helper object both pages expose. `DECLINED_CARD_STUB` spreads `CARD_STUB` with the gateway's decline test number. The final `THEN` asserts the sign-in page rendered through its page object, not only that the URL changed.
 
 ### Add Annotations
 

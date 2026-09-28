@@ -23,7 +23,7 @@ The page object exposes `<html>` as a locator so the theme class is asserted whe
 ```ts
 // e2e/preferences/pages/preferences.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class PreferencesPage {
   public readonly dashboardLink: Locator;
@@ -52,11 +52,11 @@ export class PreferencesPage {
   }
 
   public async expectDarkMode(): Promise<void> {
-    await test.step('THEN html carries the dark-mode class', (): Promise<void> => expect(this.root).toHaveClass(/dark-mode/), { box: true });
+    await expect(this.root).toHaveClass(/dark-mode/);
   }
 
   public async expectLightMode(): Promise<void> {
-    await test.step('THEN html has no dark-mode class', (): Promise<void> => expect(this.root).not.toHaveClass(/dark-mode/), { box: true });
+    await expect(this.root).not.toHaveClass(/dark-mode/);
   }
 }
 ```
@@ -66,16 +66,16 @@ export class PreferencesPage {
 import { test } from './preferences.fixture';
 
 test.describe('FEATURE: theme context', () => {
-  test.beforeEach(async ({ preferencesPage }): Promise<void> => {
-    await test.step('GIVEN the preferences page is open', (): Promise<void> => preferencesPage.goto());
+  test('GIVEN a fresh session, the preferences page starts in light mode', async ({ preferencesPage }): Promise<void> => {
+    await test.step('WHEN the preferences page is opened', (): Promise<void> => preferencesPage.goto());
 
-    await test.step('AND light mode is active', (): Promise<void> => preferencesPage.expectLightMode());
+    await test.step('THEN light mode is active', (): Promise<void> => preferencesPage.expectLightMode());
   });
 
   test('GIVEN the preferences page, enabling the dark theme applies it across pages', async ({ preferencesPage }): Promise<void> => {
-    await test.step('WHEN the dark theme is enabled', (): Promise<void> => preferencesPage.enableDarkTheme());
+    await test.step('WHEN the preferences page is opened', (): Promise<void> => preferencesPage.goto());
 
-    await test.step('THEN dark mode is active', (): Promise<void> => preferencesPage.expectDarkMode());
+    await test.step('AND the dark theme is enabled', (): Promise<void> => preferencesPage.enableDarkTheme());
 
     await test.step('AND the dashboard is opened', (): Promise<void> => preferencesPage.openDashboard());
 
@@ -99,7 +99,7 @@ A client-side navigation keeps the document. The page object stamps an attribute
 ```ts
 // e2e/navigation/pages/home.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const SPA_MARKER = 'data-spa-session';
 
@@ -140,7 +140,7 @@ export class HomePage {
   }
 
   public async expectSpaSessionKept(): Promise<void> {
-    await test.step('THEN spa marker survives navigation', (): Promise<void> => expect(this.root).toHaveAttribute(SPA_MARKER, 'on'), { box: true });
+    await expect(this.root).toHaveAttribute(SPA_MARKER, 'on');
   }
 }
 ```
@@ -151,25 +151,35 @@ import { expect, test } from './navigation.fixture';
 
 test.describe('FEATURE: client routing', () => {
   test('GIVEN a marked session, following a router link keeps the document loaded', async ({ homePage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('AND the session is marked', (): Promise<void> => homePage.markSpaSession());
 
-    await test.step('WHEN the inventory link is followed', (): Promise<void> => homePage.openInventory());
+    await test.step('AND the inventory link is followed', (): Promise<void> => homePage.openInventory());
 
     await test.step('THEN the marker is still present', (): Promise<void> => homePage.expectSpaSessionKept());
   });
 
-  test('GIVEN two followed links, going back twice replays the history', async ({ homePage, page }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('GIVEN two followed links, going back once returns to the first', async ({ homePage, page }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-    await test.step('AND the inventory link was followed', (): Promise<void> => homePage.openInventory());
+    await test.step('AND the inventory link is followed', (): Promise<void> => homePage.openInventory());
 
-    await test.step('AND the help link was followed', (): Promise<void> => homePage.openHelp());
+    await test.step('AND the help link is followed', (): Promise<void> => homePage.openHelp());
 
-    await test.step('WHEN the browser goes back', (): Promise<void> => homePage.goBack());
+    await test.step('AND the browser goes back', (): Promise<void> => homePage.goBack());
 
     await test.step('THEN the url is the inventory', (): Promise<void> => expect(page).toHaveURL(/\/inventory/));
+  });
+
+  test('GIVEN two followed links, going back twice returns to the root', async ({ homePage, page }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
+
+    await test.step('AND the inventory link is followed', (): Promise<void> => homePage.openInventory());
+
+    await test.step('AND the help link is followed', (): Promise<void> => homePage.openHelp());
+
+    await test.step('AND the browser goes back', (): Promise<void> => homePage.goBack());
 
     await test.step('AND the browser goes back again', (): Promise<void> => homePage.goBack());
 
@@ -177,18 +187,16 @@ test.describe('FEATURE: client routing', () => {
   });
 
   test('GIVEN the security section, changing the nested route keeps the layout', async ({ accountPage }): Promise<void> => {
-    await test.step('GIVEN the security section is open', (): Promise<void> => accountPage.gotoSection('security'));
+    await test.step('WHEN the security section is opened', (): Promise<void> => accountPage.gotoSection('security'));
 
-    await test.step('AND the layout heading and section heading are shown', (): Promise<void> => accountPage.expectSection('Security'));
-
-    await test.step('WHEN the privacy link is followed', (): Promise<void> => accountPage.openSection('Privacy'));
+    await test.step('AND the privacy link is followed', (): Promise<void> => accountPage.openSection('Privacy'));
 
     await test.step('THEN the layout heading and section heading are shown', (): Promise<void> => accountPage.expectSection('Privacy'));
   });
 });
 ```
 
-`accountPage.expectSection(name)` asserts the level-1 `Account` heading and the level-2 section heading in one boxed step.
+`accountPage.expectSection(name)` asserts the level-1 `Account` heading and the level-2 section heading as two plain `expect` lines.
 
 | Case | Page object call | Assertion |
 |---|---|---|
@@ -251,9 +259,9 @@ import { expect, test } from './search.fixture';
 
 test.describe('FEATURE: useDebounce via SearchBox', () => {
   test('GIVEN fast typing, the search batches the requests', async ({ searchCalls, searchPage }): Promise<void> => {
-    await test.step('GIVEN the search page is open', (): Promise<void> => searchPage.goto());
+    await test.step('WHEN the search page is opened', (): Promise<void> => searchPage.goto());
 
-    await test.step('WHEN a query is typed with 40ms between keys', (): Promise<void> => searchPage.typeQuery('testing'));
+    await test.step('AND a query is typed with 40ms between keys', (): Promise<void> => searchPage.typeQuery('testing'));
 
     await test.step('THEN three results are listed', (): Promise<void> => searchPage.expectResultCount(3));
 
@@ -273,7 +281,7 @@ The page object takes a typed `SignupUser` from `common/signup.type.ts`; the stu
 ```ts
 // e2e/signup/pages/signup.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { SignupUser } from '../common/signup.type';
 
@@ -319,11 +327,11 @@ export class SignupPage {
   }
 
   public async expectError(message: string): Promise<void> {
-    await test.step(`THEN error "${message}" is shown`, (): Promise<void> => expect(this.page.getByText(message)).toBeVisible(), { box: true });
+    await expect(this.page.getByText(message)).toBeVisible();
   }
 
   public async expectSubmitting(): Promise<void> {
-    await test.step('THEN register button is disabled while submitting', (): Promise<void> => expect(this.page.getByRole('button', { name: /Registering|Loading/ })).toBeDisabled(), { box: true });
+    await expect(this.page.getByRole('button', { name: /Registering|Loading/ })).toBeDisabled();
   }
 }
 ```
@@ -355,12 +363,10 @@ import { slowSignupMock } from './test/mocks/signup.mock';
 import { SIGNUP_USER_STUB } from './test/stubs/signup.stub';
 
 test.describe('FEATURE: signup form', () => {
-  test.beforeEach(async ({ signupPage }): Promise<void> => {
-    await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
-  });
-
   test('GIVEN an empty form, submitting shows the required errors', async ({ signupPage }): Promise<void> => {
-    await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
+    await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto());
+
+    await test.step('AND the form is submitted', (): Promise<void> => signupPage.submit());
 
     await test.step('THEN the email is required', (): Promise<void> => signupPage.expectError('Email required'));
 
@@ -368,15 +374,19 @@ test.describe('FEATURE: signup form', () => {
   });
 
   test('GIVEN an invalid email, losing focus shows the inline error', async ({ signupPage }): Promise<void> => {
-    await test.step('WHEN the email field is blurred with an invalid value', (): Promise<void> => signupPage.blurEmailWith('invalid'));
+    await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto());
+
+    await test.step('AND the email field is blurred with an invalid value', (): Promise<void> => signupPage.blurEmailWith('invalid'));
 
     await test.step('THEN the format error is shown', (): Promise<void> => signupPage.expectError('Invalid email format'));
   });
 
   test('GIVEN a valid user, submitting greets them on the welcome page', async ({ page, signupPage, welcomePage }): Promise<void> => {
+    await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto());
+
     await test.step('AND a valid user is filled in', (): Promise<void> => signupPage.fill(SIGNUP_USER_STUB));
 
-    await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
+    await test.step('AND the form is submitted', (): Promise<void> => signupPage.submit());
 
     await test.step('THEN the welcome url is shown', (): Promise<void> => expect(page).toHaveURL('/welcome'));
 
@@ -384,18 +394,18 @@ test.describe('FEATURE: signup form', () => {
   });
 
   test('GIVEN a slow signup response, submitting disables the button meanwhile', async ({ signupPage }): Promise<void> => {
-    await test.step('AND the signup response is held for 800ms', (): Promise<void> => signupPage.routeSignup(slowSignupMock(800)));
+    await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto({ signup: slowSignupMock(800) }));
 
     await test.step('AND a valid user is filled in', (): Promise<void> => signupPage.fill(SIGNUP_USER_STUB));
 
-    await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
+    await test.step('AND the form is submitted', (): Promise<void> => signupPage.submit());
 
     await test.step('THEN the button is disabled while submitting', (): Promise<void> => signupPage.expectSubmitting());
   });
 });
 ```
 
-`signupPage.routeSignup(handler)` wraps `page.route('**/api/signup', handler)`. The password-strength indicator case is `signupPage.fillPassword('weak')` with `expectRule('Minimum 8 characters', /invalid/)`, then `fillPassword('StrongPass1!')` with `expectRule(..., /valid/)`.
+`signupPage.goto()` above takes no options; the slow case adds an optional `signup: RouteHandler` on a named `SignupOptions` type and routes `page.route('**/api/signup', signup)` before it navigates. The password-strength indicator case is `signupPage.fillPassword('weak')` with `expectRule('Minimum 8 characters', /invalid/)`, then `fillPassword('StrongPass1!')` with `expectRule(..., /valid/)`.
 
 ### Portals (Modals, Tooltips, Dropdowns)
 
@@ -406,26 +416,32 @@ test.describe('FEATURE: signup form', () => {
 import { test } from './items.fixture';
 
 test.describe('FEATURE: portal dialog', () => {
-  test.beforeEach(async ({ itemsPage }): Promise<void> => {
-    await test.step('GIVEN the items page is open', (): Promise<void> => itemsPage.goto());
+  test('GIVEN the open dialog, cancel has focus', async ({ itemsPage }): Promise<void> => {
+    await test.step('WHEN the items page is opened', (): Promise<void> => itemsPage.goto());
 
     await test.step('AND remove is clicked on the first item', (): Promise<void> => itemsPage.removeFirst());
 
-    await test.step('AND the confirm dialog is open', (): Promise<void> => itemsPage.expectDialogOpen());
-  });
+    await test.step('THEN the confirm dialog is open', (): Promise<void> => itemsPage.expectDialogOpen());
 
-  test('GIVEN the open dialog, cancel has focus', async ({ itemsPage }): Promise<void> => {
-    await test.step('THEN the cancel button is focused', (): Promise<void> => itemsPage.expectCancelFocused());
+    await test.step('AND the cancel button is focused', (): Promise<void> => itemsPage.expectCancelFocused());
   });
 
   test('GIVEN the open dialog, confirming the removal closes it', async ({ itemsPage }): Promise<void> => {
-    await test.step('WHEN the removal is confirmed', (): Promise<void> => itemsPage.confirmRemoval());
+    await test.step('WHEN the items page is opened', (): Promise<void> => itemsPage.goto());
+
+    await test.step('AND remove is clicked on the first item', (): Promise<void> => itemsPage.removeFirst());
+
+    await test.step('AND the removal is confirmed', (): Promise<void> => itemsPage.confirmRemoval());
 
     await test.step('THEN the dialog is closed', (): Promise<void> => itemsPage.expectDialogClosed());
   });
 
   test('GIVEN the open dialog, pressing escape closes it', async ({ itemsPage }): Promise<void> => {
-    await test.step('WHEN escape is pressed', (): Promise<void> => itemsPage.pressEscape());
+    await test.step('WHEN the items page is opened', (): Promise<void> => itemsPage.goto());
+
+    await test.step('AND remove is clicked on the first item', (): Promise<void> => itemsPage.removeFirst());
+
+    await test.step('AND escape is pressed', (): Promise<void> => itemsPage.pressEscape());
 
     await test.step('THEN the dialog is closed', (): Promise<void> => itemsPage.expectDialogClosed());
   });
@@ -489,9 +505,7 @@ import { brokenWidgetsMock, recoveringWidgetsMock } from './test/mocks/widgets.m
 
 test.describe('FEATURE: widget error boundary', () => {
   test('GIVEN a broken widgets payload, the panel shows the fallback and keeps the navigation', async ({ panelPage }): Promise<void> => {
-    await test.step('GIVEN widgets are routed to the broken payload', (): Promise<void> => panelPage.routeWidgets(brokenWidgetsMock()));
-
-    await test.step('WHEN the panel is opened', (): Promise<void> => panelPage.goto());
+    await test.step('WHEN the panel is opened', (): Promise<void> => panelPage.goto({ widgets: brokenWidgetsMock() }));
 
     await test.step('THEN the fallback is shown with a retry button', (): Promise<void> => panelPage.expectFallback());
 
@@ -499,18 +513,16 @@ test.describe('FEATURE: widget error boundary', () => {
   });
 
   test('GIVEN a failed first load, clicking retry recovers the widget', async ({ panelPage }): Promise<void> => {
-    await test.step('GIVEN widgets are routed to fail once', (): Promise<void> => panelPage.routeWidgets(recoveringWidgetsMock()));
+    await test.step('WHEN the panel is opened', (): Promise<void> => panelPage.goto({ widgets: recoveringWidgetsMock() }));
 
-    await test.step('AND the panel is open', (): Promise<void> => panelPage.goto());
-
-    await test.step('AND the fallback is shown', (): Promise<void> => panelPage.expectFallback());
-
-    await test.step('WHEN retry is clicked', (): Promise<void> => panelPage.retry());
+    await test.step('AND retry is clicked', (): Promise<void> => panelPage.retry());
 
     await test.step('THEN the fallback is gone and the chart is shown', (): Promise<void> => panelPage.expectWidget('Chart'));
   });
 });
 ```
+
+`panelPage.goto(options?)` takes an optional `widgets: RouteHandler` on a named `PanelOptions` type and routes `page.route('**/api/widgets', widgets)` before it navigates.
 
 ### Component Testing (Experimental)
 
@@ -563,9 +575,9 @@ import { mountStepper } from './test/utils/stepper-mount.spec.util';
 
 test.describe('FEATURE: stepper', () => {
   test('GIVEN a stepper at 0, clicking + reads 1', async ({ mount }): Promise<void> => {
-    const stepper = await test.step('GIVEN the stepper is mounted at 0', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0 }));
+    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0 }));
 
-    await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
+    await test.step('AND + is clicked', (): Promise<void> => stepper.increment());
 
     await test.step('THEN the value reads 1', (): Promise<void> => stepper.expectValue(1));
   });
@@ -573,9 +585,9 @@ test.describe('FEATURE: stepper', () => {
   test('GIVEN an onChange handler, clicking + twice passes it each value', async ({ mount }): Promise<void> => {
     const values: number[] = [];
     const onChange = (value: number): number => values.push(value);
-    const stepper = await test.step('GIVEN the stepper is mounted at 0 with onChange', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, onChange }));
+    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, onChange }));
 
-    await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
+    await test.step('AND + is clicked', (): Promise<void> => stepper.increment());
 
     await test.step('AND + is clicked again', (): Promise<void> => stepper.increment());
 
@@ -583,14 +595,14 @@ test.describe('FEATURE: stepper', () => {
   });
 
   test('GIVEN a value at min, the decrement button is disabled', async ({ mount }): Promise<void> => {
-    const stepper = await test.step('GIVEN the stepper is mounted at 0 with min 0', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, min: 0 }));
+    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, min: 0 }));
 
     await test.step('THEN - is disabled', (): Promise<void> => stepper.expectDecrementDisabled());
   });
 });
 ```
 
-`StepperHelper` in `helpers/stepper.helper.ts` takes the mounted `Locator` root, exposes `incrementButton` and `decrementButton`, and wraps `expectValue` / `expectDecrementDisabled` in boxed steps. The Vue version in [vue.md](vue.md#component-testing-with-experimental-ct) shows the full class.
+`StepperHelper` in `helpers/stepper.helper.ts` takes the mounted `Locator` root, exposes `incrementButton` and `decrementButton`, and holds `expectValue` / `expectDecrementDisabled` as plain `expect` lines. The Vue version in [vue.md](vue.md#component-testing-with-experimental-ct) shows the full class.
 
 ## Setup
 
@@ -658,9 +670,9 @@ import { test } from './analytics.fixture';
 
 test.describe('FEATURE: lazy analytics route', () => {
   test('GIVEN the lazy analytics chunk, following its link renders it', async ({ analyticsPage, homePage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-    await test.step('WHEN the analytics link is followed', (): Promise<void> => homePage.openAnalytics());
+    await test.step('AND the analytics link is followed', (): Promise<void> => homePage.openAnalytics());
 
     await test.step('THEN the analytics heading is shown', (): Promise<void> => analyticsPage.expectHeading());
   });
@@ -711,9 +723,9 @@ import { expect, test } from './panel.fixture';
 
 test.describe('FEATURE: panel unmount', () => {
   test('GIVEN the open panel, navigating away and back logs no unmounted-state warning', async ({ panelPage, unmountWarnings }): Promise<void> => {
-    await test.step('GIVEN the panel is open', (): Promise<void> => panelPage.goto());
+    await test.step('WHEN the panel is opened', (): Promise<void> => panelPage.goto());
 
-    await test.step('WHEN settings is opened', (): Promise<void> => panelPage.openSettings());
+    await test.step('AND settings is opened', (): Promise<void> => panelPage.openSettings());
 
     await test.step('AND the browser goes back', (): Promise<void> => panelPage.goBack());
 

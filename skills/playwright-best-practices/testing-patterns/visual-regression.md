@@ -98,9 +98,9 @@ import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: analytics panel snapshot with frozen timestamps', () => {
   test('GIVEN frozen timestamps, the panel matches its snapshot', async ({ analyticsPage, page }): Promise<void> => {
-    await test.step('GIVEN the analytics page is open', (): Promise<void> => analyticsPage.goto());
+    await test.step('WHEN the analytics page is opened', (): Promise<void> => analyticsPage.goto());
 
-    await test.step('WHEN the timestamps are frozen', (): Promise<void> => analyticsPage.freezeTimestamps());
+    await test.step('AND the timestamps are frozen', (): Promise<void> => analyticsPage.freezeTimestamps());
 
     await test.step('THEN the page matches analytics-frozen.png', (): Promise<void> => expect(page).toHaveScreenshot('analytics-frozen.png'));
   });
@@ -144,7 +144,7 @@ For JavaScript-driven animations (GSAP, Framer Motion), the page object asserts 
 ```ts
 // e2e/visual/pages/hero.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class HeroPage {
   public readonly heroBanner: Locator;
@@ -161,10 +161,8 @@ export class HeroPage {
   }
 
   public async expectSettled(): Promise<void> {
-    await test.step('THEN hero banner is visible and no longer animating', async (): Promise<void> => {
-      await expect(this.heroBanner).toBeVisible();
-      await expect(this.heroBanner).not.toHaveClass(/animating/);
-    }, { box: true });
+    await expect(this.heroBanner).toBeVisible();
+    await expect(this.heroBanner).not.toHaveClass(/animating/);
   }
 }
 ```
@@ -342,7 +340,7 @@ test.describe('FEATURE: snapshot scope', () => {
 
 **Use when**: Application has responsive breakpoints requiring verification at different viewport sizes.
 
-Viewport size can change at runtime, so each breakpoint is a looped test whose `GIVEN` step calls `page.setViewportSize` before the page opens. Projects per breakpoint, below, are the alternative when every visual spec must run at every size.
+Viewport size can change at runtime, so each breakpoint is a looped test whose opening call applies it: `LandingPage.goto(options?: LandingOptions)` calls `page.setViewportSize(options.viewport)` before it navigates when a viewport is given. Projects per breakpoint, below, are the alternative when every visual spec must run at every size.
 
 ```ts
 // e2e/visual/common/visual.type.ts
@@ -351,11 +349,15 @@ export type Breakpoint = {
   readonly name: string;
   readonly width: number;
 };
+
+export type LandingOptions = {
+  readonly viewport?: Breakpoint;
+};
 ```
 
 ```ts
 // e2e/visual/landing-breakpoints.visual.e2e.ts
-import type { Breakpoint } from './common/visual.type';
+import type { Breakpoint, LandingOptions } from './common/visual.type';
 import { expect, test } from './visual.fixture';
 
 const BREAKPOINTS: Breakpoint[] = [
@@ -367,9 +369,9 @@ const BREAKPOINTS: Breakpoint[] = [
 test.describe('FEATURE: landing page breakpoints', () => {
   for (const breakpoint of BREAKPOINTS) {
     test(`GIVEN the ${breakpoint.name} viewport (${breakpoint.width}x${breakpoint.height}), the landing page matches landing-${breakpoint.name}.png`, async ({ landingPage, page }): Promise<void> => {
-      await test.step(`GIVEN the viewport is ${breakpoint.width}x${breakpoint.height}`, (): Promise<void> => page.setViewportSize(breakpoint));
+      const options: LandingOptions = { viewport: breakpoint };
 
-      await test.step('WHEN the landing page opens', (): Promise<void> => landingPage.goto());
+      await test.step('WHEN the landing page opens', (): Promise<void> => landingPage.goto(options));
 
       await test.step(`THEN the full page matches landing-${breakpoint.name}.png`, (): Promise<void> => expect(page).toHaveScreenshot(`landing-${breakpoint.name}.png`, { animations: 'disabled', fullPage: true }));
     });
@@ -440,17 +442,17 @@ const SIZES = ['small', 'medium', 'large'];
 
 test.describe('FEATURE: button visual states', () => {
   test('GIVEN the primary button story, the button matches btn-primary.png', async ({ storyPage }): Promise<void> => {
-    await test.step('GIVEN the primary button story is open', (): Promise<void> => storyPage.goto('button--primary'));
+    await test.step('WHEN the primary button story is opened', (): Promise<void> => storyPage.goto('button--primary'));
 
-    await test.step('WHEN the button has rendered', (): Promise<void> => expect(storyPage.button).toBeVisible());
+    await test.step('THEN the button has rendered', (): Promise<void> => expect(storyPage.button).toBeVisible());
 
-    await test.step('THEN the button matches btn-primary.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary.png', STILL));
+    await test.step('AND the button matches btn-primary.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary.png', STILL));
   });
 
   test('GIVEN a hovered primary button, it matches btn-primary-hover.png', async ({ storyPage }): Promise<void> => {
-    await test.step('GIVEN the primary button story is open', (): Promise<void> => storyPage.goto('button--primary'));
+    await test.step('WHEN the primary button story is opened', (): Promise<void> => storyPage.goto('button--primary'));
 
-    await test.step('WHEN the button is hovered', (): Promise<void> => storyPage.hoverButton());
+    await test.step('AND the button is hovered', (): Promise<void> => storyPage.hoverButton());
 
     await test.step('THEN the button matches btn-primary-hover.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary-hover.png', STILL));
   });

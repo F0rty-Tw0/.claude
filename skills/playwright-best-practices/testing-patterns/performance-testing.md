@@ -145,9 +145,9 @@ import { annotateLoadTime } from './test/utils/performance-annotation.spec.util'
 
 test.describe('FEATURE: performance', () => {
   test('GIVEN the home page, core web vitals stay inside the good thresholds', async ({ performancePage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => performancePage.goto('/'));
+    await test.step('WHEN the home page is opened', (): Promise<void> => performancePage.goto('/'));
 
-    const vitals = await test.step('WHEN core web vitals are read', (): Promise<WebVitals> => performancePage.webVitals());
+    const vitals = await test.step('AND core web vitals are read', (): Promise<WebVitals> => performancePage.webVitals());
 
     await test.step('THEN LCP is under 2.5 seconds', (): void => expect(vitals.lcp).toBeLessThan(2500));
 
@@ -155,9 +155,9 @@ test.describe('FEATURE: performance', () => {
   });
 
   test('GIVEN the home page, load time stays within 10% of the baseline', async ({ performancePage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => performancePage.goto('/'));
+    await test.step('WHEN the home page is opened', (): Promise<void> => performancePage.goto('/'));
 
-    const timing = await test.step('WHEN navigation timing is read', (): Promise<NavigationTiming> => performancePage.navigationTiming());
+    const timing = await test.step('AND navigation timing is read', (): Promise<NavigationTiming> => performancePage.navigationTiming());
 
     await test.step('AND the load time is recorded for the reporter', (): void => annotateLoadTime(timing.loadComplete));
 
@@ -167,9 +167,9 @@ test.describe('FEATURE: performance', () => {
   test('GIVEN the dashboard in Chromium, heap usage stays under 100 MB', async ({ browserName, performancePage }): Promise<void> => {
     test.skip(browserName !== 'chromium', 'performance.memory is Chromium-only');
 
-    await test.step('GIVEN the dashboard is open', (): Promise<void> => performancePage.goto('/dashboard'));
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => performancePage.goto('/dashboard'));
 
-    const usage = await test.step('WHEN heap usage is read', (): Promise<HeapUsage> => performancePage.heapUsage());
+    const usage = await test.step('AND heap usage is read', (): Promise<HeapUsage> => performancePage.heapUsage());
 
     await test.step('THEN the used heap is under 100 MB', (): void => expect(usage.usedJSHeapSize).toBeLessThan(HEAP_CEILING_BYTES));
   });
@@ -221,7 +221,7 @@ The page object collects reports into a map and asserts with `expect.poll`, whic
 ```ts
 // e2e/performance/pages/web-vitals.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import { WEB_VITALS_URL } from '../common/performance.const';
 import type { MetricReport } from '../common/performance.type';
@@ -256,7 +256,7 @@ export class WebVitalsPage {
   public async expectVital(name: string, ceiling: number): Promise<void> {
     const read = (): number | undefined => this.reports.get(name);
 
-    await test.step(`THEN ${name} is under ${ceiling}`, (): Promise<void> => expect.poll(read).toBeLessThan(ceiling), { box: true });
+    await expect.poll(read).toBeLessThan(ceiling);
   }
 }
 ```
@@ -266,12 +266,10 @@ export class WebVitalsPage {
 import { test } from './performance.fixture';
 
 test.describe('FEATURE: web vitals library', () => {
-  test.beforeEach(async ({ webVitalsPage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => webVitalsPage.goto('/'));
-  });
-
   test('GIVEN the first button, clicking it keeps LCP and INP inside the good thresholds', async ({ webVitalsPage }): Promise<void> => {
-    await test.step('WHEN the first button is clicked', (): Promise<void> => webVitalsPage.clickFirstButton());
+    await test.step('WHEN the home page is opened', (): Promise<void> => webVitalsPage.goto('/'));
+
+    await test.step('AND the first button is clicked', (): Promise<void> => webVitalsPage.clickFirstButton());
 
     await test.step('THEN LCP is under 2.5 seconds', (): Promise<void> => webVitalsPage.expectVital('LCP', 2500));
 
@@ -309,7 +307,7 @@ export const readNavigationTiming = (): NavigationTiming => {
 };
 ```
 
-A timing test has the shape of the `load time` test above: one `WHEN` step returning `NavigationTiming`, then one `THEN` / `AND` step per limit, the good limits being `ttfb < 600`, `domContentLoaded < 2000`, and `loadComplete < 4000`.
+A timing test has the shape of the `load time` test above: a `WHEN` step opening the page, an `AND` step returning `NavigationTiming`, then one `THEN` / `AND` step per limit, the good limits being `ttfb < 600`, `domContentLoaded < 2000`, and `loadComplete < 4000`.
 
 ### Resource Timing
 
@@ -398,12 +396,12 @@ export const summarizeResources = (resources: ResourceEntry[]): ResourceSummary 
 };
 ```
 
-Upstream shape is an `assertBudget` function fixture. The house shape is a page object the fixture injects: it composes `PerformancePage`, reads every metric once, and asserts each budget line in its own boxed step so a failure points at the spec line. The spec is then one `GIVEN` step and one `THEN` step.
+Upstream shape is an `assertBudget` function fixture. The house shape is a page object the fixture injects: it composes `PerformancePage`, reads every metric once, and asserts each budget line as a plain `expect` with no step; the failure message names the metric and the stack names the spec line. The spec is then one `WHEN` step and one `THEN` step.
 
 ```ts
 // e2e/performance/pages/budget.page.ts
 import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { PerformanceBudget } from '../common/performance.type';
 import { summarizeResources } from '../test/utils/resource-summary.spec.util';
@@ -425,19 +423,13 @@ export class BudgetPage {
     const timing = await this.performancePage.navigationTiming();
     const summary = summarizeResources(await this.performancePage.resourceEntries());
 
-    await test.step('THEN LCP is inside the budget', (): void => expect(vitals.lcp).toBeLessThan(budget.lcp), { box: true });
-
-    await test.step('AND CLS is inside the budget', (): void => expect(vitals.cls).toBeLessThan(budget.cls), { box: true });
-
-    await test.step('AND FCP is inside the budget', (): void => expect(vitals.fcp).toBeLessThan(budget.fcp), { box: true });
-
-    await test.step('AND TTFB is inside the budget', (): void => expect(timing.ttfb).toBeLessThan(budget.ttfb), { box: true });
-
-    await test.step('AND total transfer size is inside the budget', (): void => expect(summary.totalSize).toBeLessThan(budget.totalSize), { box: true });
-
-    await test.step('AND script transfer size is inside the budget', (): void => expect(summary.jsSize).toBeLessThan(budget.jsSize), { box: true });
-
-    await test.step('AND image count is inside the budget', (): void => expect(summary.imageCount).toBeLessThanOrEqual(budget.imageCount), { box: true });
+    expect(vitals.lcp).toBeLessThan(budget.lcp);
+    expect(vitals.cls).toBeLessThan(budget.cls);
+    expect(vitals.fcp).toBeLessThan(budget.fcp);
+    expect(timing.ttfb).toBeLessThan(budget.ttfb);
+    expect(summary.totalSize).toBeLessThan(budget.totalSize);
+    expect(summary.jsSize).toBeLessThan(budget.jsSize);
+    expect(summary.imageCount).toBeLessThanOrEqual(budget.imageCount);
   }
 }
 ```
@@ -448,11 +440,9 @@ import { HOMEPAGE_BUDGET } from './common/performance.const';
 import { test } from './performance.fixture';
 
 test.describe('FEATURE: performance budget', () => {
-  test.beforeEach(async ({ budgetPage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => budgetPage.goto('/'));
-  });
-
   test('GIVEN the home page, its metrics stay inside the budget', async ({ budgetPage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => budgetPage.goto('/'));
+
     await test.step('THEN the metrics stay inside the home page budget', (): Promise<void> => budgetPage.expectWithinBudget(HOMEPAGE_BUDGET));
   });
 });
@@ -534,12 +524,10 @@ import type { LighthouseSummary } from './common/lighthouse.type';
 import { expect, test } from './lighthouse.fixture';
 
 test.describe('FEATURE: lighthouse audit', () => {
-  test.beforeEach(async ({ lighthousePage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => lighthousePage.goto('/'));
-  });
-
   test('GIVEN a performance-only audit, the score clears 70', async ({ lighthousePage }): Promise<void> => {
-    const summary = await test.step('WHEN the throttled performance audit runs', (): Promise<LighthouseSummary> => lighthousePage.audit(PERFORMANCE_ONLY_THRESHOLDS, PERFORMANCE_ONLY_CONFIG));
+    await test.step('WHEN the home page is opened', (): Promise<void> => lighthousePage.goto('/'));
+
+    const summary = await test.step('AND the throttled performance audit runs', (): Promise<LighthouseSummary> => lighthousePage.audit(PERFORMANCE_ONLY_THRESHOLDS, PERFORMANCE_ONLY_CONFIG));
 
     await test.step('THEN performance scores at least 70', (): void => expect(summary.performance).toBeGreaterThanOrEqual(70));
   });

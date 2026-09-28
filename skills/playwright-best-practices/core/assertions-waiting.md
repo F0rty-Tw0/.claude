@@ -15,12 +15,12 @@ Auto-retry until condition is met or timeout. Always prefer these over generic a
 
 ### Locator Assertions
 
-A locator assertion lives in a page-object `expect*` method, one matcher per boxed step, so the failure points at the spec line. The page object shows the shape; the table lists every matcher.
+A locator assertion lives in a page-object `expect*` method as a plain `await expect(…)` line; the spec's `THEN` step is the only step around it. The page object shows the shape; the table lists every matcher.
 
 ```ts
 // e2e/profile/pages/profile.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class ProfilePage {
   public readonly emailInput: Locator;
@@ -41,23 +41,23 @@ export class ProfilePage {
   }
 
   public async expectHeading(text: string): Promise<void> {
-    await test.step(`THEN heading reads "${text}"`, (): Promise<void> => expect(this.heading).toHaveText(text), { box: true });
+    await expect(this.heading).toHaveText(text);
   }
 
   public async expectEmail(email: string): Promise<void> {
-    await test.step(`THEN email field holds ${email}`, (): Promise<void> => expect(this.emailInput).toHaveValue(email), { box: true });
+    await expect(this.emailInput).toHaveValue(email);
   }
 
   public async expectSaveEnabled(): Promise<void> {
-    await test.step('THEN save button is enabled', (): Promise<void> => expect(this.saveButton).toBeEnabled(), { box: true });
+    await expect(this.saveButton).toBeEnabled();
   }
 
   public async expectNewsletterChecked(): Promise<void> {
-    await test.step('THEN newsletter box is checked', (): Promise<void> => expect(this.newsletterCheckbox).toBeChecked(), { box: true });
+    await expect(this.newsletterCheckbox).toBeChecked();
   }
 
   public async expectHomeLink(): Promise<void> {
-    await test.step('THEN home link points at /home', (): Promise<void> => expect(this.homeLink).toHaveAttribute('href', '/home'), { box: true });
+    await expect(this.homeLink).toHaveAttribute('href', '/home');
   }
 }
 ```
@@ -161,12 +161,12 @@ test.describe('FEATURE: users api', () => {
 
 ## Soft Assertions
 
-Continue test execution after failure, report all failures at end. Each `expect.soft` is its own boxed step inside one page-object method, so the report names every failed check.
+Continue test execution after failure, report all failures at end. The `expect.soft` calls sit as plain lines in one page-object method; the report lists every failed check under the spec's one `THEN` step.
 
 ```ts
 // e2e/dashboard/pages/dashboard.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class DashboardPage {
   public readonly dataContainer: Locator;
@@ -189,11 +189,9 @@ export class DashboardPage {
   }
 
   public async expectHeaderSoft(): Promise<void> {
-    await test.step('THEN heading reads Dashboard', (): Promise<void> => expect.soft(this.heading).toHaveText('Dashboard'), { box: true });
-
-    await test.step('AND save button is enabled', (): Promise<void> => expect.soft(this.saveButton).toBeEnabled(), { box: true });
-
-    await test.step('AND welcome text is visible', (): Promise<void> => expect.soft(this.welcomeText).toBeVisible(), { box: true });
+    await expect.soft(this.heading).toHaveText('Dashboard');
+    await expect.soft(this.saveButton).toBeEnabled();
+    await expect.soft(this.welcomeText).toBeVisible();
   }
 }
 ```
@@ -222,15 +220,14 @@ export class SignupPage {
   }
 
   public async expectFormFieldsSoft(): Promise<void> {
-    await test.step('THEN form is visible', (): Promise<void> => expect.soft(this.form).toBeVisible(), { box: true });
+    await expect.soft(this.form).toBeVisible();
 
     const hasFailures = test.info().errors.length > 0;
 
     if (hasFailures) return;
 
-    await test.step('AND name field is visible', (): Promise<void> => expect.soft(this.nameInput).toBeVisible(), { box: true });
-
-    await test.step('AND email field is visible', (): Promise<void> => expect.soft(this.emailInput).toBeVisible(), { box: true });
+    await expect.soft(this.nameInput).toBeVisible();
+    await expect.soft(this.emailInput).toBeVisible();
   }
 }
 ```
@@ -333,7 +330,7 @@ test.describe('FEATURE: users list', () => {
 
 ### Wait for Element State
 
-A web-first assertion covers every element state, so a spec never calls `locator.waitFor`. The `expect*` method is a boxed step as in [Locator Assertions](#locator-assertions).
+A web-first assertion covers every element state, so a spec never calls `locator.waitFor`. The `expect*` method is a plain `await expect(…)` as in [Locator Assertions](#locator-assertions).
 
 | State | Assertion |
 |---|---|
@@ -490,7 +487,7 @@ export default defineConfig({ expect: expectOptions, timeout: 30000 });
 | Every assertion | `expect: { timeout: 5000 }` in the config |
 | One describe | `test.describe.configure({ timeout: 60000 })` at the top of the `describe` callback |
 | One test | `test.setTimeout(60000)` as the first line of the test body, before the first step |
-| One assertion | `expect(locator).toBeVisible({ timeout: 10000 })` inside the boxed `expect*` method |
+| One assertion | `expect(locator).toBeVisible({ timeout: 10000 })` inside the `expect*` method |
 
 ## Best Practices
 

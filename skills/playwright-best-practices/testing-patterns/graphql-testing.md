@@ -373,19 +373,19 @@ import type { FetchItemData, UpdateItemData } from './common/catalog.type';
 
 test.describe('FEATURE: update item mutation', () => {
   test('GIVEN a fetched item, updating the title echoes the new title', async ({ graphqlApi }): Promise<void> => {
-    const fetchResponse = await test.step('GIVEN item 101 is fetched', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
+    const fetchResponse = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
 
     const fetched = await test.step('AND the fetched item is read', (): Promise<GraphqlResult<FetchItemData>> => readGraphql<FetchItemData>(fetchResponse));
 
-    await test.step('AND the fetched item has a title', (): void => expect(fetched.data?.item.title).toBeDefined());
-
-    const updateResponse = await test.step('WHEN the title is updated', (): Promise<APIResponse> => graphqlApi.updateItem('101', 'Updated Title'));
+    const updateResponse = await test.step('AND the title is updated', (): Promise<APIResponse> => graphqlApi.updateItem('101', 'Updated Title'));
 
     const updated = await test.step('AND the updated item is read', (): Promise<GraphqlResult<UpdateItemData>> => readGraphql<UpdateItemData>(updateResponse));
 
-    await test.step('THEN no errors are reported', (): void => expect(updated.errors).toBeUndefined());
+    await test.step('THEN the fetched item had a title', (): void => expect(fetched.data?.item.title).toBeDefined());
 
-    await test.step('AND the title is updated', (): void => expect(updated.data?.updateItem.title).toBe('Updated Title'));
+    await test.step('AND no errors are reported', (): void => expect(updated.errors).toBeUndefined());
+
+    await test.step('AND the title is the new title', (): void => expect(updated.data?.updateItem.title).toBe('Updated Title'));
   });
 });
 ```

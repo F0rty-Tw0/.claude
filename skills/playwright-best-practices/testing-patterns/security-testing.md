@@ -9,7 +9,7 @@
 5. [Input Validation](#input-validation)
 6. [Security Headers](#security-headers)
 
-Every sample lives under `e2e/security/`. Malicious inputs are typed constants in `common/security.const.ts`; page objects encode and submit them; the spec asserts that nothing executed, nothing leaked, and the server refused. `common/security.type.ts` holds `Credentials`, `SettingsPatch`, and `HeaderMap` (`Record<string, string>`); `test/stubs/security.stub.ts` holds `USER_STUB`.
+Every sample lives under `e2e/security/`. Malicious inputs are typed constants in `common/security.const.ts`; page objects encode and submit them; the spec asserts that nothing executed, nothing leaked, and the server refused. `common/security.type.ts` holds `Credentials`, `HeaderMap` (`Record<string, string>`), `LoginOptions`, and `SettingsPatch`; `test/stubs/security.stub.ts` holds `USER_STUB`.
 
 ```ts
 // e2e/security/common/security.const.ts
@@ -167,7 +167,7 @@ export const test = mergeTests(authPagesTest, browserEventsTest).extend<Security
 export { expect } from '@playwright/test';
 ```
 
-Every page object below follows `SearchPage`: `public readonly` locators set in the constructor, `public async` actions, and `expect*` methods that assert inside a boxed step.
+Every page object below follows `SearchPage`: `public readonly` locators set in the constructor, `public async` actions, and `expect*` methods that assert with plain `expect` lines and open no step.
 
 ## XSS Prevention
 
@@ -178,7 +178,7 @@ A reflected payload arrives through the query string. `SearchPage.gotoQuery` enc
 ```ts
 // e2e/security/pages/search.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class SearchPage {
   public readonly databaseError: Locator;
@@ -210,11 +210,11 @@ export class SearchPage {
   public async expectPayloadEscaped(): Promise<void> {
     const content = await this.page.content();
 
-    await test.step('THEN served html has no raw script or handler', (): void => expect(content).not.toMatch(/<script>alert|onerror=/), { box: true });
+    expect(content).not.toMatch(/<script>alert|onerror=/);
   }
 
   public async expectNoDatabaseError(): Promise<void> {
-    await test.step('THEN no database error is shown', (): Promise<void> => expect(this.databaseError).not.toBeVisible(), { box: true });
+    await expect(this.databaseError).not.toBeVisible();
   }
 }
 ```
@@ -227,7 +227,7 @@ import { expect, test } from './security.fixture';
 test.describe('FEATURE: reflected XSS', () => {
   for (const payload of XSS_PAYLOADS) {
     test(`GIVEN the query ${payload}, the search page escapes it and does not run it`, async ({ dialogs, searchPage }): Promise<void> => {
-      await test.step('WHEN the search page is opened with the payload', (): Promise<void> => searchPage.gotoQuery(payload));
+      await test.step('WHEN the search page is opened', (): Promise<void> => searchPage.gotoQuery(payload));
 
       await test.step('THEN no dialog opened', (): void => expect(dialogs).toEqual([]));
 
@@ -239,7 +239,7 @@ test.describe('FEATURE: reflected XSS', () => {
 
 ### Test Stored XSS
 
-A stored payload goes in through a form and comes back on a later page. `PostEditorPage` has `goto()` and `submit(body)`. `PostPage` has `gotoLatest()` and `expectSanitized(visibleText)`, which reads `page.content()`, asserts it does not contain `<script>alert`, and asserts the `article` role `toContainText(visibleText)`, each in a boxed step.
+A stored payload goes in through a form and comes back on a later page. `PostEditorPage` has `goto()` and `submit(body)`. `PostPage` has `gotoLatest()` and `expectSanitized(visibleText)`, which reads `page.content()`, asserts it does not contain `<script>alert`, and asserts the `article` role `toContainText(visibleText)`, as two plain `expect` lines.
 
 ```ts
 // e2e/security/stored-xss.e2e.ts
@@ -249,9 +249,9 @@ const STORED_PAYLOAD = '<script>alert("xss")</script>Hello';
 
 test.describe('FEATURE: stored XSS', () => {
   test('GIVEN a post with a script tag, creating it renders it sanitized', async ({ postEditorPage, postPage }): Promise<void> => {
-    await test.step('GIVEN the post editor is open', (): Promise<void> => postEditorPage.goto());
+    await test.step('WHEN the post editor is opened', (): Promise<void> => postEditorPage.goto());
 
-    await test.step('WHEN a post containing a script tag is submitted', (): Promise<void> => postEditorPage.submit(STORED_PAYLOAD));
+    await test.step('AND a post containing a script tag is submitted', (): Promise<void> => postEditorPage.submit(STORED_PAYLOAD));
 
     await test.step('AND the latest post is opened', (): Promise<void> => postPage.gotoLatest());
 
@@ -278,9 +278,9 @@ test.describe('FEATURE: CSRF token', () => {
   });
 
   test('GIVEN a theme choice, saving it through the form saves the settings', async ({ settingsPage }): Promise<void> => {
-    await test.step('GIVEN the settings page is open', (): Promise<void> => settingsPage.goto());
+    await test.step('WHEN the settings page is opened', (): Promise<void> => settingsPage.goto());
 
-    await test.step('WHEN the dark theme is saved', (): Promise<void> => settingsPage.saveTheme('dark'));
+    await test.step('AND the dark theme is saved', (): Promise<void> => settingsPage.saveTheme('dark'));
 
     await test.step('THEN the settings saved notice is shown', (): Promise<void> => settingsPage.expectSaved());
   });
@@ -345,24 +345,23 @@ test.describe('FEATURE: CSRF validation', () => {
 
 ### Test Session Expiry
 
-`LoginPage.login(credentials)` opens `/login`, fills `Email` and `Password`, and clicks Sign in; `expectSessionExpired` asserts the `Session expired` text is visible. The clock jumps two hours through `page.clock.fastForward`, which needs `page.clock.install()` earlier in the test or fixture (see [clock-mocking.md](../advanced/clock-mocking.md)). The next navigation, `ProfilePage.goto()` to `/profile`, must land on the login page with the expiry notice.
+`LoginPage.login(credentials)` opens `/login`, fills `Email` and `Password`, and clicks Sign in; `expectSessionExpired` asserts the `Session expired` text is visible. `login` takes an optional `LoginOptions` (`type LoginOptions = { readonly installClock?: boolean }`); with `installClock` set it runs `page.clock.install()` before it navigates, so the opening call applies the clock (see [clock-mocking.md](../advanced/clock-mocking.md)). The two-hour jump through `page.clock.fastForward` happens after sign-in, so it stays an `AND` action step. The next navigation, `ProfilePage.goto()` to `/profile`, must land on the login page with the expiry notice.
 
 ```ts
 // e2e/security/session-expiry.e2e.ts
+import type { LoginOptions } from './common/security.type';
 import { expect, test } from './security.fixture';
 import { USER_STUB } from './test/stubs/security.stub';
 
+const CLOCK_INSTALLED: LoginOptions = { installClock: true };
+
 test.describe('FEATURE: session expiry', () => {
-  test.beforeEach(async ({ loginPage, page }): Promise<void> => {
-    await test.step('GIVEN the clock is installed', (): Promise<void> => page.clock.install());
-
-    await test.step('AND the user is signed in', (): Promise<void> => loginPage.login(USER_STUB));
-
-    await test.step('AND the dashboard is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
-  });
-
   test('GIVEN a session idle for two hours, the next navigation goes to the login page', async ({ loginPage, page, profilePage }): Promise<void> => {
-    await test.step('WHEN the clock advances two hours', (): Promise<void> => page.clock.fastForward('02:00:00'));
+    await test.step('WHEN the user signs in', (): Promise<void> => loginPage.login(USER_STUB, CLOCK_INSTALLED));
+
+    await test.step('THEN the dashboard is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+
+    await test.step('AND the clock advances two hours', (): Promise<void> => page.clock.fastForward('02:00:00'));
 
     await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
 
@@ -384,9 +383,9 @@ import { USER_STUB } from './test/stubs/security.stub';
 
 test.describe('FEATURE: concurrent session limit', () => {
   test('GIVEN a session in one browser, signing in from a second ends the first', async ({ dashboardPage, loginPage, secondLoginPage }): Promise<void> => {
-    await test.step('GIVEN the user is signed in from the first browser', (): Promise<void> => loginPage.login(USER_STUB));
+    await test.step('WHEN the user signs in from the first browser', (): Promise<void> => loginPage.login(USER_STUB));
 
-    await test.step('WHEN the same user signs in from a second browser', (): Promise<void> => secondLoginPage.login(USER_STUB));
+    await test.step('AND the same user signs in from a second browser', (): Promise<void> => secondLoginPage.login(USER_STUB));
 
     await test.step('AND the first browser is reloaded', (): Promise<void> => dashboardPage.reload());
 
@@ -397,7 +396,7 @@ test.describe('FEATURE: concurrent session limit', () => {
 
 ### Test Password Reset Security
 
-A reset token works once. In a test environment the token is exposed or captured from an email mock; here it is a constant. `ForgotPasswordPage.request(email)` submits the forgot-password form. `ResetPasswordPage.goto(token)` opens `/reset-password?token=<token>`; `submit(password)` fills the new password and clicks Reset; `expectUpdated` and `expectInvalidToken` assert the success and the invalid-or-expired notices.
+A reset token works once. The test spends the token through the UI, then opens the reset page with it again; the updated notice is asserted before the reuse so a token that never worked cannot pass. In a test environment the token is exposed or captured from an email mock; here it is a constant. `ForgotPasswordPage.request(email)` submits the forgot-password form. `ResetPasswordPage.goto(token)` opens `/reset-password?token=<token>`; `submit(password)` fills the new password and clicks Reset; `expectUpdated` and `expectInvalidToken` assert the success and the invalid-or-expired notices.
 
 ```ts
 // e2e/security/password-reset.e2e.ts
@@ -407,18 +406,16 @@ import { USER_STUB } from './test/stubs/security.stub';
 const RESET_TOKEN = 'mock-reset-token';
 
 test.describe('FEATURE: password reset token', () => {
-  test.beforeEach(async ({ forgotPasswordPage, resetPasswordPage }): Promise<void> => {
-    await test.step('GIVEN a password reset was requested', (): Promise<void> => forgotPasswordPage.request(USER_STUB.email));
+  test('GIVEN a used reset token, reusing it rejects it as invalid or expired', async ({ forgotPasswordPage, resetPasswordPage }): Promise<void> => {
+    await test.step('WHEN a password reset is requested', (): Promise<void> => forgotPasswordPage.request(USER_STUB.email));
 
-    await test.step('AND the reset page is open with the token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
+    await test.step('AND the reset page is opened with the token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
 
-    await test.step('AND a new password was submitted', (): Promise<void> => resetPasswordPage.submit('NewPassword123'));
+    await test.step('AND a new password is submitted', (): Promise<void> => resetPasswordPage.submit('NewPassword123'));
 
-    await test.step('AND the password updated notice is shown', (): Promise<void> => resetPasswordPage.expectUpdated());
-  });
+    await test.step('THEN the password updated notice is shown', (): Promise<void> => resetPasswordPage.expectUpdated());
 
-  test('GIVEN a used reset token, reusing it rejects it as invalid or expired', async ({ resetPasswordPage }): Promise<void> => {
-    await test.step('WHEN the reset page is opened with the used token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
+    await test.step('AND the reset page is opened again with the used token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
 
     await test.step('THEN the invalid or expired token notice is shown', (): Promise<void> => resetPasswordPage.expectInvalidToken());
   });
@@ -462,13 +459,13 @@ The API call must carry the signed-in user's session, otherwise a 401 for a miss
 
 ### Test SQL Injection Prevention
 
-`sql-injection.e2e.ts` loops `SQL_PAYLOADS` exactly as `reflected-xss.e2e.ts` loops `XSS_PAYLOADS`, so the failing payload names itself: `searchPage.goto()` as the `GIVEN` step of a `FEATURE`-level `beforeEach`, `WHEN searchPage.submitSearch(payload)`, `THEN searchPage.expectNoDatabaseError()`, which asserts no text matching `/database error|sql|syntax|error/i` is visible.
+`sql-injection.e2e.ts` loops `SQL_PAYLOADS` exactly as `reflected-xss.e2e.ts` loops `XSS_PAYLOADS`, so the failing payload names itself: `WHEN searchPage.goto()`, `AND searchPage.submitSearch(payload)`, `THEN searchPage.expectNoDatabaseError()`, which asserts no text matching `/database error|sql|syntax|error/i` is visible.
 
 ### Test Input Length Limits
 
 A 10 000-character bio must be refused or truncated to the field's limit. `ProfilePage.saveBio(bio)` fills `Bio` and clicks Save; `expectBioAtMost(length)` asserts `toHaveValue(limit)` on the input, where `limit` is `new RegExp('^.{0,' + length + '}$', 's')`, which waits for the app to truncate.
 
-`input-length.e2e.ts` is one test: `GIVEN profilePage.goto()`, `WHEN profilePage.saveBio('a'.repeat(10000))`, `THEN profilePage.expectBioAtMost(500)`.
+`input-length.e2e.ts` is one test: `WHEN profilePage.goto()`, `AND profilePage.saveBio('a'.repeat(10000))`, `THEN profilePage.expectBioAtMost(500)`.
 
 ## Security Headers
 
@@ -522,14 +519,10 @@ import type { HeaderMap } from './common/security.type';
 import { expect, test } from './security.fixture';
 
 test.describe('FEATURE: security headers', () => {
-  let response: Response;
+  test('GIVEN the home page response, reading the headers finds the policy headers set', async ({ homePage }): Promise<void> => {
+    const response = await test.step('WHEN the home page is opened', (): Promise<Response> => homePage.open());
 
-  test.beforeEach(async ({ homePage }): Promise<void> => {
-    response = await test.step('GIVEN the home page is open', (): Promise<Response> => homePage.open());
-  });
-
-  test('GIVEN the home page response, reading the headers finds the policy headers set', async (): Promise<void> => {
-    const headers = await test.step('WHEN the response headers are read', (): HeaderMap => response.headers());
+    const headers = await test.step('AND the response headers are read', (): HeaderMap => response.headers());
 
     await test.step('THEN the content security policy is set', (): void => expect(headers['content-security-policy']).toBeTruthy());
 
@@ -541,7 +534,9 @@ test.describe('FEATURE: security headers', () => {
   });
 
   test('GIVEN an injected inline script, the policy reports a violation', async ({ cspViolations, homePage }): Promise<void> => {
-    await test.step('WHEN an inline script is injected', (): Promise<void> => homePage.injectInlineScript());
+    await test.step('WHEN the home page is opened', (): Promise<Response> => homePage.open());
+
+    await test.step('AND an inline script is injected', (): Promise<void> => homePage.injectInlineScript());
 
     await test.step('THEN at least one violation was reported', (): void => expect(cspViolations.length).toBeGreaterThan(0));
   });

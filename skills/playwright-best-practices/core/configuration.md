@@ -205,13 +205,13 @@ import { saveStorageState } from './test/utils/storage-state.spec.util';
 const STORAGE_STATE = 'e2e/.auth/session.json';
 
 setup('authenticate as the default user', async ({ dashboardPage, loginPage, page }): Promise<void> => {
-  await setup.step('open the login page', (): Promise<void> => loginPage.goto());
+  await setup.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-  await setup.step('submit credentials', (): Promise<void> => loginPage.submit(USER_STUB));
+  await setup.step('AND credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
 
-  await setup.step('home heading is shown', (): Promise<void> => dashboardPage.expectHeading('Home'));
+  await setup.step('THEN the home heading is shown', (): Promise<void> => dashboardPage.expectHeading('Home'));
 
-  await setup.step('save the storage state', (): Promise<void> => saveStorageState(page, STORAGE_STATE));
+  await setup.step('AND the storage state is saved', (): Promise<void> => saveStorageState(page, STORAGE_STATE));
 });
 ```
 

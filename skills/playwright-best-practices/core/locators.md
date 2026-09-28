@@ -191,12 +191,12 @@ export class ProductsPage {
 
 ### Waiting for Elements
 
-Locators auto-wait for actionability by default. Explicit state waits are web-first assertions inside a boxed `expect*` method, never `waitFor` in a spec.
+Locators auto-wait for actionability by default. Explicit state waits are web-first assertions inside a page-object `expect*` method, never `waitFor` in a spec.
 
 ```ts
 // e2e/products/pages/products.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class ProductsPage {
   public readonly loadingText: Locator;
@@ -211,18 +211,18 @@ export class ProductsPage {
   }
 
   public async expectLoaded(): Promise<void> {
-    await test.step('THEN loading indicator is gone', (): Promise<void> => expect(this.loadingText).toBeHidden(), { box: true });
+    await expect(this.loadingText).toBeHidden();
   }
 
   public async expectItemCount(count: number): Promise<void> {
-    await test.step(`THEN ${count} items are listed`, (): Promise<void> => expect(this.productItems).toHaveCount(count), { box: true });
+    await expect(this.productItems).toHaveCount(count);
   }
 
   public async expectAllItemsVisible(): Promise<void> {
     const items = await this.productItems.all();
 
     for (const item of items) {
-      await test.step('THEN item is visible', (): Promise<void> => expect(item).toBeVisible(), { box: true });
+      await expect(item).toBeVisible();
     }
   }
 }

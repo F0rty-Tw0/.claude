@@ -92,7 +92,7 @@ test.describe('FEATURE: server components', () => {
 });
 ```
 
-`HomePage` is shared by every `home.e2e.ts` below: `goto()` opens `/`; `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
+`HomePage` is shared by every `home.e2e.ts` below: `goto(options?)` opens `/`, and its optional `headers` (a `RequestHeaders` field on a named `HomeOptions` type) are applied with `page.setExtraHTTPHeaders` before it navigates; `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
 
 ### Loading States with Streaming
 
@@ -114,7 +114,7 @@ export const slowStatsMock = (delayMs: number): RouteHandler => {
 };
 ```
 
-`DashboardPage` owns `heading` (`getByRole('heading', { name: 'Dashboard' })`), `progressbar` (`getByRole('progressbar')`) and `sidebar` (`getByRole('navigation', { name: 'Dashboard' })`). `goto(path = '/dashboard')` navigates; `routeStats(handler: RouteHandler)` wraps `page.route('**/api/stats', handler)`; `expectLoading` asserts the progressbar visible; `expectLoaded` asserts the heading visible and the progressbar hidden in one boxed step; `openSection(name)` clicks the sidebar link then `waitForURL('/dashboard/<name>')`; `expectSection(name)` asserts the sidebar and the section heading.
+`DashboardPage` owns `heading` (`getByRole('heading', { name: 'Dashboard' })`), `progressbar` (`getByRole('progressbar')`) and `sidebar` (`getByRole('navigation', { name: 'Dashboard' })`). `goto(path = '/dashboard', options?)` navigates, and its optional `stats: RouteHandler` (on a named `DashboardOptions` type) is routed with `page.route('**/api/stats', stats)` before it navigates; `expectLoading` asserts the progressbar visible; `expectLoaded` asserts the heading visible and the progressbar hidden as two plain `expect` lines; `openSection(name)` clicks the sidebar link then `waitForURL('/dashboard/<name>')`; `expectSection(name)` asserts the sidebar and the section heading.
 
 ```ts
 // e2e/dashboard/dashboard.test.ts
@@ -123,9 +123,7 @@ import { slowStatsMock } from './test/mocks/stats.mock';
 
 test.describe('FEATURE: streaming dashboard', () => {
   test('GIVEN a slow stats response, the loading boundary shows until it resolves', async ({ dashboardPage }): Promise<void> => {
-    await test.step('GIVEN the stats response is held for 2s', (): Promise<void> => dashboardPage.routeStats(slowStatsMock(2_000)));
-
-    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto('/dashboard', { stats: slowStatsMock(2_000) }));
 
     await test.step('THEN loading boundary is shown', (): Promise<void> => dashboardPage.expectLoading());
 
@@ -136,7 +134,7 @@ test.describe('FEATURE: streaming dashboard', () => {
 
 ### Nested Layouts
 
-A nested layout stays mounted while its child route changes. `dashboardPage.goto('/dashboard/analytics')`, `expectSection('Analytics')`, `openSection('Settings')`, `expectSection('Settings')` walk the same page object.
+A nested layout stays mounted while its child route changes. `dashboardPage.goto('/dashboard/analytics')`, `openSection('Settings')`, `expectSection('Settings')` walk the same page object.
 
 ## Pages Router Patterns
 
@@ -157,7 +155,7 @@ Same shape: `aboutPage.goto()`, `expectHeading('About Us')`, `expectText('Founde
 ```ts
 // e2e/blog/pages/post.page.ts
 import type { Locator, Page, Response } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class PostPage {
   public readonly heading: Locator;
@@ -178,14 +176,12 @@ export class PostPage {
   }
 
   public async expectPost(title: string): Promise<void> {
-    await test.step(`THEN post "${title}" is shown`, async (): Promise<void> => {
-      await expect(this.heading).toContainText(title);
-      await expect(this.notFoundText).toBeHidden();
-    }, { box: true });
+    await expect(this.heading).toContainText(title);
+    await expect(this.notFoundText).toBeHidden();
   }
 
   public async expectNotFound(): Promise<void> {
-    await test.step('THEN 404 heading is shown', (): Promise<void> => expect(this.notFoundHeading).toBeVisible(), { box: true });
+    await expect(this.notFoundHeading).toBeVisible();
   }
 }
 ```
@@ -245,7 +241,7 @@ test.describe('FEATURE: product filters', () => {
 
     const prices = await test.step('AND the rendered prices are read', (): Promise<number[]> => productsPage.prices());
 
-    await test.step('THEN prices are ascending', (): void => expect(prices).toEqual(sortedAscending(prices)));
+    await test.step('AND prices are ascending', (): void => expect(prices).toEqual(sortedAscending(prices)));
   });
 });
 ```
@@ -291,7 +287,7 @@ test.describe('FEATURE: products api', () => {
 
     const body = await test.step('AND the body is read', (): Promise<ProductsBody> => response.json());
 
-    await test.step('THEN first product has an id and a name', (): void => expect(body.products[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String) }));
+    await test.step('AND first product has an id and a name', (): void => expect(body.products[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String) }));
   });
 });
 ```
@@ -316,9 +312,9 @@ import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
 
 test.describe('FEATURE: product form', () => {
   test('GIVEN a new product, submitting creates it in the api and confirms it on the page', async ({ newProductPage }): Promise<void> => {
-    await test.step('GIVEN the new product page is open', (): Promise<void> => newProductPage.goto());
+    await test.step('WHEN the new product page is opened', (): Promise<void> => newProductPage.goto());
 
-    await test.step('WHEN a widget is created', (): Promise<void> => newProductPage.create({ ...NEW_PRODUCT_STUB, name: 'Widget', price: 19.99 }));
+    await test.step('AND a widget is created', (): Promise<void> => newProductPage.create({ ...NEW_PRODUCT_STUB, name: 'Widget', price: 19.99 }));
 
     await test.step('THEN success message is shown', (): Promise<void> => newProductPage.expectCreated());
   });
@@ -368,24 +364,22 @@ test.describe('FEATURE: auth middleware', () => {
 
 ### Security Headers
 
-The navigation response carries the middleware headers. Both assertions describe one state, so they share a boxed step in the util.
+The navigation response carries the middleware headers. Both assertions describe one state, so the util holds them as two plain `expect` lines.
 
 ```ts
 // e2e/auth/test/utils/security-headers.spec.util.ts
 import type { Response } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
-export const expectSecurityHeaders = async (response: Response | null): Promise<void> => {
+export const expectSecurityHeaders = (response: Response | null): void => {
   const headers = response?.headers() ?? {};
 
-  await test.step('THEN security headers are set', (): void => {
-    expect(headers['x-frame-options']).toBe('DENY');
-    expect(headers['x-content-type-options']).toBe('nosniff');
-  }, { box: true });
+  expect(headers['x-frame-options']).toBe('DENY');
+  expect(headers['x-content-type-options']).toBe('nosniff');
 };
 ```
 
-The spec reads `const response = await test.step('WHEN the home page is opened', (): Promise<Response | null> => page.goto('/'));` then `await test.step('THEN security headers are set', (): Promise<void> => expectSecurityHeaders(response));`.
+The spec reads `const response = await test.step('WHEN the home page is opened', (): Promise<Response | null> => page.goto('/'));` then `await test.step('THEN security headers are set', (): void => expectSecurityHeaders(response));`.
 
 ### Locale Rewrites
 
@@ -404,10 +398,8 @@ import { test } from './home.fixture';
 import { FRENCH_HEADERS_STUB } from './test/stubs/locale.stub';
 
 test.describe('FEATURE: locale middleware', () => {
-  test('GIVEN a French accept-language header, the home page serves the French copy', async ({ context, homePage }): Promise<void> => {
-    await test.step('GIVEN French accept-language is sent', (): Promise<void> => context.setExtraHTTPHeaders(FRENCH_HEADERS_STUB));
-
-    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
+  test('GIVEN a French accept-language header, the home page serves the French copy', async ({ homePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto({ headers: FRENCH_HEADERS_STUB }));
 
     await test.step('THEN french welcome is shown', (): Promise<void> => homePage.expectText('Bienvenue'));
   });
@@ -434,9 +426,9 @@ import { hydrationErrors } from './test/utils/hydration.spec.util';
 
 test.describe('FEATURE: hydration', () => {
   test('GIVEN the hydrated home page, clicking it logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-    await test.step('WHEN get started is clicked', (): Promise<void> => homePage.getStarted());
+    await test.step('AND get started is clicked', (): Promise<void> => homePage.getStarted());
 
     const mismatches = await test.step('AND the hydration errors are kept', (): string[] => hydrationErrors(consoleErrors));
 
@@ -447,7 +439,7 @@ test.describe('FEATURE: hydration', () => {
 
 ### Interactive Elements After Hydration
 
-A click that changes state proves hydration finished. `counterPage.expectValue(0)`, `counterPage.increment()`, `counterPage.expectValue(1)` on the `counter-value` test ID; the page object is the one in [angular.md](angular.md#signals-and-observables).
+A click that changes state proves hydration finished. `counterPage.goto()`, `counterPage.increment()`, `counterPage.expectValue(1)` on the `counter-value` test ID; the page object is the one in [angular.md](angular.md#signals-and-observables).
 
 ## next/image Testing
 
@@ -456,7 +448,7 @@ A click that changes state proves hydration finished. `counterPage.expectValue(0
 ```ts
 // e2e/gallery/pages/gallery.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const naturalWidth = (image: HTMLImageElement): number => image.naturalWidth;
 
@@ -487,11 +479,9 @@ export class GalleryPage {
   }
 
   public async expectHeroEager(): Promise<void> {
-    await test.step('THEN hero image is visible, has a srcset, and is not lazy', async (): Promise<void> => {
-      await expect(this.heroImage).toBeVisible();
-      await expect(this.heroImage).toHaveAttribute('srcset', /w=/);
-      await expect(this.heroImage).not.toHaveAttribute('loading', 'lazy');
-    }, { box: true });
+    await expect(this.heroImage).toBeVisible();
+    await expect(this.heroImage).toHaveAttribute('srcset', /w=/);
+    await expect(this.heroImage).not.toHaveAttribute('loading', 'lazy');
   }
 }
 ```
@@ -501,16 +491,16 @@ export class GalleryPage {
 import { expect, test } from './gallery.fixture';
 
 test.describe('FEATURE: next/image', () => {
-  test.beforeEach(async ({ galleryPage }): Promise<void> => {
-    await test.step('GIVEN the gallery is open', (): Promise<void> => galleryPage.goto());
-  });
-
   test('GIVEN the hero image, loading the page renders it eager with a srcset', async ({ galleryPage }): Promise<void> => {
+    await test.step('WHEN the gallery is opened', (): Promise<void> => galleryPage.goto());
+
     await test.step('THEN hero image is eager', (): Promise<void> => galleryPage.expectHeroEager());
   });
 
   test('GIVEN an offscreen image, scrolling it into view loads it', async ({ galleryPage }): Promise<void> => {
-    await test.step('WHEN item 20 is scrolled to', (): Promise<void> => galleryPage.scrollToItem(20));
+    await test.step('WHEN the gallery is opened', (): Promise<void> => galleryPage.goto());
+
+    await test.step('AND item 20 is scrolled to', (): Promise<void> => galleryPage.scrollToItem(20));
 
     const width = await test.step('AND the natural width is read', (): Promise<number> => galleryPage.itemNaturalWidth(20));
 
