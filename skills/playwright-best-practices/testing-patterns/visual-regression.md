@@ -342,7 +342,7 @@ test.describe('FEATURE: snapshot scope', () => {
 
 **Use when**: Application has responsive breakpoints requiring verification at different viewport sizes.
 
-Each breakpoint is a `GIVEN` with `test.use({ viewport })`, which sizes the context before the page opens. `page.setViewportSize` does the same mid-test when one test must walk several sizes.
+Viewport size can change at runtime, so each breakpoint is a looped test whose `GIVEN` step calls `page.setViewportSize` before the page opens. Projects per breakpoint, below, are the alternative when every visual spec must run at every size.
 
 ```ts
 // e2e/visual/common/visual.type.ts
@@ -366,14 +366,12 @@ const BREAKPOINTS: Breakpoint[] = [
 
 test.describe('FEATURE: landing page breakpoints', () => {
   for (const breakpoint of BREAKPOINTS) {
-    test.describe('GIVEN a viewport size', () => {
-      test.use({ viewport: breakpoint });
+    test(`SCENARIO: the landing page at ${breakpoint.name} (${breakpoint.width}x${breakpoint.height}) matches landing-${breakpoint.name}.png`, async ({ landingPage, page }): Promise<void> => {
+      await test.step(`GIVEN the viewport is ${breakpoint.width}x${breakpoint.height}`, (): Promise<void> => page.setViewportSize(breakpoint));
 
-      test(`SCENARIO: the landing page at ${breakpoint.name} (${breakpoint.width}x${breakpoint.height}) matches landing-${breakpoint.name}.png`, async ({ landingPage, page }): Promise<void> => {
-        await test.step('WHEN the landing page opens', (): Promise<void> => landingPage.goto());
+      await test.step('WHEN the landing page opens', (): Promise<void> => landingPage.goto());
 
-        await test.step(`THEN the full page matches landing-${breakpoint.name}.png`, (): Promise<void> => expect(page).toHaveScreenshot(`landing-${breakpoint.name}.png`, { animations: 'disabled', fullPage: true }));
-      });
+      await test.step(`THEN the full page matches landing-${breakpoint.name}.png`, (): Promise<void> => expect(page).toHaveScreenshot(`landing-${breakpoint.name}.png`, { animations: 'disabled', fullPage: true }));
     });
   }
 });
@@ -441,22 +439,20 @@ const STILL = { animations: 'disabled' } as const;
 const SIZES = ['small', 'medium', 'large'];
 
 test.describe('FEATURE: button visual states', () => {
-  test.describe('GIVEN the primary button story', () => {
-    test.beforeEach(async ({ storyPage }): Promise<void> => {
-      await test.step('GIVEN the primary button story is open', (): Promise<void> => storyPage.goto('button--primary'));
-    });
+  test('SCENARIO: the rendered primary button matches btn-primary.png', async ({ storyPage }): Promise<void> => {
+    await test.step('GIVEN the primary button story is open', (): Promise<void> => storyPage.goto('button--primary'));
 
-    test('SCENARIO: the rendered button matches btn-primary.png', async ({ storyPage }): Promise<void> => {
-      await test.step('WHEN the button has rendered', (): Promise<void> => expect(storyPage.button).toBeVisible());
+    await test.step('WHEN the button has rendered', (): Promise<void> => expect(storyPage.button).toBeVisible());
 
-      await test.step('THEN the button matches btn-primary.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary.png', STILL));
-    });
+    await test.step('THEN the button matches btn-primary.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary.png', STILL));
+  });
 
-    test('SCENARIO: the hovered button matches btn-primary-hover.png', async ({ storyPage }): Promise<void> => {
-      await test.step('WHEN the button is hovered', (): Promise<void> => storyPage.hoverButton());
+  test('SCENARIO: the hovered primary button matches btn-primary-hover.png', async ({ storyPage }): Promise<void> => {
+    await test.step('GIVEN the primary button story is open', (): Promise<void> => storyPage.goto('button--primary'));
 
-      await test.step('THEN the button matches btn-primary-hover.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary-hover.png', STILL));
-    });
+    await test.step('WHEN the button is hovered', (): Promise<void> => storyPage.hoverButton());
+
+    await test.step('THEN the button matches btn-primary-hover.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary-hover.png', STILL));
   });
 
   for (const size of SIZES) {

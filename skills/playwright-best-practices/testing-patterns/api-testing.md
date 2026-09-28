@@ -207,7 +207,7 @@ export class ItemsApi {
 | `multipart` | `multipart/form-data` body | See [File Upload via API](#file-upload-via-api) |
 | `headers` | Per-request headers | `{ headers: { Authorization: '' } }` |
 
-The spec creates its item in a `GIVEN` `beforeEach`, deletes it in `afterEach`, and asserts one outcome per test. `remove` returns the response instead of throwing, so the `afterEach` delete is safe after the delete test.
+The spec creates its item in a `FEATURE`-level `beforeEach` whose step is `GIVEN`, deletes it in `afterEach`, and asserts one outcome per test. `remove` returns the response instead of throwing, so the `afterEach` delete is safe after the delete test.
 
 ```ts
 // e2e/items/items.api.e2e.ts
@@ -219,44 +219,42 @@ import { expect, test } from './items.fixture';
 import { ITEM_STUB } from './test/stubs/items.stub';
 
 test.describe('FEATURE: items api', () => {
-  test.describe('GIVEN a created item', () => {
-    let item: Item;
+  let item: Item;
 
-    test.beforeEach(async ({ itemsApi }): Promise<void> => {
-      const response = await test.step('GIVEN the item is created', (): Promise<APIResponse> => itemsApi.create(ITEM_STUB));
+  test.beforeEach(async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('GIVEN the item is created', (): Promise<APIResponse> => itemsApi.create(ITEM_STUB));
 
-      item = await test.step('AND the created item is read', (): Promise<Item> => readJson<Item>(response));
-    });
+    item = await test.step('AND the created item is read', (): Promise<Item> => readJson<Item>(response));
+  });
 
-    test.afterEach(async ({ itemsApi }): Promise<void> => {
-      await test.step('AND the item is deleted', (): Promise<APIResponse> => itemsApi.remove(item.id));
-    });
+  test.afterEach(async ({ itemsApi }): Promise<void> => {
+    await test.step('AND the item is deleted', (): Promise<APIResponse> => itemsApi.remove(item.id));
+  });
 
-    test('SCENARIO: patching the price returns the new price', async ({ itemsApi }): Promise<void> => {
-      const response = await test.step('WHEN the price is patched', (): Promise<APIResponse> => itemsApi.update(item.id, { price: 22.5 }));
+  test('SCENARIO: patching the price returns the new price', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN the price is patched', (): Promise<APIResponse> => itemsApi.update(item.id, { price: 22.5 }));
 
-      const patched = await test.step('AND the patched item is read', (): Promise<Item> => readJson<Item>(response));
+    const patched = await test.step('AND the patched item is read', (): Promise<Item> => readJson<Item>(response));
 
-      await test.step('THEN the price is updated', (): void => expect(patched.price).toBe(22.5));
-    });
+    await test.step('THEN the price is updated', (): void => expect(patched.price).toBe(22.5));
+  });
 
-    test('SCENARIO: replacing the item succeeds', async ({ itemsApi }): Promise<void> => {
-      const replacement: NewItem = { ...ITEM_STUB, price: 24.99, title: 'Claw Hammer' };
+  test('SCENARIO: replacing the item succeeds', async ({ itemsApi }): Promise<void> => {
+    const replacement: NewItem = { ...ITEM_STUB, price: 24.99, title: 'Claw Hammer' };
 
-      const response = await test.step('WHEN the item is replaced', (): Promise<APIResponse> => itemsApi.replace(item.id, replacement));
+    const response = await test.step('WHEN the item is replaced', (): Promise<APIResponse> => itemsApi.replace(item.id, replacement));
 
-      await test.step('THEN the response is ok', (): void => expect(response.ok()).toBeTruthy());
-    });
+    await test.step('THEN the response is ok', (): void => expect(response.ok()).toBeTruthy());
+  });
 
-    test('SCENARIO: deleting the item makes a later read return 404', async ({ itemsApi }): Promise<void> => {
-      const deleted = await test.step('WHEN the item is deleted', (): Promise<APIResponse> => itemsApi.remove(item.id));
+  test('SCENARIO: deleting the item makes a later read return 404', async ({ itemsApi }): Promise<void> => {
+    const deleted = await test.step('WHEN the item is deleted', (): Promise<APIResponse> => itemsApi.remove(item.id));
 
-      await test.step('THEN the delete returns 204', (): void => expect(deleted.status()).toBe(204));
+    await test.step('THEN the delete returns 204', (): void => expect(deleted.status()).toBe(204));
 
-      const read = await test.step('AND the deleted item is read', (): Promise<APIResponse> => itemsApi.get(item.id));
+    const read = await test.step('AND the deleted item is read', (): Promise<APIResponse> => itemsApi.get(item.id));
 
-      await test.step('AND the read returns 404', (): void => expect(read.status()).toBe(404));
-    });
+    await test.step('AND the read returns 404', (): void => expect(read.status()).toBe(404));
   });
 });
 ```
@@ -307,50 +305,48 @@ const FIELD_TYPES = { createdAt: expect.any(String), id: expect.any(Number), tag
 const METADATA_SHAPE = { rating: expect.any(Number), views: expect.any(Number) };
 
 test.describe('FEATURE: item response shape', () => {
-  test.describe('GIVEN item 101 exists', () => {
-    test('SCENARIO: fetching the item returns 200', async ({ itemsApi }): Promise<void> => {
-      const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
+  test('SCENARIO: fetching the item returns 200', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
-      await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
-    });
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
+  });
 
-    test('SCENARIO: fetching the item names json and a cache policy in the headers', async ({ itemsApi }): Promise<void> => {
-      const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
+  test('SCENARIO: fetching the item names json and a cache policy in the headers', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
-      await test.step('THEN the content type is json', (): void => expect(response.headers()['content-type']).toContain('application/json'));
+    await test.step('THEN the content type is json', (): void => expect(response.headers()['content-type']).toContain('application/json'));
 
-      await test.step('AND cache control sets a max age', (): void => expect(response.headers()['cache-control']).toMatch(/max-age=\d+/));
-    });
+    await test.step('AND cache control sets a max age', (): void => expect(response.headers()['cache-control']).toMatch(/max-age=\d+/));
+  });
 
-    test('SCENARIO: fetching the item matches known fields and every field type', async ({ itemsApi }): Promise<void> => {
-      const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
+  test('SCENARIO: fetching the item matches known fields and every field type', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
-      const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
+    const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
 
-      await test.step('THEN the known fields match', (): void => expect(item).toMatchObject(KNOWN_FIELDS));
+    await test.step('THEN the known fields match', (): void => expect(item).toMatchObject(KNOWN_FIELDS));
 
-      await test.step('AND the field types match', (): void => expect(item).toMatchObject(FIELD_TYPES));
+    await test.step('AND the field types match', (): void => expect(item).toMatchObject(FIELD_TYPES));
 
-      await test.step('AND the metadata has views and rating', (): void => expect(item.metadata).toMatchObject(METADATA_SHAPE));
-    });
+    await test.step('AND the metadata has views and rating', (): void => expect(item.metadata).toMatchObject(METADATA_SHAPE));
+  });
 
-    test('SCENARIO: fetching the item tags it featured and not deprecated', async ({ itemsApi }): Promise<void> => {
-      const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
+  test('SCENARIO: fetching the item tags it featured and not deprecated', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
-      const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
+    const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
 
-      await test.step('THEN the featured tag is present', (): void => expect(item.tags).toEqual(expect.arrayContaining(['featured'])));
+    await test.step('THEN the featured tag is present', (): void => expect(item.tags).toEqual(expect.arrayContaining(['featured'])));
 
-      await test.step('AND the deprecated tag is absent', (): void => expect(item.tags).not.toContain('deprecated'));
-    });
+    await test.step('AND the deprecated tag is absent', (): void => expect(item.tags).not.toContain('deprecated'));
+  });
 
-    test('SCENARIO: fetching the item returns an ISO createdAt', async ({ itemsApi }): Promise<void> => {
-      const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
+  test('SCENARIO: fetching the item returns an ISO createdAt', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
-      const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
+    const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
 
-      await test.step('THEN createdAt round-trips through Date', (): void => expect(new Date(item.createdAt).toISOString()).toBe(item.createdAt));
-    });
+    await test.step('THEN createdAt round-trips through Date', (): void => expect(new Date(item.createdAt).toISOString()).toBe(item.createdAt));
   });
 });
 ```
@@ -605,7 +601,7 @@ test.describe('FEATURE: document upload api', () => {
 **Use when**: Testing multi-step workflows — create, read, update, delete sequences; order flows; state machine transitions.
 **Avoid when**: You can test each endpoint in isolation and the interactions are trivial.
 
-A chain is a Gherkin tree: the `GIVEN` `beforeEach` performs the arrange links and stores the typed body in a `let`; each `test` performs the action links as `WHEN` / `AND` steps and asserts one outcome; `afterEach` deletes what was created.
+A chain is a flat spec: the `FEATURE`-level `beforeEach` performs the arrange links as `GIVEN` / `AND` steps and stores the typed body in a `let`; each `test` performs the action links as `WHEN` / `AND` steps and asserts one outcome; `afterEach` deletes what was created.
 
 ```ts
 // e2e/orders/api/shop.api.ts
@@ -664,86 +660,84 @@ import { expect, test } from './orders.fixture';
 import { ADDRESS_STUB, PRODUCT_STUB } from './test/stubs/orders.stub';
 
 test.describe('FEATURE: checkout api', () => {
-  test.describe('GIVEN a product with stock 50 in a cart of three', () => {
-    let lines: CartLine[];
-    let order: Order;
-    let product: Product;
+  let lines: CartLine[];
+  let order: Order;
+  let product: Product;
 
-    test.beforeEach(async ({ shopApi }): Promise<void> => {
-      const response = await test.step('GIVEN the product is created', (): Promise<APIResponse> => shopApi.createProduct(PRODUCT_STUB));
+  test.beforeEach(async ({ shopApi }): Promise<void> => {
+    const response = await test.step('GIVEN the product is created', (): Promise<APIResponse> => shopApi.createProduct(PRODUCT_STUB));
 
-      product = await test.step('AND the product is read', (): Promise<Product> => readJson<Product>(response));
-      lines = [{ productId: product.id, quantity: 3 }];
-    });
+    product = await test.step('AND the product is read', (): Promise<Product> => readJson<Product>(response));
+    lines = [{ productId: product.id, quantity: 3 }];
+  });
 
-    test.afterEach(async ({ shopApi }): Promise<void> => {
-      await test.step('AND the order is deleted', (): Promise<APIResponse> => shopApi.deleteOrder(order.id));
+  test.afterEach(async ({ shopApi }): Promise<void> => {
+    await test.step('AND the order is deleted', (): Promise<APIResponse> => shopApi.deleteOrder(order.id));
 
-      await test.step('AND the product is deleted', (): Promise<APIResponse> => shopApi.deleteProduct(product.id));
-    });
+    await test.step('AND the product is deleted', (): Promise<APIResponse> => shopApi.deleteProduct(product.id));
+  });
 
-    test('SCENARIO: checking out the cart totals three times the price', async ({ shopApi }): Promise<void> => {
-      const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
+  test('SCENARIO: checking out the cart totals three times the price', async ({ shopApi }): Promise<void> => {
+    const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
 
-      const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
+    const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
 
-      const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
+    const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
 
-      order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
+    order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
 
-      await test.step('THEN the cart total is 149.97', (): void => expect(cart.total).toBe(149.97));
-    });
+    await test.step('THEN the cart total is 149.97', (): void => expect(cart.total).toBe(149.97));
+  });
 
-    test('SCENARIO: checking out the cart creates a pending order with one line', async ({ shopApi }): Promise<void> => {
-      const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
+  test('SCENARIO: checking out the cart creates a pending order with one line', async ({ shopApi }): Promise<void> => {
+    const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
 
-      const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
+    const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
 
-      const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
+    const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
 
-      order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
+    order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
 
-      await test.step('THEN the order status is pending', (): void => expect(order.status).toBe('pending'));
+    await test.step('THEN the order status is pending', (): void => expect(order.status).toBe('pending'));
 
-      await test.step('AND the order has one line', (): void => expect(order.items).toHaveLength(1));
-    });
+    await test.step('AND the order has one line', (): void => expect(order.items).toHaveLength(1));
+  });
 
-    test('SCENARIO: checking out the cart lists the order', async ({ shopApi }): Promise<void> => {
-      const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
+  test('SCENARIO: checking out the cart lists the order', async ({ shopApi }): Promise<void> => {
+    const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
 
-      const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
+    const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
 
-      const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
+    const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
 
-      order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
+    order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
 
-      const response = await test.step('AND the orders are listed', (): Promise<APIResponse> => shopApi.listOrders());
+    const response = await test.step('AND the orders are listed', (): Promise<APIResponse> => shopApi.listOrders());
 
-      const list = await test.step('AND the list is read', (): Promise<OrderList> => readJson<OrderList>(response));
+    const list = await test.step('AND the list is read', (): Promise<OrderList> => readJson<OrderList>(response));
 
-      await test.step('THEN the list contains the order', (): void => expect(list.items.map((entry: Order): number => entry.id)).toContain(order.id));
-    });
+    await test.step('THEN the list contains the order', (): void => expect(list.items.map((entry: Order): number => entry.id)).toContain(order.id));
+  });
 
-    test('SCENARIO: checking out the cart drops the product stock to 47', async ({ shopApi }): Promise<void> => {
-      const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
+  test('SCENARIO: checking out the cart drops the product stock to 47', async ({ shopApi }): Promise<void> => {
+    const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
 
-      const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
+    const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
 
-      const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
+    const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
 
-      order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
+    order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
 
-      const response = await test.step('AND the product is fetched', (): Promise<APIResponse> => shopApi.product(product.id));
+    const response = await test.step('AND the product is fetched', (): Promise<APIResponse> => shopApi.product(product.id));
 
-      const updated = await test.step('AND the product is read', (): Promise<Product> => readJson<Product>(response));
+    const updated = await test.step('AND the product is read', (): Promise<Product> => readJson<Product>(response));
 
-      await test.step('THEN the stock dropped by three', (): void => expect(updated.stock).toBe(47));
-    });
+    await test.step('THEN the stock dropped by three', (): void => expect(updated.stock).toBe(47));
   });
 });
 ```
 
-A state machine is the same tree with one `GIVEN` per starting state and one `WHEN` step per transition. For an article publish workflow through `patch('/api/articles/:id/status', { data: { status } })`:
+A state machine is the same flat spec with one test per starting state: its `GIVEN` step sets the state, one `WHEN` step runs the transition, and the title names both (`'SCENARIO: publishing an article in review succeeds'`). For an article publish workflow through `patch('/api/articles/:id/status', { data: { status } })`:
 
 | GIVEN | WHEN status is set to | THEN |
 |---|---|---|

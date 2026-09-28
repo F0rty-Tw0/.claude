@@ -196,17 +196,15 @@ import { XSS_PAYLOADS } from './common/security.const';
 import { expect, test } from './security.fixture';
 
 test.describe('FEATURE: reflected XSS', () => {
-  test.describe('GIVEN a search page that echoes the query', () => {
-    for (const payload of XSS_PAYLOADS) {
-      test(`SCENARIO: the query ${payload} is escaped and does not run`, async ({ dialogs, searchPage }): Promise<void> => {
-        await test.step('WHEN the search page is opened with the payload', (): Promise<void> => searchPage.gotoQuery(payload));
+  for (const payload of XSS_PAYLOADS) {
+    test(`SCENARIO: the query ${payload} is escaped and does not run`, async ({ dialogs, searchPage }): Promise<void> => {
+      await test.step('WHEN the search page is opened with the payload', (): Promise<void> => searchPage.gotoQuery(payload));
 
-        await test.step('THEN no dialog opened', (): void => expect(dialogs).toEqual([]));
+      await test.step('THEN no dialog opened', (): void => expect(dialogs).toEqual([]));
 
-        await test.step('AND the payload is escaped in the html', (): Promise<void> => searchPage.expectPayloadEscaped());
-      });
-    }
-  });
+      await test.step('AND the payload is escaped in the html', (): Promise<void> => searchPage.expectPayloadEscaped());
+    });
+  }
 });
 ```
 
@@ -326,24 +324,22 @@ import { expect, test } from './security.fixture';
 import { USER_STUB } from './test/stubs/security.stub';
 
 test.describe('FEATURE: session expiry', () => {
-  test.describe('GIVEN a signed-in user', () => {
-    test.beforeEach(async ({ loginPage, page }): Promise<void> => {
-      await test.step('GIVEN the clock is installed', (): Promise<void> => page.clock.install());
+  test.beforeEach(async ({ loginPage, page }): Promise<void> => {
+    await test.step('GIVEN the clock is installed', (): Promise<void> => page.clock.install());
 
-      await test.step('AND the user is signed in', (): Promise<void> => loginPage.login(USER_STUB));
+    await test.step('AND the user is signed in', (): Promise<void> => loginPage.login(USER_STUB));
 
-      await test.step('AND the dashboard is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
-    });
+    await test.step('AND the dashboard is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+  });
 
-    test('SCENARIO: two hours passing sends the next navigation to the login page', async ({ loginPage, page, profilePage }): Promise<void> => {
-      await test.step('WHEN the clock advances two hours', (): Promise<void> => page.clock.fastForward('02:00:00'));
+  test('SCENARIO: two hours passing sends the next navigation to the login page', async ({ loginPage, page, profilePage }): Promise<void> => {
+    await test.step('WHEN the clock advances two hours', (): Promise<void> => page.clock.fastForward('02:00:00'));
 
-      await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
+    await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
 
-      await test.step('THEN the login page is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
+    await test.step('THEN the login page is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
 
-      await test.step('AND the session expired notice is shown', (): Promise<void> => loginPage.expectSessionExpired());
-    });
+    await test.step('AND the session expired notice is shown', (): Promise<void> => loginPage.expectSessionExpired());
   });
 });
 ```
@@ -382,22 +378,20 @@ import { USER_STUB } from './test/stubs/security.stub';
 const RESET_TOKEN = 'mock-reset-token';
 
 test.describe('FEATURE: password reset token', () => {
-  test.describe('GIVEN a reset was requested and the token used once', () => {
-    test.beforeEach(async ({ forgotPasswordPage, resetPasswordPage }): Promise<void> => {
-      await test.step('GIVEN a password reset was requested', (): Promise<void> => forgotPasswordPage.request(USER_STUB.email));
+  test.beforeEach(async ({ forgotPasswordPage, resetPasswordPage }): Promise<void> => {
+    await test.step('GIVEN a password reset was requested', (): Promise<void> => forgotPasswordPage.request(USER_STUB.email));
 
-      await test.step('AND the reset page is open with the token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
+    await test.step('AND the reset page is open with the token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
 
-      await test.step('AND a new password was submitted', (): Promise<void> => resetPasswordPage.submit('NewPassword123'));
+    await test.step('AND a new password was submitted', (): Promise<void> => resetPasswordPage.submit('NewPassword123'));
 
-      await test.step('AND the password updated notice is shown', (): Promise<void> => resetPasswordPage.expectUpdated());
-    });
+    await test.step('AND the password updated notice is shown', (): Promise<void> => resetPasswordPage.expectUpdated());
+  });
 
-    test('SCENARIO: reusing the token rejects it as invalid or expired', async ({ resetPasswordPage }): Promise<void> => {
-      await test.step('WHEN the reset page is opened with the used token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
+  test('SCENARIO: reusing the token rejects it as invalid or expired', async ({ resetPasswordPage }): Promise<void> => {
+    await test.step('WHEN the reset page is opened with the used token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
 
-      await test.step('THEN the invalid or expired token notice is shown', (): Promise<void> => resetPasswordPage.expectInvalidToken());
-    });
+    await test.step('THEN the invalid or expired token notice is shown', (): Promise<void> => resetPasswordPage.expectInvalidToken());
   });
 });
 ```
@@ -406,7 +400,7 @@ test.describe('FEATURE: password reset token', () => {
 
 ### Test Unauthorized Access
 
-A regular user's storage state is pinned with `test.use` under its own `GIVEN`. `AdminUsersPage.goto()` requests `/admin/users`; `expectAccessDenied` asserts `getByText('Access denied')` is visible. Apps differ in how they refuse; assert the one yours does. The same shape covers another user's resource: `userSettingsPage.goto('other-user-id')` then `expectAccessDenied()`.
+A regular user's storage state is fixed at context creation, so the spec pins it with a file-level `test.use` and the title names the regular user. `AdminUsersPage.goto()` requests `/admin/users`; `expectAccessDenied` asserts `getByText('Access denied')` is visible. Apps differ in how they refuse; assert the one yours does. The same shape covers another user's resource: `userSettingsPage.goto('other-user-id')` then `expectAccessDenied()`.
 
 | Refusal | Assertion |
 |---|---|
@@ -418,17 +412,15 @@ A regular user's storage state is pinned with `test.use` under its own `GIVEN`. 
 // e2e/security/admin-access.e2e.ts
 import { expect, test } from './security.fixture';
 
+test.use({ storageState: '.auth/user.json' });
+
 test.describe('FEATURE: admin route authorization', () => {
-  test.describe('GIVEN a regular user session', () => {
-    test.use({ storageState: '.auth/user.json' });
+  test('SCENARIO: a regular user requesting the admin users page is denied access', async ({ adminUsersPage, page }): Promise<void> => {
+    await test.step('WHEN the admin users page is requested', (): Promise<void> => adminUsersPage.goto());
 
-    test('SCENARIO: requesting the admin users page denies access', async ({ adminUsersPage, page }): Promise<void> => {
-      await test.step('WHEN the admin users page is requested', (): Promise<void> => adminUsersPage.goto());
+    await test.step('THEN the admin url is not reached', (): Promise<void> => expect(page).not.toHaveURL('/admin/users'));
 
-      await test.step('THEN the admin url is not reached', (): Promise<void> => expect(page).not.toHaveURL('/admin/users'));
-
-      await test.step('AND access denied is shown', (): Promise<void> => adminUsersPage.expectAccessDenied());
-    });
+    await test.step('AND access denied is shown', (): Promise<void> => adminUsersPage.expectAccessDenied());
   });
 });
 ```
@@ -441,7 +433,7 @@ The API call must carry the signed-in user's session, otherwise a 401 for a miss
 
 ### Test SQL Injection Prevention
 
-`sql-injection.e2e.ts` loops `SQL_PAYLOADS` exactly as `reflected-xss.e2e.ts` loops `XSS_PAYLOADS`, so the failing payload names itself: `searchPage.goto()` in a `GIVEN` `beforeEach`, `WHEN searchPage.submitSearch(payload)`, `THEN searchPage.expectNoDatabaseError()`, which asserts no text matching `/database error|sql|syntax|error/i` is visible.
+`sql-injection.e2e.ts` loops `SQL_PAYLOADS` exactly as `reflected-xss.e2e.ts` loops `XSS_PAYLOADS`, so the failing payload names itself: `searchPage.goto()` as the `GIVEN` step of a `FEATURE`-level `beforeEach`, `WHEN searchPage.submitSearch(payload)`, `THEN searchPage.expectNoDatabaseError()`, which asserts no text matching `/database error|sql|syntax|error/i` is visible.
 
 ### Test Input Length Limits
 
@@ -501,30 +493,28 @@ import type { HeaderMap } from './common/security.type';
 import { expect, test } from './security.fixture';
 
 test.describe('FEATURE: security headers', () => {
-  test.describe('GIVEN the home page response', () => {
-    let response: Response;
+  let response: Response;
 
-    test.beforeEach(async ({ homePage }): Promise<void> => {
-      response = await test.step('GIVEN the home page is open', (): Promise<Response> => homePage.open());
-    });
+  test.beforeEach(async ({ homePage }): Promise<void> => {
+    response = await test.step('GIVEN the home page is open', (): Promise<Response> => homePage.open());
+  });
 
-    test('SCENARIO: reading the headers finds the policy headers set', async (): Promise<void> => {
-      const headers = await test.step('WHEN the response headers are read', (): HeaderMap => response.headers());
+  test('SCENARIO: reading the headers finds the policy headers set', async (): Promise<void> => {
+    const headers = await test.step('WHEN the response headers are read', (): HeaderMap => response.headers());
 
-      await test.step('THEN the content security policy is set', (): void => expect(headers['content-security-policy']).toBeTruthy());
+    await test.step('THEN the content security policy is set', (): void => expect(headers['content-security-policy']).toBeTruthy());
 
-      await test.step('AND x-frame-options denies framing', (): void => expect(headers['x-frame-options']).toMatch(/DENY|SAMEORIGIN/));
+    await test.step('AND x-frame-options denies framing', (): void => expect(headers['x-frame-options']).toMatch(/DENY|SAMEORIGIN/));
 
-      await test.step('AND x-content-type-options is nosniff', (): void => expect(headers['x-content-type-options']).toBe('nosniff'));
+    await test.step('AND x-content-type-options is nosniff', (): void => expect(headers['x-content-type-options']).toBe('nosniff'));
 
-      await test.step('AND x-xss-protection is set', (): void => expect(headers['x-xss-protection']).toBeTruthy());
-    });
+    await test.step('AND x-xss-protection is set', (): void => expect(headers['x-xss-protection']).toBeTruthy());
+  });
 
-    test('SCENARIO: injecting an inline script makes the policy report a violation', async ({ cspViolations, homePage }): Promise<void> => {
-      await test.step('WHEN an inline script is injected', (): Promise<void> => homePage.injectInlineScript());
+  test('SCENARIO: injecting an inline script makes the policy report a violation', async ({ cspViolations, homePage }): Promise<void> => {
+    await test.step('WHEN an inline script is injected', (): Promise<void> => homePage.injectInlineScript());
 
-      await test.step('THEN at least one violation was reported', (): void => expect(cspViolations.length).toBeGreaterThan(0));
-    });
+    await test.step('THEN at least one violation was reported', (): void => expect(cspViolations.length).toBeGreaterThan(0));
   });
 });
 ```
