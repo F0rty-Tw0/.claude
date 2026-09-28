@@ -51,7 +51,6 @@ export default defineConfig({
   fullyParallel: true,
   projects,
   retries: IS_CI ? 2 : 0,
-  testDir: './e2e',
   testMatch: '**/*.@(e2e|test).ts',
   use,
   webServer,
@@ -152,12 +151,15 @@ export class ProjectsPage {
 
 Playwright interacts with the rendered DOM, so reactive forms (`FormGroup`, `FormControl`, `FormArray`) are transparent. The page object below covers required and format errors on blur, cross-field validation, and the submit button state.
 
+`goto(options)` takes `SignupOptions` from `common/signup.type.ts`, the one options type this page object has: `{ readonly failOn?: 'register'; readonly signupDelayMs?: number; readonly usernameCheckDelayMs?: number }`. The sample shows the `usernameCheckDelayMs` branch that the async validator case below passes. `signupDelayMs` ([react.md](react.md#form-libraries-react-hook-form-formik)) and `failOn` ([error-testing.md](../debugging/error-testing.md#test-server-side-validation)) route their mocks the same way before the page opens.
+
 ```ts
 // e2e/signup/pages/signup.page.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-import type { SignupUser } from '../common/signup.type';
+import type { SignupOptions, SignupUser } from '../common/signup.type';
+import { slowUsernameCheckMock } from '../test/mocks/username-check.mock';
 
 export class SignupPage {
   public readonly confirmInput: Locator;
@@ -179,7 +181,9 @@ export class SignupPage {
     this.termsCheckbox = page.getByLabel('Accept terms');
   }
 
-  public async goto(): Promise<void> {
+  public async goto(options: SignupOptions = {}): Promise<void> {
+    if (options.usernameCheckDelayMs !== undefined) await this.page.route('**/api/username-check*', slowUsernameCheckMock(options.usernameCheckDelayMs));
+
     await this.page.goto('/signup');
   }
 
@@ -243,7 +247,7 @@ test.describe('FEATURE: signup form validation', () => {
     await test.step('THEN the mismatch error is shown', (): Promise<void> => signupPage.expectError('Passwords must match'));
   });
 
-  test('GIVEN a mismatch error, filling matching passwords clears it', async ({ signupPage }): Promise<void> => {
+  test('GIVEN an empty form, correcting mismatched passwords clears the mismatch error', async ({ signupPage }): Promise<void> => {
     await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto());
 
     await test.step('AND mismatched passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Mismatch'));
@@ -297,11 +301,10 @@ export const slowUsernameCheckMock = (delayMs: number, check: UsernameCheck = US
 ```ts
 // e2e/signup/signup.test.ts
 import { test } from './signup.fixture';
-import { slowUsernameCheckMock } from './test/mocks/username-check.mock';
 
 test.describe('FEATURE: async username validator', () => {
   test('GIVEN a slow username check, the loading state shows until it resolves', async ({ signupPage }): Promise<void> => {
-    await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto({ usernameCheck: slowUsernameCheckMock(800) }));
+    await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto({ usernameCheckDelayMs: 800 }));
 
     await test.step('AND the username field loses focus', (): Promise<void> => signupPage.blurUsernameWith('alice'));
 
@@ -312,7 +315,7 @@ test.describe('FEATURE: async username validator', () => {
 });
 ```
 
-`goto({ usernameCheck })` takes an optional `usernameCheck: RouteHandler` in a named `SignupOptions` type and routes `page.route('**/api/username-check*', usernameCheck)` before it navigates; `expectUsernameLoading` asserts `getByTestId('username-loading')` visible; `expectUsernameAvailable` asserts it hidden and `Username available` visible as two plain `expect` lines.
+The spec passes data, not a handler: `goto({ usernameCheckDelayMs: 800 })` routes `slowUsernameCheckMock(800)` before it navigates, as the `SignupPage` sample above shows. `blurUsernameWith(value)` fills and blurs the `Username` field (`getByLabel('Username')`) the way `blurEmailWith` does; `expectUsernameLoading` asserts `getByTestId('username-loading')` visible; `expectUsernameAvailable` asserts it hidden and `Username available` visible as two plain `expect` lines.
 
 ## Angular Material Components
 
@@ -353,7 +356,7 @@ export class PreferencesPage {
 import { test } from './preferences.fixture';
 
 test.describe('FEATURE: material select', () => {
-  test('GIVEN the preferences page, choosing a language shows it in the select', async ({ preferencesPage }): Promise<void> => {
+  test('GIVEN default preferences, choosing a language shows it in the select', async ({ preferencesPage }): Promise<void> => {
     await test.step('WHEN the preferences page is opened', (): Promise<void> => preferencesPage.goto());
 
     await test.step('AND Spanish is chosen', (): Promise<void> => preferencesPage.chooseLanguage('Spanish'));
@@ -427,7 +430,7 @@ test.describe('FEATURE: angular router', () => {
     await test.step('AND the sign in heading is shown', (): Promise<void> => loginPage.expectHeading());
   });
 
-  test('GIVEN an item resolver, opening an item renders the resolved data', async ({ itemPage }): Promise<void> => {
+  test('GIVEN a stored item, opening it renders the resolved data', async ({ itemPage }): Promise<void> => {
     await test.step('WHEN item 42 is opened', (): Promise<void> => itemPage.goto(42));
 
     await test.step('THEN the heading names the item', (): Promise<void> => itemPage.expectHeading('Item'));
@@ -445,13 +448,19 @@ test.describe('FEATURE: angular router', () => {
 
 ## Lazy-Loaded Modules
 
-A lazy route downloads its chunk on first navigation. The page object waits for the chunk response before asserting; a console fixture from [console-errors.md](console-errors.md#fail-test-on-any-error) collects errors and the util keeps only chunk failures.
+A lazy route downloads its chunk on first navigation. The page object waits for the chunk response before asserting; a console fixture from [console-errors.md](../debugging/console-errors.md#fail-test-on-any-error) collects errors; the `expect*` util keeps only chunk failures and asserts there are none.
 
 ```ts
 // e2e/analytics/test/utils/chunk-errors.spec.util.ts
+import { expect } from '@playwright/test';
+
 const isChunkError = (error: string): boolean => error.includes('ChunkLoadError') || error.includes('Loading chunk');
 
-export const chunkErrors = (errors: string[]): string[] => errors.filter(isChunkError);
+export const expectNoChunkErrors = (errors: string[]): void => {
+  const chunkErrors = errors.filter(isChunkError);
+
+  expect(chunkErrors).toEqual([]);
+};
 ```
 
 ```ts
@@ -486,8 +495,8 @@ export class HomePage {
 
 ```ts
 // e2e/analytics/analytics.e2e.ts
-import { expect, test } from './analytics.fixture';
-import { chunkErrors } from './test/utils/chunk-errors.spec.util';
+import { test } from './analytics.fixture';
+import { expectNoChunkErrors } from './test/utils/chunk-errors.spec.util';
 
 test.describe('FEATURE: lazy analytics module', () => {
   test('GIVEN the lazy analytics chunk, following its link loads it without errors', async ({ analyticsPage, consoleErrors, homePage }): Promise<void> => {
@@ -497,9 +506,7 @@ test.describe('FEATURE: lazy analytics module', () => {
 
     await test.step('THEN the analytics heading is shown', (): Promise<void> => analyticsPage.expectHeading());
 
-    const failures = await test.step('AND the chunk errors are collected', (): string[] => chunkErrors(consoleErrors));
-
-    await test.step('AND no chunk error was logged', (): void => expect(failures).toEqual([]));
+    await test.step('AND no chunk error was logged', (): void => expectNoChunkErrors(consoleErrors));
   });
 });
 ```
@@ -556,7 +563,7 @@ test.describe('FEATURE: signal counter', () => {
     await test.step('THEN the value reads 0', (): Promise<void> => counterPage.expectValue(0));
   });
 
-  test('GIVEN a value of 0, clicking increment raises it to 1', async ({ counterPage }): Promise<void> => {
+  test('GIVEN a fresh counter, clicking increment raises it to 1', async ({ counterPage }): Promise<void> => {
     await test.step('WHEN the counter page is opened', (): Promise<void> => counterPage.goto());
 
     await test.step('AND increment is clicked', (): Promise<void> => counterPage.increment());
@@ -564,7 +571,7 @@ test.describe('FEATURE: signal counter', () => {
     await test.step('THEN the value reads 1', (): Promise<void> => counterPage.expectValue(1));
   });
 
-  test('GIVEN an incremented value, clicking reset returns it to 0', async ({ counterPage }): Promise<void> => {
+  test('GIVEN a fresh counter, clicking reset after an increment returns it to 0', async ({ counterPage }): Promise<void> => {
     await test.step('WHEN the counter page is opened', (): Promise<void> => counterPage.goto());
 
     await test.step('AND increment is clicked', (): Promise<void> => counterPage.increment());
@@ -608,7 +615,7 @@ const webServer = {
   url: BASE_URL
 };
 
-export default defineConfig({ webServer });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', webServer });
 ```
 
 A hydration mismatch is logged as a console error mentioning `hydration`. The collector keeps those; the spec asserts the list is empty after the first interaction.
@@ -631,7 +638,7 @@ export const collectHydrationError = (errors: string[], message: ConsoleMessage)
 import { expect, test } from './home.fixture';
 
 test.describe('FEATURE: server-side rendering', () => {
-  test('GIVEN the hydrated home page, clicking it logs no hydration error', async ({ homePage, hydrationErrors }): Promise<void> => {
+  test('GIVEN server-rendered HTML, clicking the hydrated page logs no hydration error', async ({ homePage, hydrationErrors }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('AND get started is clicked', (): Promise<void> => homePage.getStarted());
@@ -641,7 +648,7 @@ test.describe('FEATURE: server-side rendering', () => {
 });
 ```
 
-The `hydrationErrors` fixture member registers `collectHydrationError` the same way `consoleErrors` does in [console-errors.md](console-errors.md#fail-test-on-any-error).
+The `hydrationErrors` fixture member registers `collectHydrationError` the same way `consoleErrors` does in [console-errors.md](../debugging/console-errors.md#fail-test-on-any-error).
 
 ## Protractor Migration Reference
 

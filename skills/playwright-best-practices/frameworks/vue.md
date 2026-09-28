@@ -56,7 +56,6 @@ export default defineConfig({
   fullyParallel: true,
   projects,
   retries: IS_CI ? 2 : 0,
-  testDir: './e2e',
   testMatch: '**/*.@(e2e|test).ts',
   use,
   webServer,
@@ -94,7 +93,6 @@ export default defineConfig({
   fullyParallel: true,
   projects,
   retries: IS_CI ? 2 : 0,
-  testDir: './e2e',
   testMatch: '**/*.@(e2e|test).ts',
   use,
   webServer
@@ -113,7 +111,6 @@ const projects = [{ name: 'chromium', use: devices['Desktop Chrome'] }];
 
 export default defineConfig({
   projects,
-  testDir: './e2e',
   testMatch: '**/*.ct.ts',
   use
 });
@@ -293,20 +290,24 @@ export { expect } from '@playwright/test';
 import { test } from './shop.fixture';
 
 test.describe('FEATURE: shopping cart store', () => {
-  test('GIVEN two added products, the badge counts both', async ({ shopPage }): Promise<void> => {
+  test('GIVEN an empty cart, adding two products counts both on the badge', async ({ shopPage }): Promise<void> => {
     await test.step('WHEN the shop is opened', (): Promise<void> => shopPage.goto());
 
-    await test.step('AND the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
+    await test.step('THEN the badge reads 0', (): Promise<void> => shopPage.expectBadge(0));
+
+    await test.step('WHEN the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
 
     await test.step('AND the cap is added', (): Promise<void> => shopPage.addToCart('Cap'));
 
     await test.step('THEN the badge reads 2', (): Promise<void> => shopPage.expectBadge(2));
   });
 
-  test('GIVEN two added products, the cart page lists both', async ({ cartPage, shopPage }): Promise<void> => {
+  test('GIVEN an empty cart, adding two products lists both on the cart page', async ({ cartPage, shopPage }): Promise<void> => {
     await test.step('WHEN the shop is opened', (): Promise<void> => shopPage.goto());
 
-    await test.step('AND the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
+    await test.step('THEN the badge reads 0', (): Promise<void> => shopPage.expectBadge(0));
+
+    await test.step('WHEN the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
 
     await test.step('AND the cap is added', (): Promise<void> => shopPage.addToCart('Cap'));
 
@@ -315,10 +316,12 @@ test.describe('FEATURE: shopping cart store', () => {
     await test.step('THEN both products are listed', (): Promise<void> => cartPage.expectItems(['Hoodie', 'Cap']));
   });
 
-  test('GIVEN a hoodie in the cart, reloading the page keeps it', async ({ shopPage }): Promise<void> => {
+  test('GIVEN an empty cart, reloading after adding a hoodie keeps it', async ({ shopPage }): Promise<void> => {
     await test.step('WHEN the shop is opened', (): Promise<void> => shopPage.goto());
 
-    await test.step('AND the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
+    await test.step('THEN the badge reads 0', (): Promise<void> => shopPage.expectBadge(0));
+
+    await test.step('WHEN the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
 
     await test.step('AND the page reloads', (): Promise<void> => shopPage.reload());
 
@@ -331,14 +334,18 @@ test.describe('FEATURE: shopping cart store', () => {
 
 **Use when**: Testing client-side routing, navigation guards, URL parameters, browser history.
 
-A client-side navigation keeps the document; a full load replaces it. The page object stamps an attribute on `<html>` before the click and asserts it is still there after, which proves the router handled the link.
+A client-side navigation keeps the document; a full load replaces it. Marking the document is not a user action, so it is an option on the opening call: `goto({ spaMarker: true })` stamps an attribute on `<html>` once the page has loaded, and the page object asserts it is still there after the click, which proves the router handled the link. `HomeOptions` in `common/navigation.type.ts` is `{ readonly spaMarker?: boolean }`.
 
 ```ts
 // e2e/navigation/pages/home.page.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
+import type { HomeOptions } from '../common/navigation.type';
+
 const SPA_MARKER = 'data-spa-session';
+
+const stampMarker = (html: HTMLElement, marker: string): void => html.setAttribute(marker, 'on');
 
 export class HomePage {
   public readonly contactLink: Locator;
@@ -354,12 +361,10 @@ export class HomePage {
     this.shopLink = page.getByRole('link', { name: 'Shop' });
   }
 
-  public async goto(): Promise<void> {
+  public async goto(options: HomeOptions = {}): Promise<void> {
     await this.page.goto('/');
-  }
 
-  public async markSpaSession(): Promise<void> {
-    await this.root.evaluate((html: HTMLElement, marker: string): void => html.setAttribute(marker, 'on'), SPA_MARKER);
+    if (options.spaMarker) await this.root.evaluate(stampMarker, SPA_MARKER);
   }
 
   public async openShop(): Promise<void> {
@@ -392,16 +397,14 @@ import { expect, test } from './navigation.fixture';
 
 test.describe('FEATURE: router navigation', () => {
   test('GIVEN a marked session, following a router link keeps the document', async ({ homePage }): Promise<void> => {
-    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
-
-    await test.step('AND the session is marked', (): Promise<void> => homePage.markSpaSession());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto({ spaMarker: true }));
 
     await test.step('AND the shop link is followed', (): Promise<void> => homePage.openShop());
 
     await test.step('THEN the marker is still present', (): Promise<void> => homePage.expectSpaSessionKept());
   });
 
-  test('GIVEN two followed links, going back returns to the shop', async ({ homePage, page }): Promise<void> => {
+  test('GIVEN a new tab, going back after two links returns to the shop', async ({ homePage, page }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('AND the shop link is followed', (): Promise<void> => homePage.openShop());
@@ -413,16 +416,18 @@ test.describe('FEATURE: router navigation', () => {
     await test.step('THEN the url is the shop', (): Promise<void> => expect(page).toHaveURL(/\/shop/));
   });
 
-  test('GIVEN a history back at the root, going forward returns to the shop', async ({ homePage, page }): Promise<void> => {
+  test('GIVEN a new tab, going forward after going back returns to the shop', async ({ homePage, page }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('AND the shop link is followed', (): Promise<void> => homePage.openShop());
 
     await test.step('AND the browser goes back', (): Promise<void> => homePage.goBack());
 
-    await test.step('AND the browser goes forward', (): Promise<void> => homePage.goForward());
+    await test.step('THEN the url is the root', (): Promise<void> => expect(page).toHaveURL(/\/$/));
 
-    await test.step('THEN the url is the shop', (): Promise<void> => expect(page).toHaveURL(/\/shop/));
+    await test.step('WHEN the browser goes forward', (): Promise<void> => homePage.goForward());
+
+    await test.step('THEN the url is the shop again', (): Promise<void> => expect(page).toHaveURL(/\/shop/));
   });
 
   test('GIVEN no session, opening an admin url redirects to login', async ({ adminPage, page }): Promise<void> => {
@@ -493,7 +498,7 @@ export class ItemsPage {
 import { test } from './items.fixture';
 
 test.describe('FEATURE: teleported dialog', () => {
-  test('GIVEN the items list, clicking remove opens the dialog', async ({ itemsPage }): Promise<void> => {
+  test('GIVEN listed items, clicking remove opens the dialog', async ({ itemsPage }): Promise<void> => {
     await test.step('WHEN the items page is opened', (): Promise<void> => itemsPage.goto());
 
     await test.step('AND remove is clicked on the first item', (): Promise<void> => itemsPage.removeFirst());
@@ -501,12 +506,14 @@ test.describe('FEATURE: teleported dialog', () => {
     await test.step('THEN the dialog is open', (): Promise<void> => itemsPage.expectDialogOpen());
   });
 
-  test('GIVEN the open dialog, cancelling the removal closes it', async ({ itemsPage }): Promise<void> => {
+  test('GIVEN listed items, cancelling a removal closes the dialog', async ({ itemsPage }): Promise<void> => {
     await test.step('WHEN the items page is opened', (): Promise<void> => itemsPage.goto());
 
     await test.step('AND remove is clicked on the first item', (): Promise<void> => itemsPage.removeFirst());
 
-    await test.step('AND the removal is cancelled', (): Promise<void> => itemsPage.cancelRemoval());
+    await test.step('THEN the dialog is open', (): Promise<void> => itemsPage.expectDialogOpen());
+
+    await test.step('WHEN the removal is cancelled', (): Promise<void> => itemsPage.cancelRemoval());
 
     await test.step('THEN the dialog is closed', (): Promise<void> => itemsPage.expectDialogClosed());
   });
@@ -547,7 +554,7 @@ export const disableAnimations = async (page: Page): Promise<void> => {
 import { test } from './tasks.fixture';
 
 test.describe('FEATURE: task list transitions', () => {
-  test('GIVEN a new task, adding it lists it', async ({ tasksPage }): Promise<void> => {
+  test('GIVEN disabled animations, adding a task lists it', async ({ tasksPage }): Promise<void> => {
     await test.step('WHEN the task list is opened', (): Promise<void> => tasksPage.goto({ animations: 'disabled' }));
 
     await test.step('AND a task is added', (): Promise<void> => tasksPage.add('Write tests'));
@@ -555,12 +562,14 @@ test.describe('FEATURE: task list transitions', () => {
     await test.step('THEN the task is listed', (): Promise<void> => tasksPage.expectTask('Write tests'));
   });
 
-  test('GIVEN a listed task, removing it drops it from the list', async ({ tasksPage }): Promise<void> => {
+  test('GIVEN disabled animations, removing an added task drops it from the list', async ({ tasksPage }): Promise<void> => {
     await test.step('WHEN the task list is opened', (): Promise<void> => tasksPage.goto({ animations: 'disabled' }));
 
     await test.step('AND a task is added', (): Promise<void> => tasksPage.add('Temp item'));
 
-    await test.step('AND the task is removed', (): Promise<void> => tasksPage.remove('Temp item'));
+    await test.step('THEN the task is listed', (): Promise<void> => tasksPage.expectTask('Temp item'));
+
+    await test.step('WHEN the task is removed', (): Promise<void> => tasksPage.remove('Temp item'));
 
     await test.step('THEN the task is gone', (): Promise<void> => tasksPage.expectNoTask('Temp item'));
   });
@@ -611,27 +620,28 @@ Every reactive primitive is asserted the same way, through what it renders:
 
 **Use when**: Testing Nuxt 3 with SSR, auto-imports, server routes, and middleware.
 
-Server routes are tested through the `request` fixture. A util owns the call and returns the typed body; the `Item` type lives in `common/posts.type.ts`.
+Server routes are tested through the `request` fixture. The spec checks the status first, then the body; the body check is an `expect*` util that reads the typed body it asserts. The `Item` type lives in `common/posts.type.ts`.
 
 ```ts
 // e2e/posts/test/utils/items-api.spec.util.ts
-import type { APIRequestContext } from '@playwright/test';
+import type { APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { Item } from '../../common/posts.type';
 
-export const fetchItems = async (request: APIRequestContext): Promise<Item[]> => {
-  const response = await request.get('/api/items');
+export const expectItemsWithIds = async (response: APIResponse): Promise<void> => {
   const items: Item[] = await response.json();
 
-  return items;
+  expect(items[0]).toHaveProperty('id');
 };
 ```
 
 ```ts
 // e2e/posts/posts.e2e.ts
-import type { Item } from './common/posts.type';
+import type { APIResponse } from '@playwright/test';
+
 import { expect, test } from './posts.fixture';
-import { fetchItems } from './test/utils/items-api.spec.util';
+import { expectItemsWithIds } from './test/utils/items-api.spec.util';
 
 test.describe('FEATURE: nuxt posts', () => {
   test('GIVEN server rendering, the posts page delivers ten articles with content', async ({ postsPage }): Promise<void> => {
@@ -643,9 +653,7 @@ test.describe('FEATURE: nuxt posts', () => {
   });
 
   test('GIVEN a marked session, following a NuxtLink keeps the document', async ({ homePage }): Promise<void> => {
-    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
-
-    await test.step('AND the session is marked', (): Promise<void> => homePage.markSpaSession());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto({ spaMarker: true }));
 
     await test.step('AND the posts link is followed', (): Promise<void> => homePage.openPosts());
 
@@ -660,10 +668,12 @@ test.describe('FEATURE: nuxt posts', () => {
     await test.step('AND the description is at least 50 characters', (): Promise<void> => postsPage.expectDescriptionLength(50));
   });
 
-  test('GIVEN the items route, requesting it returns items with ids', async ({ request }): Promise<void> => {
-    const items = await test.step('WHEN the items are fetched', (): Promise<Item[]> => fetchItems(request));
+  test('GIVEN stored items, requesting them returns items with ids', async ({ request }): Promise<void> => {
+    const response = await test.step('WHEN the items are requested', (): Promise<APIResponse> => request.get('/api/items'));
 
-    await test.step('THEN the first item has an id', (): void => expect(items[0]).toHaveProperty('id'));
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
+
+    await test.step('AND the first item has an id', (): Promise<void> => expectItemsWithIds(response));
   });
 
   test('GIVEN no session, opening the admin page redirects to login', async ({ adminPage, page }): Promise<void> => {
@@ -674,7 +684,7 @@ test.describe('FEATURE: nuxt posts', () => {
 });
 ```
 
-`postsPage.expectDescriptionLength(min)` reads `meta[name="description"]` with `getAttribute('content')` and asserts `length` with a plain `expect`. `HomePage.markSpaSession` is the same attribute stamp shown under [Vue Router Navigation](#vue-router-navigation).
+`postsPage.expectDescriptionLength(min)` reads `meta[name="description"]` with `getAttribute('content')` and asserts `length` with a plain `expect`. The posts fixture's `homePage` opens with the same `goto({ spaMarker: true })` stamp shown under [Vue Router Navigation](#vue-router-navigation) and adds `openPosts()` for the `Posts` link.
 
 ## Vue vs Nuxt Differences
 
@@ -793,7 +803,7 @@ export { expect } from '@playwright/test';
 import { expect, test } from './home.fixture';
 
 test.describe('FEATURE: home page', () => {
-  test('GIVEN the home page, rendering it logs no Vue warning', async ({ homePage, vueWarnings }): Promise<void> => {
+  test('GIVEN a clean console, rendering the home page logs no Vue warning', async ({ homePage, vueWarnings }): Promise<void> => {
     await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
 
     await test.step('THEN the heading is shown', (): Promise<void> => homePage.expectHeading('Home'));

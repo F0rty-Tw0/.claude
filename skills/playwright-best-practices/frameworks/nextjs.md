@@ -51,7 +51,7 @@ export default defineConfig({
   fullyParallel: true,
   projects,
   retries: IS_CI ? 2 : 0,
-  testDir: './e2e',
+  testMatch: '**/*.@(e2e|test).ts',
   use,
   webServer,
   workers: IS_CI ? '50%' : undefined
@@ -82,7 +82,7 @@ A server component is plain HTML by the time Playwright sees it. Assert on roles
 import { test } from './home.fixture';
 
 test.describe('FEATURE: server components', () => {
-  test('GIVEN the server-rendered home page, loading it shows the heading and navigation', async ({ homePage }): Promise<void> => {
+  test('GIVEN server-rendered HTML, the home page shows the heading and navigation', async ({ homePage }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('THEN welcome heading is shown', (): Promise<void> => homePage.expectHeading('Welcome'));
@@ -92,7 +92,7 @@ test.describe('FEATURE: server components', () => {
 });
 ```
 
-`HomePage` is shared by every `home.e2e.ts` below: `goto(options?)` opens `/`, and its optional `headers` (a `RequestHeaders` field on a named `HomeOptions` type) are applied with `page.setExtraHTTPHeaders` before it navigates; `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
+`HomePage` (`e2e/home/pages/home.page.ts`) is shared by every `home.e2e.ts` below. `goto(options?)` opens `/`. `HomeOptions` gains `headers?: RequestHeaders`, which `goto` applies with `page.setExtraHTTPHeaders` before it navigates. `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
 
 ### Loading States with Streaming
 
@@ -114,16 +114,15 @@ export const slowStatsMock = (delayMs: number): RouteHandler => {
 };
 ```
 
-`DashboardPage` owns `heading` (`getByRole('heading', { name: 'Dashboard' })`), `progressbar` (`getByRole('progressbar')`) and `sidebar` (`getByRole('navigation', { name: 'Dashboard' })`). `goto(path = '/dashboard', options?)` navigates, and its optional `stats: RouteHandler` (on a named `DashboardOptions` type) is routed with `page.route('**/api/stats', stats)` before it navigates; `expectLoading` asserts the progressbar visible; `expectLoaded` asserts the heading visible and the progressbar hidden as two plain `expect` lines; `openSection(name)` clicks the sidebar link then `waitForURL('/dashboard/<name>')`; `expectSection(name)` asserts the sidebar and the section heading.
+`DashboardPage` owns `heading` (`getByRole('heading', { name: 'Dashboard' })`), `progressbar` (`getByRole('progressbar')`) and `sidebar` (`getByRole('navigation', { name: 'Dashboard' })`). `goto(options?)` opens `/dashboard`; `DashboardOptions` gains `statsDelayMs?: number`, which `goto` turns into `slowStatsMock(statsDelayMs)` on `**/api/stats` before it navigates, so the spec passes a number and the page object picks the mock. `gotoSection(name)` opens `/dashboard/<name>`; `expectLoading` asserts the progressbar visible; `expectLoaded` asserts the heading visible and the progressbar hidden as two plain `expect` lines; `openSection(name)` clicks the sidebar link then `waitForURL('/dashboard/<name>')`; `expectSection(name)` asserts the sidebar and the section heading.
 
 ```ts
 // e2e/dashboard/dashboard.test.ts
 import { test } from './dashboard.fixture';
-import { slowStatsMock } from './test/mocks/stats.mock';
 
 test.describe('FEATURE: streaming dashboard', () => {
   test('GIVEN a slow stats response, the loading boundary shows until it resolves', async ({ dashboardPage }): Promise<void> => {
-    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto('/dashboard', { stats: slowStatsMock(2_000) }));
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ statsDelayMs: 2_000 }));
 
     await test.step('THEN loading boundary is shown', (): Promise<void> => dashboardPage.expectLoading());
 
@@ -134,7 +133,7 @@ test.describe('FEATURE: streaming dashboard', () => {
 
 ### Nested Layouts
 
-A nested layout stays mounted while its child route changes. `dashboardPage.goto('/dashboard/analytics')`, `openSection('Settings')`, `expectSection('Settings')` walk the same page object.
+A nested layout stays mounted while its child route changes. `dashboardPage.gotoSection('analytics')`, `openSection('Settings')`, `expectSection('Settings')` walk the same page object.
 
 ## Pages Router Patterns
 
@@ -200,7 +199,7 @@ test.describe('FEATURE: blog post routes', () => {
   });
 
   test('GIVEN an unknown slug, opening it responds 404', async ({ postPage }): Promise<void> => {
-    const response = await test.step('WHEN a missing post is opened', (): Promise<Response | null> => postPage.goto('nonexistent-post'));
+    const response = await test.step('WHEN the post page is opened', (): Promise<Response | null> => postPage.goto('nonexistent-post'));
 
     await test.step('THEN status is 404', (): void => expect(response?.status()).toBe(404));
 
@@ -215,7 +214,7 @@ test.describe('FEATURE: blog post routes', () => {
 
 ### Query Parameters
 
-Query parameters drive the filter and the sort. The page object returns the rendered prices as numbers; the util decides whether they are ascending.
+Query parameters drive the filter and the sort. The page object's `expectPricesAscending()` reads the rendered prices and compares them with the util's sorted copy.
 
 ```ts
 // e2e/products/test/utils/prices.spec.util.ts
@@ -230,29 +229,26 @@ export const sortedAscending = (prices: number[]): number[] => [...prices].sort(
 
 ```ts
 // e2e/products/products.e2e.ts
-import { expect, test } from './products.fixture';
-import { sortedAscending } from './test/utils/prices.spec.util';
+import { test } from './products.fixture';
 
 test.describe('FEATURE: product filters', () => {
-  test('GIVEN a price-ascending sort, loading the page lists prices ascending', async ({ productsPage }): Promise<void> => {
-    await test.step('WHEN electronics sorted by price is opened', (): Promise<void> => productsPage.goto('category=electronics&sort=price-asc'));
+  test('GIVEN electronics sorted by price, the page lists prices ascending', async ({ productsPage }): Promise<void> => {
+    await test.step('WHEN the products page is opened', (): Promise<void> => productsPage.goto('category=electronics&sort=price-asc'));
 
     await test.step('THEN electronics heading is shown', (): Promise<void> => productsPage.expectHeading('Electronics'));
 
-    const prices = await test.step('AND the rendered prices are read', (): Promise<number[]> => productsPage.prices());
-
-    await test.step('AND prices are ascending', (): void => expect(prices).toEqual(sortedAscending(prices)));
+    await test.step('AND prices are ascending', (): Promise<void> => productsPage.expectPricesAscending());
   });
 });
 ```
 
-`productsPage.goto(query)` opens `/products?${query}`; `expectHeading(name)` asserts the level-1 heading; `prices()` reads `getByTestId('product-price').allTextContents()` and returns `toPrices(texts)`.
+`productsPage.goto(query)` opens `/products?${query}`; `expectHeading(name)` asserts the level-1 heading; `expectPricesAscending()` reads `getByTestId('product-price').allTextContents()`, converts the texts with `toPrices`, and asserts `expect(prices).toEqual(sortedAscending(prices))`.
 
 ## API Routes
 
 ### Direct API Testing
 
-The `request` fixture hits the route without a browser. A typed body replaces `toHaveProperty` checks: reading `response.json()` into a `ProductsBody` const makes the shape part of the contract.
+The `request` fixture hits the route without a browser. The spec checks the status first, then the body. The body check is an `expect*` util that reads `response.json()` into a `ProductsBody` const, so the shape is part of the contract.
 
 ```ts
 // e2e/products/common/products.type.ts
@@ -272,29 +268,40 @@ export type CreatedProductBody = {
 ```
 
 ```ts
+// e2e/products/test/utils/products-api.spec.util.ts
+import type { APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import type { ProductsBody } from '../../common/products.type';
+
+export const expectProductList = async (response: APIResponse): Promise<void> => {
+  const body: ProductsBody = await response.json();
+
+  expect(body.products[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String) });
+};
+```
+
+```ts
 // e2e/products/products-api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import type { CreatedProductBody, ProductsBody } from './common/products.type';
 import { expect, test } from './products.fixture';
-import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
+import { expectProductList } from './test/utils/products-api.spec.util';
 
 test.describe('FEATURE: products api', () => {
-  test('GIVEN the products route, a GET returns a product list', async ({ request }): Promise<void> => {
+  test('GIVEN stored products, a GET returns them as a list', async ({ request }): Promise<void> => {
     const response = await test.step('WHEN products are fetched', (): Promise<APIResponse> => request.get('/api/products'));
 
-    await test.step('THEN response is ok', (): void => expect(response.ok()).toBeTruthy());
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-    const body = await test.step('AND the body is read', (): Promise<ProductsBody> => response.json());
-
-    await test.step('AND first product has an id and a name', (): void => expect(body.products[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String) }));
+    await test.step('AND the first product has an id and a name', (): Promise<void> => expectProductList(response));
   });
 });
 ```
 
-`NEW_PRODUCT_STUB` is `{ name: 'Test Product', price: 29.99 }` in `test/stubs/products.stub.ts`. The write cases follow the same four steps:
+`NEW_PRODUCT_STUB` is `{ name: 'Test Product', price: 29.99 }` in `test/stubs/products.stub.ts`. The write cases follow the same three steps. Each body check is a util of the same shape that reads the body it asserts:
 
-| Case | Call | Status | Body |
+| Case | Call | Status | Body check |
 |---|---|---|---|
 | Create | `request.post('/api/products', { data: NEW_PRODUCT_STUB })` | `201` | `CreatedProductBody`; `body.product.name` is `NEW_PRODUCT_STUB.name` |
 | Validation | `request.post('/api/products', { data: { ...NEW_PRODUCT_STUB, name: '' } })` | `400` | `body.error` contains `expect.objectContaining({ field: 'name' })` |
@@ -410,29 +417,33 @@ test.describe('FEATURE: locale middleware', () => {
 
 ### Console Error Detection
 
-A hydration mismatch is a console error mentioning `Hydration`, `hydration`, or `did not match`. The `consoleErrors` fixture from [console-errors.md](console-errors.md#fail-test-on-any-error) collects every error; the util keeps the hydration ones.
+A hydration mismatch is a console error mentioning `Hydration`, `hydration`, or `did not match`. The `consoleErrors` fixture from [console-errors.md](../debugging/console-errors.md#fail-test-on-any-error) collects every error; the `expect*` util keeps the hydration ones and asserts there are none.
 
 ```ts
 // e2e/home/test/utils/hydration.spec.util.ts
+import { expect } from '@playwright/test';
+
 const isHydrationError = (error: string): boolean => error.includes('Hydration') || error.includes('hydration') || error.includes('did not match');
 
-export const hydrationErrors = (errors: string[]): string[] => errors.filter(isHydrationError);
+export const expectNoHydrationErrors = (errors: string[]): void => {
+  const mismatches = errors.filter(isHydrationError);
+
+  expect(mismatches).toEqual([]);
+};
 ```
 
 ```ts
 // e2e/home/home.e2e.ts
-import { expect, test } from './home.fixture';
-import { hydrationErrors } from './test/utils/hydration.spec.util';
+import { test } from './home.fixture';
+import { expectNoHydrationErrors } from './test/utils/hydration.spec.util';
 
 test.describe('FEATURE: hydration', () => {
-  test('GIVEN the hydrated home page, clicking it logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
+  test('GIVEN server-rendered HTML, clicking the hydrated page logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('AND get started is clicked', (): Promise<void> => homePage.getStarted());
 
-    const mismatches = await test.step('AND the hydration errors are kept', (): string[] => hydrationErrors(consoleErrors));
-
-    await test.step('THEN no hydration error was logged', (): void => expect(mismatches).toEqual([]));
+    await test.step('THEN no hydration error was logged', (): void => expectNoHydrationErrors(consoleErrors));
   });
 });
 ```
@@ -443,7 +454,7 @@ A click that changes state proves hydration finished. `counterPage.goto()`, `cou
 
 ## next/image Testing
 
-`next/image` emits a `srcset` with `w=` descriptors and sets `loading="lazy"` on everything but priority images. Web-first attribute assertions cover both; `naturalWidth` proves a lazy image actually loaded after scrolling.
+`next/image` emits a `srcset` with `w=` descriptors and sets `loading="lazy"` on everything but priority images. Web-first attribute assertions cover both; `expect.poll` on `naturalWidth` proves a lazy image actually loaded after scrolling, and the `expect*` method reads the width itself.
 
 ```ts
 // e2e/gallery/pages/gallery.page.ts
@@ -470,10 +481,6 @@ export class GalleryPage {
     await this.item(index).scrollIntoViewIfNeeded();
   }
 
-  public async itemNaturalWidth(index: number): Promise<number> {
-    return this.item(index).evaluate(naturalWidth);
-  }
-
   private item(index: number): Locator {
     return this.page.getByRole('img', { name: `Gallery item ${index}` });
   }
@@ -483,15 +490,22 @@ export class GalleryPage {
     await expect(this.heroImage).toHaveAttribute('srcset', /w=/);
     await expect(this.heroImage).not.toHaveAttribute('loading', 'lazy');
   }
+
+  public async expectItemLoaded(index: number): Promise<void> {
+    const item = this.item(index);
+    const readWidth = (): Promise<number> => item.evaluate(naturalWidth);
+
+    await expect.poll(readWidth).toBeGreaterThan(0);
+  }
 }
 ```
 
 ```ts
 // e2e/gallery/gallery.e2e.ts
-import { expect, test } from './gallery.fixture';
+import { test } from './gallery.fixture';
 
 test.describe('FEATURE: next/image', () => {
-  test('GIVEN the hero image, loading the page renders it eager with a srcset', async ({ galleryPage }): Promise<void> => {
+  test('GIVEN a priority hero image, the gallery renders it eager with a srcset', async ({ galleryPage }): Promise<void> => {
     await test.step('WHEN the gallery is opened', (): Promise<void> => galleryPage.goto());
 
     await test.step('THEN hero image is eager', (): Promise<void> => galleryPage.expectHeroEager());
@@ -502,9 +516,7 @@ test.describe('FEATURE: next/image', () => {
 
     await test.step('AND item 20 is scrolled to', (): Promise<void> => galleryPage.scrollToItem(20));
 
-    const width = await test.step('AND the natural width is read', (): Promise<number> => galleryPage.itemNaturalWidth(20));
-
-    await test.step('THEN image has loaded pixels', (): void => expect(width).toBeGreaterThan(0));
+    await test.step('THEN image has loaded pixels', (): Promise<void> => galleryPage.expectItemLoaded(20));
   });
 });
 ```
@@ -513,7 +525,7 @@ test.describe('FEATURE: next/image', () => {
 
 ### Setup Project
 
-The `setup` project logs in once and writes storage state; the `authenticated` project depends on it. Unauthenticated specs match `*.unauth.e2e.ts` and run without state.
+The `setup` project logs in once and writes storage state; the `authenticated` project depends on it and ignores the unauthenticated specs. Unauthenticated specs match `*.unauth.e2e.ts` and run without state.
 
 ```ts
 // e2e/playwright.config.ts
@@ -525,11 +537,11 @@ const authenticated = { storageState: USER_STATE_PATH };
 
 const projects = [
   { name: 'setup', testMatch: /auth\.setup\.ts/ },
-  { dependencies: ['setup'], name: 'authenticated', use: authenticated },
+  { dependencies: ['setup'], name: 'authenticated', testIgnore: '**/*.unauth.e2e.ts', use: authenticated },
   { name: 'unauthenticated', testMatch: '**/*.unauth.e2e.ts' }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Auth Setup
