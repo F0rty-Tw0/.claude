@@ -18,6 +18,7 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 ## The Process
 
 ```
+0. Proof gate        → proof bundle + fresh adversarial review (code-review skill); BLOCK → stop and ask
 1. Gather changes    → git diff, git log against base branch
 2. Scan repo context → understand what areas the changes touch and what depends on them
 3. Size the change   → small / medium / large (determines output format)
@@ -27,6 +28,25 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 7. Humanize          → run output through humanizer patterns
 8. Present           → show to user, ready for gh pr create
 ```
+
+### Step 0: Proof Gate
+
+**REQUIRED SUB-SKILL:** Use skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it.
+
+1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. UI change → screenshot.
+2. **Fresh review** — `code-review` review mode on `<base>...HEAD`. It dispatches an independent reviewer; do not review your own work in this session.
+3. **Verdict gate:**
+   - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
+   - `APPROVE — …` → continue.
+4. **Scale proof to blast radius** — keep small PRs small:
+
+| Class | `## Proof` contains |
+|---|---|
+| Leaf | Test command + counts, visual/log for visible change, **Not verified** line, review verdict — ~4 lines |
+| Branch | + base-failure check (bug fix), one non-mocked runtime log |
+| Trunk | Full `templates/pr-proof.md`: gate, rollback, invariants, canary metric, human must deep-read list |
+
+Updating a PR after new commits → re-run steps 1–3 and replace the `## Proof` section; stale proof is no proof.
 
 ### Step 1: Gather Changes
 
@@ -162,7 +182,9 @@ If the branch has no recognizable ticket number, skip this step silently — don
 
 ### Step 7: Humanize
 
-Run the final title and description through `skill:humanizer` to remove AI-sounding language before presenting.
+Run the final title and description through `skill:humanizer` to remove AI-sounding language before presenting. Humanize prose only — leave the `## Proof` section's commands, output, and verdict verbatim.
+
+Append the `## Proof` section from Step 0 at the end of the body, before `Closes #…`. It does not count toward the size-based section limits.
 
 ### Step 8: Present
 
@@ -207,7 +229,8 @@ Using "enhances", "fosters", "ensures", "leveraging". Write like a person.
 
 If your PR description has any of these, rewrite it:
 
-- More than 2 sections for a change under 5 files
+- More than 2 sections for a change under 5 files (`## Proof` excluded)
+- No `## Proof` section, or proof claims ("tests pass", "verified") with no pasted output
 - Any bullet starting with a bold header followed by a colon
 - The word "comprehensive", "robust", "seamless", or "leverage"
 - A test plan padded with obvious steps
