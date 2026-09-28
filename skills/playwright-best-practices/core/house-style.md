@@ -28,7 +28,7 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 
 | Concern | Rule |
 |---|---|
-| Naming tree | `test.describe('FEATURE: <name>')` → `test.describe('GIVEN <state>')` → `test('SCENARIO: <flow>')`. Every `test.step`, in a spec, page object, helper object, or fixture, carries `GIVEN` / `WHEN` / `THEN` / `AND`. Every level carries its keyword; a title without one is not house style. Never a `WHEN` describe; the step owns it. |
+| Naming tree | Flat: `test.describe('FEATURE: <name>')` → `test('SCENARIO: <condition> <outcome>')`. One describe per spec, never nested. The starting state is a `GIVEN` step inside the test, and the title names any condition that sets the scenario apart (`'SCENARIO: a failed create warns and keeps the sheet open'`). Every `test.step`, in a spec, page object, helper object, or fixture, carries `GIVEN` / `WHEN` / `THEN` / `AND`. Every level carries its keyword; a title without one is not house style. Never a `GIVEN` or `WHEN` describe; the step owns it. |
 | Test body | Every statement inside `test(...)` is `await test.step('<prose>', ...)`. No bare `page.*`, `expect(...)`, or page-object call outside a step. |
 | Step body | One call. `(): Promise<void> => loginPage.submit(user)`. Two or more statements mean a page-object or fixture method is missing. |
 | Step naming | Upper-case Gherkin keyword, then present-tense prose: `'WHEN wrong credentials are submitted'`, `'THEN the error names invalid credentials'`. `GIVEN` for arrange, `WHEN` for action, `THEN` for assertion, `AND` for a consecutive step of the same kind. Applies to page-object and helper-object steps too; see Steps. |
@@ -105,37 +105,37 @@ import { expect, test } from './login.fixture';
 import { USER_STUB } from './test/stubs/user.stub';
 
 test.describe('FEATURE: login', () => {
-  test.describe('GIVEN a registered user', () => {
-    test.beforeEach(async ({ loginPage }): Promise<void> => {
-      await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
-    });
+  test('SCENARIO: valid credentials open the dashboard', async ({ dashboardPage, loginPage, page }): Promise<void> => {
+    await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
-    test('SCENARIO: valid credentials open the dashboard', async ({ dashboardPage, loginPage, page }): Promise<void> => {
-      await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
+    await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
 
-      await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+    await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
 
-      await test.step('AND the greeting names the user', (): Promise<void> => dashboardPage.expectGreeting(USER_STUB.displayName));
-    });
+    await test.step('AND the greeting names the user', (): Promise<void> => dashboardPage.expectGreeting(USER_STUB.displayName));
+  });
 
-    test('SCENARIO: wrong password shows the error banner', async ({ loginPage }): Promise<void> => {
-      const user: Credentials = { ...USER_STUB, password: 'wrong' };
+  test('SCENARIO: a wrong password shows the error banner', async ({ loginPage }): Promise<void> => {
+    const user: Credentials = { ...USER_STUB, password: 'wrong' };
 
-      await test.step('WHEN the wrong password is submitted', (): Promise<void> => loginPage.submit(user));
+    await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
-      await test.step('THEN the error banner reports invalid credentials', (): Promise<void> => loginPage.expectError('Invalid credentials'));
-    });
+    await test.step('WHEN the wrong password is submitted', (): Promise<void> => loginPage.submit(user));
+
+    await test.step('THEN the error banner reports invalid credentials', (): Promise<void> => loginPage.expectError('Invalid credentials'));
   });
 });
 ```
 
 | Concern | Rule |
 |---|---|
-| `describe` text | Exactly `FEATURE:` or `GIVEN`. Upper-case keyword, plain present-tense prose after it. |
-| `test` text | `SCENARIO:` then the flow as one lower-case present-tense sentence naming the outcome: `'SCENARIO: wrong password shows the error banner'`. `WHEN` / `THEN` never appear in the title; they are steps. No "should". |
+| `describe` text | Exactly one `test.describe('FEATURE: <name>')` per spec, wrapping every test. No nested describe, so no `GIVEN` describe: the report tree is `file → FEATURE → SCENARIO`. |
+| Condition in title | The `GIVEN` step is only visible when a test's steps are expanded, so the title carries any condition that distinguishes the scenario: `'SCENARIO: a failed list shows a load error in both lists'`, not `'SCENARIO: both lists show a load error'`. A starting state every scenario shares (`the login page is open`) stays out of the title. |
+| `test` text | `SCENARIO:` then the flow as one lower-case present-tense sentence naming the condition, when it differs per scenario, and the outcome: `'SCENARIO: wrong password shows the error banner'`. `WHEN` / `THEN` never appear in the title; they are steps. No "should". |
 | Step keywords | Every step in a spec starts with `GIVEN`, `WHEN`, `THEN`, or `AND`. A test holds at least one `WHEN` and one `THEN`. `beforeEach` steps are `GIVEN` / `AND`. |
 | Step order | `GIVEN`? → `WHEN` → `THEN`, then only `AND` and `THEN` repeat. One `GIVEN` and one `WHEN` per test; a further arrange or action step is `AND` (`AND 5 more minutes pass`). Independent phases are separate tests. |
-| Arrange | Shared arrange for every test in a `GIVEN` goes in that `GIVEN`'s `beforeEach`, itself expressed as a step. When that arrange is API seeding, a fixture seeds, opens the page, and hands over the ready page object instead; see [Requirement Annotation](annotations.md#requirement-annotation). Case-specific arrange is a `const` above the first step, blank line after. |
+| Arrange | The test's own `GIVEN` step sets its starting state: the error mock, the permission grant, the page opening. Arrange shared by every test in the spec may go in a `FEATURE`-level `beforeEach`, itself a `GIVEN` step; the test's own arrange then starts with `AND`. When the arrange is API seeding, a fixture seeds, opens the page, and hands over the ready page object instead; see [Requirement Annotation](annotations.md#requirement-annotation). Case-specific data is a `const` above the first step, blank line after. |
+| `test.use` options | `test.use` cannot run inside a test, and there is no describe to scope it. An option the browser can change at runtime is a `GIVEN` step: `page.setViewportSize`, `context.grantPermissions` / `clearPermissions`, `page.clock.install`. An option fixed at context creation (`locale`, `storageState`, `timezoneId`, device) that differs from the rest of the spec moves the scenarios to their own spec with a file-level `test.use` and its own `FEATURE`: `store-finder-denied.e2e.ts`. The same scenarios across several option values are a project per value in `playwright.config`, not a loop of describes. |
 | Steps | One step per action or per assertion group. Blank line between steps. |
 | Fixtures in signature | Destructure only what the test uses, alphabetical. |
 | Tags | `test('SCENARIO: <flow>', { tag: ['@smoke'] }, async …)`. Tags are the second argument, never in the title. |
@@ -403,6 +403,7 @@ Rules for the markdown files in this skill, so every reference reads the same wa
 | "The body is only used by this one mock, keep it in the file." | A `.mock.ts` is behavior. The moment the body is a value with a shape, it is a stub, and `test/stubs/` is where a reader looks for it. |
 | "`const INTENT_BODY = { clientSecret: '…' }` is obviously typed." | It is inferred, not typed. It drifts from the real response the day the API changes and nothing reports it. Name the type in `common/`, annotate the stub. |
 | "This route returns a one-field object, a stub is overkill." | The one field is the contract the app parses. Same rule, same cost: one line in `test/stubs/`. |
+| "A `GIVEN` describe saves repeating the arrange step." | It saves one line per test and hides the condition from the report tree. The step repeats; a fixture that hands over the ready page removes the repeat when it grows. |
 | "Mocking inline in the spec is clearer for a failure case." | The spec now owns a payload shape and a status code. `GIVEN` step, error mock, typed stub. |
 | "The fixture needs different data per test, so the mock can't be shared." | That is what the stub-defaulted parameter is for. One factory, `sessionMock({ ...SESSION_STUB, … })` per case. |
 
@@ -415,6 +416,8 @@ Stop and re-check this file when reasoning includes:
 - `page.getBy` or `page.locator` inside a `.e2e.ts` or `.test.ts`.
 - `test.describe('Login', ...)` or any describe text with no Gherkin keyword.
 - `test.describe('WHEN …')` or a test title starting with `WHEN` / `THEN`.
+- `test.describe('GIVEN …')`, or any describe nested inside the `FEATURE`.
+- Two scenario titles that read the same once the `GIVEN` step is hidden.
 - A step, in a spec, page object, or helper object, whose name has no `GIVEN` / `WHEN` / `THEN` / `AND`.
 - "should" in a test title.
 - `interface`, `as SomeType`, `any`, or `// ...` inside a sample.
@@ -437,6 +440,8 @@ Stop and re-check this file when reasoning includes:
 | `test('WHEN the order is placed THEN the confirmation page opens', ...)` | `test('SCENARIO: placing the order opens the confirmation page', ...)` with `WHEN` / `THEN` steps inside. |
 | `test('placing the order opens the confirmation page', ...)` | Same, with `SCENARIO:` in front. No keyword, no place in the tree. |
 | `test.describe('WHEN the order is placed', ...)` | Delete the describe; `'WHEN the order is placed'` is a step. |
+| `test.describe('GIVEN the create api fails', ...)` around scenarios | Delete the describe. Each test opens with `GIVEN the create api fails`, and its title names the failure: `'SCENARIO: a failed create warns and keeps the sheet open'`. |
+| `test.describe('GIVEN notifications are denied', () => { test.use({ permissions: [] }); … })` | Runtime-changeable: a `GIVEN` step (`context.clearPermissions()`). Context-fixed (`locale`, `storageState`): a separate spec with a file-level `test.use`. |
 | `test.step('submit credentials', ...)` in a spec or page object | `test.step('WHEN credentials are submitted', ...)`. |
 | Step with `async () => { await a(); await b(); }` | Add `checkoutPage.placeOrder()` and call it. |
 | `test.step('modal is open', …, { box: true })` in a page object | `test.step('THEN modal is open', …, { box: true })`. |
