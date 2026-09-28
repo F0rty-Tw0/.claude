@@ -17,6 +17,8 @@ Run **before** flipping a feature gate ON. Specialist agents attack the whole pr
 | **Slow-path profiler** (`performance-reviewer`) | Profile the new paths: N+1 queries, payload size, render cost, p50/p95 under a small load, memory growth over repeated use | Real measurements (timings, network waterfall, `performance.now()` probes, query logs) — no estimates without numbers | Hotspots ranked by measured cost + fix |
 | **Prober** (`security-reviewer`) | Probe inputs (injection, XSS, oversized, negative/NaN amounts), permissions (other user's IDs, missing auth, role escalation), data exposure (PII in responses/logs), rate limits | Crafted requests against the staging API with test accounts | Findings: severity × exploitability × blast radius |
 
+`performance-reviewer` and `security-reviewer` default to static review — their prompt must say "runtime probing of the target URL is allowed and expected (Bash: curl, timing); still no file edits".
+
 Each agent prompt gets: target URL, test accounts, feature description, the diff range, and "non-prod only; no destructive actions; Confirmed vs Inferred on every finding".
 
 ## Consolidated report
