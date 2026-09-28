@@ -46,7 +46,9 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 | Branch | + base-failure check (bug fix), one non-mocked runtime log |
 | Trunk | Full `templates/pr-proof.md`: gate, rollback, invariants, canary metric, human must deep-read list |
 
-Updating a PR after new commits → re-run steps 1–3 and replace the `## Proof` section; stale proof is no proof.
+Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
+
+Run `git push` and `gh pr create` as **separate** Bash calls. If the hook blocks a chained call, the push never runs, but commit-guard has already used up its one-shot flag.
 
 ### Step 1: Gather Changes
 
