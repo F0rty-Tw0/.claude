@@ -40,8 +40,9 @@ Use a fixed 1h interval, or omit the interval to self-pace (CI usually needs 5�
 
 Babysit the whole stack: `/loop 1h /code-review babysit <n1> <n2> <n3>`. Each tick, per PR, also check:
 
-- **Parent merged?** (`gh pr view <parent> --json state`) → the child needs retarget + restack. Don't switch branches or push — ping with the exact commands from `meaningful-prs` `references/mechanics.md` ("Parent squash-merged"). Retarget urgency: if the parent branch gets deleted first, GitHub closes the child PR.
+- **Parent merged?** (`gh pr view <parent> --json state`) → the child needs retarget + restack. Don't switch branches or push — ping with the exact commands from `meaningful-prs` `references/mechanics.md` ("Parent squash-merged"). Until restacked, the child's diff still shows the parent's content.
 - **Parent got new commits?** → the child is behind its base; list it as "restack needed" in the tick summary.
+- Delta review per PR with `gh pr diff <n>` (each PR's own base), not the local checkout.
 - Local fixes go only on the checked-out PR's branch. Other PRs in the stack: report, don't touch.
 
 ## Pinging

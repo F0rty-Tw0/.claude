@@ -18,7 +18,7 @@ This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
 
 | One PR | Split |
 |---|---|
-| ≤ ~400 changed lines (lockfiles, generated files and snapshots excluded) | > ~400 lines |
+| ≤ ~400 changed lines (lockfiles, generated files, snapshots and eval fixtures excluded) | > ~400 lines |
 | One blast class, one concern | Trunk + leaf mixed (e.g. an ungated change to a widely-imported helper + a feature) |
 | Hotfix | Migration/schema that has a deploy order relative to code |
 | Pieces don't build apart | Independent concerns (a badge that doesn't need the ledger) |
@@ -35,7 +35,7 @@ This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
 
 ## Topology
 
-- **Independent PRs off `main` by default.** They merge in parallel and never need a restack.
+- **Independent PRs off the default branch by default.** They merge in parallel. Exception: siblings that share a partial file (a flag registry) — the second one needs `git merge origin/<default>` after the first lands.
 - **Stack only on a real dependency.** The child imports or migrates on top of the parent.
 - A PR has **one** base. If a PR needs two parents, put them in a line: `money ← ledger ← credits`.
   - This creates a fake edge: `ledger` now waits on `money` without importing it. If that wait hurts, open both parents off `main` and open the child after one merges. Say which option you picked in the split plan.
@@ -44,21 +44,21 @@ This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
 ## Procedure
 
 1. **Pre-flight (read-only):**
-   - `git diff --stat main...HEAD`
-   - `gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed,deleteBranchOnMerge`
+   - `gh repo view --json defaultBranchRef,squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed,deleteBranchOnMerge` — use `defaultBranchRef` as `<default>` everywhere, never assume `main`
+   - `git diff --stat origin/<default>...HEAD`
    - `gh pr list --head <branch>`
    - migration number collisions on `main`
    - the real typecheck/test script names
 2. **Split plan** as a table: slice, branch, base, blast class (`code-review` `references/blast-radius.md`), files, ~lines.
-3. **One approval:** ask with AskUserQuestion. The approval covers the listed commits, pushes and PRs. Force-push is **never** part of it; ask separately every time.
+3. **One approval:** ask with AskUserQuestion. The approval covers the listed commits, the first push and the PRs. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
 4. **Build the slices.** Details and commands: `references/mechanics.md`.
    - Sync the source branch with `main` first.
-   - Take files **by path** from the source branch.
-   - Partial files (a flag line) get split with Edit.
+   - Take files **by path** from the source branch (`git restore --source`, which also carries deletions).
+   - Partial files (a flag line): Edit, or stage a prepared version into the index.
    - Each slice must pass typecheck and tests before its commits, which follow `meaningful-commits`.
 5. **Completeness check:** the union of all slices must equal the source branch. `git diff --stat` must be empty. If not, stop.
-6. **Open PRs bottom-up**, one `pr-description` run per PR. Its review gets:
-   - the diff **against the parent** (`<parent>...<slice>`), not `main`
+6. **Open PRs bottom-up**, one `pr-description` run per PR. **Skip its "one PR or several?" routing**: the split is already decided, so don't loop back here. Its review gets:
+   - the diff **against the parent** (`<parent>...<slice>`), not `<default>`; the description's Step 1 `BASE` is the parent too
    - the stack map, so that symbols consumed by a later PR are not flagged as dead code
 
    BLOCK on a lower PR → stop. Don't open the PRs above it.
@@ -79,7 +79,7 @@ This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
 
 The default is a **merge-based restack**: merge the parent into the child, then a normal push. There's no force-push, and squash throws the merge commits away anyway.
 
-Retarget the child **before** its parent branch is deleted, because deleting a PR's base branch closes that PR. Commands: `references/mechanics.md`.
+After a squash, merge in this order: `<default>` as it was just before the squash, then `-s ours` the squash commit, then `<default>`. Skipping the first step silently reverts unrelated `<default>` changes. Retarget the child first; it's always safe. Commands and reasons: `references/mechanics.md`.
 
 ## Common mistakes
 
@@ -89,6 +89,7 @@ Retarget the child **before** its parent branch is deleted, because deleting a P
 | Stacking everything in one line | Independent off `main` unless a real import/migration dependency exists |
 | Flag line shipped in a different PR than the code that reads it | Flag line goes with its reader |
 | Reviewing a child PR against `main` | Diff against the parent, and give the reviewer the stack map |
-| Deleting a merged parent branch before retargeting | `gh pr edit <child> --base main` first |
+| `git merge -s ours <squash>` straight away | Merge `<squash>^` first, or unrelated default-branch drift is lost |
+| Assuming the default branch is `main` | `defaultBranchRef` from `gh repo view` |
 | Rebase + force-push after every review fix | Merge the parent into the child; push normally |
 | Flag flip bundled into the feature stack | Separate PR after canary (`code-review` `launch`) |

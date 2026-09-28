@@ -45,7 +45,7 @@ Plan expected to exceed ~400 changed lines, or mixing trunk and leaf work? Group
 | 3 | feat/x-3-badge | main | Leaf | 5 |
 ```
 
-Tasks for one slice sit contiguously, and each slice must build and pass tests on its own. Executors then work slice by slice on that slice's branch — no untangling at PR time.
+Tasks for one slice sit contiguously, and each slice must build and pass tests on its own. At PR time `meaningful-prs` reads this table instead of re-deriving the split. Working on per-slice branches during execution needs commits, so only do that when the user has authorized commits.
 
 ## Bite-Sized Task Granularity
 
