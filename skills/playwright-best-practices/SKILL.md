@@ -80,7 +80,7 @@ Reference set for Playwright test development, rewritten to house style: one fla
 | Fixing a flake by retrying | skill:deflaky audit, then the matching category in `debugging/flaky-tests.md`. |
 | `login.spec.ts` for a Playwright file | `login.test.ts` when your own API is routed (directly or via fixture, page object, mock); `login.e2e.ts` otherwise, third-party stubs included. `.spec.ts` is artification's unit-test suffix. |
 | `test.describe('Login')` | `test.describe('FEATURE: login')`. |
-| `test.describe('GIVEN …')` grouping scenarios | Flat: one `FEATURE` describe; the state is each test's `GIVEN` step and the title starts `GIVEN <state>,`. |
+| `test.describe('GIVEN …')` grouping tests | Flat: one `FEATURE` describe (plus `JOURNEY` for a user path). The title starts `GIVEN <state>,`, and the opening `WHEN` call or a fixture sets that state up. |
 | `test('WHEN … THEN …')`, `test('SCENARIO: …')`, or `test('<bare title>')` | Title is `GIVEN <state>, <outcome>`; `WHEN` / `THEN` are `test.step` names. |
 | A `page.getByRole` in a spec | Move it to the page object; call the method from a step. |
 | `route.fulfill({ json: { … } })` with a literal | Typed `<TYPE>_STUB` in `test/stubs/`, passed through the mock's stub-defaulted parameter. |
