@@ -33,6 +33,20 @@ Before defining tasks, map out which files will be created or modified and what 
 
 This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
 
+## PR Slices
+
+Plan expected to exceed ~400 changed lines, or mixing trunk and leaf work? Group tasks into PR slices now, per skill:meaningful-prs. Add a table after the header and tag every task with its slice:
+
+```markdown
+| Slice | Branch | Base | Blast | Tasks |
+|---|---|---|---|---|
+| 1 | feat/x-1-ledger | main | Trunk | 1, 2 |
+| 2 | feat/x-2-core | feat/x-1-ledger | Branch | 3, 4 |
+| 3 | feat/x-3-badge | main | Leaf | 5 |
+```
+
+Tasks for one slice sit contiguously, and each slice must build and pass tests on its own. At PR time `meaningful-prs` reads this table instead of re-deriving the split. Working on per-slice branches during execution needs commits, so only do that when the user has authorized commits.
+
 ## Bite-Sized Task Granularity
 
 **Each step is one action (2-5 minutes):**
@@ -64,6 +78,8 @@ This structure informs the task decomposition. Each task should produce self-con
 
 ````markdown
 ### Task N: [Component Name]
+
+**PR slice:** [N — only when the plan has a PR Slices table]
 
 **Files:**
 - Create: `exact/path/to/file.ts`

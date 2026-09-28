@@ -29,6 +29,10 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 8. Present           → show to user, ready for gh pr create
 ```
 
+### Before Step 0: One PR or Several?
+
+Branch diff over ~400 changed lines, mixing trunk and leaf changes, or holding independent concerns → **REQUIRED SUB-SKILL:** use skill:meaningful-prs first. It splits the branch and then runs this skill once per PR. For a stacked PR, `BASE` (Step 1) and the Step 0 review use the **parent branch**, the reviewer gets the stack map, and `## Stack` goes before `## Proof`. Called from `meaningful-prs`? Skip this routing step.
+
 ### Step 0: Proof Gate
 
 **REQUIRED SUB-SKILL:** Use skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it.

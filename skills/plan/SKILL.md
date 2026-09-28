@@ -109,6 +109,7 @@ Every plan includes:
 - Implementation Steps (with file references)
 - Risks and Mitigations
 - Verification Steps
+- PR Slices — when the work will exceed ~400 changed lines or mixes blast-radius classes: slice table (Slice, Branch, Base, Blast, Tasks — same columns as plans-writing) per skill:meaningful-prs. Slicing at plan time is cheap; splitting a finished branch is not.
 
 Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`. </Steps>
 

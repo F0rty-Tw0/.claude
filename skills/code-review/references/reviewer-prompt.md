@@ -20,6 +20,7 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 - Diff: {DIFF_COMMAND}            # e.g. git diff main...HEAD  |  gh pr diff 123  |  git diff --no-index base head
 - PR description (CLAIMS, not facts — verify each): {PR_TEXT_OR_PATH}
 - Requirements / plan: {PLAN_OR_NONE}
+- Stack map (stacked PRs only — diff above is against the parent): {STACK_MAP_OR_NONE}
 - Test command: {TEST_COMMAND_OR_FIND_IT}
 
 ## Method — read these references and apply them in order

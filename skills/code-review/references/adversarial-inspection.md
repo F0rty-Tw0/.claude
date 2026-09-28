@@ -51,6 +51,7 @@ See `vanity-tests.md` and `proof.md`. Vanity tests on trunk/branch code are a **
 
 - Does the diff do what the PR/plan says? Anything claimed but absent, or present but unclaimed?
 - Code added with zero callers (dead on arrival) or config added that nothing reads — scope creep, flag it once.
+  - **Stacked PR exception:** a symbol whose consumer the stack map places in a later PR is not dead. Check that PR's branch (`git show <child-branch>:<path>` or `gh pr diff <child>`); if the consumer is not there either, flag it.
 
 ## What NOT to report — style is dead
 
