@@ -11,32 +11,30 @@
 7. [Anti-Patterns to Avoid](#anti-patterns-to-avoid)
 8. [Related References](#related-references)
 
-Every spec below imports `test` from its own feature fixture. Each feature fixture merges the clock fixture from [Clock with Fixture](#clock-with-fixture) with the feature's page objects through `mergeTests`; the merge is shown once under `billing`. Page objects follow the shape in `core/house-style.md`; `SearchPage` is shown in full, the rest are listed here. Each `expect*` method wraps one web-first assertion in a boxed step.
+Every spec below imports `test` from its own feature fixture. Each feature fixture merges the clock fixture from [Clock with Fixture](#clock-with-fixture) with the feature's page objects through `mergeTests`; the merge is shown once under `billing`. Page objects follow the shape in `core/house-style.md`; `SearchPage` is shown in full, the rest are listed here. Each `expect*` method is one plain web-first `await expect(…)` with no step around it; only the spec opens steps. `DashboardPage.goto({ time })` takes an optional typed `DashboardOptions` and installs the clock at `time` before it navigates; `PostPage.goto({ post })` routes `postMock(post)` before it opens `/posts/<id>`; `LiveDataPage.goto({ dataHandler })` routes `**/api/data` to that handler before it navigates.
 
 | Page object | File | Members used in this file |
 |---|---|---|
-| `DashboardPage` | `e2e/dashboard/pages/dashboard.page.ts` | `goto()`, `expectDate(text)`, `expectSessionNotice(text)` |
-| `PostPage` | `e2e/posts/pages/post.page.ts` | `goto(id)`, `expectPostedAgo(text)` |
+| `DashboardPage` | `e2e/dashboard/pages/dashboard.page.ts` | `goto(options?)`, `expectDate(text)`, `expectSessionNotice(text)` |
+| `PostPage` | `e2e/posts/pages/post.page.ts` | `goto({ post })`, `expectPostedAgo(text)` |
 | `BillingPage` | `e2e/billing/pages/billing.page.ts` | `goto()`, `expectDue(text)` |
 | `SearchPage` | `e2e/search/pages/search.page.ts` | shown below |
 | `SchedulePage` | `e2e/schedule/pages/schedule.page.ts` | `goto()`, `expectTime(text)` |
-| `LiveDataPage` | `e2e/live-data/pages/live-data.page.ts` | `goto()` |
+| `LiveDataPage` | `e2e/live-data/pages/live-data.page.ts` | `goto({ dataHandler })` |
 
 ## Clock API Basics
 
 ### Install Clock
 
-`page.clock.install({ time })` before the first `goto`. `time` accepts an ISO string, a `Date`, or epoch milliseconds; the page then sees that instant as now.
+`page.clock.install({ time })` before the first `goto`. The opening call does it: `dashboardPage.goto({ time })` installs the clock, then navigates, so no step only installs a clock. `time` accepts an ISO string, a `Date`, or epoch milliseconds; the page then sees that instant as now.
 
 ```ts
 // e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard date', () => {
-  test('GIVEN the clock installed before navigation, the page shows the installed date', async ({ dashboardPage, page }): Promise<void> => {
-    await test.step('GIVEN the clock is installed on 15 January 2025', (): Promise<void> => page.clock.install({ time: '2025-01-15T09:00:00Z' }));
-
-    await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+  test('GIVEN 15 January 2025 as now, the dashboard shows that date', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ time: '2025-01-15T09:00:00Z' }));
 
     await test.step('THEN the date reads January 15, 2025', (): Promise<void> => dashboardPage.expectDate('January 15, 2025'));
   });
@@ -122,7 +120,7 @@ Other date-dependent specs keep the same shape and differ only in these three ce
 
 ### Test Relative Time Display
 
-Freeze now at 14:00 and serve a post created at 12:00, so "2 hours ago" is deterministic. The post comes from a stub with `createdAt` overridden for this case.
+Freeze now at 14:00 and serve a post created at 12:00, so "2 hours ago" is deterministic. The post comes from a stub with `createdAt` overridden for this case, handed to the opening call, which routes it before it navigates.
 
 ```ts
 // e2e/posts/test/mocks/post.mock.ts
@@ -141,20 +139,15 @@ export const postMock = (post: Post = POST_STUB): RouteHandler => {
 // e2e/posts/relative-time.test.ts
 import type { Post } from './common/post.type';
 import { test } from './posts.fixture';
-import { postMock } from './test/mocks/post.mock';
 import { POST_STUB } from './test/stubs/post.stub';
 
 test.use({ frozenTime: '2025-06-15T14:00:00Z' });
 
 test.describe('FEATURE: relative post time', () => {
-  test('GIVEN a post created at 12:00, at 14:00 it reads 2 hours ago', async ({ page, postPage }): Promise<void> => {
+  test('GIVEN a post created at 12:00, at 14:00 it reads 2 hours ago', async ({ postPage }): Promise<void> => {
     const post: Post = { ...POST_STUB, createdAt: '2025-06-15T12:00:00Z' };
 
-    await test.step('GIVEN the post is served', async (): Promise<void> => {
-      await page.route('**/api/posts/1', postMock(post));
-    });
-
-    await test.step('WHEN the post opens', (): Promise<void> => postPage.goto(post.id));
+    await test.step('WHEN the post is opened', (): Promise<void> => postPage.goto({ post }));
 
     await test.step('THEN the posted time reads 2 hours ago', (): Promise<void> => postPage.expectPostedAgo('2 hours ago'));
   });
@@ -165,7 +158,7 @@ test.describe('FEATURE: relative post time', () => {
 
 ### Advance Time Manually
 
-`page.clock.fastForward` accepts `'mm:ss'`, `'hh:mm:ss'`, or milliseconds. Timers due inside the jump fire once, at the end of it.
+`page.clock.fastForward` accepts `'mm:ss'`, `'hh:mm:ss'`, or milliseconds. Timers due inside the jump fire once, at the end of it. A jump happens after the page is open, so it is an action: an `AND` step after the `WHEN`, and a `THEN` follows it when the outcome changes.
 
 ```ts
 // e2e/dashboard/session-timeout.e2e.ts
@@ -173,9 +166,9 @@ import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: session timeout notice', () => {
   test('GIVEN a 30 minute session, it warns after 25 minutes and expires after 30', async ({ dashboardPage, page }): Promise<void> => {
-    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-    await test.step('WHEN 25 minutes pass', (): Promise<void> => page.clock.fastForward('25:00'));
+    await test.step('AND 25 minutes pass', (): Promise<void> => page.clock.fastForward('25:00'));
 
     await test.step('THEN the notice reads session expires in 5 minutes', (): Promise<void> => dashboardPage.expectSessionNotice('Session expires in 5 minutes'));
 
@@ -188,7 +181,7 @@ test.describe('FEATURE: session timeout notice', () => {
 
 ### Pause and Resume Time
 
-The installed clock is paused; each `fastForward` is an explicit jump, so a countdown, a `setTimeout` chain, or a CSS animation can be checked at exact instants. These specs follow the session-timeout shape above: `GIVEN` open, `WHEN` act, `THEN` assert, then `AND` jump and `THEN` assert per row.
+The installed clock is paused; each `fastForward` is an explicit jump, so a countdown, a `setTimeout` chain, or a CSS animation can be checked at exact instants. These specs follow the session-timeout shape above: `WHEN` open, `AND` act, `THEN` assert, then `AND` jump and `THEN` assert per row.
 
 | Spec | Act | Jump | Assertions before and after the jump |
 |---|---|---|---|
@@ -203,7 +196,7 @@ A 300 ms debounce does not fire until the clock moves past it.
 ```ts
 // e2e/search/pages/search.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class SearchPage {
   public readonly results: Locator;
@@ -226,11 +219,11 @@ export class SearchPage {
   }
 
   public async expectResultsHidden(): Promise<void> {
-    await test.step('THEN results are hidden', (): Promise<void> => expect(this.results).toBeHidden(), { box: true });
+    await expect(this.results).toBeHidden();
   }
 
   public async expectResultsVisible(): Promise<void> {
-    await test.step('THEN results are visible', (): Promise<void> => expect(this.results).toBeVisible(), { box: true });
+    await expect(this.results).toBeVisible();
   }
 }
 ```
@@ -241,9 +234,9 @@ import { test } from './search.fixture';
 
 test.describe('FEATURE: debounced search', () => {
   test('GIVEN a 300 ms debounce, results appear only after it elapses', async ({ page, searchPage }): Promise<void> => {
-    await test.step('GIVEN the search page is open', (): Promise<void> => searchPage.goto());
+    await test.step('WHEN the search page is opened', (): Promise<void> => searchPage.goto());
 
-    await test.step('WHEN a term is typed', (): Promise<void> => searchPage.search('playwright'));
+    await test.step('AND a term is typed', (): Promise<void> => searchPage.search('playwright'));
 
     await test.step('THEN the results are still hidden', (): Promise<void> => searchPage.expectResultsHidden());
 
@@ -358,15 +351,11 @@ test.describe('FEATURE: live data auto refresh', () => {
   test('GIVEN two 30 second refresh intervals, the data endpoint is called three times', async ({ liveDataPage, page }): Promise<void> => {
     const data = dataMock();
 
-    await test.step('GIVEN the data endpoint is served and recorded', async (): Promise<void> => {
-      await page.route('**/api/data', data.handler);
-    });
+    await test.step('WHEN the live data page is opened', (): Promise<void> => liveDataPage.goto({ dataHandler: data.handler }));
 
-    await test.step('AND the live data page is open', (): Promise<void> => liveDataPage.goto());
+    await test.step('THEN the initial load called the endpoint once', (): Promise<void> => expect.poll((): number => data.calls.length).toBe(1));
 
-    await test.step('AND the initial load called the endpoint once', (): Promise<void> => expect.poll((): number => data.calls.length).toBe(1));
-
-    await test.step('WHEN 30 seconds pass', (): Promise<void> => page.clock.fastForward('00:30'));
+    await test.step('AND 30 seconds pass', (): Promise<void> => page.clock.fastForward('00:30'));
 
     await test.step('THEN the first refresh called the endpoint twice', (): Promise<void> => expect.poll((): number => data.calls.length).toBe(2));
 
@@ -394,7 +383,7 @@ test('date test', async ({ page }) => {
 });
 ```
 
-Prefer: install as the first step, or let the `page` override in [Clock with Fixture](#clock-with-fixture) do it before any test code runs.
+Prefer: install inside the opening call before it navigates (`dashboardPage.goto({ time })`), or let the `page` override in [Clock with Fixture](#clock-with-fixture) do it before any test code runs.
 
 ### Use ISO Strings for Clarity
 

@@ -20,11 +20,11 @@ The mechanic every popup and new-tab sample shares: start waiting for the event,
 | `SupportChatPage` | `e2e/support/pages/support-chat.page.ts` | `send(message)` (fill "Message", click "Send"), `expectSent()` ("Message sent") |
 | `DashboardPage` | `e2e/integrations/pages/dashboard.page.ts` | `goto()`, `openConnectAccount(): Promise<Page>`, `expectAccountConnected()` |
 | `ProviderLoginPage` | `e2e/integrations/pages/provider-login.page.ts` | `submit(credentials)` (email, password, "Log In") |
-| `SharePage` | `e2e/share/pages/share.page.ts` | `goto()`, `openTwitterShare(): Promise<Page>`, `shareToTwitter()`, `expectCopyLinkFallback()` ("Copy share link instead") |
+| `SharePage` | `e2e/share/pages/share.page.ts` | `goto(options?)` (`{ popups: 'blocked' }` calls `blockPopups(this.page)` before navigating), `openTwitterShare(): Promise<Page>`, `shareToTwitter()`, `expectCopyLinkFallback()` ("Copy share link instead") |
 | `ResourcesPage` | `e2e/resources/pages/resources.page.ts` | `goto()`, `openDocumentation(): Promise<Page>` (waits on `context().waitForEvent('page')`) |
 | `DocsPage` | `e2e/resources/pages/docs.page.ts` | `expectHeading()` (level 1 heading visible) |
-| `LinksPage` | `e2e/links/pages/links.page.ts` | `goto()`, `openExternalSite()` |
-| `LoginPage` | `e2e/auth/pages/login.page.ts` | gains `openGoogleSignIn(): Promise<Page>`, `signInWithGoogle()` |
+| `LinksPage` | `e2e/links/pages/links.page.ts` | `goto(options?)` (`{ blankTargets: 'dropped' }` calls `keepLinksInTab(this.page)` after navigating), `openExternalSite()` |
+| `LoginPage` | `e2e/auth/pages/login.page.ts` | gains `goto(options?)` (`{ oauth: 'mocked' }` routes `callbackRedirectMock()` and `tokenMock()` before navigating), `openGoogleSignIn(): Promise<Page>`, `signInWithGoogle()` |
 | `GoogleLoginPage` | `e2e/auth/pages/google-login.page.ts` | `submit(credentials)` (email, "Next", password, "Next") |
 | `HomePage` | `e2e/auth/pages/home.page.ts` | `expectWelcome(name)` |
 | `SyncDashboardPage` | `e2e/dashboard/pages/dashboard.page.ts` | `goto()`, `addItem(name)` ("Add Item", fill "Name", "Save"), `expectItem(name)` (10 s timeout for the sync) |
@@ -76,16 +76,14 @@ import { test } from './support.fixture';
 
 test.describe('FEATURE: support chat popup', () => {
   test('GIVEN the chat popup, sending a message shows the confirmation', async ({ homePage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-    const popup = await test.step('WHEN the support chat popup is opened', (): Promise<Page> => homePage.openSupportChat());
+    const popup = await test.step('AND the support chat popup is opened', (): Promise<Page> => homePage.openSupportChat());
     const chat = new SupportChatPage(popup);
 
     await test.step('AND a message is sent', (): Promise<void> => chat.send('Need help'));
 
     await test.step('THEN the message sent confirmation is shown', (): Promise<void> => chat.expectSent());
-
-    await test.step('AND the popup is closed', (): Promise<void> => popup.close());
   });
 });
 ```
@@ -104,9 +102,9 @@ import { ProviderLoginPage } from './pages/provider-login.page';
 
 test.describe('FEATURE: connect account', () => {
   test('GIVEN the provider login popup, completing it connects the account', async ({ dashboardPage }): Promise<void> => {
-    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-    const popup = await test.step('WHEN the connect account popup is opened', (): Promise<Page> => dashboardPage.openConnectAccount());
+    const popup = await test.step('AND the connect account popup is opened', (): Promise<Page> => dashboardPage.openConnectAccount());
     const providerLogin = new ProviderLoginPage(popup);
 
     await test.step('AND the login is submitted inside the popup', (): Promise<void> => providerLogin.submit(TEST_USER));
@@ -120,7 +118,7 @@ test.describe('FEATURE: connect account', () => {
 
 ### Handle Blocked Popups
 
-A blocked popup is its own scenario whose `GIVEN` step blocks it, made deterministic by stubbing `window.open` in an init script rather than racing a `waitForEvent('popup')` against a timeout. If you cannot stub `window.open`, race `page.waitForEvent('popup', { timeout })` with `.catch` against the fallback text and branch in a util, not in the spec.
+A blocked popup is its own scenario whose opening call blocks it, `sharePage.goto({ popups: 'blocked' })`, made deterministic by stubbing `window.open` in an init script rather than racing a `waitForEvent('popup')` against a timeout. If you cannot stub `window.open`, race `page.waitForEvent('popup', { timeout })` with `.catch` against the fallback text and branch in a util, not in the spec.
 
 ```ts
 // e2e/share/test/utils/popup-blocker.spec.util.ts
@@ -138,22 +136,19 @@ export const blockPopups = async (page: Page): Promise<void> => {
 ```ts
 // e2e/share/share.e2e.ts
 import { test } from './share.fixture';
-import { blockPopups } from './test/utils/popup-blocker.spec.util';
 
 test.describe('FEATURE: share to twitter', () => {
-  test('GIVEN a blocked popup, sharing falls back to the copy link', async ({ page, sharePage }): Promise<void> => {
-    await test.step('GIVEN window.open is stubbed to return null', (): Promise<void> => blockPopups(page));
+  test('GIVEN a blocked popup, sharing falls back to the copy link', async ({ sharePage }): Promise<void> => {
+    await test.step('WHEN the share page is opened', (): Promise<void> => sharePage.goto({ popups: 'blocked' }));
 
-    await test.step('AND the share page is open', (): Promise<void> => sharePage.goto());
-
-    await test.step('WHEN share to twitter is clicked', (): Promise<void> => sharePage.shareToTwitter());
+    await test.step('AND share to twitter is clicked', (): Promise<void> => sharePage.shareToTwitter());
 
     await test.step('THEN the copy share link fallback is shown', (): Promise<void> => sharePage.expectCopyLinkFallback());
   });
 });
 ```
 
-`SharePage` has two methods on the same button: `openTwitterShare()` waits for the popup and returns it; `shareToTwitter()` only clicks. The allowed-popup scenario, `'GIVEN an allowed popup, sharing opens the twitter share'`, is the Basic Popup shape in the same `FEATURE`: `openTwitterShare()`, `expect(popup).toHaveURL(/twitter\.com/)`, `popup.close()`.
+`SharePage` has two methods on the same button: `openTwitterShare()` waits for the popup and returns it; `shareToTwitter()` only clicks. The allowed-popup scenario, `'GIVEN an allowed popup, sharing opens the twitter share'`, is the Basic Popup shape in the same `FEATURE`: `openTwitterShare()`, then `expect(popup).toHaveURL(/twitter\.com/)`. The popup closes with the context at teardown, so no step closes it.
 
 ## New Tab Navigation
 
@@ -170,9 +165,9 @@ import { expect, test } from './resources.fixture';
 
 test.describe('FEATURE: documentation link', () => {
   test('GIVEN the resources page, clicking the documentation link opens the docs in a new tab', async ({ page, resourcesPage }): Promise<void> => {
-    await test.step('GIVEN the resources page is open', (): Promise<void> => resourcesPage.goto());
+    await test.step('WHEN the resources page is opened', (): Promise<void> => resourcesPage.goto());
 
-    const docsTab = await test.step('WHEN the documentation link is clicked', (): Promise<Page> => resourcesPage.openDocumentation());
+    const docsTab = await test.step('AND the documentation link is clicked', (): Promise<Page> => resourcesPage.openDocumentation());
     const docsPage = new DocsPage(docsTab);
 
     await test.step('THEN the new tab url is on the docs host', (): Promise<void> => expect(docsTab).toHaveURL(/docs\.example\.com/));
@@ -180,15 +175,13 @@ test.describe('FEATURE: documentation link', () => {
     await test.step('AND the docs heading is shown', (): Promise<void> => docsPage.expectHeading());
 
     await test.step('AND the original tab is still on resources', (): Promise<void> => expect(page).toHaveURL(/\/resources/));
-
-    await test.step('AND the docs tab is closed', (): Promise<void> => docsTab.close());
   });
 });
 ```
 
 ### Intercept New Tab
 
-Removing `target="_blank"` keeps the navigation in the current tab, so the destination can be asserted on `page`. The spec (`e2e/links/external-link.e2e.ts`) runs `linksPage.goto()`, then `keepLinksInTab(page)` as an `AND` arrange step, clicks through `linksPage.openExternalSite()`, and asserts `expect(page).toHaveURL(/external-site\.com/)`.
+Removing `target="_blank"` keeps the navigation in the current tab, so the destination can be asserted on `page`. The spec (`e2e/links/external-link.e2e.ts`) opens with `linksPage.goto({ blankTargets: 'dropped' })` as its `WHEN`, which navigates and then calls `keepLinksInTab(this.page)`, clicks through `linksPage.openExternalSite()` in an `AND` step, and asserts `expect(page).toHaveURL(/external-site\.com/)`.
 
 ```ts
 // e2e/links/test/utils/links.spec.util.ts
@@ -211,15 +204,15 @@ Driving the real provider popup: slow, needs real credentials, and the provider'
 
 | Step | Popup with Authentication | Google OAuth popup |
 |---|---|---|
-| GIVEN | `dashboardPage.goto()` | `loginPage.goto()` |
-| WHEN popup opens | `dashboardPage.openConnectAccount()` | `loginPage.openGoogleSignIn()` |
+| WHEN page opened | `dashboardPage.goto()` | `loginPage.goto()` |
+| AND popup opens | `dashboardPage.openConnectAccount()` | `loginPage.openGoogleSignIn()` |
 | AND login submitted | `new ProviderLoginPage(popup).submit(TEST_USER)` | `new GoogleLoginPage(popup).submit(GOOGLE_TEST_USER)` |
 | THEN popup closes | `popup.waitForEvent('close')` | same |
 | AND outcome | `dashboardPage.expectAccountConnected()` | `homePage.expectWelcome('Test User')` |
 
 ### Mock OAuth (Recommended)
 
-Two routes replace the provider: the callback answers with a `302` to the dashboard, and the token exchange answers with a stub user. Both are factories registered in the test's opening `GIVEN` and `AND` steps, before any navigation.
+Two routes replace the provider: the callback answers with a `302` to the dashboard, and the token exchange answers with a stub user. Both are factories the opening call registers before it navigates: `loginPage.goto({ oauth: 'mocked' })`. The title names the mocked provider, so the `WHEN` only says the login page is opened.
 
 ```ts
 // e2e/auth/test/stubs/callback.stub.ts
@@ -247,24 +240,14 @@ export const callbackRedirectMock = (headers: ResponseHeaders = DASHBOARD_REDIRE
 // e2e/auth/google-mocked.test.ts
 import { expect, test } from './auth.fixture';
 import { EMPTY_STORAGE_STATE } from './common/auth.const';
-import { callbackRedirectMock } from './test/mocks/callback-redirect.mock';
-import { tokenMock } from './test/mocks/token.mock';
 
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: google sign in', () => {
   test('GIVEN a mocked callback and token exchange, google sign-in works without the provider', async ({ homePage, loginPage, page }): Promise<void> => {
-    await test.step('GIVEN the oauth callback redirects to the dashboard', async (): Promise<void> => {
-      await page.route('**/auth/callback**', callbackRedirectMock());
-    });
+    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto({ oauth: 'mocked' }));
 
-    await test.step('AND the token exchange is mocked', async (): Promise<void> => {
-      await page.route('**/api/auth/token', tokenMock());
-    });
-
-    await test.step('AND the login page is open', (): Promise<void> => loginPage.goto());
-
-    await test.step('WHEN sign in with google is clicked', (): Promise<void> => loginPage.signInWithGoogle());
+    await test.step('AND sign in with google is clicked', (): Promise<void> => loginPage.signInWithGoogle());
 
     await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
 
@@ -281,27 +264,19 @@ test.describe('FEATURE: google sign in', () => {
 
 ### Test Across Multiple Windows
 
-Two tabs in one context share cookies and storage, which is what "same user, two windows" needs. `expectItem` carries a 10 s timeout because real-time sync is slower than a local render.
+Two tabs in one context share cookies and storage, which is what "same user, two windows" needs. `dashboard.fixture.ts` hands over `firstDashboard` and `secondDashboard`, each a `SyncDashboardPage` on its own `context.newPage()` tab, so opening the windows is not a step. `expectItem` carries a 10 s timeout because real-time sync is slower than a local render.
 
 ```ts
 // e2e/dashboard/window-sync.e2e.ts
-import type { Page } from '@playwright/test';
-
 import { test } from './dashboard.fixture';
-import { SyncDashboardPage } from './pages/dashboard.page';
 
 test.describe('FEATURE: dashboard window sync', () => {
-  test('GIVEN two windows, adding an item in one shows it in the other', async ({ context }): Promise<void> => {
-    const firstTab = await test.step('GIVEN a first window is open', (): Promise<Page> => context.newPage());
-    const secondTab = await test.step('AND a second window is open', (): Promise<Page> => context.newPage());
-    const firstDashboard = new SyncDashboardPage(firstTab);
-    const secondDashboard = new SyncDashboardPage(secondTab);
+  test('GIVEN two windows, adding an item in one shows it in the other', async ({ firstDashboard, secondDashboard }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened in the first window', (): Promise<void> => firstDashboard.goto());
 
-    await test.step('AND the dashboard is open in the first window', (): Promise<void> => firstDashboard.goto());
+    await test.step('AND the dashboard is opened in the second window', (): Promise<void> => secondDashboard.goto());
 
-    await test.step('AND the dashboard is open in the second window', (): Promise<void> => secondDashboard.goto());
-
-    await test.step('WHEN an item is added in the first window', (): Promise<void> => firstDashboard.addItem('New Item'));
+    await test.step('AND an item is added in the first window', (): Promise<void> => firstDashboard.addItem('New Item'));
 
     await test.step('THEN the second window shows the item', (): Promise<void> => secondDashboard.expectItem('New Item'));
   });
@@ -318,7 +293,7 @@ test.describe('FEATURE: dashboard window sync', () => {
 
 Same two-tab shape as the window sync spec above. `bringToFront()` and `reload()` are page-object methods that delegate to `this.page`, so the spec never touches `Page` directly.
 
-| Spec | Page objects on `context.newPage()` tabs | WHEN | THEN |
+| Spec | Fixture page objects, each on its own `context.newPage()` tab, opened in `WHEN` / `AND` | `AND` actions | `THEN` |
 |---|---|---|---|
 | `e2e/dashboard/window-sync.e2e.ts` | `SyncDashboardPage` twice, `goto()` each | `firstDashboard.addItem('New Item')` | `secondDashboard.expectItem('New Item')` |
 | `e2e/editor/preview-tab.e2e.ts` | `EditorPage`, `PreviewPage`, `goto()` each | `editorPage.bringToFront()`, `fillContent('Hello World')`, `previewPage.bringToFront()`, `reload()` | `previewPage.expectContent('Hello World')` |

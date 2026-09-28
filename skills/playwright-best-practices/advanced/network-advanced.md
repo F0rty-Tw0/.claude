@@ -8,7 +8,7 @@
 4. [Conditional Mocking](#conditional-mocking)
 5. [Network Throttling](#network-throttling)
 
-Every route handler in this file is a factory in `test/mocks/<name>.mock.ts` returning a `(route: Route) => Promise<void>`. A spec installs it in one step whose block body awaits `page.route(...)` (the call returns `Promise<Disposable>` since Playwright 1.63, so an expression body would not type as `Promise<void>`), or a fixture installs it before `use`. Specs never contain a handler body.
+Every route handler in this file is a factory in `test/mocks/<name>.mock.ts` returning a `(route: Route) => Promise<void>`. The opening page-object call installs it as an option before it navigates, awaiting `page.route(...)` in its method body (the call returns `Promise<Disposable>` since Playwright 1.63), or a fixture installs it before `use`. Specs never contain a handler body or a step that only routes.
 
 ## Request Modification
 
@@ -120,6 +120,12 @@ export type GraphQLMock = {
   readonly response: GraphQLResponse;
   readonly variables?: Record<string, unknown>;
 };
+
+export type DashboardOptions = {
+  readonly dataDelayMs?: number;
+  readonly graphql?: GraphQLMock[];
+  readonly statusFailures?: number;
+};
 ```
 
 ```ts
@@ -150,51 +156,9 @@ export const graphqlMock = (mocks: GraphQLMock[]): RouteHandler => {
 };
 ```
 
-### GraphQL Mock Fixture
+### GraphQL Mocks on the Opening Call
 
-The fixture exposes `mockGraphQL(mocks)`, which routes `**/graphql` to the factory. Mock lists are stubs, so the spec reads as data plus steps.
-
-```ts
-// e2e/dashboard/dashboard.fixture.ts
-import { test as base } from '@playwright/test';
-
-import type { GraphQLMock } from './common/dashboard.type';
-import { DashboardPage } from './pages/dashboard.page';
-import { graphqlMock } from './test/mocks/graphql.mock';
-import { slowDataMock } from './test/mocks/slow-data.mock';
-
-type MockGraphQL = (mocks: GraphQLMock[]) => Promise<void>;
-
-type MockSlowData = (delayMs: number) => Promise<void>;
-
-type DashboardFixtures = {
-  readonly dashboardPage: DashboardPage;
-  readonly mockGraphQL: MockGraphQL;
-  readonly mockSlowData: MockSlowData;
-};
-
-export const test = base.extend<DashboardFixtures>({
-  dashboardPage: async ({ page }, use): Promise<void> => {
-    await use(new DashboardPage(page));
-  },
-  mockGraphQL: async ({ page }, use): Promise<void> => {
-    const mockGraphQL = async (mocks: GraphQLMock[]): Promise<void> => {
-      await page.route('**/graphql', graphqlMock(mocks));
-    };
-
-    await use(mockGraphQL);
-  },
-  mockSlowData: async ({ page }, use): Promise<void> => {
-    const mockSlowData = async (delayMs: number): Promise<void> => {
-      await page.route('**/api/data', slowDataMock(delayMs));
-    };
-
-    await use(mockSlowData);
-  }
-});
-
-export { expect } from '@playwright/test';
-```
+The mock list is an option on the opening call. `DashboardPage.goto(options: DashboardOptions = {})` routes each mock it is given, then navigates: `graphql` to `graphqlMock(graphql)` on `**/graphql`, `dataDelayMs` to `slowDataMock(dataDelayMs)` on `**/api/data`, `statusFailures` to `statusRetryMock(statusFailures)` on `**/api/status`. Mock lists are stubs, so the spec reads as data plus steps, and the `WHEN` only says the dashboard is opened.
 
 ```ts
 // e2e/dashboard/test/stubs/graphql.stub.ts
@@ -217,10 +181,8 @@ import { test } from './dashboard.fixture';
 import { STATS_MOCK_STUB, USER_MOCK_STUB } from './test/stubs/graphql.stub';
 
 test.describe('FEATURE: dashboard', () => {
-  test('GIVEN mocked stats and user queries, the dashboard shows the user count', async ({ dashboardPage, mockGraphQL }): Promise<void> => {
-    await test.step('GIVEN the dashboard queries are mocked', (): Promise<void> => mockGraphQL([STATS_MOCK_STUB, USER_MOCK_STUB]));
-
-    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+  test('GIVEN mocked stats and user queries, the dashboard shows the user count', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ graphql: [STATS_MOCK_STUB, USER_MOCK_STUB] }));
 
     await test.step('THEN stats card shows 100 users', (): Promise<void> => dashboardPage.expectUserCount(100));
   });
@@ -272,7 +234,7 @@ export const createOrderMock = (): RouteHandler => {
 };
 ```
 
-The spec installs it on `**/graphql`, clicks `checkoutPage.placeOrder()`, and asserts `checkoutPage.expectOrderNumber('order-123')`.
+`CheckoutPage.goto()` routes it on `**/graphql` before it navigates; the spec opens the checkout in its `WHEN`, clicks `checkoutPage.placeOrder()` in an `AND` step, and asserts `checkoutPage.expectOrderNumber('order-123')`.
 
 ## HAR Recording & Playback
 
@@ -367,25 +329,21 @@ export const searchMock = (): RouteHandler => {
 ```
 
 ```ts
-// e2e/search/search.e2e.ts
+// e2e/search/search.test.ts
 import { test } from './search.fixture';
 
 test.describe('FEATURE: search', () => {
-  test.beforeEach(async ({ mockSearch }): Promise<void> => {
-    await test.step('GIVEN the search endpoint is mocked by query', (): Promise<void> => mockSearch());
-  });
-
   test('GIVEN the error query, searching shows the failure message', async ({ searchPage }): Promise<void> => {
-    await test.step('AND the search page is open', (): Promise<void> => searchPage.goto());
+    await test.step('WHEN the search page is opened', (): Promise<void> => searchPage.goto());
 
-    await test.step('WHEN the error query is searched', (): Promise<void> => searchPage.search('error'));
+    await test.step('AND the error query is searched', (): Promise<void> => searchPage.search('error'));
 
     await test.step('THEN failure message is shown', (): Promise<void> => searchPage.expectError('Search failed'));
   });
 });
 ```
 
-`searchPage.search(query)` fills the `Search` textbox and presses `Enter`; the `empty` and default queries are two more `test` blocks in the same `FEATURE`, sharing its `beforeEach` mock.
+`searchPage.search(query)` fills the `Search` textbox and presses `Enter`; the `empty` and default queries are two more `test` blocks in the same `FEATURE`. Every test in the feature needs the same mock, so the `searchPage` fixture routes `**/api/search` to `searchMock()` before `use`; no hook and no step installs it.
 
 ### Mock Nth Request
 
@@ -420,7 +378,7 @@ export const statusRetryMock = (failuresBeforeSuccess: number): RouteHandler => 
 };
 ```
 
-The spec routes `**/api/status` to `statusRetryMock(2)`, opens the dashboard, and asserts `dashboardPage.expectConnected()`; the web-first `expect` waits through the retries.
+The spec opens the dashboard with `dashboardPage.goto({ statusFailures: 2 })`, which routes `**/api/status` to `statusRetryMock(2)` first, and asserts `dashboardPage.expectConnected()`; the web-first `expect` waits through the retries.
 
 ### Mock with Delay
 
@@ -450,10 +408,8 @@ export const slowDataMock = (delayMs: number, data: DashboardData = DASHBOARD_DA
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard loading state', () => {
-  test('GIVEN a two second data response, the loader shows before the data', async ({ dashboardPage, mockSlowData }): Promise<void> => {
-    await test.step('GIVEN the data endpoint answers after two seconds', (): Promise<void> => mockSlowData(2000));
-
-    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+  test('GIVEN a two second data response, the loader shows before the data', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ dataDelayMs: 2000 }));
 
     await test.step('THEN loading indicator is shown', (): Promise<void> => dashboardPage.expectLoading());
 
@@ -488,7 +444,7 @@ export const throttle = async (context: BrowserContext, page: Page, profile: Net
 };
 ```
 
-`NetworkProfile` is `{ readonly downloadThroughput: number; readonly latency: number; readonly offline: boolean; readonly uploadThroughput: number }`. The spec calls `throttle(context, page, SLOW_3G)` in its first step, opens the page, and asserts `homePage.expectSkeleton()`.
+`NetworkProfile` is `{ readonly downloadThroughput: number; readonly latency: number; readonly offline: boolean; readonly uploadThroughput: number }`. The opening call applies it: `homePage.goto({ network: SLOW_3G })` calls `throttle(this.page.context(), this.page, SLOW_3G)` before it navigates, and the spec asserts `homePage.expectSkeleton()`.
 
 ### Offline Mode
 
@@ -501,7 +457,7 @@ Use `context.setOffline(true/false)` to simulate network connectivity changes.
 
 ### Network Throttling Fixture
 
-The fixture opens one CDP session, exposes `setNetworkCondition(condition)`, and resets `setOffline(false)` after `use`. Offline routes through `context.setOffline`; the throttled profiles go through CDP.
+The fixture opens one CDP session, exposes `setNetworkCondition(condition)`, and resets `setOffline(false)` after `use`. A condition change after the page is open is a user-visible event, so the spec calls it in an `AND` step after the `WHEN`: `'AND the network goes offline'`. Offline routes through `context.setOffline`; the throttled profiles go through CDP.
 
 ```ts
 // e2e/home/home.fixture.ts
