@@ -10,7 +10,7 @@
 6. [Anti-Patterns to Avoid](#anti-patterns-to-avoid)
 7. [Related References](#related-references)
 
-Every user is a separate browser context, opened through the `openUser` fixture below and closed by it. Saved sessions come from the `setup` project in [authentication.md](authentication.md): `AUTH_DIR/<role>.json` for `Role = 'admin' | 'guest' | 'member'`. `openUser` hands over a page object built on that user's own `Page`; `RecordPage` is shown in full, the rest are listed.
+Every user is a separate browser context, opened through the `openUser` fixture below and closed by it. Saved sessions come from the `setup` project in [authentication.md](authentication.md): `AUTH_DIR/<role>.json` for `Role = 'admin' | 'guest' | 'member'`. `openUser` opens the page for that user and hands over the page object built on the user's own `Page`; `RecordPage` is shown in full, the rest are listed.
 
 | Page object | File | Members used in this file |
 |---|---|---|
@@ -29,7 +29,7 @@ Every user is a separate browser context, opened through the `openUser` fixture 
 
 ### Multi-User Fixture
 
-`openUser(PageObject, storageState?)` opens a fresh context, optionally from a saved session file, and hands over a page object built on its page. Nothing is visible yet, so it is not a step: the test calls it above its first step, like case data, and the page object's `goto` is the `WHEN`. The fixture closes every context it opened after the test.
+`openUser(PageObject, open, storageState?)` opens a fresh context, optionally from a saved session file, builds the page object on its page, and runs `open` on it, so the user arrives on the page. `open` is one short arrow that calls the page object's `goto`. Opening the page is that user's first action, so the call is itself a step, as `openUsersAs` is in [authentication.md](authentication.md#multiple-roles), and the step returns the page object for the steps after it. The fixture closes every context it opened after the test.
 
 ```ts
 // e2e/collaboration/collaboration.fixture.ts
@@ -38,7 +38,9 @@ import { test as base } from '@playwright/test';
 
 type PageObjectClass<T> = new (page: Page) => T;
 
-type OpenUser = <T>(PageObject: PageObjectClass<T>, storageState?: string) => Promise<T>;
+type OpenPage<T> = (pageObject: T) => Promise<void>;
+
+type OpenUser = <T>(PageObject: PageObjectClass<T>, open: OpenPage<T>, storageState?: string) => Promise<T>;
 
 type CollaborationFixtures = {
   readonly openUser: OpenUser;
@@ -47,12 +49,14 @@ type CollaborationFixtures = {
 export const test = base.extend<CollaborationFixtures>({
   openUser: async ({ browser }, use): Promise<void> => {
     const contexts: BrowserContext[] = [];
-    const openUser: OpenUser = async <T>(PageObject: PageObjectClass<T>, storageState?: string): Promise<T> => {
+    const openUser: OpenUser = async <T>(PageObject: PageObjectClass<T>, open: OpenPage<T>, storageState?: string): Promise<T> => {
       const context = await browser.newContext({ storageState });
+      const pageObject = new PageObject(await context.newPage());
 
       contexts.push(context);
+      await open(pageObject);
 
-      return new PageObject(await context.newPage());
+      return pageObject;
     };
 
     await use(openUser);
@@ -77,12 +81,9 @@ import { DocumentPage } from './pages/document.page';
 
 test.describe('FEATURE: shared document', () => {
   test('GIVEN two users on one document, text typed by one is seen by the other', async ({ openUser }): Promise<void> => {
-    const documentA = await openUser(DocumentPage);
-    const documentB = await openUser(DocumentPage);
+    const documentA = await test.step('WHEN user A opens the document', (): Promise<DocumentPage> => openUser(DocumentPage, (documentPage): Promise<void> => documentPage.goto('shared-123')));
 
-    await test.step('WHEN user A opens the document', (): Promise<void> => documentA.goto('shared-123'));
-
-    await test.step('AND user B opens the document', (): Promise<void> => documentB.goto('shared-123'));
+    const documentB = await test.step('AND user B opens the document', (): Promise<DocumentPage> => openUser(DocumentPage, (documentPage): Promise<void> => documentPage.goto('shared-123')));
 
     await test.step('AND user A types', (): Promise<void> => documentA.fillContent('Hello from User A'));
 
@@ -93,7 +94,7 @@ test.describe('FEATURE: shared document', () => {
 
 ### Multiple Users with Auth States
 
-Each user starts from a different saved session, so the admin sees the admin UI and the member sees the member UI in the same test. The admin's reply is an action after the first assertion, so the member's check after it is a new `THEN`.
+Each user starts from a different saved session, so the admin sees the admin UI and the member sees the member UI in the same test. The admin's reply is an action after a check, so it starts a new phase: `WHEN` the admin replies, `THEN` the member sees the reply.
 
 ```ts
 // e2e/collaboration/support-ticket.e2e.ts
@@ -106,19 +107,16 @@ const ADMIN_STATE = `${AUTH_DIR}/admin.json`;
 const MEMBER_STATE = `${AUTH_DIR}/member.json`;
 
 test.describe('FEATURE: support tickets', () => {
-  test('GIVEN a member question, the admin reply reaches the member who asked', async ({ openUser }): Promise<void> => {
-    const tickets = await openUser(TicketsPage, ADMIN_STATE);
-    const support = await openUser(SupportPage, MEMBER_STATE);
-
-    await test.step('WHEN the member opens support', (): Promise<void> => support.goto());
+  test('GIVEN saved admin and member sessions, the admin reply reaches the member who asked', async ({ openUser }): Promise<void> => {
+    const support = await test.step('WHEN the member opens support', (): Promise<SupportPage> => openUser(SupportPage, (supportPage): Promise<void> => supportPage.goto(), MEMBER_STATE));
 
     await test.step('AND the member submits a request', (): Promise<void> => support.submit('Need help!'));
 
-    await test.step('AND the admin opens the tickets', (): Promise<void> => tickets.goto());
+    const tickets = await test.step('AND the admin opens the tickets', (): Promise<TicketsPage> => openUser(TicketsPage, (ticketsPage): Promise<void> => ticketsPage.goto(), ADMIN_STATE));
 
     await test.step('THEN the admin sees the request', (): Promise<void> => tickets.expectTicket('Need help!'));
 
-    await test.step('AND the admin replies', (): Promise<void> => tickets.reply('How can I help?'));
+    await test.step('WHEN the admin replies', (): Promise<void> => tickets.reply('How can I help?'));
 
     await test.step('THEN the member sees the reply', (): Promise<void> => support.expectReply('How can I help?'));
   });
@@ -137,13 +135,10 @@ import { test } from './collaboration.fixture';
 import { EditorPage } from './pages/editor.page';
 
 test.describe('FEATURE: collaborative editing', () => {
-  test('GIVEN two users typing at different ends, both see the combined text', async ({ openUser }): Promise<void> => {
-    const editorOne = await openUser(EditorPage);
-    const editorTwo = await openUser(EditorPage);
+  test('GIVEN two users on one editor, text typed at both ends shows both the combined text', async ({ openUser }): Promise<void> => {
+    const editorOne = await test.step('WHEN user 1 opens the editor', (): Promise<EditorPage> => openUser(EditorPage, (editorPage): Promise<void> => editorPage.goto()));
 
-    await test.step('WHEN user 1 opens the editor', (): Promise<void> => editorOne.goto());
-
-    await test.step('AND user 2 opens the editor', (): Promise<void> => editorTwo.goto());
+    const editorTwo = await test.step('AND user 2 opens the editor', (): Promise<EditorPage> => openUser(EditorPage, (editorPage): Promise<void> => editorPage.goto()));
 
     await test.step('AND user 1 types at the start', (): Promise<void> => editorOne.typeAtStart('User 1: '));
 
@@ -162,7 +157,7 @@ test.describe('FEATURE: collaborative editing', () => {
 
 ### Cursor Presence
 
-Identity comes from a mocked `/api/me` per user, routed by the opening call: `goto(id, { identity })` registers `meMock(identity)` on that user's page before it navigates. `Identity` is `{ readonly id: string; readonly name: string }` in `e2e/collaboration/common/collaboration.type.ts`; the stub and the factory are shared with the chat sample below.
+Identity comes from a mocked `/api/me` per user, routed by the opening call that `openUser` runs: `goto(id, { identity })` registers `meMock(identity)` on that user's page before it navigates. `Identity` is `{ readonly id: string; readonly name: string }` in `e2e/collaboration/common/collaboration.type.ts`; the stub and the factory are shared with the chat sample below.
 
 ```ts
 // e2e/collaboration/test/stubs/identity.stub.ts
@@ -194,12 +189,9 @@ import { ALICE_STUB, BOB_STUB } from './test/stubs/identity.stub';
 
 test.describe('FEATURE: cursor presence', () => {
   test('GIVEN Alice and Bob on one board, moving her cursor shows Bob her name', async ({ openUser }): Promise<void> => {
-    const aliceBoard = await openUser(WhiteboardPage);
-    const bobBoard = await openUser(WhiteboardPage);
+    const aliceBoard = await test.step('WHEN Alice opens the whiteboard', (): Promise<WhiteboardPage> => openUser(WhiteboardPage, (whiteboardPage): Promise<void> => whiteboardPage.goto('123', { identity: ALICE_STUB })));
 
-    await test.step('WHEN Alice opens the whiteboard', (): Promise<void> => aliceBoard.goto('123', { identity: ALICE_STUB }));
-
-    await test.step('AND Bob opens the whiteboard', (): Promise<void> => bobBoard.goto('123', { identity: BOB_STUB }));
+    const bobBoard = await test.step('AND Bob opens the whiteboard', (): Promise<WhiteboardPage> => openUser(WhiteboardPage, (whiteboardPage): Promise<void> => whiteboardPage.goto('123', { identity: BOB_STUB })));
 
     await test.step('AND Alice moves her cursor', (): Promise<void> => aliceBoard.moveCursor(200, 200));
 
@@ -242,9 +234,9 @@ import { DocumentAccessPage } from './pages/document-access.page';
 test.describe('FEATURE: document access by role', () => {
   for (const permissions of ROLE_PERMISSIONS) {
     test(`GIVEN the ${permissions.role} role, the document shows the controls that match the role`, async ({ openUser }): Promise<void> => {
-      const documentPage = await openUser(DocumentAccessPage, `${AUTH_DIR}/${permissions.role}.json`);
+      const roleState = `${AUTH_DIR}/${permissions.role}.json`;
 
-      await test.step('WHEN the document is opened', (): Promise<void> => documentPage.goto('123'));
+      const documentPage = await test.step('WHEN the document is opened', (): Promise<DocumentAccessPage> => openUser(DocumentAccessPage, (accessPage): Promise<void> => accessPage.goto('123'), roleState));
 
       await test.step('THEN the content visibility matches the role', (): Promise<void> => documentPage.expectContentVisible(permissions.canView));
 
@@ -270,9 +262,7 @@ const MEMBER_STATE = `${AUTH_DIR}/member.json`;
 
 test.describe('FEATURE: admin route protection', () => {
   test('GIVEN a member session, opening the admin users route directly is denied', async ({ openUser }): Promise<void> => {
-    const adminUsers = await openUser(AdminUsersPage, MEMBER_STATE);
-
-    await test.step('WHEN the admin users route is opened', (): Promise<void> => adminUsers.goto());
+    const adminUsers = await test.step('WHEN the admin users route is opened', (): Promise<AdminUsersPage> => openUser(AdminUsersPage, (usersPage): Promise<void> => usersPage.goto(), MEMBER_STATE));
 
     await test.step('THEN the url is not the admin users route', (): Promise<void> => adminUsers.expectRedirected());
 
@@ -308,13 +298,9 @@ import { countConflicts } from './test/utils/conflict.spec.util';
 
 test.describe('FEATURE: concurrent item edit', () => {
   test('GIVEN two users on one item, saving at once gives exactly one a conflict', async ({ openUser }): Promise<void> => {
-    const itemOne = await openUser(ItemPage);
-    const itemTwo = await openUser(ItemPage);
-    const items = [itemOne, itemTwo];
+    const itemOne = await test.step('WHEN user 1 opens the item', (): Promise<ItemPage> => openUser(ItemPage, (itemPage): Promise<void> => itemPage.goto('123')));
 
-    await test.step('WHEN user 1 opens the item', (): Promise<void> => itemOne.goto('123'));
-
-    await test.step('AND user 2 opens the item', (): Promise<void> => itemTwo.goto('123'));
+    const itemTwo = await test.step('AND user 2 opens the item', (): Promise<ItemPage> => openUser(ItemPage, (itemPage): Promise<void> => itemPage.goto('123')));
 
     await test.step('AND both click edit at once', (): Promise<void[]> => Promise.all([itemOne.edit(), itemTwo.edit()]));
 
@@ -324,7 +310,7 @@ test.describe('FEATURE: concurrent item edit', () => {
 
     await test.step('AND both save at once', (): Promise<void[]> => Promise.all([itemOne.save(), itemTwo.save()]));
 
-    await test.step('THEN exactly one user sees a conflict', (): Promise<void> => expect.poll((): Promise<number> => countConflicts(items)).toBe(1));
+    await test.step('THEN exactly one user sees a conflict', (): Promise<void> => expect.poll((): Promise<number> => countConflicts([itemOne, itemTwo])).toBe(1));
   });
 });
 ```
@@ -388,13 +374,10 @@ import { test } from './collaboration.fixture';
 import { RecordPage } from './pages/record.page';
 
 test.describe('FEATURE: optimistic locking', () => {
-  test('GIVEN a stale version, saving is rejected', async ({ openUser }): Promise<void> => {
-    const recordOne = await openUser(RecordPage);
-    const recordTwo = await openUser(RecordPage);
+  test('GIVEN two users on one record, the second save of the same version is rejected', async ({ openUser }): Promise<void> => {
+    const recordOne = await test.step('WHEN user 1 opens the record', (): Promise<RecordPage> => openUser(RecordPage, (recordPage): Promise<void> => recordPage.goto('123')));
 
-    await test.step('WHEN user 1 opens the record', (): Promise<void> => recordOne.goto('123'));
-
-    await test.step('AND user 2 opens the record', (): Promise<void> => recordTwo.goto('123'));
+    const recordTwo = await test.step('AND user 2 opens the record', (): Promise<RecordPage> => openUser(RecordPage, (recordPage): Promise<void> => recordPage.goto('123')));
 
     await test.step('AND user 1 edits', (): Promise<void> => recordOne.edit());
 
@@ -402,7 +385,7 @@ test.describe('FEATURE: optimistic locking', () => {
 
     await test.step('THEN user 1 sees saved', (): Promise<void> => recordOne.expectSaved());
 
-    await test.step('AND user 2 edits', (): Promise<void> => recordTwo.edit());
+    await test.step('WHEN user 2 edits', (): Promise<void> => recordTwo.edit());
 
     await test.step('AND user 2 saves the stale version', (): Promise<void> => recordTwo.save('Updated by User 2'));
 
@@ -415,7 +398,7 @@ test.describe('FEATURE: optimistic locking', () => {
 
 ### Real-Time Chat
 
-Identity is routed by the opening call, as in the cursor sample. Bob's reply is an action after the first assertion, so Alice's check after it is a new `THEN`.
+Identity is routed by the opening call, as in the cursor sample. Bob's reply is an action after a check, so it starts a new phase: `WHEN` Bob replies, `THEN` Alice sees the reply.
 
 ```ts
 // e2e/collaboration/chat.test.ts
@@ -425,18 +408,15 @@ import { ALICE_STUB, BOB_STUB } from './test/stubs/identity.stub';
 
 test.describe('FEATURE: chat room', () => {
   test('GIVEN Alice and Bob in one chat, a sent message reaches the other with the sender name', async ({ openUser }): Promise<void> => {
-    const aliceChat = await openUser(ChatPage);
-    const bobChat = await openUser(ChatPage);
+    const aliceChat = await test.step('WHEN Alice opens the room', (): Promise<ChatPage> => openUser(ChatPage, (chatPage): Promise<void> => chatPage.goto('room-1', { identity: ALICE_STUB })));
 
-    await test.step('WHEN Alice opens the room', (): Promise<void> => aliceChat.goto('room-1', { identity: ALICE_STUB }));
-
-    await test.step('AND Bob opens the room', (): Promise<void> => bobChat.goto('room-1', { identity: BOB_STUB }));
+    const bobChat = await test.step('AND Bob opens the room', (): Promise<ChatPage> => openUser(ChatPage, (chatPage): Promise<void> => chatPage.goto('room-1', { identity: BOB_STUB })));
 
     await test.step('AND Alice sends a message', (): Promise<void> => aliceChat.send('Hi Bob!'));
 
     await test.step('THEN Bob sees the message', (): Promise<void> => bobChat.expectMessage('Alice: Hi Bob!'));
 
-    await test.step('AND Bob replies', (): Promise<void> => bobChat.send('Hey Alice!'));
+    await test.step('WHEN Bob replies', (): Promise<void> => bobChat.send('Hey Alice!'));
 
     await test.step('THEN Alice sees the reply', (): Promise<void> => aliceChat.expectMessage('Bob: Hey Alice!'));
   });

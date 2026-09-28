@@ -19,16 +19,16 @@
 | Config | `use: { storageState }` per project, as a named const above `defineConfig` | No login per test |
 | API login | `request.post('/api/auth/login')` then `request.storageState({ path })` | Skips the UI entirely, 5-10x faster |
 
-The fastest form is a `setup` project that logs in through the API and saves the state. `saveApiSessionState` comes from the util shown under [Storage State Reuse](#storage-state-reuse). A `.setup.ts` file is not a spec, so it opens no steps: its body is plain awaits.
+The fastest form is a `setup` project that logs in through the API and saves the state. `saveApiSessionState` comes from the util shown under [Storage State Reuse](#storage-state-reuse). A `.setup.ts` file is not a spec, so it opens no steps: its body is plain awaits, and its title names what it produces.
 
 ```ts
 // e2e/auth/auth.setup.ts
-import { expect, test } from '@playwright/test';
+import { expect, test as setup } from '@playwright/test';
 
 import { SESSION_STATE_PATH, TEST_USER } from './common/auth.const';
 import { saveApiSessionState } from './test/utils/session.spec.util';
 
-test('GIVEN the api login, posting credentials saves the storage state', async ({ request }): Promise<void> => {
+setup('saves the test user session', async ({ request }): Promise<void> => {
   const response = await request.post('/api/auth/login', { data: TEST_USER });
 
   await expect(response).toBeOK();
@@ -53,6 +53,10 @@ export type OAuthCallback = {
 
 export type LoginOptions = {
   readonly oauthCallback?: OAuthCallback;
+};
+
+export type ResponseHeaders = {
+  readonly [name: string]: string;
 };
 
 export type Role = 'admin' | 'guest' | 'member';
@@ -106,7 +110,7 @@ export const ROLE_ACCOUNTS: RoleAccount[] = [
 ];
 ```
 
-Page objects referenced below. `LoginPage` is shown in full under [Login Page Object](#login-page-object); the rest follow the same shape and are listed here instead of repeated.
+Page objects referenced below. `LoginPage` is shown under [Login Page Object](#login-page-object), all but the provider button that section describes; the rest follow the same shape and are listed here instead of repeated.
 
 | Page object | File | Members used in this file |
 |---|---|---|
@@ -144,19 +148,21 @@ export class HomePage {
 
 ```ts
 // e2e/auth/auth.fixture.ts
-import { test as base } from '@playwright/test';
+import { expect, test as base } from '@playwright/test';
 
 import { HomePage } from './pages/home.page';
 import { LandingPage } from './pages/landing.page';
 import { LoginPage } from './pages/login.page';
 import { MfaPage } from './pages/mfa.page';
 import { SignupPage } from './pages/signup.page';
+import { OAUTH_SESSION_STUB } from './test/stubs/auth.stub';
 
 type AuthFixtures = {
   readonly homePage: HomePage;
   readonly landingPage: LandingPage;
   readonly loginPage: LoginPage;
   readonly mfaPage: MfaPage;
+  readonly oauthHomePage: HomePage;
   readonly signupPage: SignupPage;
 };
 
@@ -172,6 +178,12 @@ export const test = base.extend<AuthFixtures>({
   },
   mfaPage: async ({ page }, use): Promise<void> => {
     await use(new MfaPage(page));
+  },
+  oauthHomePage: async ({ page }, use): Promise<void> => {
+    const response = await page.request.post('/api/test/create-session', { data: OAUTH_SESSION_STUB });
+
+    await expect(response).toBeOK();
+    await use(new HomePage(page));
   },
   signupPage: async ({ page }, use): Promise<void> => {
     await use(new SignupPage(page));
@@ -212,11 +224,11 @@ The UI version of the setup project drives the login page through `LoginPage`. R
 
 ```ts
 // e2e/auth/auth.setup.ts
-import { test } from './auth.fixture';
+import { test as setup } from './auth.fixture';
 import { SESSION_STATE_PATH, TEST_USER } from './common/auth.const';
 import { saveSessionState } from './test/utils/session.spec.util';
 
-test('GIVEN the ui login, submitting credentials saves the storage state', async ({ loginPage, page }): Promise<void> => {
+setup('saves the test user session', async ({ loginPage, page }): Promise<void> => {
   await loginPage.goto();
   await loginPage.submitAndWaitForHome(TEST_USER);
   await saveSessionState(page.context(), SESSION_STATE_PATH);
@@ -238,7 +250,7 @@ const projects = [
   { dependencies: ['setup'], name: 'chromium', use: chromium }
 ];
 
-export default defineConfig({ projects, testDir: './e2e', use });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 Every test in the `chromium` project now starts logged in.
@@ -298,7 +310,7 @@ const use = { baseURL: 'http://localhost:4000', storageState: SESSION_STATE_PATH
 
 export default defineConfig({
   globalSetup: require.resolve('./global-setup'),
-  testDir: './e2e',
+  testMatch: '**/*.@(e2e|test).ts',
   use
 });
 ```
@@ -383,12 +395,12 @@ One `setup` test per role saves `e2e/.auth/<role>.json`.
 
 ```ts
 // e2e/auth/roles.setup.ts
-import { test } from './auth.fixture';
+import { test as setup } from './auth.fixture';
 import { AUTH_DIR, ROLE_ACCOUNTS } from './common/auth.const';
 import { saveSessionState } from './test/utils/session.spec.util';
 
 for (const account of ROLE_ACCOUNTS) {
-  test(`GIVEN ${account.role} credentials, logging in saves the ${account.role} storage state`, async ({ loginPage, page }): Promise<void> => {
+  setup(`saves the ${account.role} session`, async ({ loginPage, page }): Promise<void> => {
     await loginPage.goto();
     await loginPage.submitAndWaitForHome(account.credentials);
     await saveSessionState(page.context(), `${AUTH_DIR}/${account.role}.json`);
@@ -417,7 +429,7 @@ const projects = [
   { name: 'anonymous', testMatch: '**/*.anon.e2e.ts', use: anonymousUse }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ```ts
@@ -494,7 +506,7 @@ import type { AdminUsersPage } from './pages/admin-users.page';
 import { test } from './role.fixture';
 
 test.describe('FEATURE: admin panel access', () => {
-  test('GIVEN an admin page and a guest page, only the admin sees the remove button', async ({ openUsersAs }): Promise<void> => {
+  test('GIVEN saved admin and guest sessions, only the admin sees the remove button', async ({ openUsersAs }): Promise<void> => {
     const adminUsers = await test.step('WHEN user management is opened as admin', (): Promise<AdminUsersPage> => openUsersAs('admin'));
 
     const guestUsers = await test.step('AND user management is opened as guest', (): Promise<AdminUsersPage> => openUsersAs('guest'));
@@ -605,43 +617,17 @@ export const SIGNUP_STUB: Signup = {
 };
 ```
 
-The session is API seeding the spec never names, so a fixture creates it, saves it, and hands over the ready `HomePage`.
-
-```ts
-// e2e/auth/oauth-session.fixture.ts
-import { expect, test as base } from '@playwright/test';
-
-import { AUTH_DIR } from './common/auth.const';
-import { HomePage } from './pages/home.page';
-import { OAUTH_SESSION_STUB } from './test/stubs/auth.stub';
-import { saveSessionState } from './test/utils/session.spec.util';
-
-type OAuthSessionFixtures = {
-  readonly homePage: HomePage;
-};
-
-export const test = base.extend<OAuthSessionFixtures>({
-  homePage: async ({ page }, use): Promise<void> => {
-    const response = await page.request.post('/api/test/create-session', { data: OAUTH_SESSION_STUB });
-
-    await expect(response).toBeOK();
-    await saveSessionState(page.context(), `${AUTH_DIR}/oauth-user.json`);
-    await use(new HomePage(page));
-  }
-});
-
-export { expect } from '@playwright/test';
-```
+The session is API seeding the spec never names, so the `oauthHomePage` member of `auth.fixture.ts` (under [Quick Reference](#quick-reference)) posts `OAUTH_SESSION_STUB` to the endpoint, checks the response, and hands over a `HomePage` on that session. The session lives in the test's own context, so no state file is written.
 
 ```ts
 // e2e/auth/oauth-session.e2e.ts
-import { test } from './oauth-session.fixture';
+import { test } from './auth.fixture';
 
 test.describe('FEATURE: oauth session injection', () => {
-  test('GIVEN an api-created session, home opens without the provider', async ({ homePage }): Promise<void> => {
-    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
+  test('GIVEN an api-created session, home opens without the provider', async ({ oauthHomePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => oauthHomePage.goto());
 
-    await test.step('THEN the home heading is shown', (): Promise<void> => homePage.expectHeading());
+    await test.step('THEN the home heading is shown', (): Promise<void> => oauthHomePage.expectHeading());
   });
 });
 ```
@@ -672,7 +658,7 @@ export const generateTotp = (secret: string): string => {
 };
 ```
 
-The code is generated inside the step so it is fresh when submitted. The prompt check is a `THEN` between the two submits; the code submit after it is an action again, so the final url check is a new `THEN`.
+The code is generated inside the step so it is fresh when submitted. The prompt check ends the first phase. Submitting the code is an action after a check, so it starts a new phase: `WHEN` the code is submitted, `THEN` the home url is shown, `AND` the heading.
 
 ```ts
 // e2e/auth/mfa-login.e2e.ts
@@ -684,14 +670,14 @@ import { generateTotp } from './utils/totp.util';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: mfa login', () => {
-  test('GIVEN the current mfa code, submitting opens the home page', async ({ homePage, loginPage, mfaPage, page }): Promise<void> => {
+  test('GIVEN an mfa account, submitting the current code opens the home page', async ({ homePage, loginPage, mfaPage, page }): Promise<void> => {
     await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
     await test.step('AND credentials are submitted', (): Promise<void> => loginPage.submit(MFA_USER_STUB));
 
     await test.step('THEN the authentication code prompt is shown', (): Promise<void> => mfaPage.expectPrompt());
 
-    await test.step('AND the current totp code is submitted', (): Promise<void> => mfaPage.submitCode(generateTotp(MFA_TOTP_SECRET)));
+    await test.step('WHEN the current totp code is submitted', (): Promise<void> => mfaPage.submitCode(generateTotp(MFA_TOTP_SECRET)));
 
     await test.step('THEN the home url is shown', (): Promise<void> => expect(page).toHaveURL('/home'));
 
@@ -869,7 +855,7 @@ test.describe('FEATURE: login', () => {
     await test.step('THEN the username field reports required', (): Promise<void> => loginPage.expectFieldError(loginPage.usernameInput, 'Username is required'));
   });
 
-  test('GIVEN the forgot password link, following it opens the reset page', async ({ loginPage, page }): Promise<void> => {
+  test('GIVEN a signed-out visitor, following the forgot password link opens the reset page', async ({ loginPage, page }): Promise<void> => {
     await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
     await test.step('AND the forgot password link is followed', (): Promise<void> => loginPage.openForgotPassword());
@@ -956,19 +942,19 @@ import { buildSignup } from './test/utils/signup-builder.spec.util';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: public pages', () => {
-  test('GIVEN the landing page, opening it shows the welcome heading and log in link', async ({ landingPage }): Promise<void> => {
+  test('GIVEN a signed-out visitor, the landing page shows the welcome heading and log in link', async ({ landingPage }): Promise<void> => {
     await test.step('WHEN the landing page is opened', (): Promise<void> => landingPage.goto());
 
     await test.step('THEN the welcome heading and log in link are shown', (): Promise<void> => landingPage.expectWelcome());
   });
 
-  test('GIVEN a protected route, opening it shows login with a redirect param', async ({ homePage, page }): Promise<void> => {
+  test('GIVEN a signed-out visitor, opening a protected route shows login with a redirect param', async ({ homePage, page }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('THEN the login url carries the redirect target', (): Promise<void> => expect(page).toHaveURL(/\/login.*redirect=%2Fhome/));
   });
 
-  test('GIVEN a new account, signing up greets the user in onboarding', async ({ page, signupPage }): Promise<void> => {
+  test('GIVEN an unused email, signing up greets the new user in onboarding', async ({ page, signupPage }): Promise<void> => {
     const signup = buildSignup();
 
     await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto());
@@ -992,7 +978,7 @@ import { SESSION_STATE_PATH } from './common/auth.const';
 test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: expired session', () => {
-  test('GIVEN vanished session cookies, reopening home reports an expired session', async ({ context, homePage, loginPage }): Promise<void> => {
+  test('GIVEN a saved session, clearing its cookies makes home report an expired session', async ({ context, homePage, loginPage }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('AND every cookie is cleared', (): Promise<void> => context.clearCookies());
@@ -1115,7 +1101,7 @@ const projects = [
   { name: 'firefox', use: firefox }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Parallel tests interfere with each other's sessions
