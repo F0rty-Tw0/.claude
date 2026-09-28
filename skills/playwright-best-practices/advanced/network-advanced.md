@@ -101,8 +101,16 @@ export const discountMock = (): RouteHandler => {
 
 Every GraphQL call hits one URL, so the handler dispatches on `operationName` from the POST body. One factory takes a list of mocks; a mock matches on operation name and, when it declares `variables`, on a JSON-equal variables object. Unmatched operations continue to the real server.
 
+`DashboardOptions` below is the options type of `DashboardPage` (`e2e/dashboard/pages/dashboard.page.ts`). A reference that needs another field adds it in prose instead of declaring the type again: it gains `time?: string` in [clock-mocking.md](clock-mocking.md) and `viewport?: ViewportSize` in [mobile-testing.md](mobile-testing.md).
+
 ```ts
 // e2e/dashboard/common/dashboard.type.ts
+export type DashboardStats = { readonly revenue: number; readonly users: number };
+
+export type User = { readonly id: string; readonly name: string };
+
+export type UserVariables = { readonly id: string };
+
 export type GraphQLError = { readonly message: string };
 
 export type GraphQLRequest<Variables = Record<string, unknown>> = {
@@ -234,7 +242,7 @@ export const createOrderMock = (): RouteHandler => {
 };
 ```
 
-`CheckoutPage.goto()` routes it on `**/graphql` before it navigates; the spec opens the checkout in its `WHEN`, clicks `checkoutPage.placeOrder()` in an `AND` step, and asserts `checkoutPage.expectOrderNumber('order-123')`.
+`CheckoutOptions` (see [third-party.md](third-party.md#payment-mocks-on-the-opening-call)) gains `graphql?: 'createOrder'`. Given it, `CheckoutPage.goto({ graphql: 'createOrder' })` routes `createOrderMock()` on `**/graphql` before it navigates; without it nothing is routed, so a real-backend checkout spec stays unmocked. The test, `'GIVEN a mocked CreateOrder mutation, placing the order shows its number'` in `checkout.test.ts`, opens the checkout with that option in its `WHEN`, clicks `checkoutPage.placeOrder()` in an `AND` step, and asserts `checkoutPage.expectOrderNumber('order-123')` in its `THEN`.
 
 ## HAR Recording & Playback
 
@@ -333,7 +341,7 @@ export const searchMock = (): RouteHandler => {
 import { test } from './search.fixture';
 
 test.describe('FEATURE: search', () => {
-  test('GIVEN the error query, searching shows the failure message', async ({ searchPage }): Promise<void> => {
+  test('GIVEN a mocked search api, searching the error query shows the failure message', async ({ searchPage }): Promise<void> => {
     await test.step('WHEN the search page is opened', (): Promise<void> => searchPage.goto());
 
     await test.step('AND the error query is searched', (): Promise<void> => searchPage.search('error'));
@@ -343,7 +351,7 @@ test.describe('FEATURE: search', () => {
 });
 ```
 
-`searchPage.search(query)` fills the `Search` textbox and presses `Enter`; the `empty` and default queries are two more `test` blocks in the same `FEATURE`. Every test in the feature needs the same mock, so the `searchPage` fixture routes `**/api/search` to `searchMock()` before `use`; no hook and no step installs it.
+`searchPage.search(query)` fills the `Search` textbox and presses `Enter`; the `empty` and default queries are two more `test` blocks in the same `FEATURE`, sharing the start state in their titles (`'GIVEN a mocked search api, searching the empty query shows no results'`). Every test in the feature needs the same mock, so the `searchPage` fixture routes `**/api/search` to `searchMock()` before `use`; no hook and no step installs it.
 
 ### Mock Nth Request
 
@@ -382,7 +390,7 @@ The spec opens the dashboard with `dashboardPage.goto({ statusFailures: 2 })`, w
 
 ### Mock with Delay
 
-A delayed fulfil lets the spec assert the loading state before the data state. The delay uses `setTimeout` from `node:timers/promises`; `waitForTimeout` in the spec is not the tool for this.
+A delayed fulfil lets the spec assert the loading state before the data state. The delay uses `setTimeout` from `node:timers/promises`; `waitForTimeout` in the spec is not the tool for this. `DashboardData`, the `/api/data` body, joins the types in `common/dashboard.type.ts`, and `DASHBOARD_DATA_STUB` lives in `test/stubs/dashboard.stub.ts`.
 
 ```ts
 // e2e/dashboard/test/mocks/slow-data.mock.ts
@@ -444,7 +452,7 @@ export const throttle = async (context: BrowserContext, page: Page, profile: Net
 };
 ```
 
-`NetworkProfile` is `{ readonly downloadThroughput: number; readonly latency: number; readonly offline: boolean; readonly uploadThroughput: number }`. The opening call applies it: `homePage.goto({ network: SLOW_3G })` calls `throttle(this.page.context(), this.page, SLOW_3G)` before it navigates, and the spec asserts `homePage.expectSkeleton()`.
+`NetworkProfile` is `{ readonly downloadThroughput: number; readonly latency: number; readonly offline: boolean; readonly uploadThroughput: number }`. The opening call applies it: `HomeOptions` gains `network?: NetworkProfile`, and `homePage.goto({ network: SLOW_3G })` calls `throttle(this.page.context(), this.page, SLOW_3G)` before it navigates; the spec asserts `homePage.expectSkeleton()`.
 
 ### Offline Mode
 
@@ -452,12 +460,12 @@ Use `context.setOffline(true/false)` to simulate network connectivity changes.
 
 > **For comprehensive offline testing patterns:**
 >
-> - **Network failure simulation** (error recovery, graceful degradation): See [error-testing.md](error-testing.md#offline-testing)
-> - **Offline-first/PWA testing** (service workers, caching, background sync): See [service-workers.md](service-workers.md#offline-testing)
+> - **Network failure simulation** (error recovery, graceful degradation): See [error-testing.md](../debugging/error-testing.md#offline-testing)
+> - **Offline-first/PWA testing** (service workers, caching, background sync): See [service-workers.md](../browser-apis/service-workers.md#offline-testing)
 
 ### Network Throttling Fixture
 
-The fixture opens one CDP session, exposes `setNetworkCondition(condition)`, and resets `setOffline(false)` after `use`. A condition change after the page is open is a user-visible event, so the spec calls it in an `AND` step after the `WHEN`: `'AND the network goes offline'`. Offline routes through `context.setOffline`; the throttled profiles go through CDP.
+The fixture opens one CDP session, exposes `setNetworkCondition(condition)`, and resets `setOffline(false)` after `use`. A condition change after the page is open is a user-visible event, so the spec calls it in an action step: an `AND` right after the opening `WHEN`, or, after a check (`'THEN the dashboard is shown'`), a new phase, `'WHEN the network goes offline'`, followed by its own `THEN`. Offline routes through `context.setOffline`; the throttled profiles go through CDP.
 
 ```ts
 // e2e/home/home.fixture.ts

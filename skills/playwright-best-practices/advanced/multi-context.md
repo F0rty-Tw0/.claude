@@ -12,28 +12,29 @@ This file covers **single-user scenarios** with multiple browser tabs, windows, 
 6. [Anti-Patterns to Avoid](#anti-patterns-to-avoid)
 7. [Related References](#related-references)
 
-The mechanic every popup and new-tab sample shares: start waiting for the event, trigger it, await the promise. That sequence lives in a page-object method that returns the new `Page`, so the spec's step is one call. The page objects below follow `core/house-style.md`; `HomePage` (support popup) is shown in full, the rest are listed. A page object built on a popup or new tab takes that `Page` in its constructor like any other.
+The mechanic every popup and new-tab sample shares: start waiting for the event, trigger it, await the promise. That sequence lives in a page-object method that returns the page object built on the new `Page`, or the `Page` itself when nothing but a URL check needs it. The spec's step is one call that hands the page object over, so the test body never builds one between steps. The page objects below follow `core/house-style.md`; `HomePage` (support popup) is shown in full, the rest are listed. A page object built on a popup or new tab takes that `Page` in its constructor like any other.
 
 | Page object | File | Members used in this file |
 |---|---|---|
 | `HomePage` | `e2e/support/pages/home.page.ts` | shown below |
 | `SupportChatPage` | `e2e/support/pages/support-chat.page.ts` | `send(message)` (fill "Message", click "Send"), `expectSent()` ("Message sent") |
-| `DashboardPage` | `e2e/integrations/pages/dashboard.page.ts` | `goto()`, `openConnectAccount(): Promise<Page>`, `expectAccountConnected()` |
-| `ProviderLoginPage` | `e2e/integrations/pages/provider-login.page.ts` | `submit(credentials)` (email, password, "Log In") |
+| `DashboardPage` | `e2e/integrations/pages/dashboard.page.ts` | `goto()`, `openConnectAccount(): Promise<ProviderLoginPage>`, `expectAccountConnected()` |
+| `ProviderLoginPage` | `e2e/integrations/pages/provider-login.page.ts` | `submit(credentials)` (email, password, "Log In"), `expectClosed()` (`expect.poll` on `page.isClosed()`) |
 | `SharePage` | `e2e/share/pages/share.page.ts` | `goto(options?)` (`{ popups: 'blocked' }` calls `blockPopups(this.page)` before navigating), `openTwitterShare(): Promise<Page>`, `shareToTwitter()`, `expectCopyLinkFallback()` ("Copy share link instead") |
-| `ResourcesPage` | `e2e/resources/pages/resources.page.ts` | `goto()`, `openDocumentation(): Promise<Page>` (waits on `context().waitForEvent('page')`) |
-| `DocsPage` | `e2e/resources/pages/docs.page.ts` | `expectHeading()` (level 1 heading visible) |
+| `ResourcesPage` | `e2e/resources/pages/resources.page.ts` | `goto()`, `openDocumentation(): Promise<DocsPage>` (waits on `context().waitForEvent('page')`) |
+| `DocsPage` | `e2e/resources/pages/docs.page.ts` | `expectHeading()` (level 1 heading visible), `expectUrl(url)` (`toHaveURL` on its tab) |
 | `LinksPage` | `e2e/links/pages/links.page.ts` | `goto(options?)` (`{ blankTargets: 'dropped' }` calls `keepLinksInTab(this.page)` after navigating), `openExternalSite()` |
-| `LoginPage` | `e2e/auth/pages/login.page.ts` | gains `goto(options?)` (`{ oauth: 'mocked' }` routes `callbackRedirectMock()` and `tokenMock()` before navigating), `openGoogleSignIn(): Promise<Page>`, `signInWithGoogle()` |
-| `GoogleLoginPage` | `e2e/auth/pages/google-login.page.ts` | `submit(credentials)` (email, "Next", password, "Next") |
-| `HomePage` | `e2e/auth/pages/home.page.ts` | `expectWelcome(name)` |
-| `SyncDashboardPage` | `e2e/dashboard/pages/dashboard.page.ts` | `goto()`, `addItem(name)` ("Add Item", fill "Name", "Save"), `expectItem(name)` (10 s timeout for the sync) |
+| `LoginPage` | `e2e/auth/pages/login.page.ts` | `goto({ oauthLogin })` from [third-party.md](third-party.md#oauth-on-the-opening-call), `expectWelcome(name)`, `signInWithGoogle()`; gains `openGoogleSignIn(): Promise<GoogleLoginPage>` |
+| `GoogleLoginPage` | `e2e/auth/pages/google-login.page.ts` | `submit(credentials)` (email, "Next", password, "Next"), `expectClosed()` (as `ProviderLoginPage`) |
+| `SyncDashboardPage` | `e2e/dashboard/pages/sync-dashboard.page.ts` | `goto()`, `addItem(name)` ("Add Item", fill "Name", "Save"), `expectItem(name)` (10 s timeout for the sync) |
 | `EditorPage` | `e2e/editor/pages/editor.page.ts` | `goto()`, `bringToFront()`, `fillContent(text)` |
 | `PreviewPage` | `e2e/editor/pages/preview.page.ts` | `goto()`, `bringToFront()`, `reload()`, `expectContent(text)` |
 
 ```ts
 // e2e/support/pages/home.page.ts
 import type { Locator, Page } from '@playwright/test';
+
+import { SupportChatPage } from './support-chat.page';
 
 export class HomePage {
   public readonly supportChatButton: Locator;
@@ -49,7 +50,7 @@ export class HomePage {
     await this.page.goto('/');
   }
 
-  public async openSupportChat(): Promise<Page> {
+  public async openSupportChat(): Promise<SupportChatPage> {
     const popupPromise = this.page.waitForEvent('popup');
 
     await this.supportChatButton.click();
@@ -58,7 +59,7 @@ export class HomePage {
 
     await popup.waitForLoadState();
 
-    return popup;
+    return new SupportChatPage(popup);
   }
 }
 ```
@@ -69,17 +70,14 @@ export class HomePage {
 
 ```ts
 // e2e/support/support-chat.e2e.ts
-import type { Page } from '@playwright/test';
-
-import { SupportChatPage } from './pages/support-chat.page';
+import type { SupportChatPage } from './pages/support-chat.page';
 import { test } from './support.fixture';
 
 test.describe('FEATURE: support chat popup', () => {
-  test('GIVEN the chat popup, sending a message shows the confirmation', async ({ homePage }): Promise<void> => {
+  test('GIVEN an allowed popup, a message sent in the support chat is confirmed', async ({ homePage }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-    const popup = await test.step('AND the support chat popup is opened', (): Promise<Page> => homePage.openSupportChat());
-    const chat = new SupportChatPage(popup);
+    const chat = await test.step('AND the support chat popup is opened', (): Promise<SupportChatPage> => homePage.openSupportChat());
 
     await test.step('AND a message is sent', (): Promise<void> => chat.send('Need help'));
 
@@ -90,26 +88,23 @@ test.describe('FEATURE: support chat popup', () => {
 
 ### Popup with Authentication
 
-The popup closes itself after login; `popup.waitForEvent('close')` is the step that waits for it.
+The popup closes itself after login. `ProviderLoginPage.expectClosed()` checks it with `expect.poll` on `page.isClosed()`, which passes even when the popup closed before the check started; a `waitForEvent('close')` registered after the close waits out its whole timeout.
 
 ```ts
 // e2e/integrations/connect-account.e2e.ts
-import type { Page } from '@playwright/test';
-
 import { TEST_USER } from '../auth/common/auth.const';
 import { test } from './integrations.fixture';
-import { ProviderLoginPage } from './pages/provider-login.page';
+import type { ProviderLoginPage } from './pages/provider-login.page';
 
 test.describe('FEATURE: connect account', () => {
-  test('GIVEN the provider login popup, completing it connects the account', async ({ dashboardPage }): Promise<void> => {
+  test('GIVEN an unconnected account, logging in through the provider popup connects it', async ({ dashboardPage }): Promise<void> => {
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-    const popup = await test.step('AND the connect account popup is opened', (): Promise<Page> => dashboardPage.openConnectAccount());
-    const providerLogin = new ProviderLoginPage(popup);
+    const providerLogin = await test.step('AND the connect account popup is opened', (): Promise<ProviderLoginPage> => dashboardPage.openConnectAccount());
 
     await test.step('AND the login is submitted inside the popup', (): Promise<void> => providerLogin.submit(TEST_USER));
 
-    await test.step('THEN the popup closes after login', (): Promise<Page> => popup.waitForEvent('close'));
+    await test.step('THEN the popup closes after login', (): Promise<void> => providerLogin.expectClosed());
 
     await test.step('AND the account connected message is shown', (): Promise<void> => dashboardPage.expectAccountConnected());
   });
@@ -154,23 +149,20 @@ test.describe('FEATURE: share to twitter', () => {
 
 ### Link Opens in New Tab
 
-`target="_blank"` links raise `page` on the context, not `popup` on the page. `openDocumentation` waits on `this.page.context().waitForEvent('page')`, then `waitForLoadState`, and returns the tab.
+`target="_blank"` links raise `page` on the context, not `popup` on the page. `openDocumentation` waits on `this.page.context().waitForEvent('page')`, then `waitForLoadState`, and returns a `DocsPage` on the new tab.
 
 ```ts
 // e2e/resources/documentation-link.e2e.ts
-import type { Page } from '@playwright/test';
-
-import { DocsPage } from './pages/docs.page';
+import type { DocsPage } from './pages/docs.page';
 import { expect, test } from './resources.fixture';
 
 test.describe('FEATURE: documentation link', () => {
-  test('GIVEN the resources page, clicking the documentation link opens the docs in a new tab', async ({ page, resourcesPage }): Promise<void> => {
+  test('GIVEN a documentation link with a blank target, clicking it opens the docs in a new tab', async ({ page, resourcesPage }): Promise<void> => {
     await test.step('WHEN the resources page is opened', (): Promise<void> => resourcesPage.goto());
 
-    const docsTab = await test.step('AND the documentation link is clicked', (): Promise<Page> => resourcesPage.openDocumentation());
-    const docsPage = new DocsPage(docsTab);
+    const docsPage = await test.step('AND the documentation link is clicked', (): Promise<DocsPage> => resourcesPage.openDocumentation());
 
-    await test.step('THEN the new tab url is on the docs host', (): Promise<void> => expect(docsTab).toHaveURL(/docs\.example\.com/));
+    await test.step('THEN the new tab url is on the docs host', (): Promise<void> => docsPage.expectUrl(/docs\.example\.com/));
 
     await test.step('AND the docs heading is shown', (): Promise<void> => docsPage.expectHeading());
 
@@ -205,60 +197,42 @@ Driving the real provider popup: slow, needs real credentials, and the provider'
 | Step | Popup with Authentication | Google OAuth popup |
 |---|---|---|
 | WHEN page opened | `dashboardPage.goto()` | `loginPage.goto()` |
-| AND popup opens | `dashboardPage.openConnectAccount()` | `loginPage.openGoogleSignIn()` |
-| AND login submitted | `new ProviderLoginPage(popup).submit(TEST_USER)` | `new GoogleLoginPage(popup).submit(GOOGLE_TEST_USER)` |
-| THEN popup closes | `popup.waitForEvent('close')` | same |
-| AND outcome | `dashboardPage.expectAccountConnected()` | `homePage.expectWelcome('Test User')` |
+| AND popup opens, returning its page object | `dashboardPage.openConnectAccount()` | `loginPage.openGoogleSignIn()` |
+| AND login submitted | `providerLogin.submit(TEST_USER)` | `googleLogin.submit(GOOGLE_TEST_USER)` |
+| THEN popup closes | `providerLogin.expectClosed()` | `googleLogin.expectClosed()` |
+| AND outcome | `dashboardPage.expectAccountConnected()` | `loginPage.expectWelcome('Test User')` |
 
 ### Mock OAuth (Recommended)
 
-Two routes replace the provider: the callback answers with a `302` to the dashboard, and the token exchange answers with a stub user. Both are factories the opening call registers before it navigates: `loginPage.goto({ oauth: 'mocked' })`. The title names the mocked provider, so the `WHEN` only says the login page is opened.
-
-```ts
-// e2e/auth/test/stubs/callback.stub.ts
-import type { ResponseHeaders } from '../../common/auth.type';
-
-export const DASHBOARD_REDIRECT_STUB: ResponseHeaders = { Location: '/dashboard' };
-```
-
-```ts
-// e2e/auth/test/mocks/callback-redirect.mock.ts
-import type { Route } from '@playwright/test';
-
-import type { RouteHandler } from '../../../common/playwright.type';
-import type { ResponseHeaders } from '../../common/auth.type';
-import { DASHBOARD_REDIRECT_STUB } from '../stubs/callback.stub';
-
-export const callbackRedirectMock = (headers: ResponseHeaders = DASHBOARD_REDIRECT_STUB): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ headers, status: 302 });
-};
-```
-
-`tokenMock()` in `e2e/auth/test/mocks/token.mock.ts` has the same shape and fulfills `**/api/auth/token` with `TOKEN_STUB`, an `AuthToken` in `test/stubs/token.stub.ts` holding `{ access_token: 'mock-token', user: { email: 'test@example.com', name: 'Test User' } }`.
+The mocked version never opens the provider. It reuses the `oauthLogin` option from [OAuth on the Opening Call](third-party.md#oauth-on-the-opening-call): `loginPage.goto({ oauthLogin })` routes the provider callback to a `302` into the app, and the session and current-user endpoints to the stub user, before it navigates. The title names the mocked provider, so the `WHEN` only says the login page is opened. The routes hit the app's own `/api`, so the spec is a `.test.ts`.
 
 ```ts
 // e2e/auth/google-mocked.test.ts
 import { expect, test } from './auth.fixture';
 import { EMPTY_STORAGE_STATE } from './common/auth.const';
+import type { OAuthLogin } from './common/auth.type';
+import { OAUTH_USER_STUB } from './test/stubs/oauth.stub';
 
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: google sign in', () => {
-  test('GIVEN a mocked callback and token exchange, google sign-in works without the provider', async ({ homePage, loginPage, page }): Promise<void> => {
-    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto({ oauth: 'mocked' }));
+  test('GIVEN a mocked google login, signing in names the user without the provider popup', async ({ loginPage, page }): Promise<void> => {
+    const oauthLogin: OAuthLogin = { provider: 'google', user: OAUTH_USER_STUB };
+
+    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto({ oauthLogin }));
 
     await test.step('AND sign in with google is clicked', (): Promise<void> => loginPage.signInWithGoogle());
 
-    await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+    await test.step('THEN the success url names google', (): Promise<void> => expect(page).toHaveURL('/auth/success?provider=google'));
 
-    await test.step('AND the welcome names the user', (): Promise<void> => homePage.expectWelcome('Test User'));
+    await test.step('AND the welcome names the user', (): Promise<void> => loginPage.expectWelcome(OAUTH_USER_STUB.name));
   });
 });
 ```
 
-### OAuth Fixture
+### More OAuth Mocking
 
-> **For comprehensive OAuth mocking patterns** (fixtures, multiple providers, SAML SSO), see [third-party.md](third-party.md#oauthsso-mocking). This section focuses on popup window handling mechanics for OAuth flows.
+> **For the mocks behind `oauthLogin`**, other providers, and SAML SSO, see [third-party.md](third-party.md#oauthsso-mocking). This file covers the popup and tab mechanics of an OAuth flow.
 
 ## Multiple Windows
 
@@ -293,11 +267,11 @@ test.describe('FEATURE: dashboard window sync', () => {
 
 Same two-tab shape as the window sync spec above. `bringToFront()` and `reload()` are page-object methods that delegate to `this.page`, so the spec never touches `Page` directly.
 
-| Spec | Fixture page objects, each on its own `context.newPage()` tab, opened in `WHEN` / `AND` | `AND` actions | `THEN` |
+| Spec | Opening steps (`WHEN`, then `AND`) | `AND` actions | `THEN` |
 |---|---|---|---|
-| `e2e/dashboard/window-sync.e2e.ts` | `SyncDashboardPage` twice, `goto()` each | `firstDashboard.addItem('New Item')` | `secondDashboard.expectItem('New Item')` |
-| `e2e/editor/preview-tab.e2e.ts` | `EditorPage`, `PreviewPage`, `goto()` each | `editorPage.bringToFront()`, `fillContent('Hello World')`, `previewPage.bringToFront()`, `reload()` | `previewPage.expectContent('Hello World')` |
-| `e2e/support/tab-cleanup.e2e.ts` | `HomePage` on the main tab, `goto()`, then `openTabs(context, ['/popup/0', '/popup/1', '/popup/2'])` | `closeOtherTabs(context, mainTab)` | `expect(context.pages()).toHaveLength(1)` |
+| `e2e/dashboard/window-sync.e2e.ts` | `firstDashboard.goto()`, `secondDashboard.goto()`: fixture `SyncDashboardPage`s, each on its own `context.newPage()` tab | `firstDashboard.addItem('New Item')` | `secondDashboard.expectItem('New Item')` |
+| `e2e/editor/preview-tab.e2e.ts` | `editorPage.goto()`, `previewPage.goto()`: fixture page objects, each on its own tab | `editorPage.bringToFront()`, `fillContent('Hello World')`, `previewPage.bringToFront()`, `reload()` | `previewPage.expectContent('Hello World')` |
+| `e2e/support/tab-cleanup.e2e.ts` | `homePage.goto()` on the test's `page`, then `openTabs(context, ['/popup/0', '/popup/1', '/popup/2'])` | `closeOtherTabs(context, page)` | `expect(context.pages()).toHaveLength(1)`, a sync `(): void =>` step |
 
 ### Close All Tabs Except One
 
@@ -326,12 +300,12 @@ export const closeOtherTabs = async (context: BrowserContext, keep: Page): Promi
 
 ## Anti-Patterns to Avoid
 
-| Anti-Pattern            | Problem                        | Solution                                   |
-| ----------------------- | ------------------------------ | ------------------------------------------ |
-| Not waiting for popup   | Race condition                 | Use `waitForEvent('popup')` before trigger |
-| Testing real OAuth      | Slow, flaky, needs credentials | Mock OAuth endpoints                       |
-| Assuming popup opens    | May be blocked                 | Handle both open and blocked cases         |
-| Not closing extra pages | Resource leak                  | Close pages in cleanup                     |
+| Anti-Pattern                    | Problem                        | Solution                                                                       |
+| ------------------------------- | ------------------------------ | ------------------------------------------------------------------------------ |
+| Not waiting for popup           | Race condition                 | Use `waitForEvent('popup')` before trigger                                     |
+| Testing real OAuth              | Slow, flaky, needs credentials | Mock OAuth endpoints                                                           |
+| Assuming popup opens            | May be blocked                 | Handle both open and blocked cases                                             |
+| Not closing contexts you create | Resource leak                  | Close them in the fixture's teardown; popups and tabs close with their context |
 
 ## Related References
 

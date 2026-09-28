@@ -12,11 +12,13 @@
 
 ### Use Built-in Devices
 
-`devices` ships viewport, scale factor, user agent, `isMobile`, and `hasTouch` for named phones and tablets. Each project spreads one descriptor; the project list is a named const above `defineConfig`.
+`devices` ships viewport, scale factor, user agent, `isMobile`, and `hasTouch` for named phones and tablets. Each project spreads one descriptor; the project list is a named const above `defineConfig`. The desktop and tablet projects ignore `*-devices.e2e.ts` specs, so a phone-only spec takes that suffix and runs on the two phone projects alone.
 
 ```ts
 // e2e/playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
+
+const PHONE_ONLY_SPECS = '**/*-devices.e2e.ts';
 
 const desktopChrome = { ...devices['Desktop Chrome'] };
 const mobileSafari = { ...devices['iPhone 14'] };
@@ -24,15 +26,15 @@ const mobileChrome = { ...devices['Pixel 7'] };
 const tablet = { ...devices['iPad Pro 11'] };
 
 const projects = [
-  { name: 'Desktop Chrome', use: desktopChrome },
+  { name: 'Desktop Chrome', testIgnore: PHONE_ONLY_SPECS, use: desktopChrome },
   { name: 'Mobile Safari', use: mobileSafari },
   { name: 'Mobile Chrome', use: mobileChrome },
-  { name: 'Tablet', use: tablet }
+  { name: 'Tablet', testIgnore: PHONE_ONLY_SPECS, use: tablet }
 ];
 
 export default defineConfig({
   projects,
-  testDir: './e2e'
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -67,7 +69,7 @@ test.describe('FEATURE: home on a custom device', () => {
 
 ### Test Across Multiple Devices
 
-A device is fixed when the context is created, and a spec is flat, so one case on several devices is one project per device, as in [Use Built-in Devices](#use-built-in-devices), not a loop of describes with `test.use`. The spec stays flat and device-free; the report prefixes each result with the project name, so the device never goes in the title. Run it on the phones only with `--project='Mobile Safari' --project='Mobile Chrome'`, or give those projects a `testMatch`.
+A device is fixed when the context is created, and a spec is flat, so one case on several devices is one project per device, as in [Use Built-in Devices](#use-built-in-devices), not a loop of describes with `test.use`. The spec stays flat and device-free; the report prefixes each result with the project name, so the device name never goes in the title. The `-devices.e2e.ts` suffix matches the `testIgnore` on the desktop and tablet projects, so this spec runs on the two phone projects only, where its `GIVEN a mobile device` holds.
 
 ```ts
 // e2e/checkout/checkout-devices.e2e.ts
@@ -95,7 +97,7 @@ import { test } from './gallery.fixture';
 test.use({ hasTouch: true });
 
 test.describe('FEATURE: gallery', () => {
-  test('GIVEN the gallery, tapping a photo opens the lightbox', async ({ galleryPage }): Promise<void> => {
+  test('GIVEN a touch screen, tapping the first photo opens the lightbox', async ({ galleryPage }): Promise<void> => {
     await test.step('WHEN the gallery is opened', (): Promise<void> => galleryPage.goto());
 
     await test.step('AND the first photo is tapped', (): Promise<void> => galleryPage.tapFirstPhoto());
@@ -266,7 +268,7 @@ export class MapPage {
 
 ### Test Different Sizes
 
-Viewports are named consts in `common/home.const.ts`. A branch on width inside a test is two cases, so the spec has two loops, one per layout. The title names the viewport, and the opening call applies it: `HomePage.goto({ viewport })` takes an optional typed `HomeOptions` and runs `page.setViewportSize(viewport)` before it navigates, so no step only resizes.
+Viewports are named consts in `common/home.const.ts`. A branch on width inside a test is two cases, so the spec has two loops, one per layout. The title names the viewport, and the opening call applies it: `HomeOptions` gains `viewport?: ViewportSize`, and `HomePage.goto({ viewport })` runs `page.setViewportSize(viewport)` before it navigates, so no step only resizes.
 
 ```ts
 // e2e/home/common/home.const.ts
@@ -308,7 +310,7 @@ test.describe('FEATURE: navigation', () => {
 
 ### Dynamic Viewport Changes
 
-Resizing mid-test verifies the layout reacts without a reload. `DashboardPage.goto({ viewport })` sets the starting size before it navigates; the resize after load is a user action, so it is an `AND` step, and a `THEN` follows it. Each layout has one `expect*` method on the page object.
+Resizing mid-test verifies the layout reacts without a reload. `DashboardOptions`, declared in [network-advanced.md](network-advanced.md#mock-by-operation-name), gains `viewport?: ViewportSize`, so `DashboardPage.goto({ viewport })` sets the starting size before it navigates. The resize after the first check is a user action, so it starts a new phase: `WHEN the viewport shrinks to mobile`, then its own `THEN`. Each layout has one `expect*` method on the page object.
 
 ```ts
 // e2e/dashboard/dashboard-resize.e2e.ts
@@ -316,12 +318,12 @@ import { DESKTOP_VIEWPORT, MOBILE_VIEWPORT } from '../home/common/home.const';
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard layout', () => {
-  test('GIVEN a desktop dashboard, shrinking the viewport to mobile collapses the sidebar into the menu', async ({ dashboardPage, page }): Promise<void> => {
+  test('GIVEN a desktop viewport, shrinking it to mobile collapses the sidebar into the menu', async ({ dashboardPage, page }): Promise<void> => {
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ viewport: DESKTOP_VIEWPORT }));
 
     await test.step('THEN the sidebar is visible', (): Promise<void> => dashboardPage.expectDesktopLayout());
 
-    await test.step('AND the viewport shrinks to mobile', (): Promise<void> => page.setViewportSize(MOBILE_VIEWPORT));
+    await test.step('WHEN the viewport shrinks to mobile', (): Promise<void> => page.setViewportSize(MOBILE_VIEWPORT));
 
     await test.step('THEN the sidebar is hidden and the menu button is visible', (): Promise<void> => dashboardPage.expectMobileLayout());
   });
@@ -334,24 +336,22 @@ test.describe('FEATURE: dashboard layout', () => {
 
 ### Hamburger Menu
 
-The navigation drawer is a page object: `menuButton` (`getByRole('button', { name: 'Menu' })`), the `nav` landmark, and `productsLink` scoped inside it (`this.nav.getByRole('link', { name: 'Products' })`). `goto()` opens `/`; `openMenu()` and `goToProducts()` click; `expectMenuOpen()` and `expectMenuClosed()` are plain `expect` calls on `nav` visible or hidden. The spec pins the mobile viewport with `test.use`.
+The navigation drawer is a page object, `MobileNavPage`: `menuButton` (`getByRole('button', { name: 'Menu' })`), the `nav` landmark, and `productsLink` scoped inside it (`this.nav.getByRole('link', { name: 'Products' })`). `goto(options?)` takes the same `viewport` option as `HomePage` and applies it before it opens `/`; `openMenu()` and `goToProducts()` click; `expectMenuOpen()` and `expectMenuClosed()` are plain `expect` calls on `nav` visible or hidden. The viewport can change at runtime, so the spec passes it to the opening call rather than pinning it with `test.use`.
 
 ```ts
 // e2e/home/mobile-nav.e2e.ts
 import { MOBILE_VIEWPORT } from './common/home.const';
 import { expect, test } from './home.fixture';
 
-test.use({ viewport: MOBILE_VIEWPORT });
-
 test.describe('FEATURE: mobile navigation', () => {
-  test('GIVEN an open drawer, following a link changes the page and closes the drawer', async ({ mobileNavPage, page }): Promise<void> => {
-    await test.step('WHEN the home page is opened', (): Promise<void> => mobileNavPage.goto());
+  test('GIVEN a mobile viewport, following a drawer link opens its page and closes the drawer', async ({ mobileNavPage, page }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => mobileNavPage.goto({ viewport: MOBILE_VIEWPORT }));
 
     await test.step('AND the menu is opened', (): Promise<void> => mobileNavPage.openMenu());
 
     await test.step('THEN the navigation drawer is shown', (): Promise<void> => mobileNavPage.expectMenuOpen());
 
-    await test.step('AND the products link is followed', (): Promise<void> => mobileNavPage.goToProducts());
+    await test.step('WHEN the products link is followed', (): Promise<void> => mobileNavPage.goToProducts());
 
     await test.step('THEN the products url is shown', (): Promise<void> => expect(page).toHaveURL('/products'));
 
@@ -362,12 +362,14 @@ test.describe('FEATURE: mobile navigation', () => {
 
 ### Bottom Sheet
 
-The sheet is a `dialog`; its controls are locators scoped to it. Choosing a size and confirming is one user intent, so one method.
+The sheet is a `dialog`; its controls are locators scoped to it. Choosing a size and confirming is one user intent, so one method. `ProductOptions` is `{ readonly viewport?: ViewportSize }` in `common/product.type.ts`.
 
 ```ts
 // e2e/product/pages/product.page.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+
+import type { ProductOptions } from '../common/product.type';
 
 export class ProductPage {
   public readonly addToCartButton: Locator;
@@ -387,7 +389,9 @@ export class ProductPage {
     this.toast = page.getByRole('status');
   }
 
-  public async goto(id: string): Promise<void> {
+  public async goto(id: string, options: ProductOptions = {}): Promise<void> {
+    if (options.viewport) await this.page.setViewportSize(options.viewport);
+
     await this.page.goto(`/product/${id}`);
   }
 
@@ -410,7 +414,7 @@ export class ProductPage {
 }
 ```
 
-The spec pins `MOBILE_VIEWPORT`, then steps through `goto('123')`, `addToCart()`, `expectSheetOpen()`, `confirmSize('Large')`, `expectAddedToast()`.
+The spec's title is `'GIVEN a mobile viewport, confirming a size in the sheet adds the product'`. Its steps are two phases: `WHEN` `goto('123', { viewport: MOBILE_VIEWPORT })`, `AND` `addToCart()`, `THEN` `expectSheetOpen()`; then `WHEN` `confirmSize('Large')`, `THEN` `expectAddedToast()`.
 
 ### Pull to Refresh
 
@@ -451,16 +455,18 @@ export class FeedPage {
 }
 ```
 
-The spec is `goto()`, `pullToRefresh()`, `expectRefreshed()` under `test.use({ hasTouch: true })`. To assert new content, read the first item's text through a `firstItemText(): Promise<string>` method before and after the pull and compare in a step.
+The spec is `goto()` (`WHEN`), `pullToRefresh()` (`AND`), `expectRefreshed()` (`THEN`) under `test.use({ hasTouch: true })`; touch support is fixed when the context is created, so it stays a file-level `test.use`. To assert new content, an `AND` step checks the first item against the text the refreshed feed serves, `expectFirstItem(text)`; no step reads the text to compare in a later one.
 
 ## Responsive Breakpoints
 
 ### Test All Breakpoints
 
-Breakpoints split into the two groups the header renders differently, so no test branches on width. `header.e2e.ts` has the shape of `home-viewports.e2e.ts` above with a different loop source and `THEN`; `HeaderPage` holds `menuButton` (`getByTestId('mobile-menu-button')`) and `desktopNav` (`getByTestId('desktop-nav')`) with one `expect*` per layout, each holding its two plain assertions.
+Breakpoints split into the two groups the header renders differently, so no test branches on width. `header.e2e.ts` has the shape of `home-viewports.e2e.ts` above with a different loop source and `THEN`; `HeaderPage` holds `menuButton` (`getByTestId('mobile-menu-button')`) and `desktopNav` (`getByTestId('desktop-nav')`) with one `expect*` per layout, each holding its two plain assertions. Its `goto(options?)` takes the same `viewport` option as `HomePage`.
 
 ```ts
 // e2e/home/common/breakpoints.const.ts
+export const BREAKPOINT_HEIGHT = 800;
+
 export const NARROW_BREAKPOINTS: Record<string, number> = { sm: 640, xs: 320 };
 
 export const WIDE_BREAKPOINTS: Record<string, number> = { '2xl': 1536, lg: 1024, md: 768, xl: 1280 };
@@ -468,7 +474,7 @@ export const WIDE_BREAKPOINTS: Record<string, number> = { '2xl': 1536, lg: 1024,
 
 | Spec | Loop | Opening call (`WHEN`) | `THEN` |
 |---|---|---|---|
-| `header.e2e.ts`, narrow loop, title names the breakpoint | `Object.entries(NARROW_BREAKPOINTS)` | `headerPage.goto({ viewport })` with `viewport` built from `HEIGHT` and `width` above the steps | `headerPage.expectMobileHeader()` |
+| `header.e2e.ts`, narrow loop, title names the breakpoint | `Object.entries(NARROW_BREAKPOINTS)` | `headerPage.goto({ viewport })` with `const viewport: ViewportSize = { height: BREAKPOINT_HEIGHT, width }` above the steps | `headerPage.expectMobileHeader()` |
 | `header.e2e.ts`, wide loop, title names the breakpoint | `Object.entries(WIDE_BREAKPOINTS)` | same | `headerPage.expectDesktopHeader()` |
 | `home-visual.e2e.ts` | `SIZES: Viewport[]` of the three viewports | `homePage.goto({ viewport })` | `` expect(page).toHaveScreenshot(`homepage-${viewport.name}.png`) `` |
 
@@ -478,12 +484,12 @@ One screenshot per viewport, named after the viewport, so a diff names the break
 
 ## Anti-Patterns to Avoid
 
-| Anti-Pattern                | Problem                   | Solution                         |
-| --------------------------- | ------------------------- | -------------------------------- |
-| Only testing one viewport   | Misses responsive bugs    | Test multiple breakpoints        |
-| Ignoring touch events       | Features broken on mobile | Test tap, swipe, long press      |
-| Hardcoded viewport in tests | Can't test multiple sizes | Use `page.setViewportSize()`     |
-| Not testing orientation     | Landscape bugs missed     | Test both portrait and landscape |
+| Anti-Pattern                | Problem                   | Solution                                          |
+| --------------------------- | ------------------------- | ------------------------------------------------- |
+| Only testing one viewport   | Misses responsive bugs    | Test multiple breakpoints                         |
+| Ignoring touch events       | Features broken on mobile | Test tap, swipe, long press                       |
+| Hardcoded viewport in tests | Can't test multiple sizes | Pass it to the opening call, `goto({ viewport })` |
+| Not testing orientation     | Landscape bugs missed     | Test both portrait and landscape                  |
 
 ## Related References
 

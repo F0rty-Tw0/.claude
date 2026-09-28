@@ -14,8 +14,10 @@
 
 An OAuth login needs three endpoints mocked: the provider callback, which redirects back into the app; the session endpoint, which the app polls after the redirect; and the current-user endpoint. Each is a factory in `test/mocks/`, installed by the page object's opening call, so a spec never sees a route or a status code. The provider is a parameter, so the same factories cover Google, GitHub, and Microsoft.
 
+The samples extend the `auth` feature of [authentication.md](authentication.md). These types join its `common/auth.type.ts`, where `ResponseHeaders` is `Record<string, string>`.
+
 ```ts
-// e2e/login/common/login.type.ts
+// e2e/auth/common/auth.type.ts
 export type OAuthProvider = 'github' | 'google' | 'microsoft';
 
 export type OAuthUser = {
@@ -24,23 +26,36 @@ export type OAuthUser = {
   readonly id: string;
   readonly name: string;
 };
+
+export type OAuthLogin = {
+  readonly provider: OAuthProvider;
+  readonly user: OAuthUser;
+};
+
+export type OAuthSession = {
+  readonly authenticated: boolean;
+  readonly provider: OAuthProvider | 'saml';
+  readonly user: OAuthUser;
+};
 ```
 
+The callback mock is `providerCallbackMock`, because `oauthCallbackMock` in `test/mocks/oauth.mock.ts` already names the provider-redirect mock behind `LoginOptions.oauthCallback`.
+
 ```ts
-// e2e/login/test/mocks/oauth.mock.ts
+// e2e/auth/test/mocks/oauth-login.mock.ts
 import type { Route } from '@playwright/test';
 
 import type { RouteHandler } from '../../../common/playwright.type';
-import type { OAuthProvider, OAuthUser } from '../../common/login.type';
+import type { OAuthProvider, OAuthSession, OAuthUser, ResponseHeaders } from '../../common/auth.type';
 
-export const oauthCallbackMock = (provider: OAuthProvider): RouteHandler => {
-  const headers = { Location: `/auth/success?provider=${provider}` };
+export const providerCallbackMock = (provider: OAuthProvider): RouteHandler => {
+  const headers: ResponseHeaders = { Location: `/auth/success?provider=${provider}` };
 
   return (route: Route): Promise<void> => route.fulfill({ headers, status: 302 });
 };
 
 export const oauthSessionMock = (provider: OAuthProvider, user: OAuthUser): RouteHandler => {
-  const json = { authenticated: true, provider, user };
+  const json: OAuthSession = { authenticated: true, provider, user };
 
   return (route: Route): Promise<void> => route.fulfill({ json });
 };
@@ -58,15 +73,17 @@ export const currentUserMock = (user: OAuthUser): RouteHandler => {
 
 ### OAuth on the Opening Call
 
-The opening call installs all three routes for one provider and one user, then navigates: `loginPage.goto({ oauth })`. The spec never routes, and its `WHEN` only says the login page is opened; the title names the mocked provider. `OAuthLogin` and `LoginOptions` join the types above in `common/login.type.ts`: `OAuthLogin` is `{ readonly provider: OAuthProvider; readonly user: OAuthUser }` and `LoginOptions` is `{ readonly oauth?: OAuthLogin }`.
+The opening call installs all three routes for one provider and one user, then navigates: `loginPage.goto({ oauthLogin })`. The spec never routes, and its `WHEN` only says the login page is opened; the title names the mocked provider. `LoginOptions` from authentication.md keeps `oauthCallback` and gains `oauthLogin?: OAuthLogin`, so `goto` applies whichever option it is given. The sample shows the members this file uses; the form members of [Login Page Object](authentication.md#login-page-object) are left out.
 
 ```ts
-// e2e/login/pages/login.page.ts
+// e2e/auth/pages/login.page.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-import type { LoginOptions, OAuthLogin } from '../common/login.type';
-import { currentUserMock, oauthCallbackMock, oauthSessionMock } from '../test/mocks/oauth.mock';
+import { PROVIDER_AUTHORIZE_URL } from '../common/auth.const';
+import type { LoginOptions, OAuthLogin } from '../common/auth.type';
+import { currentUserMock, oauthSessionMock, providerCallbackMock } from '../test/mocks/oauth-login.mock';
+import { oauthCallbackMock } from '../test/mocks/oauth.mock';
 
 export class LoginPage {
   public readonly githubButton: Locator;
@@ -85,7 +102,8 @@ export class LoginPage {
   }
 
   public async goto(options: LoginOptions = {}): Promise<void> {
-    if (options.oauth) await this.routeOAuth(options.oauth);
+    if (options.oauthCallback) await this.page.route(PROVIDER_AUTHORIZE_URL, oauthCallbackMock(options.oauthCallback));
+    if (options.oauthLogin) await this.routeOAuthLogin(options.oauthLogin);
 
     await this.page.goto('/login');
   }
@@ -106,27 +124,30 @@ export class LoginPage {
     await expect(this.welcomeBanner).toContainText(`Welcome, ${name}`);
   }
 
-  private async routeOAuth({ provider, user }: OAuthLogin): Promise<void> {
-    await this.page.route(`**/auth/${provider}/callback**`, oauthCallbackMock(provider));
+  private async routeOAuthLogin({ provider, user }: OAuthLogin): Promise<void> {
+    await this.page.route(`**/auth/${provider}/callback**`, providerCallbackMock(provider));
     await this.page.route('**/api/auth/session', oauthSessionMock(provider, user));
     await this.page.route('**/api/me', currentUserMock(user));
   }
 }
 ```
 
-The `login.fixture.ts` for this feature only constructs `LoginPage`, as in `core/house-style.md`.
+`auth.fixture.ts` from authentication.md already hands over `loginPage`. `OAUTH_USER_STUB`, an `OAuthUser`, joins `OAUTH_CALLBACK_STUB` in `test/stubs/oauth.stub.ts`. The spec starts signed out, like every OAuth spec in the `auth` feature, and routes the app's own `/api`, so it is a `.test.ts`.
 
 ```ts
-// e2e/login/login.test.ts
-import type { OAuthLogin } from './common/login.type';
-import { test } from './login.fixture';
+// e2e/auth/provider-login.test.ts
+import { test } from './auth.fixture';
+import { EMPTY_STORAGE_STATE } from './common/auth.const';
+import type { OAuthLogin } from './common/auth.type';
 import { OAUTH_USER_STUB } from './test/stubs/oauth.stub';
 
-test.describe('FEATURE: login', () => {
-  test('GIVEN a mocked GitHub provider, signing in names the user in the welcome banner', async ({ loginPage }): Promise<void> => {
-    const oauth: OAuthLogin = { provider: 'github', user: OAUTH_USER_STUB };
+test.use({ storageState: EMPTY_STORAGE_STATE });
 
-    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto({ oauth }));
+test.describe('FEATURE: provider login', () => {
+  test('GIVEN a mocked GitHub provider, signing in names the user in the welcome banner', async ({ loginPage }): Promise<void> => {
+    const oauthLogin: OAuthLogin = { provider: 'github', user: OAUTH_USER_STUB };
+
+    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto({ oauthLogin }));
 
     await test.step('AND the user signs in with GitHub', (): Promise<void> => loginPage.signInWithGithub());
 
@@ -140,8 +161,8 @@ test.describe('FEATURE: login', () => {
 SAML differs from OAuth in one place: the assertion consumer service (`/saml/acs`) sets the session cookie on the redirect. The session mock then reports `provider: 'saml'`.
 
 ```ts
-// e2e/login/test/stubs/saml.stub.ts
-import type { ResponseHeaders } from '../../common/login.type';
+// e2e/auth/test/stubs/saml.stub.ts
+import type { ResponseHeaders } from '../../common/auth.type';
 
 export const SAML_ACS_HEADERS_STUB: ResponseHeaders = {
   Location: '/dashboard',
@@ -150,25 +171,26 @@ export const SAML_ACS_HEADERS_STUB: ResponseHeaders = {
 ```
 
 ```ts
-// e2e/login/test/mocks/saml.mock.ts
+// e2e/auth/test/mocks/saml.mock.ts
 import type { Route } from '@playwright/test';
 
 import type { RouteHandler } from '../../../common/playwright.type';
-import type { OAuthSession, OAuthUser, ResponseHeaders } from '../../common/login.type';
-import { OAUTH_USER_STUB, SAML_ACS_HEADERS_STUB } from '../stubs/saml.stub';
+import type { OAuthSession, OAuthUser, ResponseHeaders } from '../../common/auth.type';
+import { OAUTH_USER_STUB } from '../stubs/oauth.stub';
+import { SAML_ACS_HEADERS_STUB } from '../stubs/saml.stub';
 
 export const samlAcsMock = (headers: ResponseHeaders = SAML_ACS_HEADERS_STUB): RouteHandler => {
   return (route: Route): Promise<void> => route.fulfill({ headers, status: 302 });
 };
 
 export const samlSessionMock = (user: OAuthUser = OAUTH_USER_STUB): RouteHandler => {
-  const json: OAuthSession = { provider: 'saml', user };
+  const json: OAuthSession = { authenticated: true, provider: 'saml', user };
 
   return (route: Route): Promise<void> => route.fulfill({ json });
 };
 ```
 
-`LoginOptions` gains `saml?: OAuthUser`, and `goto` routes `samlAcsMock()` on `**/saml/acs` and `samlSessionMock(user)` on `**/api/session` for it the same way it routes `oauth`. The spec opens with `loginPage.goto({ saml: OAUTH_USER_STUB })` as its `WHEN`, clicks `loginPage.signInWithSso()` in an `AND` step, and asserts `expect(page).toHaveURL('/dashboard')` in a `THEN` step.
+`LoginOptions` gains `saml?: OAuthUser`, and `goto` routes `samlAcsMock()` on `**/saml/acs` and `samlSessionMock(user)` on `**/api/auth/session` for it the same way it routes `oauthLogin`. The spec opens with `loginPage.goto({ saml: OAUTH_USER_STUB })` as its `WHEN`, clicks `loginPage.signInWithSso()` in an `AND` step, and asserts `expect(page).toHaveURL('/dashboard')` in a `THEN` step.
 
 ## Payment Gateway Mocking
 
@@ -306,7 +328,7 @@ export const paypalOrderMock = (order: PayPalOrder = PAYPAL_ORDER_STUB): RouteHa
 
 ### Payment Mocks on the Opening Call
 
-`CheckoutPage.goto(options: CheckoutOptions = {})` takes `card?: 'accepted' | 'declined'` (`CheckoutOptions` in `common/checkout.type.ts`). Given a card, it calls `stripeMock(this.page, card === 'declined')` and routes `paymentIntentMock()` and `confirmPaymentMock()` before it navigates. Declined and succeeded cases differ only in that option, and the fixture below keeps only what every test shares.
+`CheckoutPage.goto(options: CheckoutOptions = {})` takes `card?: 'accepted' | 'declined'` (`CheckoutOptions` in `common/checkout.type.ts`; [network-advanced.md](network-advanced.md#mock-graphql-mutations) adds `graphql?: 'createOrder'`). Given a card, it calls `stripeMock(this.page, card === 'declined')` and routes `paymentIntentMock()` and `confirmPaymentMock()` before it navigates. Declined and succeeded cases differ only in that option, and the fixture below keeps only what every test shares.
 
 ```ts
 // e2e/checkout/checkout.fixture.ts
@@ -408,22 +430,22 @@ export const verificationMock = (): VerificationMock => {
 };
 ```
 
-`VerificationMock` lives in `e2e/signup/common/signup.type.ts` as `{ readonly send: RouteHandler; readonly token: () => string; readonly verify: RouteHandler }`. A `verification` fixture creates it, routes `send` on `**/api/send-verification` and `verify` on `**/api/verify-email**`, and yields it.
+`VerificationMock` lives in `e2e/signup/common/signup.type.ts` as `{ readonly send: RouteHandler; readonly token: () => string; readonly verify: RouteHandler }`. A `verification` fixture creates it, routes `send` on `**/api/send-verification` and `verify` on `**/api/verify-email**`, and yields it. Those are the app's own endpoints, so the spec is a `.test.ts`. The check-your-email notice is the guard that the send finished; opening the link after it starts a new phase.
 
 ```ts
-// e2e/signup/signup.e2e.ts
+// e2e/signup/signup.test.ts
 import { test } from './signup.fixture';
 import { SIGNUP_STUB } from './test/stubs/signup.stub';
 
 test.describe('FEATURE: signup', () => {
-  test('GIVEN an emailed verification link, opening it verifies the address', async ({ signupPage, verification, verifyPage }): Promise<void> => {
+  test('GIVEN a mocked email service, opening the emailed link verifies the address', async ({ signupPage, verification, verifyPage }): Promise<void> => {
     await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto());
 
     await test.step('AND the email address is submitted', (): Promise<void> => signupPage.submitEmail(SIGNUP_STUB.email));
 
     await test.step('THEN the check-your-email notice is shown', (): Promise<void> => signupPage.expectCheckEmailNotice());
 
-    await test.step('AND the verification link is opened', (): Promise<void> => verifyPage.goto(verification.token()));
+    await test.step('WHEN the verification link is opened', (): Promise<void> => verifyPage.goto(verification.token()));
 
     await test.step('THEN the verified notice is shown', (): Promise<void> => verifyPage.expectVerified());
   });
@@ -465,13 +487,13 @@ export const fetchVerificationLink = async (request: APIRequestContext, inbox: s
 };
 ```
 
-After its `WHEN` opens the signup page and an `AND` submits the address, a spec calls it in one step, `const link = await test.step('AND the verification link is fetched', (): Promise<string> => fetchVerificationLink(request, inbox))`, then opens the link through a page-object `verifyPage.gotoLink(link)` in the next `AND` step.
+The spec keeps the phases above: its `WHEN` opens the signup page, an `AND` submits the address, and the `THEN` checks the notice. The next `WHEN` is one call, `verifyPage.gotoEmailedLink(inbox)`: the page object calls `fetchVerificationLink(this.page.request, inbox)` and navigates to the link it returns, so no step only reads the link.
 
 ## SMS Verification
 
 ### Mock SMS API
 
-Same shape as the email mock: the send handler generates a six-digit code, the verify handler compares `postDataJSON().code` with it, and a `code()` reader lets the spec type the code the phone would have received. The bodies live in `test/stubs/sms.stub.ts` with `SmsError`, `SmsSent`, and `SmsVerified` declared in `common/verify-phone.type.ts`.
+Same shape as the email mock: the send handler generates a six-digit code, the verify handler compares `postDataJSON().code` with it, and a `code()` reader lets the spec type the code the phone would have received. The bodies live in `test/stubs/sms.stub.ts` with `SmsError`, `SmsSent`, and `SmsVerified` declared in `common/verify-phone.type.ts`. An `sms` fixture routes `send` and `verify` on the app's SMS endpoints the way the `verification` fixture does and yields the mock, so this spec is a `.test.ts` too.
 
 ```ts
 // e2e/verify-phone/test/mocks/sms.mock.ts
@@ -503,12 +525,12 @@ export const smsMock = (): SmsMock => {
 ```
 
 ```ts
-// e2e/verify-phone/verify-phone.e2e.ts
+// e2e/verify-phone/verify-phone.test.ts
 import { test } from './verify-phone.fixture';
 import { PHONE_STUB } from './test/stubs/phone.stub';
 
 test.describe('FEATURE: phone verification', () => {
-  test('GIVEN a received SMS code, entering it verifies the phone', async ({ sms, verifyPhonePage }): Promise<void> => {
+  test('GIVEN a mocked SMS service, entering the texted code verifies the phone', async ({ sms, verifyPhonePage }): Promise<void> => {
     await test.step('WHEN the verify-phone page is opened', (): Promise<void> => verifyPhonePage.goto());
 
     await test.step('AND a code is requested', (): Promise<void> => verifyPhonePage.requestCode(PHONE_STUB.number));
@@ -600,14 +622,14 @@ export const analyticsCaptureMock = (): AnalyticsCapture => {
 };
 ```
 
-`AnalyticsEvent` is `{ readonly event: string; readonly props: Record<string, unknown> }` and `AnalyticsCapture` is `{ readonly events: AnalyticsEvent[]; readonly handler: RouteHandler }`, both in `common/checkout.type.ts`. An `analytics` fixture installs the SDK stub, routes `**/api/analytics/**` to the capture handler, and yields the capture.
+`AnalyticsEvent` is `{ readonly event: string; readonly props: Record<string, unknown> }` and `AnalyticsCapture` is `{ readonly events: AnalyticsEvent[]; readonly handler: RouteHandler }`, both in `common/checkout.type.ts`. The `analytics` fixture in `checkout.fixture.ts` above installs the SDK stub, routes `**/api/analytics/track` to the capture handler, and yields the capture.
 
 ```ts
 // e2e/checkout/checkout-analytics.test.ts
 import { expect, test } from './checkout.fixture';
 
 test.describe('FEATURE: checkout analytics', () => {
-  test('GIVEN a checkout, completing the purchase tracks the purchase event', async ({ analytics, checkoutPage }): Promise<void> => {
+  test('GIVEN a stubbed analytics sdk, completing the purchase tracks the purchase event', async ({ analytics, checkoutPage }): Promise<void> => {
     const props = expect.objectContaining({ amount: expect.any(Number) });
     const purchase = expect.objectContaining({ event: 'Purchase Completed', props });
 
@@ -632,4 +654,4 @@ test.describe('FEATURE: checkout analytics', () => {
 ## Related References
 
 - **Network Mocking**: See [network-advanced.md](network-advanced.md) for route patterns
-- **Authentication**: See [fixtures-hooks.md](../core/fixtures-hooks.md) for auth patterns
+- **Authentication**: See [authentication.md](authentication.md) for the `auth` feature the OAuth samples extend
