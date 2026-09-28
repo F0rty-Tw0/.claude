@@ -42,7 +42,7 @@ Branch diff over ~400 changed lines, mixing trunk and leaf changes, or holding i
 3. **Verdict gate:**
    - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
    - `APPROVE — …` → continue.
-4. **Scale proof to blast radius** — keep small PRs small:
+4. **Scale proof to blast radius** — keep small PRs small. (For-us format. The for-someone-else format in Step 3 always uses its compact Proof instead.)
 
 | Class | `## Proof` contains |
 |---|---|
@@ -97,6 +97,7 @@ Mention impact only when it's real and non-obvious. Don't manufacture significan
 - Tests: `<cmd>` → <pass/fail counts>
 - Verified: <one line>
 - Not verified: <one line>
+- Blockers: <one line each>   ← only on a draft opened despite BLOCK
 <screenshot link, UI changes only>
 
 Closes #<n>         ← only if the branch has a ticket
@@ -215,7 +216,7 @@ If the branch has no recognizable ticket number, skip this step silently — don
 
 Run the final title and description through `skill:humanizer` to remove AI-sounding language before presenting. Humanize prose only — leave the `## Proof` section's commands, output, and verdict verbatim.
 
-Append the `## Proof` section from Step 0 at the end of the body, before `Closes #…`. It does not count toward the size-based section limits.
+Append the `## Proof` section at the end of the body, before `Closes #…`: the class-scaled one from Step 0 for us, or the compact one from Step 3 for someone else. It does not count toward the size-based section limits.
 
 ### Step 8: Present
 
