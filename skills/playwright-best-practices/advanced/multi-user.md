@@ -77,7 +77,7 @@ import { test } from './collaboration.fixture';
 import { DocumentPage } from './pages/document.page';
 
 test.describe('FEATURE: shared document', () => {
-  test('SCENARIO: text typed by one user is seen by the other', async ({ openUser }): Promise<void> => {
+  test('GIVEN two users on one document, text typed by one is seen by the other', async ({ openUser }): Promise<void> => {
     const pageA = await test.step('GIVEN a browser is open for user A', (): Promise<Page> => openUser());
     const pageB = await test.step('AND a browser is open for user B', (): Promise<Page> => openUser());
     const documentA = new DocumentPage(pageA);
@@ -111,7 +111,7 @@ const ADMIN_STATE = `${AUTH_DIR}/admin.json`;
 const MEMBER_STATE = `${AUTH_DIR}/member.json`;
 
 test.describe('FEATURE: support tickets', () => {
-  test('SCENARIO: an admin reply reaches the member who asked', async ({ openUser }): Promise<void> => {
+  test('GIVEN a member question, the admin reply reaches the member who asked', async ({ openUser }): Promise<void> => {
     const adminPage = await test.step('GIVEN a browser is open as admin', (): Promise<Page> => openUser(ADMIN_STATE));
     const memberPage = await test.step('AND a browser is open as member', (): Promise<Page> => openUser(MEMBER_STATE));
     const tickets = new TicketsPage(adminPage);
@@ -146,7 +146,7 @@ import { test } from './collaboration.fixture';
 import { EditorPage } from './pages/editor.page';
 
 test.describe('FEATURE: collaborative editing', () => {
-  test('SCENARIO: typing at different ends shows both users the combined text', async ({ openUser }): Promise<void> => {
+  test('GIVEN two users typing at different ends, both see the combined text', async ({ openUser }): Promise<void> => {
     const pageOne = await test.step('GIVEN a browser is open for user 1', (): Promise<Page> => openUser());
     const pageTwo = await test.step('AND a browser is open for user 2', (): Promise<Page> => openUser());
     const editorOne = new EditorPage(pageOne);
@@ -207,7 +207,7 @@ import { meMock } from './test/mocks/me.mock';
 import { ALICE_STUB, BOB_STUB } from './test/stubs/identity.stub';
 
 test.describe('FEATURE: cursor presence', () => {
-  test('SCENARIO: a cursor moved by Alice shows Bob her name', async ({ openUser }): Promise<void> => {
+  test('GIVEN Alice and Bob on one board, moving her cursor shows Bob her name', async ({ openUser }): Promise<void> => {
     const alicePage = await test.step('GIVEN a browser is open for Alice', (): Promise<Page> => openUser());
     const bobPage = await test.step('AND a browser is open for Bob', (): Promise<Page> => openUser());
     const aliceBoard = new WhiteboardPage(alicePage);
@@ -267,7 +267,7 @@ import { DocumentAccessPage } from './pages/document-access.page';
 
 test.describe('FEATURE: document access by role', () => {
   for (const permissions of ROLE_PERMISSIONS) {
-    test(`SCENARIO: the ${permissions.role} sees the controls that match the role`, async ({ openUser }): Promise<void> => {
+    test(`GIVEN the ${permissions.role} role, the document shows the controls that match the role`, async ({ openUser }): Promise<void> => {
       const page = await test.step(`GIVEN a browser is open as ${permissions.role}`, (): Promise<Page> => openUser(`${AUTH_DIR}/${permissions.role}.json`));
       const documentPage = new DocumentAccessPage(page);
 
@@ -298,7 +298,7 @@ import { expect, test } from '../collaboration/collaboration.fixture';
 const MEMBER_STATE = `${AUTH_DIR}/member.json`;
 
 test.describe('FEATURE: admin route protection', () => {
-  test('SCENARIO: a member opening the admin users route directly is denied', async ({ openUser }): Promise<void> => {
+  test('GIVEN a member session, opening the admin users route directly is denied', async ({ openUser }): Promise<void> => {
     const page = await test.step('GIVEN a browser is open as member', (): Promise<Page> => openUser(MEMBER_STATE));
     const adminUsers = new AdminUsersPage(page);
 
@@ -339,7 +339,7 @@ import { ItemPage } from './pages/item.page';
 import { countConflicts } from './test/utils/conflict.spec.util';
 
 test.describe('FEATURE: concurrent item edit', () => {
-  test('SCENARIO: saving at once gives exactly one user a conflict', async ({ openUser }): Promise<void> => {
+  test('GIVEN two users on one item, saving at once gives exactly one a conflict', async ({ openUser }): Promise<void> => {
     const pageOne = await test.step('GIVEN a browser is open for user 1', (): Promise<Page> => openUser());
     const pageTwo = await test.step('AND a browser is open for user 2', (): Promise<Page> => openUser());
     const itemOne = new ItemPage(pageOne);
@@ -426,7 +426,7 @@ import { test } from './collaboration.fixture';
 import { RecordPage } from './pages/record.page';
 
 test.describe('FEATURE: optimistic locking', () => {
-  test('SCENARIO: a save on a stale version is rejected', async ({ openUser }): Promise<void> => {
+  test('GIVEN a stale version, saving is rejected', async ({ openUser }): Promise<void> => {
     const pageOne = await test.step('GIVEN a browser is open for user 1', (): Promise<Page> => openUser());
     const pageTwo = await test.step('AND a browser is open for user 2', (): Promise<Page> => openUser());
     const recordOne = new RecordPage(pageOne);
@@ -465,7 +465,7 @@ import { meMock } from './test/mocks/me.mock';
 import { ALICE_STUB, BOB_STUB } from './test/stubs/identity.stub';
 
 test.describe('FEATURE: chat room', () => {
-  test('SCENARIO: a sent message reaches the other user with the sender name', async ({ openUser }): Promise<void> => {
+  test('GIVEN Alice and Bob in one chat, a sent message reaches the other with the sender name', async ({ openUser }): Promise<void> => {
     const alicePage = await test.step('GIVEN a browser is open for Alice', (): Promise<Page> => openUser());
     const bobPage = await test.step('AND a browser is open for Bob', (): Promise<Page> => openUser());
     const aliceChat = new ChatPage(alicePage);

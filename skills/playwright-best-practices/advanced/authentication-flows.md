@@ -217,7 +217,7 @@ const NEW_PASSWORD = 'NewPassword456!';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: password reset', () => {
-  test('SCENARIO: requesting and following the reset link updates the password', async ({ forgotPasswordPage, page, resetPasswordPage }): Promise<void> => {
+  test('GIVEN a captured reset token, following the reset link updates the password', async ({ forgotPasswordPage, page, resetPasswordPage }): Promise<void> => {
     const capture = tokenCapture('resetToken');
 
     await test.step('GIVEN the forgot-password response token is captured', async (): Promise<void> => {
@@ -245,8 +245,8 @@ Expired-token and strength cases are further tests in the same spec, each one te
 
 | Scenario title | Token | Password | `THEN` |
 |---|---|---|---|
-| `'SCENARIO: an expired reset token shows the expired error'` | `'expired-token'` | `NEW_PASSWORD` | `resetPasswordPage.expectError(/expired\|invalid/i)`; `expectError` takes a `RegExp` so the message can be either |
-| `'SCENARIO: a weak password on a valid token shows the strength hint'` | `'valid-token'` | `'weak'` | `resetPasswordPage.expectStrengthHint()` |
+| `'GIVEN an expired reset token, submitting shows the expired error'` | `'expired-token'` | `NEW_PASSWORD` | `resetPasswordPage.expectError(/expired\|invalid/i)`; `expectError` takes a `RegExp` so the message can be either |
+| `'GIVEN a weak password on a valid token, submitting shows the strength hint'` | `'valid-token'` | `'weak'` | `resetPasswordPage.expectStrengthHint()` |
 
 ## Session Timeout
 
@@ -291,7 +291,7 @@ test.describe('FEATURE: session timeout', () => {
     await test.step('AND the user is logged in on home', (): Promise<void> => loginPage.submitAndWaitForHome(TEST_USER));
   });
 
-  test('SCENARIO: a missing session cookie redirects a protected route to login', async ({ context, loginPage, page, profilePage }): Promise<void> => {
+  test('GIVEN a missing session cookie, a protected route redirects to login', async ({ context, loginPage, page, profilePage }): Promise<void> => {
     await test.step('WHEN the session cookie is removed', (): Promise<void> => clearSessionCookie(context));
 
     await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
@@ -317,7 +317,7 @@ import { sessionMock } from './test/mocks/session.mock';
 test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: session extension', () => {
-  test('SCENARIO: extend calls the refresh endpoint and hides the warning', async ({ homePage, page }): Promise<void> => {
+  test('GIVEN an expiring session, extending calls the refresh endpoint and hides the warning', async ({ homePage, page }): Promise<void> => {
     const refresh = refreshMock();
 
     await test.step('GIVEN the session endpoint is mocked', async (): Promise<void> => {
@@ -384,7 +384,7 @@ import { loginWithRememberMe, openPageWithState } from './test/utils/remember-me
 const REMEMBERED_STATE_PATH = `${AUTH_DIR}/remembered.json`;
 
 test.describe('FEATURE: remember me', () => {
-  test('SCENARIO: a fresh browser from the saved state opens home without login', async ({ browser }): Promise<void> => {
+  test('GIVEN a remember me login, a fresh browser from the saved state opens home without login', async ({ browser }): Promise<void> => {
     await test.step('GIVEN a login with remember me saved the state', (): Promise<void> => loginWithRememberMe(browser, REMEMBERED_STATE_PATH));
 
     const page = await test.step('WHEN a fresh browser starts from the saved state', (): Promise<Page> => openPageWithState(browser, REMEMBERED_STATE_PATH));
@@ -401,7 +401,7 @@ test.describe('FEATURE: remember me', () => {
 });
 ```
 
-Session-only login: a second test in the same spec, `'SCENARIO: a login without keep me signed in leaves no persistent cookie'`, opens with `GIVEN a login with keep me signed in unchecked` and uses two more util functions of the same shape. `persistentCookiesAfterLogin(browser)` is `loginWithRememberMe` with `uncheck()` and, instead of saving state, returns `cookies.filter((cookie: Cookie): boolean => cookie.expires > 0)`; session cookies have `expires: -1`, so the filter drops them. `openPageWithCookies(browser, cookies)` is `openPageWithState` with `EMPTY_STORAGE_STATE` plus `context.addCookies(cookies)`. The test then opens home and asserts `expect(page).toHaveURL(/\/login/)`.
+Session-only login: a second test in the same spec, `'GIVEN a login without keep me signed in, no persistent cookie is left'`, opens with `GIVEN a login with keep me signed in unchecked` and uses two more util functions of the same shape. `persistentCookiesAfterLogin(browser)` is `loginWithRememberMe` with `uncheck()` and, instead of saving state, returns `cookies.filter((cookie: Cookie): boolean => cookie.expires > 0)`; session cookies have `expires: -1`, so the filter drops them. `openPageWithCookies(browser, cookies)` is `openPageWithState` with `EMPTY_STORAGE_STATE` plus `context.addCookies(cookies)`. The test then opens home and asserts `expect(page).toHaveURL(/\/login/)`.
 
 ## Logout Patterns
 
@@ -418,7 +418,7 @@ import { sessionCookies } from './test/utils/session-cookie.spec.util';
 test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: logout', () => {
-  test('SCENARIO: sign out clears the session', async ({ context, homePage, page }): Promise<void> => {
+  test('GIVEN a signed-in session, signing out clears it', async ({ context, homePage, page }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     await test.step('WHEN sign out is clicked in the account menu', (): Promise<void> => homePage.signOut());
@@ -438,7 +438,7 @@ test.describe('FEATURE: logout', () => {
 
 ### Logout from All Devices
 
-A second test in the same spec, which is why the file is `logout.test.ts` (it routes the app's own `**/api/**`), `'SCENARIO: sign out everywhere calls logout-all and opens login'`, follows `session-extension.test.ts`: `const logoutAll = logoutAllMock()`, `GIVEN page.route('**/api/auth/logout-all', logoutAll.handler)`, `AND securitySettingsPage.goto()`, `WHEN securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
+A second test in the same spec, which is why the file is `logout.test.ts` (it routes the app's own `**/api/**`), `'GIVEN the security settings, signing out everywhere calls logout-all and opens login'`, follows `session-extension.test.ts`: `const logoutAll = logoutAllMock()`, `GIVEN page.route('**/api/auth/logout-all', logoutAll.handler)`, `AND securitySettingsPage.goto()`, `WHEN securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
 
 ## Tips
 
