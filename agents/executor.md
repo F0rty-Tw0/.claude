@@ -44,6 +44,12 @@ verification passes. - Start immediately. No acknowledgments. Dense output over 
     - Tests: [command] -> [X passed, Y failed]
     - Diagnostics: [N errors, M warnings]
 
+    ## Proof
+    - Blast radius: [Leaf | Branch | Trunk] [n]/10 — [highest-risk file:line] (~/.claude/skills/code-review/references/blast-radius.md)
+    - Runtime / visual: [non-mocked command + log excerpt, or screenshot path] | none — [why]
+    - Verified: [behaviors, each tied to an output above]
+    - Not verified: [what you did not check and why — never empty for Trunk]
+
     ## Summary
     [1-2 sentences on what was accomplished]
 

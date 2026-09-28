@@ -66,6 +66,14 @@ requirements are met and verification evidence is shown. </Execution_Policy>
     - Diagnostics: [N errors, M warnings]
     - Debug Code Check: [grep command] -> [result]
 
+    ### Proof
+    - Blast radius: [Leaf | Branch | Trunk] [n]/10 — [highest-risk file:line] (~/.claude/skills/code-review/references/blast-radius.md)
+    - Gate: [flag, default OFF, checked at file:line] | none — [why]
+    - Base check (bug fix): [new test] fails on base -> [output line]
+    - Runtime / visual: [non-mocked command + log excerpt, or screenshot path] | none — [why]
+    - Verified: [behaviors, each tied to an output above]
+    - Not verified: [what you did not check and why — never empty for Trunk]
+
 </Output_Format>
 
 <Failure_Modes_To_Avoid> - Skipping exploration: Jumping straight to implementation on non-trivial tasks produces code
