@@ -2,7 +2,7 @@
 
 Read this file before any other reference in this skill. Every code sample in this skill follows these rules; every Playwright file written with this skill follows them too. Where a Playwright doc or an older test in the repo disagrees, this file wins.
 
-**REQUIRED BACKGROUND:** skill:artification. `references/typescript-style.md` applies unchanged. `references/spec-style.md` applies with one override, stated in its Scope section: Playwright has `test.step`, so `WHEN` / `THEN` move from `describe` / `it` into steps and the `test` title is `SCENARIO:`. This file adds only what Playwright needs on top.
+**REQUIRED BACKGROUND:** skill:artification. `references/typescript-style.md` applies unchanged. `references/spec-style.md` applies with one override, stated in its Scope section: Playwright has `test.step`, so `WHEN` / `THEN` move from `describe` / `it` into steps and the `test` title is `GIVEN <state>, <outcome>`. This file adds only what Playwright needs on top.
 
 ## Contents
 
@@ -28,7 +28,7 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 
 | Concern | Rule |
 |---|---|
-| Naming tree | Flat: `test.describe('FEATURE: <name>')` → `test('SCENARIO: <condition> <outcome>')`. One describe per spec, never nested. The starting state is a `GIVEN` step inside the test, and the title names any condition that sets the scenario apart (`'SCENARIO: a failed create warns and keeps the sheet open'`). Every `test.step`, in a spec, page object, helper object, or fixture, carries `GIVEN` / `WHEN` / `THEN` / `AND`. Every level carries its keyword; a title without one is not house style. Never a `GIVEN` or `WHEN` describe; the step owns it. |
+| Naming tree | Flat: `test.describe('FEATURE: <name>')` → `test('GIVEN <state>, <outcome>')`. One describe per spec, never nested. The title's `GIVEN` names the state that sets the test apart (`'GIVEN a failed create, saving warns and keeps the sheet open'`); the test body still sets that state up in its own `GIVEN` step. Every `test.step`, in a spec, page object, helper object, or fixture, carries `GIVEN` / `WHEN` / `THEN` / `AND`. Every level carries its keyword; a title without one is not house style. Never a `GIVEN` or `WHEN` describe, and no `SCENARIO:` prefix. |
 | Test body | Every statement inside `test(...)` is `await test.step('<prose>', ...)`. No bare `page.*`, `expect(...)`, or page-object call outside a step. |
 | Step body | One call. `(): Promise<void> => loginPage.submit(user)`. Two or more statements mean a page-object or fixture method is missing. |
 | Step naming | Upper-case Gherkin keyword, then present-tense prose: `'WHEN wrong credentials are submitted'`, `'THEN the error names invalid credentials'`. `GIVEN` for arrange, `WHEN` for action, `THEN` for assertion, `AND` for a consecutive step of the same kind. Applies to page-object and helper-object steps too; see Steps. |
@@ -105,7 +105,7 @@ import { expect, test } from './login.fixture';
 import { USER_STUB } from './test/stubs/user.stub';
 
 test.describe('FEATURE: login', () => {
-  test('SCENARIO: valid credentials open the dashboard', async ({ dashboardPage, loginPage, page }): Promise<void> => {
+  test('GIVEN valid credentials, submitting opens the dashboard', async ({ dashboardPage, loginPage, page }): Promise<void> => {
     await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
     await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
@@ -115,7 +115,7 @@ test.describe('FEATURE: login', () => {
     await test.step('AND the greeting names the user', (): Promise<void> => dashboardPage.expectGreeting(USER_STUB.displayName));
   });
 
-  test('SCENARIO: a wrong password shows the error banner', async ({ loginPage }): Promise<void> => {
+  test('GIVEN a wrong password, submitting shows the error banner', async ({ loginPage }): Promise<void> => {
     const user: Credentials = { ...USER_STUB, password: 'wrong' };
 
     await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
@@ -129,18 +129,18 @@ test.describe('FEATURE: login', () => {
 
 | Concern | Rule |
 |---|---|
-| `describe` text | Exactly one `test.describe('FEATURE: <name>')` per spec, wrapping every test. No nested describe, so no `GIVEN` describe: the report tree is `file → FEATURE → SCENARIO`. |
-| Condition in title | The `GIVEN` step is only visible when a test's steps are expanded, so the title carries any condition that distinguishes the scenario: `'SCENARIO: a failed list shows a load error in both lists'`, not `'SCENARIO: both lists show a load error'`. A starting state every scenario shares (`the login page is open`) stays out of the title. |
-| `test` text | `SCENARIO:` then the flow as one lower-case present-tense sentence naming the condition, when it differs per scenario, and the outcome: `'SCENARIO: wrong password shows the error banner'`. `WHEN` / `THEN` never appear in the title; they are steps. No "should". |
+| `describe` text | Exactly one `test.describe('FEATURE: <name>')` per spec, wrapping every test. No nested describe, so no `GIVEN` describe: the report tree is `file → FEATURE → GIVEN <state>, <outcome>`. |
+| State in title | The `GIVEN` step is only visible when a test's steps are expanded, so the title's `GIVEN` names the state that distinguishes the test: `'GIVEN a failed list, both lists show a load error'`. A state every test in the spec shares (`the login page is open`) is not what the title names; name the input or condition that differs instead (`'GIVEN a wrong password, submitting shows the error banner'`). |
+| `test` text | `GIVEN`, the distinguishing state, a comma, then the outcome, as one lower-case present-tense sentence: `'GIVEN a wrong password, submitting shows the error banner'`. `WHEN` / `THEN` never appear in the title; they are steps. No "should". |
 | Step keywords | Every step in a spec starts with `GIVEN`, `WHEN`, `THEN`, or `AND`. A test holds at least one `WHEN` and one `THEN`. `beforeEach` steps are `GIVEN` / `AND`. |
 | Step order | `GIVEN`? → `WHEN` → `THEN`, then only `AND` and `THEN` repeat. One `GIVEN` and one `WHEN` per test; a further arrange or action step is `AND` (`AND 5 more minutes pass`). Independent phases are separate tests. |
 | Arrange | The test's own `GIVEN` step sets its starting state: the error mock, the permission grant, the page opening. Arrange shared by every test in the spec may go in a `FEATURE`-level `beforeEach`, itself a `GIVEN` step; the test's own arrange then starts with `AND`. When the arrange is API seeding, a fixture seeds, opens the page, and hands over the ready page object instead; see [Requirement Annotation](annotations.md#requirement-annotation). Case-specific data is a `const` above the first step, blank line after. |
 | `test.use` options | `test.use` cannot run inside a test, and there is no describe to scope it. An option the browser can change at runtime is a `GIVEN` step: `page.setViewportSize`, `context.grantPermissions` / `clearPermissions`, `page.clock.install`. An option fixed at context creation (`locale`, `storageState`, `timezoneId`, device) that differs from the rest of the spec moves the scenarios to their own spec with a file-level `test.use` and its own `FEATURE`: `store-finder-denied.e2e.ts`. The same scenarios across several option values are a project per value in `playwright.config`, not a loop of describes. |
 | Steps | One step per action or per assertion group. Blank line between steps. |
 | Fixtures in signature | Destructure only what the test uses, alphabetical. |
-| Tags | `test('SCENARIO: <flow>', { tag: ['@smoke'] }, async …)`. Tags are the second argument, never in the title. |
+| Tags | `test('GIVEN <state>, <outcome>', { tag: ['@smoke'] }, async …)`. Tags are the second argument, never in the title. |
 | Annotations | `test.skip`, `test.fixme`, `test.slow` carry a reason string. |
-| Requirement link | A scenario that covers a written requirement declares its ID in the details object: `test('SCENARIO: <flow>', { annotation: { description: 'CHK-2', type: 'requirement' } }, async …)`. One ID per scenario. See [annotations.md](annotations.md#requirement-annotation). |
+| Requirement link | A test that covers a written requirement declares its ID in the details object: `test('GIVEN <state>, <outcome>', { annotation: { description: 'CHK-2', type: 'requirement' } }, async …)`. One ID per test. See [annotations.md](annotations.md#requirement-annotation). |
 
 ## Steps
 
@@ -173,7 +173,7 @@ After, the spec is steps and the page object owns the locators:
 
 ```ts
 // e2e/login/login.e2e.ts
-test('SCENARIO: valid credentials open the dashboard', async ({ loginPage, page }): Promise<void> => {
+test('GIVEN valid credentials, submitting opens the dashboard', async ({ loginPage, page }): Promise<void> => {
   await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
   await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
@@ -390,8 +390,8 @@ Rules for the markdown files in this skill, so every reference reads the same wa
 | Excuse | Counter |
 |---|---|
 | "Steps make short tests longer." | A three-line test with three steps is still three lines. The trace now names them. |
-| "The title already says WHEN and THEN." | The title is the `SCENARIO:`; `WHEN` / `THEN` are steps. Saying it twice is what the rule removes. |
-| "`SCENARIO:` on every test is noise." | Every level names its keyword. A bare title is the one shape a reader cannot place in the tree. |
+| "The title already says WHEN and THEN." | The title is `GIVEN <state>, <outcome>`; `WHEN` / `THEN` are steps. Saying it twice is what the rule removes. |
+| "The title and the first step both say `GIVEN`." | The title is the summary the report tree shows; the step is the call the trace shows. Steps appear without their title in traces, so the step keeps its keyword. |
 | "One `page.getByRole` in the spec is fine." | The spec now knows the DOM. Move it to the page object. |
 | "Return types on test callbacks are noise." | The rule has no exception for tests. Consistency is the point. |
 | "Playwright docs use `interface`." | Playwright docs are not this repo. `type` with `readonly`. |
@@ -437,10 +437,10 @@ Stop and re-check this file when reasoning includes:
 | Mistake | Fix |
 |---|---|
 | `test.describe('Checkout', ...)` | `test.describe('FEATURE: checkout', ...)`. |
-| `test('WHEN the order is placed THEN the confirmation page opens', ...)` | `test('SCENARIO: placing the order opens the confirmation page', ...)` with `WHEN` / `THEN` steps inside. |
-| `test('placing the order opens the confirmation page', ...)` | Same, with `SCENARIO:` in front. No keyword, no place in the tree. |
+| `test('WHEN the order is placed THEN the confirmation page opens', ...)` | `test('GIVEN a filled cart, placing the order opens the confirmation page', ...)` with `WHEN` / `THEN` steps inside. |
+| `test('placing the order opens the confirmation page', ...)` or `test('SCENARIO: …')` | Start with `GIVEN <state>,`. No keyword, no place in the tree; `SCENARIO:` is the old prefix. |
 | `test.describe('WHEN the order is placed', ...)` | Delete the describe; `'WHEN the order is placed'` is a step. |
-| `test.describe('GIVEN the create api fails', ...)` around scenarios | Delete the describe. Each test opens with `GIVEN the create api fails`, and its title names the failure: `'SCENARIO: a failed create warns and keeps the sheet open'`. |
+| `test.describe('GIVEN the create api fails', ...)` around tests | Delete the describe. Each test opens with a `GIVEN the create api fails` step, and its title names the failure: `'GIVEN a failed create, saving warns and keeps the sheet open'`. |
 | `test.describe('GIVEN notifications are denied', () => { test.use({ permissions: [] }); … })` | Runtime-changeable: a `GIVEN` step (`context.clearPermissions()`). Context-fixed (`locale`, `storageState`): a separate spec with a file-level `test.use`. |
 | `test.step('submit credentials', ...)` in a spec or page object | `test.step('WHEN credentials are submitted', ...)`. |
 | Step with `async () => { await a(); await b(); }` | Add `checkoutPage.placeOrder()` and call it. |
