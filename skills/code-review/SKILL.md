@@ -1,195 +1,125 @@
 ---
 name: code-review
-description: Use when the user requests "review this code" or "code review", before merging a pull request, after implementing a major feature, or when a quality assessment of code changes is wanted.
+description: Use when the user asks to review code, a diff, a branch, or a pull request — especially AI-generated or agent-authored changes — before merging, when a PR claims "fixed", "verified", or "all tests pass" without evidence, when tests look suspiciously green, when asked to babysit a PR's CI, or when planning a feature-gated launch, canary rollout, or pre-launch attack on staging.
+argument-hint: "[review|proof|babysit|attack|launch] [PR# | base..head | path]"
 ---
 
-# Code Review Skill
+# Code Review — Risk-Gradient, Proof-Based, Adversarial
 
-Conduct a thorough code review for quality, security, and maintainability with severity-rated feedback.
+AI tools write more code than a human can read line by line. So review effort follows **blast radius**, not line count. Claims get replaced by **proof**. And the reviewer is never the author.
 
-## When to Use
+**Core rule:** classify the change first, demand artifacts over promises, and send an independent zero-trust reviewer. Never grade style — linters own it.
 
-This skill activates when:
+## Modes
 
-- User requests "review this code", "code review"
-- Before merging a pull request
-- After implementing a major feature
-- User wants quality assessment
+| Arg | When | Reference |
+|---|---|---|
+| `review` (default) | Review a diff / branch / PR | this file + all `references/*` |
+| `proof` | You wrote the change; build the PR proof bundle | `references/proof.md`, `templates/pr-proof.md` |
+| `babysit <PR#>` | Watch CI + comments on a loop, fix mechanical failures locally | `references/babysit.md` |
+| `attack` | Before opening a feature gate: break the product in staging | `references/attack.md` |
+| `launch` | Plan the gate before coding; merge-ready → launch-ready → canary | `references/launch.md` |
 
-## What It Does
+## Review mode
 
-Delegates to the `code-reviewer` agent for deep analysis:
+1. **Scope.** Resolve the material:
+   - diff command (`gh pr diff <n>`, `git diff <base>...HEAD`, `git diff --cached`)
+   - PR description
+   - plan/requirements
+   - test command
 
-1. **Identify Changes**
-   - Run `git diff` to find changed files
-   - Determine scope of review (specific files or entire PR)
+   No diff found → say so and stop. Never review from memory.
 
-2. **Review Categories**: Security, Code Quality, Performance, Best Practices, Maintainability -- see the full
-   `## Review Checklist` below for the concrete items in each
+2. **Independence.** Dispatch the reviewer with `references/reviewer-prompt.md`. Always dispatch, even for small diffs: if this session wrote any of the code, it is biased and must not review it.
 
-3. **Severity Rating**
-   - **CRITICAL** - Security vulnerability (must fix before merge)
-   - **HIGH** - Bug or major code smell (should fix before merge)
-   - **MEDIUM** - Minor issue (fix when possible)
-   - **LOW** - Style/suggestion (consider fixing)
+   Pass only artifacts: diff, PR text, plan. Never pass your session's rationale, opinions, or a hint list.
 
-4. **Specific Recommendations**
-   - File:line locations for each issue
-   - Concrete fix suggestions
-   - Code examples where applicable
+3. **Trunk escalation.** Run `git diff --stat` and check file paths. If any trunk signal shows (`references/blast-radius.md`), dispatch the `security-reviewer` and/or `performance-reviewer` in the **same message**, ≤3 agents total.
 
-## Agent Delegation
+   If the reviewer later classifies the change as trunk and no specialist was sent, send one then.
 
-```
-Agent(
-  subagent_type="code-reviewer",
-  prompt="CODE REVIEW TASK
+4. **Verify findings.** Agents over-report. For each finding:
+   - open the cited `file:line`
+   - re-run the reproduction for every blocker
 
-Review code changes for quality, security, and maintainability.
+   Discard a finding only with evidence. "The author intended it" is not evidence. List discarded findings with the reason.
 
-Scope: [git diff or specific files]
+5. **Report** in the format below. If the host offers `ReportFindings`, also call it with the verified findings.
 
-Apply the Review Checklist below. Output a code review report with:
-- Files reviewed count
-- Issues by severity (CRITICAL, HIGH, MEDIUM, LOW)
-- Specific file:line locations
-- Fix recommendations
-- Approval recommendation (APPROVE / REQUEST CHANGES / COMMENT)"
-)
-```
+6. **After the verdict:** triage fixes with the `code-review-receiving` skill. Plan the gate or canary with `launch` mode.
 
-## External Model Consultation (Preferred)
+## Non-negotiables (each one closed a gap seen in baseline testing)
 
-The code-reviewer agent SHOULD consult `mcp__agentic-mcp__review_codex` for cross-validation.
+- **Classification comes first and always appears in the output:**
+  - class (Leaf / Branch / Trunk)
+  - score 1–10
+  - failure mode
+  - gating status
 
-### Protocol
+  A list of bugs without a blast-radius call is an incomplete review.
+- **Zero style findings.** No `var`, semicolons, naming taste, function length, or "more idiomatic". If no linter exists, report that **once**, as a process gap. Taste belongs to the human polish pass (`launch.md`).
+- **Vanity tests on Branch/Trunk code block the merge** as a proof gap. They are never a "medium" or "redundant" note.
+  - Run the mutation probe (`references/vanity-tests.md`).
+  - Name the test that should have failed.
+- **Boundary inputs are checked on every risky function:** negative, zero, `NaN`, null, wrong type, rejected I/O.
+- **Every Trunk review names:**
+  - the rollback path (flag flip / revert / data repair)
+  - the telemetry metric that would spike in a canary
+  - the exact lines a human must deep-read — the agent cannot sign off on trunk alone
+- **Proof is re-run, not read.** A claim with no artifact is a proof gap. A claim that fails to reproduce is a blocker.
 
-1. **Form your OWN review FIRST** - Complete the review independently
-2. **Consult for validation** - Cross-check findings with `review_codex`
-3. **Critically evaluate** - Never blindly adopt external findings
-4. **Graceful fallback** - Never block if tools unavailable
+## Output format
 
-### When to Consult
+```markdown
+## 1. Classification & Blast Radius
+- **Class:** Leaf | Branch | Trunk — driven by <highest-risk hunk, file:line>
+- **Blast radius:** <n>/10 — <one-line rationale>
+- **Failure mode:** throws → <…>; silently wrong → <…>; concurrent → <…>
+- **Gating:** Gated (<flag>, default OFF, checked at <file:line>) | Ungated on <path> (HIGH RISK) | N/A
+- **Rollback:** flag OFF | revert deploy | needs data repair (<what>)
 
-- Security-sensitive code changes
-- Complex architectural patterns
-- Unfamiliar codebases or languages
-- High-stakes production code
+## 2. Blockers
+(Genuine blockers only. None → "None identified.")
+- **<file:line>** [Confirmed: <command/trace> | Inferred: <what would confirm>] — <flaw> → <fix>
 
-### When to Skip
+## 3. Should-fix / Notes
+- **<file:line>** [Confirmed|Inferred] [pre-existing?] — <issue> → <fix>
 
-- Simple refactoring
-- Well-understood patterns
-- Time-critical reviews
-- Small, isolated changes
+## 4. Vanity Test & Invariant Audit
+- Tests run: `<cmd>` → <pass/fail, exit code>. Mutation probe: <what was broken> → <still green? which test should have failed>
+- Per test: <name> — proves <behavior> | vanity: <pattern>
+- Missing invariants: <rule the system must hold> → <test to add>
 
-### Tool Usage
+## 5. Proof Gaps & Required Proof Before Merge
+- Claim "<quote from PR>" → <artifact found / missing / did not reproduce>
+1. <command or deterministic test that must pass>
+2. <runtime/visual evidence needed from author>
 
-Before first MCP tool use, call `ToolSearch("mcp")` to discover deferred MCP tools. Use `mcp__agentic-mcp__review_codex`
-for the cross-check. If ToolSearch finds no MCP tools or agentic-mcp is unavailable, fall back to the `code-reviewer`
-Claude agent alone -- never block on external tools.
+## 6. Launch Safety
+- **Canary metric:** <metric that spikes on failure> — rollback threshold <…>
+- **Not rollback-able by flag:** <migrations / emails / charges / data writes> | none
+- **Human must deep-read:** <file:line ranges> | none (Leaf)
 
-## Output Format
+## 7. Verdict
+APPROVE — LOW RISK LEAF | APPROVE — TRUNK, HUMAN SIGN-OFF REQUIRED | BLOCK — REQUIRES PROOF | BLOCK — HIGH BLAST RADIUS DEFECT
+**State:** merge-ready (dark) | not merge-ready · launch-ready: no — see `launch` mode
 
-```
-CODE REVIEW REPORT
-==================
-
-Files Reviewed: 8
-Total Issues: 15
-
-CRITICAL (0)
------------
-(none)
-
-HIGH (3)
---------
-1. src/api/auth.ts:42
-   Issue: User input not sanitized before SQL query
-   Risk: SQL injection vulnerability
-   Fix: Use parameterized queries or ORM
-
-MEDIUM (7)
-----------
-...
-
-LOW (5)
--------
-...
-
-RECOMMENDATION: REQUEST CHANGES
-
-Critical security issues must be addressed before merge.
+Discarded findings: <finding — reason> | none
 ```
 
-## Review Checklist
+Verdict rules:
+- Any blocker defect → **BLOCK — HIGH BLAST RADIUS DEFECT**.
+- No defects but proof gaps → **BLOCK — REQUIRES PROOF**.
+- Trunk that is clean and proven → **APPROVE — TRUNK, HUMAN SIGN-OFF REQUIRED**.
+- **APPROVE — LOW RISK LEAF** only for Leaf that is gated or isolated, with proof.
 
-The code-reviewer agent checks:
+## Common mistakes
 
-### Security
-
-- [ ] No hardcoded secrets (API keys, passwords, tokens)
-- [ ] All user inputs sanitized
-- [ ] SQL/NoSQL injection prevention
-- [ ] XSS prevention (escaped outputs)
-- [ ] CSRF protection on state-changing operations
-- [ ] Authentication/authorization properly enforced
-
-### Code Quality
-
-- [ ] Functions < 50 lines (guideline)
-- [ ] Cyclomatic complexity < 10
-- [ ] No deeply nested code (> 4 levels)
-- [ ] No duplicate logic (DRY principle)
-- [ ] Clear, descriptive naming
-
-### Performance
-
-- [ ] No N+1 query patterns
-- [ ] Appropriate caching where applicable
-- [ ] Efficient algorithms (avoid O(n²) when O(n) possible)
-- [ ] No unnecessary re-renders (React/Vue)
-
-### Best Practices
-
-- [ ] Error handling present and appropriate
-- [ ] Logging at appropriate levels
-- [ ] Documentation for public APIs
-- [ ] Tests for critical paths
-- [ ] No commented-out code
-
-## Approval Criteria
-
-**APPROVE** - No CRITICAL or HIGH issues, minor improvements only **REQUEST CHANGES** - CRITICAL or HIGH issues present
-**COMMENT** - Only LOW/MEDIUM issues, no blocking concerns
-
-## Use with Other Skills
-
-**As a sequential agent chain:**
-
-Drive it manually: `explore` -> `architect` -> `critic` -> `executor`, folding each stage's findings into the next prompt,
-with this skill's `code-reviewer` delegation standing in for the `critic` stage.
-
-**With Ralph:**
-
-```
-/ralph code-review then fix all issues
-```
-
-Review code, get feedback, fix until approved.
-
-**With Ultrawork:**
-
-```
-/ultrawork review all files in src/
-```
-
-Parallel code review across multiple files.
-
-## Best Practices
-
-- **Review early** - Catch issues before they compound
-- **Review often** - Small, frequent reviews better than huge ones
-- **Address CRITICAL/HIGH first** - Fix security and bugs immediately
-- **Consider context** - Some "issues" may be intentional trade-offs
-- **Learn from reviews** - Use feedback to improve coding practices
+| Mistake | Fix |
+|---|---|
+| Reviewing in the session that wrote the code | Dispatch a fresh reviewer — step 2 |
+| Priming the reviewer ("check the race in wallet.ts") | Pass artifacts only; let it find things |
+| Trusting "all tests pass" | Re-run; mutation-probe; base-failure check |
+| Stopping at the producer side of a new event/type | Read the consumer's dispatch point outside the diff |
+| Treating a gated PR as all-leaf | Migrations, shared helpers, and payload changes are trunk even inside a gate |
+| Babysit pushing fixes | Never. Local working tree only; the human commits and pushes |
