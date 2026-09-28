@@ -177,12 +177,10 @@ import { test } from './checkout.fixture';
 import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: checkout', () => {
-  test.describe('GIVEN the payment frame is ready', () => {
-    test('SCENARIO: paying with the test card shows the confirmation', async ({ paymentReadyPage }): Promise<void> => {
-      await test.step('WHEN the test card is paid', (): Promise<void> => paymentReadyPage.pay(CARD_STUB.number));
+  test('SCENARIO: paying with the test card shows the confirmation', async ({ paymentReadyPage }): Promise<void> => {
+    await test.step('WHEN the test card is paid', (): Promise<void> => paymentReadyPage.pay(CARD_STUB.number));
 
-      await test.step('THEN the payment confirmation is shown', (): Promise<void> => paymentReadyPage.expectConfirmed());
-    });
+    await test.step('THEN the payment confirmation is shown', (): Promise<void> => paymentReadyPage.expectConfirmed());
   });
 });
 ```
@@ -287,16 +285,12 @@ Prefer a web-first assertion on content inside the frame; `frameLocator` waits f
 import { test } from './checkout.fixture';
 
 test.describe('FEATURE: dashboard widget', () => {
-  test.describe('GIVEN the dashboard is open', () => {
-    test.beforeEach(async ({ widgetPage }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => widgetPage.goto());
-    });
+  test('SCENARIO: opening the widget makes the widget frame report loaded', async ({ widgetPage }): Promise<void> => {
+    await test.step('GIVEN the dashboard is open', (): Promise<void> => widgetPage.goto());
 
-    test('SCENARIO: opening the widget makes the widget frame report loaded', async ({ widgetPage }): Promise<void> => {
-      await test.step('WHEN the widget is opened', (): Promise<void> => widgetPage.openWidget());
+    await test.step('WHEN the widget is opened', (): Promise<void> => widgetPage.openWidget());
 
-      await test.step('THEN the widget frame shows Widget Loaded', (): Promise<void> => widgetPage.expectWidgetLoaded());
-    });
+    await test.step('THEN the widget frame shows Widget Loaded', (): Promise<void> => widgetPage.expectWidgetLoaded());
   });
 });
 ```

@@ -217,14 +217,12 @@ import { test } from './console.fixture';
 import { expectNoConsoleErrors } from './test/utils/console-error.spec.util';
 
 test.describe('FEATURE: console errors', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: loading data logs no console error', async ({ consoleErrors, dashboardPage }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  test('SCENARIO: loading data logs no console error', async ({ consoleErrors, dashboardPage }): Promise<void> => {
+    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('WHEN data is loaded', (): Promise<void> => dashboardPage.loadData());
+    await test.step('WHEN data is loaded', (): Promise<void> => dashboardPage.loadData());
 
-      await test.step('THEN no console error was logged', (): void => expectNoConsoleErrors(consoleErrors));
-    });
+    await test.step('THEN no console error was logged', (): void => expectNoConsoleErrors(consoleErrors));
   });
 });
 ```
@@ -355,16 +353,14 @@ import { expect, test } from './console.fixture';
 import { brokenDataMock } from './test/mocks/data.mock';
 
 test.describe('FEATURE: error boundary', () => {
-  test.describe('GIVEN the data endpoint returns null', () => {
-    test('SCENARIO: rendering the dashboard lets the boundary catch the error', async ({ dashboardPage, pageErrors }): Promise<void> => {
-      await test.step('GIVEN data is routed to a null payload', (): Promise<void> => dashboardPage.routeData(brokenDataMock()));
+  test('SCENARIO: a null data payload is caught by the error boundary', async ({ dashboardPage, pageErrors }): Promise<void> => {
+    await test.step('GIVEN data is routed to a null payload', (): Promise<void> => dashboardPage.routeData(brokenDataMock()));
 
-      await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN the fallback is shown', (): Promise<void> => dashboardPage.expectFallback());
+    await test.step('THEN the fallback is shown', (): Promise<void> => dashboardPage.expectFallback());
 
-      await test.step('AND no exception escaped the boundary', (): void => expect(pageErrors).toEqual([]));
-    });
+    await test.step('AND no exception escaped the boundary', (): void => expect(pageErrors).toEqual([]));
   });
 });
 ```

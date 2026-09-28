@@ -72,18 +72,16 @@ import { CARD_STUB, ITEM_STUB } from './test/stubs/checkout.stub';
 test.describe.configure({ mode: 'serial' });
 
 test.describe('FEATURE: checkout', () => {
-  test.describe('GIVEN an empty cart', () => {
-    test('SCENARIO: adding an item shows one item on the cart badge', async ({ cartPage }): Promise<void> => {
-      await test.step('WHEN the item is added to the cart', (): Promise<void> => cartPage.addItem(ITEM_STUB));
+  test('SCENARIO: adding an item shows one item on the cart badge', async ({ cartPage }): Promise<void> => {
+    await test.step('WHEN the item is added to the cart', (): Promise<void> => cartPage.addItem(ITEM_STUB));
 
-      await test.step('THEN the cart badge shows one item', (): Promise<void> => cartPage.expectBadgeCount(1));
-    });
+    await test.step('THEN the cart badge shows one item', (): Promise<void> => cartPage.expectBadgeCount(1));
+  });
 
-    test('SCENARIO: completing payment opens the confirmation page', async ({ checkoutPage, page }): Promise<void> => {
-      await test.step('WHEN the card payment is completed', (): Promise<void> => checkoutPage.pay(CARD_STUB));
+  test('SCENARIO: completing payment opens the confirmation page', async ({ checkoutPage, page }): Promise<void> => {
+    await test.step('WHEN the card payment is completed', (): Promise<void> => checkoutPage.pay(CARD_STUB));
 
-      await test.step('THEN the confirmation url is shown', (): Promise<void> => expect(page).toHaveURL('/confirmation'));
-    });
+    await test.step('THEN the confirmation url is shown', (): Promise<void> => expect(page).toHaveURL('/confirmation'));
   });
 });
 ```
@@ -280,16 +278,14 @@ export { expect } from '@playwright/test';
 import { test } from './profile.fixture';
 
 test.describe('FEATURE: profile settings', () => {
-  test.describe('GIVEN a freshly seeded user', () => {
-    test.beforeEach(async ({ settingsPage, user }): Promise<void> => {
-      await test.step('GIVEN the settings page is open', (): Promise<void> => settingsPage.goto(user.id));
-    });
+  test.beforeEach(async ({ settingsPage, user }): Promise<void> => {
+    await test.step('GIVEN the settings page is open', (): Promise<void> => settingsPage.goto(user.id));
+  });
 
-    test('SCENARIO: changing the email keeps the new value in the field', async ({ settingsPage }): Promise<void> => {
-      await test.step('WHEN a new email is saved', (): Promise<void> => settingsPage.saveEmail('updated@example.com'));
+  test('SCENARIO: changing the email keeps the new value in the field', async ({ settingsPage }): Promise<void> => {
+    await test.step('WHEN a new email is saved', (): Promise<void> => settingsPage.saveEmail('updated@example.com'));
 
-      await test.step('THEN the email field shows the new value', (): Promise<void> => settingsPage.expectEmail('updated@example.com'));
-    });
+    await test.step('THEN the email field shows the new value', (): Promise<void> => settingsPage.expectEmail('updated@example.com'));
   });
 });
 ```
@@ -309,14 +305,12 @@ import { test } from './orders.fixture';
 import { uniqueOrderRef } from './test/utils/order-builder.spec.util';
 
 test.describe('FEATURE: orders', () => {
-  test.describe('GIVEN a signed-in buyer', () => {
-    test('SCENARIO: opening a new order shows its reference', async ({ orderPage }, testInfo): Promise<void> => {
-      const orderRef = uniqueOrderRef(testInfo.workerIndex);
+  test('SCENARIO: opening a new order shows its reference', async ({ orderPage }, testInfo): Promise<void> => {
+    const orderRef = uniqueOrderRef(testInfo.workerIndex);
 
-      await test.step('WHEN a new order is opened', (): Promise<void> => orderPage.gotoNew(orderRef));
+    await test.step('WHEN a new order is opened', (): Promise<void> => orderPage.gotoNew(orderRef));
 
-      await test.step('THEN the order reference is shown', (): Promise<void> => orderPage.expectReference(orderRef));
-    });
+    await test.step('THEN the order reference is shown', (): Promise<void> => orderPage.expectReference(orderRef));
   });
 });
 ```

@@ -185,14 +185,12 @@ import { parseFrame, waitForFirstFrame } from './test/utils/frame-log.spec.util'
 import { dispatchSocketMessage } from './test/utils/socket-message.spec.util';
 
 test.describe('FEATURE: chat socket', () => {
-  test.describe('GIVEN the chat page', () => {
-    test('SCENARIO: opening the page connects a socket to the chat endpoint', async ({ chatPage }): Promise<void> => {
-      const socket = await test.step('WHEN the page opens and the socket is captured', (): Promise<WebSocket> => chatPage.gotoAndCaptureSocket());
+  test('SCENARIO: opening the page connects a socket to the chat endpoint', async ({ chatPage }): Promise<void> => {
+    const socket = await test.step('WHEN the page opens and the socket is captured', (): Promise<WebSocket> => chatPage.gotoAndCaptureSocket());
 
-      await test.step('THEN the socket url targets the chat endpoint', (): void => expect(socket.url()).toContain('/ws/chat'));
+    await test.step('THEN the socket url targets the chat endpoint', (): void => expect(socket.url()).toContain('/ws/chat'));
 
-      await test.step('AND the client sends its first frame', (): Promise<void> => waitForFirstFrame(socket));
-    });
+    await test.step('AND the client sends its first frame', (): Promise<void> => waitForFirstFrame(socket));
   });
 });
 ```
@@ -320,24 +318,22 @@ The `chatSocket` fixture (shown in [WebSocket Basics](#websocket-basics)) regist
 
 ```ts
 // e2e/chat/chat.test.ts
-test.describe('GIVEN a mocked chat socket', () => {
-  test.beforeEach(async ({ chatPage }): Promise<void> => {
-    await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
-  });
+test('SCENARIO: a message pushed by the mocked server is shown', async ({ chatPage, chatSocket }): Promise<void> => {
+  const message: SocketMessage = { content: 'Hi!', from: 'Bob', type: 'message' };
 
-  test('SCENARIO: a message pushed by the server is shown', async ({ chatPage, chatSocket }): Promise<void> => {
-    const message: SocketMessage = { content: 'Hi!', from: 'Bob', type: 'message' };
+  await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
-    await test.step('WHEN a message from Bob is injected', (): void => chatSocket.injectMessage(message));
+  await test.step('WHEN a message from Bob is injected', (): void => chatSocket.injectMessage(message));
 
-    await test.step('THEN the message from Bob is shown', (): Promise<void> => chatPage.expectMessage('Bob: Hi!'));
-  });
+  await test.step('THEN the message from Bob is shown', (): Promise<void> => chatPage.expectMessage('Bob: Hi!'));
+});
 
-  test('SCENARIO: sending a reply delivers it to the socket', async ({ chatPage, chatSocket }): Promise<void> => {
-    await test.step('WHEN a reply is sent', (): Promise<void> => chatPage.send('Hello Bob!'));
+test('SCENARIO: sending a reply delivers it to the mocked socket', async ({ chatPage, chatSocket }): Promise<void> => {
+  await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
-    await test.step('THEN the sent frames contain the reply', (): Promise<void> => expect.poll((): SocketMessage[] => chatSocket.sentMessages()).toContainEqual(expect.objectContaining({ content: 'Hello Bob!' })));
-  });
+  await test.step('WHEN a reply is sent', (): Promise<void> => chatPage.send('Hello Bob!'));
+
+  await test.step('THEN the sent frames contain the reply', (): Promise<void> => expect.poll((): SocketMessage[] => chatSocket.sentMessages()).toContainEqual(expect.objectContaining({ content: 'Hello Bob!' })));
 });
 ```
 
@@ -415,16 +411,14 @@ import { eventsMock } from './test/mocks/events.mock';
 const COUNTER_EVENTS = ['{"count":1}', '{"count":2}', '{"count":3}'];
 
 test.describe('FEATURE: live data', () => {
-  test.describe('GIVEN the events endpoint streams three counter events', () => {
-    test('SCENARIO: opening the page shows the last event on the counter', async ({ liveDataPage, page }): Promise<void> => {
-      await test.step('GIVEN three counter events are served', async (): Promise<void> => {
-        await page.route('**/api/events', eventsMock(COUNTER_EVENTS));
-      });
-
-      await test.step('WHEN the page opens', (): Promise<void> => liveDataPage.goto());
-
-      await test.step('THEN the counter shows 3', (): Promise<void> => liveDataPage.expectCount('3'));
+  test('SCENARIO: three streamed counter events leave the last one on the counter', async ({ liveDataPage, page }): Promise<void> => {
+    await test.step('GIVEN three counter events are served', async (): Promise<void> => {
+      await page.route('**/api/events', eventsMock(COUNTER_EVENTS));
     });
+
+    await test.step('WHEN the page opens', (): Promise<void> => liveDataPage.goto());
+
+    await test.step('THEN the counter shows 3', (): Promise<void> => liveDataPage.expectCount('3'));
   });
 });
 ```

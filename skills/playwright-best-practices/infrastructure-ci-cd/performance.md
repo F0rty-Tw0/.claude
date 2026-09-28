@@ -28,7 +28,7 @@ export default defineConfig({
 
 ### Serial Execution When Needed
 
-`test.describe.configure({ mode: 'serial' })` at the top of a file runs every test in order on one worker and skips the rest after a failure. The same call inside a `describe` scopes the mode to that block; `test.describe.serial('GIVEN …', …)` is the shorthand. Blocks without the call stay parallel.
+`test.describe.configure({ mode: 'serial' })` at the top of a file runs every test in order on one worker and skips the rest after a failure. Specs are flat, so the only block is the `FEATURE` describe: the call inside it, or `test.describe.serial('FEATURE: …', …)`, scopes the mode to the same tests. Scenarios that can run in parallel go in their own spec.
 
 ```ts
 // e2e/onboarding/onboarding.e2e.ts
@@ -38,18 +38,16 @@ import { PROFILE_STUB } from './test/stubs/onboarding.stub';
 test.describe.configure({ mode: 'serial' });
 
 test.describe('FEATURE: onboarding', () => {
-  test.describe('GIVEN a new account', () => {
-    test('SCENARIO: completed profile opens the plan step', async ({ onboardingPage }): Promise<void> => {
-      await test.step('WHEN the profile is filled in', (): Promise<void> => onboardingPage.completeProfile(PROFILE_STUB));
+  test('SCENARIO: completed profile opens the plan step', async ({ onboardingPage }): Promise<void> => {
+    await test.step('WHEN the profile is filled in', (): Promise<void> => onboardingPage.completeProfile(PROFILE_STUB));
 
-      await test.step('THEN plan step is shown', (): Promise<void> => onboardingPage.expectStep('plan'));
-    });
+    await test.step('THEN plan step is shown', (): Promise<void> => onboardingPage.expectStep('plan'));
+  });
 
-    test('SCENARIO: picked plan opens the summary step', async ({ onboardingPage }): Promise<void> => {
-      await test.step('WHEN the free plan is picked', (): Promise<void> => onboardingPage.pickPlan('free'));
+  test('SCENARIO: picked plan opens the summary step', async ({ onboardingPage }): Promise<void> => {
+    await test.step('WHEN the free plan is picked', (): Promise<void> => onboardingPage.pickPlan('free'));
 
-      await test.step('THEN summary step is shown', (): Promise<void> => onboardingPage.expectStep('summary'));
-    });
+    await test.step('THEN summary step is shown', (): Promise<void> => onboardingPage.expectStep('summary'));
   });
 });
 ```
@@ -57,9 +55,9 @@ test.describe('FEATURE: onboarding', () => {
 | Call | Scope | Effect |
 |---|---|---|
 | `test.describe.configure({ mode: 'serial' })` at file top | Whole file | Ordered, one worker, stop on first failure |
-| `test.describe.configure({ mode: 'serial' })` inside a describe | That block | Same, block only |
-| `test.describe.serial('GIVEN …', () => {})` | That block | Shorthand for the above |
-| `test.describe.configure({ mode: 'parallel' })` | That block | Tests in the block run in parallel even with `fullyParallel: false` |
+| `test.describe.configure({ mode: 'serial' })` inside the `FEATURE` describe | The `FEATURE` block | Same as file top for a flat spec |
+| `test.describe.serial('FEATURE: …', () => {})` | The `FEATURE` block | Shorthand for the above |
+| `test.describe.configure({ mode: 'parallel' })` | File or `FEATURE` block | Tests run in parallel even with `fullyParallel: false` |
 
 ### Parallel Projects
 
@@ -167,25 +165,23 @@ test.describe('Dashboard', () => {
 });
 ```
 
-Prefer storage state from a setup project (see [Reuse Authentication](#reuse-authentication)) and one navigation step in the `GIVEN`'s `beforeEach`. Each test gets a fresh page; the navigation cost is one `goto`:
+Prefer storage state from a setup project (see [Reuse Authentication](#reuse-authentication)) and one navigation step, a `GIVEN`, in the `FEATURE`-level `beforeEach`. Each test gets a fresh page; the navigation cost is one `goto`:
 
 ```ts
 // e2e/dashboard/dashboard.test.ts
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN a signed-in user', () => {
-    test.beforeEach(async ({ dashboardPage }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
-    });
+  test.beforeEach(async ({ dashboardPage }): Promise<void> => {
+    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  });
 
-    test('SCENARIO: page load shows the stats panel', async ({ dashboardPage }): Promise<void> => {
-      await test.step('THEN stats panel is visible', (): Promise<void> => dashboardPage.expectStatsVisible());
-    });
+  test('SCENARIO: page load shows the stats panel', async ({ dashboardPage }): Promise<void> => {
+    await test.step('THEN stats panel is visible', (): Promise<void> => dashboardPage.expectStatsVisible());
+  });
 
-    test('SCENARIO: page load shows the chart', async ({ dashboardPage }): Promise<void> => {
-      await test.step('THEN chart is visible', (): Promise<void> => dashboardPage.expectChartVisible());
-    });
+  test('SCENARIO: page load shows the chart', async ({ dashboardPage }): Promise<void> => {
+    await test.step('THEN chart is visible', (): Promise<void> => dashboardPage.expectChartVisible());
   });
 });
 ```
@@ -206,7 +202,7 @@ test('check footer', async ({ page }) => {
 });
 ```
 
-Prefer the shape in [Reuse Page State](#reuse-page-state-serial-only--trade-off-with-isolation): the shared navigation is one step in the `GIVEN`'s `beforeEach`, and each test holds only its own assertion step.
+Prefer the shape in [Reuse Page State](#reuse-page-state-serial-only--trade-off-with-isolation): the shared navigation is one `GIVEN` step in the `FEATURE`-level `beforeEach`, and each test holds only its own assertion step.
 
 ### Skip Unnecessary Setup
 
@@ -218,14 +214,12 @@ import { ADMIN_ENABLED } from './common/admin.const';
 import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin panel', () => {
-  test.describe('GIVEN an admin user', () => {
-    test('SCENARIO: opened admin panel shows the user list', async ({ adminPage }): Promise<void> => {
-      test.skip(!ADMIN_ENABLED, 'admin features disabled in this environment');
+  test('SCENARIO: opened admin panel shows the user list', async ({ adminPage }): Promise<void> => {
+    test.skip(!ADMIN_ENABLED, 'admin features disabled in this environment');
 
-      await test.step('WHEN the admin panel is opened', (): Promise<void> => adminPage.goto());
+    await test.step('WHEN the admin panel is opened', (): Promise<void> => adminPage.goto());
 
-      await test.step('THEN user list is shown', (): Promise<void> => adminPage.expectUserList());
-    });
+    await test.step('THEN user list is shown', (): Promise<void> => adminPage.expectUserList());
   });
 });
 ```
@@ -524,20 +518,18 @@ import { expect, test } from './home.fixture';
 import { annotateLoadTime } from './test/utils/annotate.spec.util';
 
 test.describe('FEATURE: home page performance', () => {
-  test.describe('GIVEN a cold visitor', () => {
-    test('SCENARIO: home page load time is recorded on the report', async ({ homePage }, testInfo): Promise<void> => {
-      const loadTime = await test.step('GIVEN the home page is opened and timed', (): Promise<number> => homePage.gotoTimed());
+  test('SCENARIO: home page load time is recorded on the report', async ({ homePage }, testInfo): Promise<void> => {
+    const loadTime = await test.step('GIVEN the home page is opened and timed', (): Promise<number> => homePage.gotoTimed());
 
-      await test.step('WHEN the load time is recorded on the report', (): void => annotateLoadTime(testInfo, loadTime));
-    });
+    await test.step('WHEN the load time is recorded on the report', (): void => annotateLoadTime(testInfo, loadTime));
+  });
 
-    test('SCENARIO: home page loads under three seconds', async ({ homePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('SCENARIO: home page loads under three seconds', async ({ homePage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      const metrics = await test.step('WHEN navigation timing is read', (): Promise<PageMetrics> => homePage.metrics());
+    const metrics = await test.step('WHEN navigation timing is read', (): Promise<PageMetrics> => homePage.metrics());
 
-      await test.step('THEN load time is under budget', (): void => expect(metrics.loadTime).toBeLessThan(3000));
-    });
+    await test.step('THEN load time is under budget', (): void => expect(metrics.loadTime).toBeLessThan(3000));
   });
 });
 ```
@@ -582,14 +574,12 @@ import { expect, test } from './home.fixture';
 import { auditHome } from './test/utils/lighthouse.spec.util';
 
 test.describe('FEATURE: home page lighthouse audit', () => {
-  test.describe('GIVEN a cold visitor', () => {
-    test('SCENARIO: home page audit scores at least 80', async ({ homePage, page }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('SCENARIO: home page audit scores at least 80', async ({ homePage, page }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      const score = await test.step('WHEN the lighthouse audit is run', (): Promise<number> => auditHome(page));
+    const score = await test.step('WHEN the lighthouse audit is run', (): Promise<number> => auditHome(page));
 
-      await test.step('THEN performance score meets the budget', (): void => expect(score).toBeGreaterThanOrEqual(80));
-    });
+    await test.step('THEN performance score meets the budget', (): void => expect(score).toBeGreaterThanOrEqual(80));
   });
 });
 ```

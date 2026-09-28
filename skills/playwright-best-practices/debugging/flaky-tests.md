@@ -395,22 +395,20 @@ Prefer Playwright's default isolation. Each test receives a fresh context and pa
 import { test } from './profile.fixture';
 
 test.describe('FEATURE: profile', () => {
-  test.describe('GIVEN a signed-in user', () => {
-    test.beforeEach(async ({ profilePage }): Promise<void> => {
-      await test.step('GIVEN the profile page is open', (): Promise<void> => profilePage.goto());
-    });
+  test.beforeEach(async ({ profilePage }): Promise<void> => {
+    await test.step('GIVEN the profile page is open', (): Promise<void> => profilePage.goto());
+  });
 
-    test('SCENARIO: updated name shows in the header', async ({ profilePage }): Promise<void> => {
-      await test.step('WHEN the name is updated', (): Promise<void> => profilePage.updateName('Ada'));
+  test('SCENARIO: updated name shows in the header', async ({ profilePage }): Promise<void> => {
+    await test.step('WHEN the name is updated', (): Promise<void> => profilePage.updateName('Ada'));
 
-      await test.step('THEN header shows the new name', (): Promise<void> => profilePage.expectHeaderName('Ada'));
-    });
+    await test.step('THEN header shows the new name', (): Promise<void> => profilePage.expectHeaderName('Ada'));
+  });
 
-    test('SCENARIO: updated email shows in the account', async ({ profilePage }): Promise<void> => {
-      await test.step('WHEN the email is updated', (): Promise<void> => profilePage.updateEmail('ada@example.com'));
+  test('SCENARIO: updated email shows in the account', async ({ profilePage }): Promise<void> => {
+    await test.step('WHEN the email is updated', (): Promise<void> => profilePage.updateEmail('ada@example.com'));
 
-      await test.step('THEN account shows the new email', (): Promise<void> => profilePage.expectEmail('ada@example.com'));
-    });
+    await test.step('THEN account shows the new email', (): Promise<void> => profilePage.expectEmail('ada@example.com'));
   });
 });
 ```
@@ -517,22 +515,20 @@ import { analyticsMock } from './test/mocks/analytics.mock';
 import { paymentMock } from './test/mocks/payment.mock';
 
 test.describe('FEATURE: checkout', () => {
-  test.describe('GIVEN third-party apis are stubbed', () => {
-    test.beforeEach(async ({ page }): Promise<void> => {
-      await test.step('GIVEN analytics is stubbed', async (): Promise<void> => {
-        await page.route('**/api.analytics.com/**', analyticsMock());
-      });
-
-      await test.step('AND the payment provider is stubbed', async (): Promise<void> => {
-        await page.route('**/api/payment', paymentMock());
-      });
+  test.beforeEach(async ({ page }): Promise<void> => {
+    await test.step('GIVEN analytics is stubbed', async (): Promise<void> => {
+      await page.route('**/api.analytics.com/**', analyticsMock());
     });
 
-    test('SCENARIO: paid order opens the confirmation', async ({ checkoutPage }): Promise<void> => {
-      await test.step('WHEN the order is paid', (): Promise<void> => checkoutPage.pay());
-
-      await test.step('THEN confirmation page is shown', (): Promise<void> => checkoutPage.expectConfirmation());
+    await test.step('AND the payment provider is stubbed', async (): Promise<void> => {
+      await page.route('**/api/payment', paymentMock());
     });
+  });
+
+  test('SCENARIO: paid order opens the confirmation', async ({ checkoutPage }): Promise<void> => {
+    await test.step('WHEN the order is paid', (): Promise<void> => checkoutPage.pay());
+
+    await test.step('THEN confirmation page is shown', (): Promise<void> => checkoutPage.expectConfirmation());
   });
 });
 ```

@@ -422,42 +422,40 @@ import { registerInvalidMock } from './test/mocks/register.mock';
 import { SIGNUP_USER_STUB } from './test/stubs/signup.stub';
 
 test.describe('FEATURE: signup validation', () => {
-  test.describe('GIVEN the signup page is open', () => {
-    test.beforeEach(async ({ signupPage }): Promise<void> => {
-      await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
+  test.beforeEach(async ({ signupPage }): Promise<void> => {
+    await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
+  });
+
+  test('SCENARIO: submitting an empty form shows the required errors and keeps the url', async ({ page, signupPage }): Promise<void> => {
+    await test.step('WHEN the empty form is submitted', (): Promise<void> => signupPage.submit());
+
+    await test.step('THEN the email is required', (): Promise<void> => signupPage.expectFieldError('Email is required'));
+
+    await test.step('AND the password is required', (): Promise<void> => signupPage.expectFieldError('Password is required'));
+
+    await test.step('AND the url is still the signup page', (): Promise<void> => expect(page).toHaveURL('/signup'));
+  });
+
+  test('SCENARIO: correcting a malformed email clears the format error', async ({ signupPage }): Promise<void> => {
+    await test.step('WHEN a malformed email is filled in', (): Promise<void> => signupPage.fillEmail('invalid-email'));
+
+    await test.step('THEN the format error is shown', (): Promise<void> => signupPage.expectFieldError('Invalid email address'));
+
+    await test.step('AND a valid email is filled in', (): Promise<void> => signupPage.fillEmail('valid@email.com'));
+
+    await test.step('THEN the format error is gone', (): Promise<void> => signupPage.expectNoFieldError('Invalid email address'));
+  });
+
+  test('SCENARIO: a 422 server rejection shows its errors on the form', async ({ page, signupPage }): Promise<void> => {
+    await test.step('AND the register api is stubbed with 422', async (): Promise<void> => {
+      await page.route('**/api/register', registerInvalidMock());
     });
 
-    test('SCENARIO: submitting an empty form shows the required errors and keeps the url', async ({ page, signupPage }): Promise<void> => {
-      await test.step('WHEN the empty form is submitted', (): Promise<void> => signupPage.submit());
+    await test.step('WHEN a taken user is registered', (): Promise<void> => signupPage.register(SIGNUP_USER_STUB));
 
-      await test.step('THEN the email is required', (): Promise<void> => signupPage.expectFieldError('Email is required'));
+    await test.step('THEN the email error is shown', (): Promise<void> => signupPage.expectFieldError('Email already exists'));
 
-      await test.step('AND the password is required', (): Promise<void> => signupPage.expectFieldError('Password is required'));
-
-      await test.step('AND the url is still the signup page', (): Promise<void> => expect(page).toHaveURL('/signup'));
-    });
-
-    test('SCENARIO: correcting a malformed email clears the format error', async ({ signupPage }): Promise<void> => {
-      await test.step('WHEN a malformed email is filled in', (): Promise<void> => signupPage.fillEmail('invalid-email'));
-
-      await test.step('THEN the format error is shown', (): Promise<void> => signupPage.expectFieldError('Invalid email address'));
-
-      await test.step('AND a valid email is filled in', (): Promise<void> => signupPage.fillEmail('valid@email.com'));
-
-      await test.step('THEN the format error is gone', (): Promise<void> => signupPage.expectNoFieldError('Invalid email address'));
-    });
-
-    test('SCENARIO: a server rejection shows its errors on the form', async ({ page, signupPage }): Promise<void> => {
-      await test.step('GIVEN the register api is stubbed with 422', async (): Promise<void> => {
-        await page.route('**/api/register', registerInvalidMock());
-      });
-
-      await test.step('WHEN a taken user is registered', (): Promise<void> => signupPage.register(SIGNUP_USER_STUB));
-
-      await test.step('THEN the email error is shown', (): Promise<void> => signupPage.expectFieldError('Email already exists'));
-
-      await test.step('AND the username error is shown', (): Promise<void> => signupPage.expectFieldError('Username is taken'));
-    });
+    await test.step('AND the username error is shown', (): Promise<void> => signupPage.expectFieldError('Username is taken'));
   });
 });
 ```

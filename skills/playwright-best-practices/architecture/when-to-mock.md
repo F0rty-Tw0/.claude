@@ -79,7 +79,7 @@ export type Inventory = {
 
 ### Blocking Unwanted Requests
 
-Block third-party scripts that slow tests and add no coverage. The mock aborts; the `GIVEN` installs it in `beforeEach`.
+Block third-party scripts that slow tests and add no coverage. The mock aborts; a `GIVEN` step in the `FEATURE`-level `beforeEach` installs it.
 
 ```ts
 // e2e/checkout/test/mocks/tracking.mock.ts
@@ -98,18 +98,16 @@ import { test } from './checkout.fixture';
 import { trackingBlockMock } from './test/mocks/tracking.mock';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN tracking hosts are blocked', () => {
-    test.beforeEach(async ({ page }): Promise<void> => {
-      await test.step('GIVEN tracking hosts are blocked', async (): Promise<void> => {
-        await page.route('**/{analytics,tracking,segment,hotjar}.{com,io}/**', trackingBlockMock());
-      });
+  test.beforeEach(async ({ page }): Promise<void> => {
+    await test.step('GIVEN tracking hosts are blocked', async (): Promise<void> => {
+      await page.route('**/{analytics,tracking,segment,hotjar}.{com,io}/**', trackingBlockMock());
     });
+  });
 
-    test('SCENARIO: opening the dashboard shows the heading', async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+  test('SCENARIO: opening the dashboard shows the heading', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN the dashboard heading is visible', (): Promise<void> => dashboardPage.expectHeading());
-    });
+    await test.step('THEN the dashboard heading is visible', (): Promise<void> => dashboardPage.expectHeading());
   });
 });
 ```
@@ -154,30 +152,28 @@ import { test } from './checkout.fixture';
 import { chargeDeclinedMock, chargeMock } from './test/mocks/charge.mock';
 
 test.describe('FEATURE: checkout', () => {
-  test.describe('GIVEN the order confirmation page', () => {
-    test('SCENARIO: a successful charge confirms the order', async ({ orderPage, page }): Promise<void> => {
-      await test.step('GIVEN a successful charge is stubbed', async (): Promise<void> => {
-        await page.route('**/api/charge', chargeMock());
-      });
-
-      await test.step('AND the confirmation page is open', (): Promise<void> => orderPage.goto());
-
-      await test.step('WHEN the purchase is completed', (): Promise<void> => orderPage.completePurchase());
-
-      await test.step('THEN the confirmation message is shown', (): Promise<void> => orderPage.expectConfirmed());
+  test('SCENARIO: a successful charge confirms the order', async ({ orderPage, page }): Promise<void> => {
+    await test.step('GIVEN a successful charge is stubbed', async (): Promise<void> => {
+      await page.route('**/api/charge', chargeMock());
     });
 
-    test('SCENARIO: a declined charge names the decline in the alert', async ({ orderPage, page }): Promise<void> => {
-      await test.step('GIVEN a declined charge is stubbed', async (): Promise<void> => {
-        await page.route('**/api/charge', chargeDeclinedMock());
-      });
+    await test.step('AND the confirmation page is open', (): Promise<void> => orderPage.goto());
 
-      await test.step('AND the confirmation page is open', (): Promise<void> => orderPage.goto());
+    await test.step('WHEN the purchase is completed', (): Promise<void> => orderPage.completePurchase());
 
-      await test.step('WHEN the purchase is completed', (): Promise<void> => orderPage.completePurchase());
+    await test.step('THEN the confirmation message is shown', (): Promise<void> => orderPage.expectConfirmed());
+  });
 
-      await test.step('THEN the alert reports the decline', (): Promise<void> => orderPage.expectPaymentError('Card declined'));
+  test('SCENARIO: a declined charge names the decline in the alert', async ({ orderPage, page }): Promise<void> => {
+    await test.step('GIVEN a declined charge is stubbed', async (): Promise<void> => {
+      await page.route('**/api/charge', chargeDeclinedMock());
     });
+
+    await test.step('AND the confirmation page is open', (): Promise<void> => orderPage.goto());
+
+    await test.step('WHEN the purchase is completed', (): Promise<void> => orderPage.completePurchase());
+
+    await test.step('THEN the alert reports the decline', (): Promise<void> => orderPage.expectPaymentError('Card declined'));
   });
 });
 ```
@@ -235,18 +231,16 @@ import { test } from './admin.fixture';
 import { ADMIN_HAR, HAR_REPLAY } from './common/admin.const';
 
 test.describe('FEATURE: admin panel', () => {
-  test.describe('GIVEN recorded API traffic', () => {
-    test.beforeEach(async ({ page }): Promise<void> => {
-      await test.step('GIVEN the admin HAR is replayed', async (): Promise<void> => {
-        await page.routeFromHAR(ADMIN_HAR, HAR_REPLAY);
-      });
+  test.beforeEach(async ({ page }): Promise<void> => {
+    await test.step('GIVEN the admin HAR is replayed', async (): Promise<void> => {
+      await page.routeFromHAR(ADMIN_HAR, HAR_REPLAY);
     });
+  });
 
-    test('SCENARIO: opening the admin panel shows the reports heading', async ({ adminPage }): Promise<void> => {
-      await test.step('WHEN the admin panel opens', (): Promise<void> => adminPage.goto());
+  test('SCENARIO: opening the admin panel shows the reports heading', async ({ adminPage }): Promise<void> => {
+    await test.step('WHEN the admin panel opens', (): Promise<void> => adminPage.goto());
 
-      await test.step('THEN the reports heading is visible', (): Promise<void> => adminPage.expectReportsHeading());
-    });
+    await test.step('THEN the reports heading is visible', (): Promise<void> => adminPage.expectReportsHeading());
   });
 });
 ```
@@ -339,7 +333,7 @@ export default globalTeardown;
 
 ## Hybrid Approach: Fixture-Based Mock Control
 
-Option fixtures let a `GIVEN` opt out of a mock with `test.use`. The `page` fixture override installs every enabled mock before the test starts.
+Option fixtures let a spec opt out of a mock with a file-level `test.use`. The `page` fixture override installs every enabled mock before the test starts.
 
 ```ts
 // e2e/billing/billing.fixture.ts
@@ -391,26 +385,31 @@ export { expect } from '@playwright/test';
 import { test } from './billing.fixture';
 
 test.describe('FEATURE: subscription renewal', () => {
-  test.describe('GIVEN the payment gateway is mocked', () => {
-    test('SCENARIO: renewing the subscription shows the renewal message', async ({ billingPage }): Promise<void> => {
-      await test.step('GIVEN the billing page is open', (): Promise<void> => billingPage.goto());
+  test('SCENARIO: renewing the subscription shows the renewal message', async ({ billingPage }): Promise<void> => {
+    await test.step('GIVEN the billing page is open', (): Promise<void> => billingPage.goto());
 
-      await test.step('WHEN the subscription is renewed', (): Promise<void> => billingPage.renew());
+    await test.step('WHEN the subscription is renewed', (): Promise<void> => billingPage.renew());
 
-      await test.step('THEN the renewal message is shown', (): Promise<void> => billingPage.expectRenewed());
-    });
+    await test.step('THEN the renewal message is shown', (): Promise<void> => billingPage.expectRenewed());
   });
+});
+```
 
-  test.describe('GIVEN the real test gateway', () => {
-    test.use({ mockPayments: false });
+The real test gateway is the same scenario with `mockPayments` off. The option is read when the `page` fixture is built, before any step runs, so it cannot be a `GIVEN` step; it is its own spec with a file-level `test.use`.
 
-    test('SCENARIO: renewing the subscription shows the renewal message', async ({ billingPage }): Promise<void> => {
-      await test.step('GIVEN the billing page is open', (): Promise<void> => billingPage.goto());
+```ts
+// e2e/billing/billing-real-gateway.test.ts
+import { test } from './billing.fixture';
 
-      await test.step('WHEN the subscription is renewed', (): Promise<void> => billingPage.renew());
+test.use({ mockPayments: false });
 
-      await test.step('THEN the renewal message is shown', (): Promise<void> => billingPage.expectRenewed());
-    });
+test.describe('FEATURE: subscription renewal on the real test gateway', () => {
+  test('SCENARIO: renewing the subscription shows the renewal message', async ({ billingPage }): Promise<void> => {
+    await test.step('GIVEN the billing page is open', (): Promise<void> => billingPage.goto());
+
+    await test.step('WHEN the subscription is renewed', (): Promise<void> => billingPage.renew());
+
+    await test.step('THEN the renewal message is shown', (): Promise<void> => billingPage.expectRenewed());
   });
 });
 ```
@@ -474,15 +473,13 @@ import { expect, test } from './billing.fixture';
 import { INVOICE_STUB } from './test/stubs/invoice.stub';
 import { chargeThroughApi, shapeOf } from './test/utils/contract.spec.util';
 
+test.use({ mockPayments: false });
+
 test.describe('FEATURE: billing mock contract', () => {
-  test.describe('GIVEN the real billing API', () => {
-    test.use({ mockPayments: false });
+  test('SCENARIO: a charge posted to the real billing API matches the mock body shape', async ({ request }): Promise<void> => {
+    const realBody = await test.step('WHEN a charge is posted through the real API', (): Promise<Record<string, unknown>> => chargeThroughApi(request));
 
-    test('SCENARIO: posting a charge matches the mock body shape', async ({ request }): Promise<void> => {
-      const realBody = await test.step('WHEN a charge is posted through the real API', (): Promise<Record<string, unknown>> => chargeThroughApi(request));
-
-      await test.step('THEN the mock keys and value types match the real body', (): void => expect(shapeOf(INVOICE_STUB)).toEqual(shapeOf(realBody)));
-    });
+    await test.step('THEN the mock keys and value types match the real body', (): void => expect(shapeOf(INVOICE_STUB)).toEqual(shapeOf(realBody)));
   });
 });
 ```

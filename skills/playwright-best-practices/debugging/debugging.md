@@ -79,14 +79,12 @@ Features:
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: inspector opens before the load click', async ({ dashboardPage, page }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  test('SCENARIO: inspector opens before the load click', async ({ dashboardPage, page }): Promise<void> => {
+    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('WHEN the run pauses for the inspector', (): Promise<void> => page.pause());
+    await test.step('WHEN the run pauses for the inspector', (): Promise<void> => page.pause());
 
-      await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
-    });
+    await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
   });
 });
 ```
@@ -151,16 +149,14 @@ import { test } from './dashboard.fixture';
 import { startTrace, stopTrace } from './test/utils/tracing.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: data load flow is saved as a trace', async ({ context, dashboardPage }): Promise<void> => {
-      await test.step('GIVEN tracing is started', (): Promise<void> => startTrace(context));
+  test('SCENARIO: data load flow is saved as a trace', async ({ context, dashboardPage }): Promise<void> => {
+    await test.step('GIVEN tracing is started', (): Promise<void> => startTrace(context));
 
-      await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
+    await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
 
-      await test.step('WHEN tracing is stopped', (): Promise<void> => stopTrace(context, 'trace.zip'));
-    });
+    await test.step('WHEN tracing is stopped', (): Promise<void> => stopTrace(context, 'trace.zip'));
   });
 });
 ```
@@ -223,14 +219,12 @@ import { test } from './dashboard.fixture';
 import { logNetworkSummary, recordNetwork } from './test/utils/network-log.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: page load prints the network log', async ({ dashboardPage, page }): Promise<void> => {
-      const network = await test.step('GIVEN network traffic is recorded', (): NetworkLog => recordNetwork(page));
+  test('SCENARIO: page load prints the network log', async ({ dashboardPage, page }): Promise<void> => {
+    const network = await test.step('GIVEN network traffic is recorded', (): NetworkLog => recordNetwork(page));
 
-      await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('WHEN the network summary is printed', (): void => logNetworkSummary(network));
-    });
+    await test.step('WHEN the network summary is printed', (): void => logNetworkSummary(network));
   });
 });
 ```
@@ -388,16 +382,14 @@ import { test } from './dashboard.fixture';
 import { logAuthState, saveStateWhenRedirected } from './test/utils/auth-debug.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN a stored session', () => {
-    test('SCENARIO: protected page open inspects the auth state', async ({ context, page }): Promise<void> => {
-      await test.step('WHEN the cookies are printed', (): Promise<void> => logAuthState(context));
+  test('SCENARIO: protected page open inspects the auth state', async ({ context, page }): Promise<void> => {
+    await test.step('WHEN the cookies are printed', (): Promise<void> => logAuthState(context));
 
-      await test.step('AND the protected page is opened', async (): Promise<void> => {
-        await page.goto('/protected');
-      });
-
-      await test.step('AND the state is saved when redirected to login', (): Promise<void> => saveStateWhenRedirected(page, context));
+    await test.step('AND the protected page is opened', async (): Promise<void> => {
+      await page.goto('/protected');
     });
+
+    await test.step('AND the state is saved when redirected to login', (): Promise<void> => saveStateWhenRedirected(page, context));
   });
 });
 ```
@@ -426,16 +418,14 @@ import { test } from './dashboard.fixture';
 import { attachFullPage } from './test/utils/screenshot.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: menu open attaches before and after screenshots', async ({ dashboardPage, page }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  test('SCENARIO: menu open attaches before and after screenshots', async ({ dashboardPage, page }): Promise<void> => {
+    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('AND the before screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'before'));
+    await test.step('AND the before screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'before'));
 
-      await test.step('AND the menu is opened', (): Promise<void> => dashboardPage.openMenu());
+    await test.step('AND the menu is opened', (): Promise<void> => dashboardPage.openMenu());
 
-      await test.step('WHEN the after screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'after'));
-    });
+    await test.step('WHEN the after screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'after'));
   });
 });
 ```
@@ -503,7 +493,7 @@ Call it on the page-object locator: `await test.step('AND the button state is pr
 | Scope | Call | Where |
 |---|---|---|
 | One assertion | `expect(this.loaded).toBeVisible({ timeout: 30_000 })` | Inside a boxed `expect*` page-object method |
-| Every test in a group | `test.setTimeout(60_000)` | First line of the `test.describe` callback |
+| Every test in a spec | `test.setTimeout(60_000)` | First line of the `FEATURE` `test.describe` callback |
 | One test | `test.slow('reason')` or `test('SCENARIO: <flow>', { timeout: 60_000 }, …)` | Spec |
 
 To see what is blocking, record network traffic with `recordNetwork(page)` from [Monitor All Requests](#monitor-all-requests) before opening the slow page.

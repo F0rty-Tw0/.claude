@@ -61,7 +61,7 @@ export { expect } from '@playwright/test';
 
 `StoreFinderPage` has `goto()`, `findNearby()`, `startTracking()`, `refreshPosition()`, and the boxed `expectStoresIn(city)`, `expectLocation(fragment)` (`toContainText` on `getByTestId('location')`), and `expectDeniedFallback()` (denied text and ZIP input visible). `refreshPosition` is `page.evaluate` of a module-level `(): void => navigator.geolocation.getCurrentPosition((): void => undefined)`, so an app that only reads once picks up a changed `setGeolocation` value.
 
-The second `GIVEN` uses `test.use({ permissions: [] })` so the browser reports the permission as denied. `browser.newContext({ permissions: [] })` does the same for a hand-built context; prefer `test.use` so the default `page` fixture stays in play.
+The denied scenario opens with a `GIVEN` step that calls `context.clearPermissions()`, so the browser reports the permission as denied. Permissions change at runtime, so this is a step, not a `test.use`; `browser.newContext({ permissions: [] })` does the same for a hand-built context.
 
 ```ts
 // e2e/store-finder/store-finder.e2e.ts
@@ -69,36 +69,30 @@ import { test } from './store-finder.fixture';
 import { OAKLAND_STUB, SAN_FRANCISCO_STUB } from './test/stubs/coordinates.stub';
 
 test.describe('FEATURE: store finder', () => {
-  test.describe('GIVEN geolocation is granted', () => {
-    test.beforeEach(async ({ setLocation, storeFinderPage }): Promise<void> => {
-      await test.step('GIVEN the location is San Francisco', (): Promise<void> => setLocation(SAN_FRANCISCO_STUB));
+  test('SCENARIO: a granted location change shows the new position in the tracker', async ({ setLocation, storeFinderPage }): Promise<void> => {
+    await test.step('GIVEN the location is San Francisco', (): Promise<void> => setLocation(SAN_FRANCISCO_STUB));
 
-      await test.step('AND the store finder is open', (): Promise<void> => storeFinderPage.goto());
-    });
+    await test.step('AND the store finder is open', (): Promise<void> => storeFinderPage.goto());
 
-    test('SCENARIO: a location change shows the new position in the tracker', async ({ setLocation, storeFinderPage }): Promise<void> => {
-      await test.step('GIVEN tracking is started', (): Promise<void> => storeFinderPage.startTracking());
+    await test.step('AND tracking is started', (): Promise<void> => storeFinderPage.startTracking());
 
-      await test.step('AND the tracker shows the initial latitude', (): Promise<void> => storeFinderPage.expectLocation('37.7749'));
+    await test.step('AND the tracker shows the initial latitude', (): Promise<void> => storeFinderPage.expectLocation('37.7749'));
 
-      await test.step('WHEN the location moves to Oakland', (): Promise<void> => setLocation(OAKLAND_STUB));
+    await test.step('WHEN the location moves to Oakland', (): Promise<void> => setLocation(OAKLAND_STUB));
 
-      await test.step('AND a fresh position is requested', (): Promise<void> => storeFinderPage.refreshPosition());
+    await test.step('AND a fresh position is requested', (): Promise<void> => storeFinderPage.refreshPosition());
 
-      await test.step('THEN the tracker shows the new latitude', (): Promise<void> => storeFinderPage.expectLocation('37.8044'));
-    });
+    await test.step('THEN the tracker shows the new latitude', (): Promise<void> => storeFinderPage.expectLocation('37.8044'));
   });
 
-  test.describe('GIVEN geolocation is denied', () => {
-    test.use({ permissions: [] });
+  test('SCENARIO: denied geolocation shows the ZIP fallback for nearby stores', async ({ context, storeFinderPage }): Promise<void> => {
+    await test.step('GIVEN geolocation is denied', (): Promise<void> => context.clearPermissions());
 
-    test('SCENARIO: requesting nearby stores shows the ZIP fallback', async ({ storeFinderPage }): Promise<void> => {
-      await test.step('GIVEN the store finder is open', (): Promise<void> => storeFinderPage.goto());
+    await test.step('AND the store finder is open', (): Promise<void> => storeFinderPage.goto());
 
-      await test.step('WHEN nearby stores are requested', (): Promise<void> => storeFinderPage.findNearby());
+    await test.step('WHEN nearby stores are requested', (): Promise<void> => storeFinderPage.findNearby());
 
-      await test.step('THEN the denied message and ZIP input are shown', (): Promise<void> => storeFinderPage.expectDeniedFallback());
-    });
+    await test.step('THEN the denied message and ZIP input are shown', (): Promise<void> => storeFinderPage.expectDeniedFallback());
   });
 });
 ```
@@ -108,8 +102,8 @@ The granted case with one position is the same test minus the move: `findNearby(
 | Goal | Setup |
 |---|---|
 | Grant for the whole project | `use: { geolocation, permissions: ['geolocation'] }` in a project config |
-| Grant per `GIVEN` | `context.grantPermissions(['geolocation'])` in a fixture or `beforeEach` step |
-| Deny per `GIVEN` | `test.use({ permissions: [] })` |
+| Grant per scenario | `context.grantPermissions(['geolocation'])` in a fixture or the test's `GIVEN` step |
+| Deny per scenario | `context.clearPermissions()` in the test's `GIVEN` step |
 | Deny in a hand-built context | `browser.newContext({ permissions: [] })`, then `context.close()` in teardown |
 
 ## Permissions
@@ -135,7 +129,7 @@ export const permissionState = (page: Page, name: PermissionName): Promise<Permi
 
 `AlertsPage` has `goto()`, `enableNotifications()`, `notifyMe()`, and the boxed `expectPermissionHint()` on `getByText('Please enable notifications')`.
 
-`context.grantPermissions` takes an array, so one step grants camera, microphone, and notifications together. The denied `GIVEN` sets `test.use({ permissions: [] })`, clicks the enable button, and asserts the hint.
+`context.grantPermissions` takes an array, so one step grants camera, microphone, and notifications together. The denied scenario opens with a `GIVEN` step that calls `context.clearPermissions()`, clicks the enable button, and asserts the hint.
 
 | Read | Step |
 |---|---|
@@ -148,30 +142,24 @@ import { expect, test } from './alerts.fixture';
 import { permissionState } from './test/utils/permissions.spec.util';
 
 test.describe('FEATURE: alert permissions', () => {
-  test.describe('GIVEN camera, microphone, and notifications are granted', () => {
-    test.beforeEach(async ({ alertsPage, context }): Promise<void> => {
-      await test.step('GIVEN the call permissions are granted', (): Promise<void> => context.grantPermissions(['camera', 'microphone', 'notifications']));
+  test('SCENARIO: with call permissions granted the permissions API reports notifications granted', async ({ alertsPage, context, page }): Promise<void> => {
+    await test.step('GIVEN the call permissions are granted', (): Promise<void> => context.grantPermissions(['camera', 'microphone', 'notifications']));
 
-      await test.step('AND the alerts page is open', (): Promise<void> => alertsPage.goto());
-    });
+    await test.step('AND the alerts page is open', (): Promise<void> => alertsPage.goto());
 
-    test('SCENARIO: querying the permissions API reports notifications granted', async ({ page }): Promise<void> => {
-      const state = await test.step('WHEN the notifications permission is queried', (): Promise<PermissionState> => permissionState(page, 'notifications'));
+    const state = await test.step('WHEN the notifications permission is queried', (): Promise<PermissionState> => permissionState(page, 'notifications'));
 
-      await test.step('THEN the state is granted', (): void => expect(state).toBe('granted'));
-    });
+    await test.step('THEN the state is granted', (): void => expect(state).toBe('granted'));
   });
 
-  test.describe('GIVEN notifications are denied', () => {
-    test.use({ permissions: [] });
+  test('SCENARIO: enabling denied notifications shows the permission hint', async ({ alertsPage, context }): Promise<void> => {
+    await test.step('GIVEN every permission is cleared', (): Promise<void> => context.clearPermissions());
 
-    test('SCENARIO: enabling notifications shows the permission hint', async ({ alertsPage }): Promise<void> => {
-      await test.step('GIVEN the alerts page is open', (): Promise<void> => alertsPage.goto());
+    await test.step('AND the alerts page is open', (): Promise<void> => alertsPage.goto());
 
-      await test.step('WHEN notifications are enabled', (): Promise<void> => alertsPage.enableNotifications());
+    await test.step('WHEN notifications are enabled', (): Promise<void> => alertsPage.enableNotifications());
 
-      await test.step('THEN the permission hint is shown', (): Promise<void> => alertsPage.expectPermissionHint());
-    });
+    await test.step('THEN the permission hint is shown', (): Promise<void> => alertsPage.expectPermissionHint());
   });
 });
 ```
@@ -230,26 +218,24 @@ export { expect } from '@playwright/test';
 import { expect, test } from './share.fixture';
 
 test.describe('FEATURE: share', () => {
-  test.describe('GIVEN the share page is open', () => {
-    test.beforeEach(async ({ sharePage }): Promise<void> => {
-      await test.step('GIVEN the share page is open', (): Promise<void> => sharePage.goto());
-    });
+  test.beforeEach(async ({ sharePage }): Promise<void> => {
+    await test.step('GIVEN the share page is open', (): Promise<void> => sharePage.goto());
+  });
 
-    test('SCENARIO: clicking the copy button puts the share link on the clipboard', async ({ clipboard, sharePage }): Promise<void> => {
-      await test.step('WHEN the link is copied', (): Promise<void> => sharePage.copyLink());
+  test('SCENARIO: clicking the copy button puts the share link on the clipboard', async ({ clipboard, sharePage }): Promise<void> => {
+    await test.step('WHEN the link is copied', (): Promise<void> => sharePage.copyLink());
 
-      const link = await test.step('AND the clipboard is read', (): Promise<string> => clipboard.read());
+    const link = await test.step('AND the clipboard is read', (): Promise<string> => clipboard.read());
 
-      await test.step('THEN the clipboard holds a share url', (): void => expect(link).toContain('https://example.com/share/'));
-    });
+    await test.step('THEN the clipboard holds a share url', (): void => expect(link).toContain('https://example.com/share/'));
+  });
 
-    test('SCENARIO: pasting clipboard text shows it in the note', async ({ clipboard, sharePage }): Promise<void> => {
-      await test.step('GIVEN text is on the clipboard', (): Promise<void> => clipboard.write('Pasted content'));
+  test('SCENARIO: pasting clipboard text shows it in the note', async ({ clipboard, sharePage }): Promise<void> => {
+    await test.step('AND text is on the clipboard', (): Promise<void> => clipboard.write('Pasted content'));
 
-      await test.step('WHEN the text is pasted into the note', (): Promise<void> => sharePage.pasteIntoNote());
+    await test.step('WHEN the text is pasted into the note', (): Promise<void> => sharePage.pasteIntoNote());
 
-      await test.step('THEN the note holds the pasted text', (): Promise<void> => sharePage.expectNote('Pasted content'));
-    });
+    await test.step('THEN the note holds the pasted text', (): Promise<void> => sharePage.expectNote('Pasted content'));
   });
 });
 ```
@@ -357,31 +343,29 @@ import { expect, test } from './alerts.fixture';
 import type { NotificationRecord } from './common/alerts.type';
 
 test.describe('FEATURE: alerts', () => {
-  test.describe('GIVEN the Notification API is faked', () => {
-    test.beforeEach(async ({ alertsPage, fakeNotification }): Promise<void> => {
-      await test.step('GIVEN the alerts page is open', (): Promise<void> => alertsPage.goto());
-    });
+  test.beforeEach(async ({ alertsPage, fakeNotification }): Promise<void> => {
+    await test.step('GIVEN the alerts page is open', (): Promise<void> => alertsPage.goto());
+  });
 
-    test('SCENARIO: clicking Notify Me creates one notification titled New Alert', async ({ alertsPage, fakeNotification }): Promise<void> => {
-      await test.step('WHEN Notify Me is clicked', (): Promise<void> => alertsPage.notifyMe());
+  test('SCENARIO: clicking Notify Me creates one notification titled New Alert', async ({ alertsPage, fakeNotification }): Promise<void> => {
+    await test.step('WHEN Notify Me is clicked', (): Promise<void> => alertsPage.notifyMe());
 
-      const created = await test.step('AND the created notifications are read', (): Promise<NotificationRecord[]> => fakeNotification.created());
+    const created = await test.step('AND the created notifications are read', (): Promise<NotificationRecord[]> => fakeNotification.created());
 
-      await test.step('THEN one notification titled New Alert exists', (): void => expect(created).toEqual([{ title: 'New Alert' }]));
-    });
+    await test.step('THEN one notification titled New Alert exists', (): void => expect(created).toEqual([{ title: 'New Alert' }]));
+  });
 
-    test('SCENARIO: clicking a notification opens the messages page', async ({ fakeNotification, page }): Promise<void> => {
-      await test.step('WHEN a New Message notification is raised and clicked', (): Promise<void> => fakeNotification.raise('New Message'));
+  test('SCENARIO: clicking a notification opens the messages page', async ({ fakeNotification, page }): Promise<void> => {
+    await test.step('WHEN a New Message notification is raised and clicked', (): Promise<void> => fakeNotification.raise('New Message'));
 
-      await test.step('THEN the messages page is shown', (): Promise<void> => expect(page).toHaveURL(/\/messages/));
-    });
+    await test.step('THEN the messages page is shown', (): Promise<void> => expect(page).toHaveURL(/\/messages/));
   });
 });
 ```
 
 ## Camera & Microphone
 
-CI has no camera, so `getUserMedia` returns a canvas stream and `enumerateDevices` returns stubbed devices. One `MediaDevicesConfig` drives both; `error` set to a `DOMException` name makes `getUserMedia` throw instead. The config is an option fixture, so each `GIVEN` selects its devices with `test.use`.
+CI has no camera, so `getUserMedia` returns a canvas stream and `enumerateDevices` returns stubbed devices. One `MediaDevicesConfig` drives both; `error` set to a `DOMException` name makes `getUserMedia` throw instead. The config is an option fixture, so a spec that needs other devices selects them with a file-level `test.use`.
 
 ```ts
 // e2e/video-call/common/video-call.type.ts
@@ -454,37 +438,42 @@ export { expect } from '@playwright/test';
 
 `VideoCallPage` owns `cameraSelect`, `joinAudioOnlyButton`, `joinCallButton`, `startCameraButton`, and `videoPreview`. Its `expect*` methods are boxed steps: `expectPreview()`, `expectCameraOptions(labels)`, and `expectCameraDenied()` (denied text plus the audio-only button).
 
-`GIVEN camera access is denied` sets `error: 'NotAllowedError'`, so the fake `getUserMedia` throws a `DOMException` with that name and the app shows its audio-only fallback. Device selection is the same shape: a `twoCameras` const spreads `MEDIA_DEVICES_STUB` with `devices: [FRONT_CAMERA_STUB, { ...FRONT_CAMERA_STUB, deviceId: 'cam2', groupId: '2', label: 'Back Camera' }]`, `test.use({ mediaDevices: twoCameras })`, then `videoCallPage.goto('/camera')` and `expectCameraOptions(['Front Camera', 'Back Camera'])`.
+The default option serves one camera, so the main spec needs no `test.use`:
 
 ```ts
 // e2e/video-call/video-call.e2e.ts
+import { test } from './video-call.fixture';
+
+test.describe('FEATURE: video call', () => {
+  test('SCENARIO: starting the camera shows the preview', async ({ videoCallPage }): Promise<void> => {
+    await test.step('GIVEN the video settings are open', (): Promise<void> => videoCallPage.goto('/video-settings'));
+
+    await test.step('WHEN the camera is started', (): Promise<void> => videoCallPage.startCamera());
+
+    await test.step('THEN the video preview is shown', (): Promise<void> => videoCallPage.expectPreview());
+  });
+});
+```
+
+`mediaDevices` is read when the init script is installed, before any test step runs, so a denied camera cannot be a step. It is its own spec with a file-level `test.use`: `error: 'NotAllowedError'` makes the fake `getUserMedia` throw a `DOMException` with that name, and the app shows its audio-only fallback. Device selection is the same shape: a `video-call-two-cameras.e2e.ts` spec spreads `MEDIA_DEVICES_STUB` with `devices: [FRONT_CAMERA_STUB, { ...FRONT_CAMERA_STUB, deviceId: 'cam2', groupId: '2', label: 'Back Camera' }]` in its file-level `test.use`, then `videoCallPage.goto('/camera')` and `expectCameraOptions(['Front Camera', 'Back Camera'])`.
+
+```ts
+// e2e/video-call/video-call-denied.e2e.ts
 import type { MediaDevicesConfig } from './common/video-call.type';
 import { test } from './video-call.fixture';
 import { MEDIA_DEVICES_STUB } from './test/stubs/media-devices.stub';
 
 const cameraDenied: MediaDevicesConfig = { ...MEDIA_DEVICES_STUB, error: 'NotAllowedError' };
 
-test.describe('FEATURE: video call', () => {
-  test.describe('GIVEN one camera is available', () => {
-    test('SCENARIO: starting the camera shows the preview', async ({ videoCallPage }): Promise<void> => {
-      await test.step('GIVEN the video settings are open', (): Promise<void> => videoCallPage.goto('/video-settings'));
+test.use({ mediaDevices: cameraDenied });
 
-      await test.step('WHEN the camera is started', (): Promise<void> => videoCallPage.startCamera());
+test.describe('FEATURE: video call with camera access denied', () => {
+  test('SCENARIO: joining the call offers the audio-only fallback', async ({ videoCallPage }): Promise<void> => {
+    await test.step('GIVEN the video call is open', (): Promise<void> => videoCallPage.goto('/video-call'));
 
-      await test.step('THEN the video preview is shown', (): Promise<void> => videoCallPage.expectPreview());
-    });
-  });
+    await test.step('WHEN the call is joined', (): Promise<void> => videoCallPage.joinCall());
 
-  test.describe('GIVEN camera access is denied', () => {
-    test.use({ mediaDevices: cameraDenied });
-
-    test('SCENARIO: joining the call offers the audio-only fallback', async ({ videoCallPage }): Promise<void> => {
-      await test.step('GIVEN the video call is open', (): Promise<void> => videoCallPage.goto('/video-call'));
-
-      await test.step('WHEN the call is joined', (): Promise<void> => videoCallPage.joinCall());
-
-      await test.step('THEN the denied message and audio-only button are shown', (): Promise<void> => videoCallPage.expectCameraDenied());
-    });
+    await test.step('THEN the denied message and audio-only button are shown', (): Promise<void> => videoCallPage.expectCameraDenied());
   });
 });
 ```
@@ -495,7 +484,7 @@ test.describe('FEATURE: video call', () => {
 |---|---|---|
 | Not granting permissions | Tests fail with permission errors | Use `context.grantPermissions()` in a fixture |
 | Testing real geolocation | Flaky, environment-dependent | Mock with `setGeolocation()` |
-| Not testing permission denial | Misses error handling | Test both granted and denied states with `test.use({ permissions: [] })` |
+| Not testing permission denial | Misses error handling | Test both granted and denied states; deny with a `context.clearPermissions()` `GIVEN` step |
 | Using real camera/mic | CI has no devices | Mock `getUserMedia` with an init script |
 | `window as any` in init scripts | Hides the shape, breaks typecheck | `Object.defineProperty(window, name, { value })` |
 

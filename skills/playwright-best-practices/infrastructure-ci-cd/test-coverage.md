@@ -317,36 +317,34 @@ import { expect, test } from './checkout.fixture';
 const MAX_UNUSED_CSS_PERCENT = 50;
 
 test.describe('FEATURE: checkout coverage', () => {
-  test.describe('GIVEN the checkout page', () => {
-    test('SCENARIO: submitting the payment covers the checkout module', async ({ checkoutPage, page }): Promise<void> => {
-      await test.step('GIVEN js coverage is recording', (): Promise<void> => page.coverage.startJSCoverage({ resetOnNavigation: false }));
+  test('SCENARIO: submitting the payment covers the checkout module', async ({ checkoutPage, page }): Promise<void> => {
+    await test.step('GIVEN js coverage is recording', (): Promise<void> => page.coverage.startJSCoverage({ resetOnNavigation: false }));
 
-      await test.step('AND the checkout page is open', (): Promise<void> => checkoutPage.goto());
+    await test.step('AND the checkout page is open', (): Promise<void> => checkoutPage.goto());
 
-      await test.step('WHEN the payment is submitted', (): Promise<void> => checkoutPage.pay());
+    await test.step('WHEN the payment is submitted', (): Promise<void> => checkoutPage.pay());
 
-      await test.step('THEN the success message is shown', (): Promise<void> => checkoutPage.expectSuccess());
+    await test.step('THEN the success message is shown', (): Promise<void> => checkoutPage.expectSuccess());
 
-      const entries = await test.step('AND js coverage is collected', (): Promise<JsCoverageEntry[]> => page.coverage.stopJSCoverage());
-      const percent = await test.step('AND checkout.js coverage is measured', (): number => moduleCoveragePercent(entries, 'checkout.js'));
+    const entries = await test.step('AND js coverage is collected', (): Promise<JsCoverageEntry[]> => page.coverage.stopJSCoverage());
+    const percent = await test.step('AND checkout.js coverage is measured', (): number => moduleCoveragePercent(entries, 'checkout.js'));
 
-      await test.step('AND the checkout module meets the minimum', (): Promise<void> => expect(percent).toBeGreaterThan(MIN_COVERAGE_PERCENT));
-    });
+    await test.step('AND the checkout module meets the minimum', (): Promise<void> => expect(percent).toBeGreaterThan(MIN_COVERAGE_PERCENT));
+  });
 
-    test('SCENARIO: opening the help dialog uses most of the stylesheet', async ({ checkoutPage, page }): Promise<void> => {
-      await test.step('GIVEN css coverage is recording', (): Promise<void> => page.coverage.startCSSCoverage());
+  test('SCENARIO: opening the help dialog uses most of the stylesheet', async ({ checkoutPage, page }): Promise<void> => {
+    await test.step('GIVEN css coverage is recording', (): Promise<void> => page.coverage.startCSSCoverage());
 
-      await test.step('AND the checkout page is open', (): Promise<void> => checkoutPage.goto());
+    await test.step('AND the checkout page is open', (): Promise<void> => checkoutPage.goto());
 
-      await test.step('WHEN the help dialog is opened', (): Promise<void> => checkoutPage.openHelp());
+    await test.step('WHEN the help dialog is opened', (): Promise<void> => checkoutPage.openHelp());
 
-      await test.step('THEN the help dialog is open', (): Promise<void> => checkoutPage.expectHelpOpen());
+    await test.step('THEN the help dialog is open', (): Promise<void> => checkoutPage.expectHelpOpen());
 
-      const entries = await test.step('AND css coverage is collected', (): Promise<CssCoverageEntry[]> => page.coverage.stopCSSCoverage());
-      const unused = await test.step('AND app.css unused share is measured', (): number => stylesheetUnusedPercent(entries, 'app.css'));
+    const entries = await test.step('AND css coverage is collected', (): Promise<CssCoverageEntry[]> => page.coverage.stopCSSCoverage());
+    const unused = await test.step('AND app.css unused share is measured', (): number => stylesheetUnusedPercent(entries, 'app.css'));
 
-      await test.step('AND under half of the stylesheet is unused', (): Promise<void> => expect(unused).toBeLessThan(MAX_UNUSED_CSS_PERCENT));
-    });
+    await test.step('AND under half of the stylesheet is unused', (): Promise<void> => expect(unused).toBeLessThan(MAX_UNUSED_CSS_PERCENT));
   });
 });
 ```

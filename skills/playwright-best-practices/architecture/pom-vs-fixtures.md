@@ -145,20 +145,18 @@ import { test } from './booking.fixture';
 import { BOOKING_DETAILS_STUB } from './test/stubs/booking.stub';
 
 test.describe('FEATURE: booking', () => {
-  test.describe('GIVEN the booking page is open', () => {
-    test.beforeEach(async ({ bookingPage }): Promise<void> => {
-      await test.step('GIVEN the booking page is open', (): Promise<void> => bookingPage.goto());
-    });
+  test.beforeEach(async ({ bookingPage }): Promise<void> => {
+    await test.step('GIVEN the booking page is open', (): Promise<void> => bookingPage.goto());
+  });
 
-    test('SCENARIO: reserving a standard room shows the confirmation', async ({ bookingPage }): Promise<void> => {
-      const details: BookingDetails = { ...BOOKING_DETAILS_STUB, room: 'standard' };
+  test('SCENARIO: reserving a standard room shows the confirmation', async ({ bookingPage }): Promise<void> => {
+    const details: BookingDetails = { ...BOOKING_DETAILS_STUB, room: 'standard' };
 
-      await test.step('WHEN the booking details are filled', (): Promise<void> => bookingPage.fillDetails(details));
+    await test.step('WHEN the booking details are filled', (): Promise<void> => bookingPage.fillDetails(details));
 
-      await test.step('AND the room is reserved', (): Promise<void> => bookingPage.reserve());
+    await test.step('AND the room is reserved', (): Promise<void> => bookingPage.reserve());
 
-      await test.step('THEN the confirmation message is shown', (): Promise<void> => bookingPage.expectConfirmed());
-    });
+    await test.step('THEN the confirmation message is shown', (): Promise<void> => bookingPage.expectConfirmed());
   });
 });
 ```
@@ -228,18 +226,16 @@ export { expect } from '@playwright/test';
 import { test } from './booking.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN a logged-in member', () => {
-    test('SCENARIO: opening the dashboard shows the widgets', async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+  test('SCENARIO: opening the dashboard shows the widgets', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN the dashboard widgets are visible', (): Promise<void> => dashboardPage.expectWidgets());
-    });
+    await test.step('THEN the dashboard widgets are visible', (): Promise<void> => dashboardPage.expectWidgets());
+  });
 
-    test('SCENARIO: opening the dashboard greets the member by email', async ({ dashboardPage, member }): Promise<void> => {
-      await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+  test('SCENARIO: opening the dashboard greets the member by email', async ({ dashboardPage, member }): Promise<void> => {
+    await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN the welcome prompt shows the member email', (): Promise<void> => dashboardPage.expectWelcome(member.email));
-    });
+    await test.step('THEN the welcome prompt shows the member email', (): Promise<void> => dashboardPage.expectWelcome(member.email));
   });
 });
 ```
@@ -314,20 +310,18 @@ import { test } from './booking.fixture';
 import { generateEmail } from './test/utils/member-builder.spec.util';
 
 test.describe('FEATURE: account settings', () => {
-  test.describe('GIVEN the account page is open', () => {
-    test.beforeEach(async ({ accountPage }): Promise<void> => {
-      await test.step('GIVEN the account page is open', (): Promise<void> => accountPage.goto());
-    });
+  test.beforeEach(async ({ accountPage }): Promise<void> => {
+    await test.step('GIVEN the account page is open', (): Promise<void> => accountPage.goto());
+  });
 
-    test('SCENARIO: updating the email saves the new address', async ({ accountPage }): Promise<void> => {
-      const newEmail = generateEmail('updated');
+  test('SCENARIO: updating the email saves the new address', async ({ accountPage }): Promise<void> => {
+    const newEmail = generateEmail('updated');
 
-      await test.step('WHEN the new email is saved', (): Promise<void> => accountPage.updateEmail(newEmail));
+    await test.step('WHEN the new email is saved', (): Promise<void> => accountPage.updateEmail(newEmail));
 
-      await test.step('THEN the notification confirms the update', (): Promise<void> => accountPage.notification.expectMessage('Account updated'));
+    await test.step('THEN the notification confirms the update', (): Promise<void> => accountPage.notification.expectMessage('Account updated'));
 
-      await test.step('AND the email field holds the new email', (): Promise<void> => accountPage.expectEmail(newEmail));
-    });
+    await test.step('AND the email field holds the new email', (): Promise<void> => accountPage.expectEmail(newEmail));
   });
 });
 ```
