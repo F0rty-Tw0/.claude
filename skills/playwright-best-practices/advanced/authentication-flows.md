@@ -19,19 +19,19 @@ Every sample in this file builds on the `e2e/auth/` feature from [authentication
 
 | Page object | File | Members used in this file |
 |---|---|---|
-| `SignupPage` | `e2e/auth/pages/signup.page.ts` | gains `expectInboxPrompt()` ("Check your inbox") |
+| `SignupPage` | `e2e/auth/pages/signup.page.ts` | gains `expectInboxPrompt()` ("Check your inbox") and a `goto({ registerHandler, verifyToken })` option: it routes `**/api/auth/register` through `registerHandler`, and with `verifyToken` also routes the verify call to `verifyMock()`, before it navigates |
 | `VerifyPage` | `e2e/auth/pages/verify.page.ts` | `goto(token)` opens `/verify?token=`, `expectConfirmed()` ("Email confirmed") |
-| `ForgotPasswordPage` | `e2e/auth/pages/forgot-password.page.ts` | `goto()`, `requestLink(email)`, `expectEmailSent()` ("Reset email sent") |
-| `ResetPasswordPage` | `e2e/auth/pages/reset-password.page.ts` | shown below; also gains `expectStrengthHint()`, a boxed `toBeVisible()` on `getByText(/at least 8 characters/i)` |
+| `ForgotPasswordPage` | `e2e/auth/pages/forgot-password.page.ts` | `goto({ tokenHandler })` routes `**/api/auth/forgot-password` through `tokenHandler` before it navigates, `requestLink(email)`, `expectEmailSent()` ("Reset email sent") |
+| `ResetPasswordPage` | `e2e/auth/pages/reset-password.page.ts` | shown below; also gains `expectStrengthHint()`, a plain `toBeVisible()` on `getByText(/at least 8 characters/i)` |
 | `LoginPage` | `e2e/auth/pages/login.page.ts` | gains `rememberMeCheckbox` ("Keep me signed in"), `expectSessionExpired()` (`/session.*expired\|sign in again/i`) |
-| `HomePage` | `e2e/auth/pages/home.page.ts` | gains `expectWelcome()`, `expectSessionWarning()` (`/session.*expir/i` plus the extend button, 10 s timeout because the warning fires on a timer), `extendSession()`, `expectSessionWarningHidden()`, `signOut()` (account menu, then "Sign out") |
-| `ProfilePage` | `e2e/auth/pages/profile.page.ts` | `goto()` opens the protected `/profile` route |
-| `SecuritySettingsPage` | `e2e/auth/pages/security-settings.page.ts` | `goto()`, `signOutEverywhere()` (button, then dialog "Confirm") |
+| `HomePage` | `e2e/auth/pages/home.page.ts` | gains `goto({ refreshHandler, sessionExpiresIn })` (routes `**/api/auth/session` to `sessionMock(sessionExpiresIn)` and `**/api/auth/refresh` through `refreshHandler` before it navigates), `expectOpen()` (url is `/home`), `expectWelcome()`, `expectSessionWarning()` (`/session.*expir/i` plus the extend button, 10 s timeout because the warning fires on a timer), `extendSession()`, `expectSessionWarningHidden()`, `signOut()` (account menu, then "Sign out") |
+| `ProfilePage` | `e2e/auth/pages/profile.page.ts` | `goto({ withoutSessionCookie })` opens the protected `/profile` route, first calling `clearSessionCookie(page.context())` when the option is set |
+| `SecuritySettingsPage` | `e2e/auth/pages/security-settings.page.ts` | `goto({ logoutAllHandler })` routes `**/api/auth/logout-all` through it before it navigates, `signOutEverywhere()` (button, then dialog "Confirm") |
 
 ```ts
 // e2e/auth/pages/reset-password.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class ResetPasswordPage {
   public readonly confirmPasswordInput: Locator;
@@ -62,32 +62,37 @@ export class ResetPasswordPage {
   }
 
   public async expectUpdated(): Promise<void> {
-    await test.step('THEN password updated message is shown', (): Promise<void> => expect(this.successMessage).toBeVisible(), { box: true });
+    await expect(this.successMessage).toBeVisible();
   }
 
   public async expectError(message: RegExp): Promise<void> {
-    await test.step(`THEN error reads ${String(message)}`, (): Promise<void> => expect(this.errorMessage).toContainText(message), { box: true });
+    await expect(this.errorMessage).toContainText(message);
   }
 }
 ```
 
-The fixture lists every page object a spec below destructures; `signupPage`, `verifyPage`, and `securitySettingsPage` register the same way for the flows described in prose.
+The fixture lists every page object a spec below destructures; `signupPage`, `verifyPage`, and `securitySettingsPage` register the same way for the flows described in prose. `rememberedHomePage` seeds its own state: it logs in with "Keep me signed in" in a throwaway context, then hands over a `HomePage` in a fresh context built from the saved file, and closes it after the test.
 
 ```ts
 // e2e/auth/auth.fixture.ts
 import { test as base } from '@playwright/test';
 
+import { AUTH_DIR } from './common/auth.const';
 import { ForgotPasswordPage } from './pages/forgot-password.page';
 import { HomePage } from './pages/home.page';
 import { LoginPage } from './pages/login.page';
 import { ProfilePage } from './pages/profile.page';
 import { ResetPasswordPage } from './pages/reset-password.page';
+import { loginWithRememberMe, openPageWithState } from './test/utils/remember-me.spec.util';
+
+const REMEMBERED_STATE_PATH = `${AUTH_DIR}/remembered.json`;
 
 type AuthFixtures = {
   readonly forgotPasswordPage: ForgotPasswordPage;
   readonly homePage: HomePage;
   readonly loginPage: LoginPage;
   readonly profilePage: ProfilePage;
+  readonly rememberedHomePage: HomePage;
   readonly resetPasswordPage: ResetPasswordPage;
 };
 
@@ -103,6 +108,14 @@ export const test = base.extend<AuthFixtures>({
   },
   profilePage: async ({ page }, use): Promise<void> => {
     await use(new ProfilePage(page));
+  },
+  rememberedHomePage: async ({ browser }, use): Promise<void> => {
+    await loginWithRememberMe(browser, REMEMBERED_STATE_PATH);
+
+    const page = await openPageWithState(browser, REMEMBERED_STATE_PATH);
+
+    await use(new HomePage(page));
+    await page.context().close();
   },
   resetPasswordPage: async ({ page }, use): Promise<void> => {
     await use(new ResetPasswordPage(page));
@@ -198,13 +211,13 @@ export const tokenCapture = (field: TokenField): TokenCapture => {
 };
 ```
 
-The captured-token spec has the shape of `password-reset.test.ts` below: `page.route('**/api/auth/register', capture.handler)` with `tokenCapture('verificationToken')`, then `signupPage.goto()`, `WHEN signupPage.submit(SIGNUP_STUB)`, `THEN signupPage.expectInboxPrompt()`, `const token = await test.step(…, (): Promise<string> => capture.token)`, `WHEN verifyPage.goto(token)`, `THEN verifyPage.expectConfirmed()`.
+The captured-token spec has the shape of `password-reset.test.ts` below, with `capture = tokenCapture('verificationToken')`: `WHEN signupPage.goto({ registerHandler: capture.handler })`, `AND signupPage.submit(SIGNUP_STUB)`, `THEN signupPage.expectInboxPrompt()`, `const token = await test.step('AND …', (): Promise<string> => capture.token)`, `AND verifyPage.goto(token)`, `THEN verifyPage.expectConfirmed()`.
 
-Fully mocked, with no backend at all: a `beforeEach` registers `page.route('**/api/auth/register', registerMock(MOCK_TOKEN))` and ``page.route(`**/api/auth/verify?token=${MOCK_TOKEN}`, verifyMock())`` as `GIVEN` / `AND` steps before any navigation, and the test runs the same steps with `verifyPage.goto(MOCK_TOKEN)` and no capture step.
+Fully mocked, with no backend at all: the opening call is `signupPage.goto({ registerHandler: registerMock(MOCK_TOKEN), verifyToken: MOCK_TOKEN })`, which routes register and ``**/api/auth/verify?token=${MOCK_TOKEN}`` before it navigates. No hook and no route step; the test runs the same steps with `verifyPage.goto(MOCK_TOKEN)` and no capture step.
 
 ## Password Reset
 
-Same capture util as above, reading `resetToken` from the forgot-password response.
+Same capture util as above, reading `resetToken` from the forgot-password response. The opening call routes the capture handler before it navigates. The email-sent check is a `THEN`; reading the token and opening the link are actions again, so the final check is a new `THEN`.
 
 ```ts
 // e2e/auth/password-reset.test.ts
@@ -217,16 +230,12 @@ const NEW_PASSWORD = 'NewPassword456!';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: password reset', () => {
-  test('GIVEN a captured reset token, following the reset link updates the password', async ({ forgotPasswordPage, page, resetPasswordPage }): Promise<void> => {
+  test('GIVEN a captured reset token, following the reset link updates the password', async ({ forgotPasswordPage, resetPasswordPage }): Promise<void> => {
     const capture = tokenCapture('resetToken');
 
-    await test.step('GIVEN the forgot-password response token is captured', async (): Promise<void> => {
-      await page.route('**/api/auth/forgot-password', capture.handler);
-    });
+    await test.step('WHEN the forgot password page is opened', (): Promise<void> => forgotPasswordPage.goto({ tokenHandler: capture.handler }));
 
-    await test.step('AND the forgot password page is open', (): Promise<void> => forgotPasswordPage.goto());
-
-    await test.step('WHEN a reset link is requested', (): Promise<void> => forgotPasswordPage.requestLink(TEST_USER.email));
+    await test.step('AND a reset link is requested', (): Promise<void> => forgotPasswordPage.requestLink(TEST_USER.email));
 
     await test.step('THEN the reset email sent message is shown', (): Promise<void> => forgotPasswordPage.expectEmailSent());
 
@@ -241,7 +250,7 @@ test.describe('FEATURE: password reset', () => {
 });
 ```
 
-Expired-token and strength cases are further tests in the same spec, each one test of three steps: `GIVEN resetPasswordPage.goto(token)`, `WHEN resetPasswordPage.submit(password)`, then the assertion. The title names the token, since the `GIVEN` step is hidden until steps are expanded.
+Expired-token and strength cases are further tests in the same spec, each one test of three steps: `WHEN resetPasswordPage.goto(token)`, `AND resetPasswordPage.submit(password)`, then the `THEN` assertion. The title names the token; the `WHEN` does not repeat it.
 
 | Scenario title | Token | Password | `THEN` |
 |---|---|---|---|
@@ -252,7 +261,7 @@ Expired-token and strength cases are further tests in the same spec, each one te
 
 ### Detecting Expired Sessions
 
-The session cookie is removed by a util, then a protected route is opened. The util returns early when no session cookie exists, so it never throws on an already-clean context.
+`ProfilePage.goto({ withoutSessionCookie: true })` removes the session cookie through this util, then opens the protected route, so the spec starts from a saved session and has no login hook. The util returns early when no session cookie exists, so it never throws on an already-clean context.
 
 ```ts
 // e2e/auth/test/utils/session-cookie.spec.util.ts
@@ -279,22 +288,13 @@ export const clearSessionCookie = async (context: BrowserContext): Promise<void>
 ```ts
 // e2e/auth/session-timeout.e2e.ts
 import { expect, test } from './auth.fixture';
-import { EMPTY_STORAGE_STATE, TEST_USER } from './common/auth.const';
-import { clearSessionCookie } from './test/utils/session-cookie.spec.util';
+import { SESSION_STATE_PATH } from './common/auth.const';
 
-test.use({ storageState: EMPTY_STORAGE_STATE });
+test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: session timeout', () => {
-  test.beforeEach(async ({ loginPage }): Promise<void> => {
-    await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
-
-    await test.step('AND the user is logged in on home', (): Promise<void> => loginPage.submitAndWaitForHome(TEST_USER));
-  });
-
-  test('GIVEN a missing session cookie, a protected route redirects to login', async ({ context, loginPage, page, profilePage }): Promise<void> => {
-    await test.step('WHEN the session cookie is removed', (): Promise<void> => clearSessionCookie(context));
-
-    await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
+  test('GIVEN a missing session cookie, a protected route redirects to login', async ({ loginPage, page, profilePage }): Promise<void> => {
+    await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto({ withoutSessionCookie: true }));
 
     await test.step('THEN the login url is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
 
@@ -305,34 +305,25 @@ test.describe('FEATURE: session timeout', () => {
 
 ### Session Extension Warning and Action
 
-`sessionMock(60)` tells the app the session ends in 60 seconds, so the warning appears without waiting for a real timeout. The recorded mock replaces a `let sessionExtended = false` flag; `expect.poll` retries until the request has been served instead of asserting on a flag that may not have flipped yet.
+`homePage.goto({ refreshHandler, sessionExpiresIn: 60 })` routes `sessionMock(60)` and the recorded refresh handler before it navigates. `sessionMock(60)` tells the app the session ends in 60 seconds, so the warning appears without waiting for a real timeout. The recorded mock replaces a `let sessionExtended = false` flag; `expect.poll` retries until the request has been served instead of asserting on a flag that may not have flipped yet.
 
 ```ts
 // e2e/auth/session-extension.test.ts
 import { expect, test } from './auth.fixture';
 import { SESSION_STATE_PATH } from './common/auth.const';
 import { refreshMock } from './test/mocks/refresh.mock';
-import { sessionMock } from './test/mocks/session.mock';
 
 test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: session extension', () => {
-  test('GIVEN an expiring session, extending calls the refresh endpoint and hides the warning', async ({ homePage, page }): Promise<void> => {
+  test('GIVEN an expiring session, extending calls the refresh endpoint and hides the warning', async ({ homePage }): Promise<void> => {
     const refresh = refreshMock();
 
-    await test.step('GIVEN the session endpoint is mocked', async (): Promise<void> => {
-      await page.route('**/api/auth/session', sessionMock(60));
-    });
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto({ refreshHandler: refresh.handler, sessionExpiresIn: 60 }));
 
-    await test.step('AND the refresh endpoint is mocked', async (): Promise<void> => {
-      await page.route('**/api/auth/refresh', refresh.handler);
-    });
+    await test.step('THEN the session warning and extend button are shown', (): Promise<void> => homePage.expectSessionWarning());
 
-    await test.step('AND the home page is open', (): Promise<void> => homePage.goto());
-
-    await test.step('AND the session warning and extend button are shown', (): Promise<void> => homePage.expectSessionWarning());
-
-    await test.step('WHEN extend is clicked', (): Promise<void> => homePage.extendSession());
+    await test.step('AND extend is clicked', (): Promise<void> => homePage.extendSession());
 
     await test.step('THEN the refresh endpoint was called once', (): Promise<void> => expect.poll((): number => refresh.calls.length).toBe(1));
 
@@ -343,7 +334,7 @@ test.describe('FEATURE: session extension', () => {
 
 ## Remember Me Persistence
 
-Two contexts stand in for two browser launches. The first logs in with "Keep me signed in" checked and saves its state through `saveSessionState`; the second starts from that file. Both live in one util file so the spec stays a straight line of steps.
+Two contexts stand in for two browser launches. The first logs in with "Keep me signed in" checked and saves its state through `saveSessionState`; the second starts from that file. Both live in one util file, and the `rememberedHomePage` fixture above calls them, so the spec holds no setup step.
 
 ```ts
 // e2e/auth/test/utils/remember-me.spec.util.ts
@@ -374,38 +365,24 @@ export const openPageWithState = async (browser: Browser, storageState: string):
 
 ```ts
 // e2e/auth/remember-me.e2e.ts
-import type { Page } from '@playwright/test';
-
-import { expect, test } from './auth.fixture';
-import { AUTH_DIR } from './common/auth.const';
-import { HomePage } from './pages/home.page';
-import { loginWithRememberMe, openPageWithState } from './test/utils/remember-me.spec.util';
-
-const REMEMBERED_STATE_PATH = `${AUTH_DIR}/remembered.json`;
+import { test } from './auth.fixture';
 
 test.describe('FEATURE: remember me', () => {
-  test('GIVEN a remember me login, a fresh browser from the saved state opens home without login', async ({ browser }): Promise<void> => {
-    await test.step('GIVEN a login with remember me saved the state', (): Promise<void> => loginWithRememberMe(browser, REMEMBERED_STATE_PATH));
+  test('GIVEN a remember me login, a fresh browser from the saved state opens home without login', async ({ rememberedHomePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => rememberedHomePage.goto());
 
-    const page = await test.step('WHEN a fresh browser starts from the saved state', (): Promise<Page> => openPageWithState(browser, REMEMBERED_STATE_PATH));
-    const homePage = new HomePage(page);
+    await test.step('THEN the home url is shown', (): Promise<void> => rememberedHomePage.expectOpen());
 
-    await test.step('AND the home page is opened', (): Promise<void> => homePage.goto());
-
-    await test.step('THEN the home url is shown', (): Promise<void> => expect(page).toHaveURL('/home'));
-
-    await test.step('AND the welcome message is shown', (): Promise<void> => homePage.expectWelcome());
-
-    await test.step('AND the fresh browser is closed', (): Promise<void> => page.context().close());
+    await test.step('AND the welcome message is shown', (): Promise<void> => rememberedHomePage.expectWelcome());
   });
 });
 ```
 
-Session-only login: a second test in the same spec, `'GIVEN a login without keep me signed in, no persistent cookie is left'`, opens with `GIVEN a login with keep me signed in unchecked` and uses two more util functions of the same shape. `persistentCookiesAfterLogin(browser)` is `loginWithRememberMe` with `uncheck()` and, instead of saving state, returns `cookies.filter((cookie: Cookie): boolean => cookie.expires > 0)`; session cookies have `expires: -1`, so the filter drops them. `openPageWithCookies(browser, cookies)` is `openPageWithState` with `EMPTY_STORAGE_STATE` plus `context.addCookies(cookies)`. The test then opens home and asserts `expect(page).toHaveURL(/\/login/)`.
+Session-only login: a second test in the same spec, `'GIVEN a login without keep me signed in, no persistent cookie is left'`, takes a second seeding fixture, `sessionOnlyHomePage`, built from two more util functions of the same shape. `persistentCookiesAfterLogin(browser)` is `loginWithRememberMe` with `uncheck()` and, instead of saving state, returns `cookies.filter((cookie: Cookie): boolean => cookie.expires > 0)`; session cookies have `expires: -1`, so the filter drops them. `openPageWithCookies(browser, cookies)` is `openPageWithState` with `EMPTY_STORAGE_STATE` plus `context.addCookies(cookies)`. The test's `WHEN` opens home and its `THEN` asserts the `/login` url.
 
 ## Logout Patterns
 
-`sessionCookies` from the session-timeout util returns every cookie whose name contains `session` or `token`; after logout the list must be empty and a second visit to home must bounce to login.
+`sessionCookies` from the session-timeout util returns every cookie whose name contains `session` or `token`; after logout the list must be empty and a second visit to home must bounce to login. That second visit is an action after assertions, so the check after it is a new `THEN`.
 
 ```ts
 // e2e/auth/logout.test.ts
@@ -419,9 +396,9 @@ test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: logout', () => {
   test('GIVEN a signed-in session, signing out clears it', async ({ context, homePage, page }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-    await test.step('WHEN sign out is clicked in the account menu', (): Promise<void> => homePage.signOut());
+    await test.step('AND sign out is clicked in the account menu', (): Promise<void> => homePage.signOut());
 
     await test.step('THEN the login url is shown', (): Promise<void> => expect(page).toHaveURL('/login'));
 
@@ -438,7 +415,7 @@ test.describe('FEATURE: logout', () => {
 
 ### Logout from All Devices
 
-A second test in the same spec, which is why the file is `logout.test.ts` (it routes the app's own `**/api/**`), `'GIVEN the security settings, signing out everywhere calls logout-all and opens login'`, follows `session-extension.test.ts`: `const logoutAll = logoutAllMock()`, `GIVEN page.route('**/api/auth/logout-all', logoutAll.handler)`, `AND securitySettingsPage.goto()`, `WHEN securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
+A second test in the same spec, which is why the file is `logout.test.ts` (it routes the app's own `**/api/**`), `'GIVEN the security settings, signing out everywhere calls logout-all and opens login'`, follows `session-extension.test.ts`: `const logoutAll = logoutAllMock()`, `WHEN securitySettingsPage.goto({ logoutAllHandler: logoutAll.handler })`, `AND securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
 
 ## Tips
 
