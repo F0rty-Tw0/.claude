@@ -185,26 +185,24 @@ import type { StepperHelper } from './helpers/stepper.helper';
 import { mountStepper } from './test/utils/stepper-mount.spec.util';
 
 test.describe('FEATURE: stepper', () => {
-  test.describe('GIVEN a mounted stepper', () => {
-    test('SCENARIO: clicking + increments the value', async ({ mount }): Promise<void> => {
-      const stepper = await test.step('GIVEN a stepper mounted at 0', (): Promise<StepperHelper> => mountStepper(mount, { value: 0 }));
+  test('SCENARIO: clicking + increments the value', async ({ mount }): Promise<void> => {
+    const stepper = await test.step('GIVEN a stepper mounted at 0', (): Promise<StepperHelper> => mountStepper(mount, { value: 0 }));
 
-      await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
+    await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
 
-      await test.step('THEN the value reads 1', (): Promise<void> => stepper.expectValue(1));
-    });
+    await test.step('THEN the value reads 1', (): Promise<void> => stepper.expectValue(1));
+  });
 
-    test('SCENARIO: clicking + twice emits change with each value', async ({ mount }): Promise<void> => {
-      const changes: number[] = [];
-      const listeners: StepperListeners = { change: (value: number): number => changes.push(value) };
-      const stepper = await test.step('GIVEN a stepper mounted at 10 with a change listener', (): Promise<StepperHelper> => mountStepper(mount, { value: 10 }, listeners));
+  test('SCENARIO: clicking + twice emits change with each value', async ({ mount }): Promise<void> => {
+    const changes: number[] = [];
+    const listeners: StepperListeners = { change: (value: number): number => changes.push(value) };
+    const stepper = await test.step('GIVEN a stepper mounted at 10 with a change listener', (): Promise<StepperHelper> => mountStepper(mount, { value: 10 }, listeners));
 
-      await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
+    await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
 
-      await test.step('AND + is clicked again', (): Promise<void> => stepper.increment());
+    await test.step('AND + is clicked again', (): Promise<void> => stepper.increment());
 
-      await test.step('THEN change was emitted with 11 then 12', (): void => expect(changes).toEqual([11, 12]));
-    });
+    await test.step('THEN change was emitted with 11 then 12', (): void => expect(changes).toEqual([11, 12]));
   });
 });
 ```
@@ -295,38 +293,36 @@ export { expect } from '@playwright/test';
 import { test } from './shop.fixture';
 
 test.describe('FEATURE: shopping cart store', () => {
-  test.describe('GIVEN an empty cart on the shop page', () => {
-    test.beforeEach(async ({ shopPage }): Promise<void> => {
-      await test.step('GIVEN the shop is open', (): Promise<void> => shopPage.goto());
+  test.beforeEach(async ({ shopPage }): Promise<void> => {
+    await test.step('GIVEN the shop is open', (): Promise<void> => shopPage.goto());
 
-      await test.step('AND the badge reads 0', (): Promise<void> => shopPage.expectBadge(0));
-    });
+    await test.step('AND the badge reads 0', (): Promise<void> => shopPage.expectBadge(0));
+  });
 
-    test('SCENARIO: adding two products counts both on the badge', async ({ shopPage }): Promise<void> => {
-      await test.step('WHEN the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
+  test('SCENARIO: adding two products counts both on the badge', async ({ shopPage }): Promise<void> => {
+    await test.step('WHEN the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
 
-      await test.step('AND the cap is added', (): Promise<void> => shopPage.addToCart('Cap'));
+    await test.step('AND the cap is added', (): Promise<void> => shopPage.addToCart('Cap'));
 
-      await test.step('THEN the badge reads 2', (): Promise<void> => shopPage.expectBadge(2));
-    });
+    await test.step('THEN the badge reads 2', (): Promise<void> => shopPage.expectBadge(2));
+  });
 
-    test('SCENARIO: adding two products lists both on the cart page', async ({ cartPage, shopPage }): Promise<void> => {
-      await test.step('WHEN the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
+  test('SCENARIO: adding two products lists both on the cart page', async ({ cartPage, shopPage }): Promise<void> => {
+    await test.step('WHEN the hoodie is added', (): Promise<void> => shopPage.addToCart('Hoodie'));
 
-      await test.step('AND the cap is added', (): Promise<void> => shopPage.addToCart('Cap'));
+    await test.step('AND the cap is added', (): Promise<void> => shopPage.addToCart('Cap'));
 
-      await test.step('AND the cart is opened', (): Promise<void> => shopPage.openCart());
+    await test.step('AND the cart is opened', (): Promise<void> => shopPage.openCart());
 
-      await test.step('THEN both products are listed', (): Promise<void> => cartPage.expectItems(['Hoodie', 'Cap']));
-    });
+    await test.step('THEN both products are listed', (): Promise<void> => cartPage.expectItems(['Hoodie', 'Cap']));
+  });
 
-    test('SCENARIO: reloading the page keeps the persisted state', async ({ shopPage }): Promise<void> => {
-      await test.step('GIVEN the hoodie is in the cart', (): Promise<void> => shopPage.addToCart('Hoodie'));
+  test('SCENARIO: reloading the page keeps the persisted state', async ({ shopPage }): Promise<void> => {
+    await test.step('AND the hoodie is in the cart', (): Promise<void> => shopPage.addToCart('Hoodie'));
 
-      await test.step('WHEN the page reloads', (): Promise<void> => shopPage.reload());
+    await test.step('WHEN the page reloads', (): Promise<void> => shopPage.reload());
 
-      await test.step('THEN the badge reads 1', (): Promise<void> => shopPage.expectBadge(1));
-    });
+    await test.step('THEN the badge reads 1', (): Promise<void> => shopPage.expectBadge(1));
   });
 });
 ```
@@ -395,46 +391,42 @@ export class HomePage {
 import { expect, test } from './navigation.fixture';
 
 test.describe('FEATURE: router navigation', () => {
-  test.describe('GIVEN the home page is open', () => {
-    test.beforeEach(async ({ homePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
-    });
+  test('SCENARIO: following a router link keeps the document', async ({ homePage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-    test('SCENARIO: following a router link keeps the document', async ({ homePage }): Promise<void> => {
-      await test.step('AND the session is marked', (): Promise<void> => homePage.markSpaSession());
+    await test.step('AND the session is marked', (): Promise<void> => homePage.markSpaSession());
 
-      await test.step('WHEN the shop link is followed', (): Promise<void> => homePage.openShop());
+    await test.step('WHEN the shop link is followed', (): Promise<void> => homePage.openShop());
 
-      await test.step('THEN the marker is still present', (): Promise<void> => homePage.expectSpaSessionKept());
-    });
-
-    test('SCENARIO: going back and forward replays history', async ({ homePage, page }): Promise<void> => {
-      await test.step('AND the shop link is followed', (): Promise<void> => homePage.openShop());
-
-      await test.step('AND the contact link is followed', (): Promise<void> => homePage.openContact());
-
-      await test.step('WHEN the browser goes back', (): Promise<void> => homePage.goBack());
-
-      await test.step('THEN the url is the shop', (): Promise<void> => expect(page).toHaveURL(/\/shop/));
-
-      await test.step('AND the browser goes back again', (): Promise<void> => homePage.goBack());
-
-      await test.step('THEN the url is the root', (): Promise<void> => expect(page).toHaveURL(/\/$/));
-
-      await test.step('AND the browser goes forward', (): Promise<void> => homePage.goForward());
-
-      await test.step('THEN the url is the shop again', (): Promise<void> => expect(page).toHaveURL(/\/shop/));
-    });
+    await test.step('THEN the marker is still present', (): Promise<void> => homePage.expectSpaSessionKept());
   });
 
-  test.describe('GIVEN no session', () => {
-    test('SCENARIO: opening an admin url redirects to login', async ({ adminPage, page }): Promise<void> => {
-      await test.step('WHEN the admin dashboard is opened', (): Promise<void> => adminPage.goto());
+  test('SCENARIO: going back and forward replays history', async ({ homePage, page }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN the url is the login page', (): Promise<void> => expect(page).toHaveURL(/\/login/));
+    await test.step('AND the shop link is followed', (): Promise<void> => homePage.openShop());
 
-      await test.step('AND the login heading is shown', (): Promise<void> => adminPage.expectLoginHeading());
-    });
+    await test.step('AND the contact link is followed', (): Promise<void> => homePage.openContact());
+
+    await test.step('WHEN the browser goes back', (): Promise<void> => homePage.goBack());
+
+    await test.step('THEN the url is the shop', (): Promise<void> => expect(page).toHaveURL(/\/shop/));
+
+    await test.step('AND the browser goes back again', (): Promise<void> => homePage.goBack());
+
+    await test.step('THEN the url is the root', (): Promise<void> => expect(page).toHaveURL(/\/$/));
+
+    await test.step('AND the browser goes forward', (): Promise<void> => homePage.goForward());
+
+    await test.step('THEN the url is the shop again', (): Promise<void> => expect(page).toHaveURL(/\/shop/));
+  });
+
+  test('SCENARIO: opening an admin url without a session redirects to login', async ({ adminPage, page }): Promise<void> => {
+    await test.step('WHEN the admin dashboard is opened', (): Promise<void> => adminPage.goto());
+
+    await test.step('THEN the url is the login page', (): Promise<void> => expect(page).toHaveURL(/\/login/));
+
+    await test.step('AND the login heading is shown', (): Promise<void> => adminPage.expectLoginHeading());
   });
 });
 ```
@@ -497,20 +489,18 @@ export class ItemsPage {
 import { test } from './items.fixture';
 
 test.describe('FEATURE: teleported dialog', () => {
-  test.describe('GIVEN the items page', () => {
-    test.beforeEach(async ({ itemsPage }): Promise<void> => {
-      await test.step('GIVEN the items page is open', (): Promise<void> => itemsPage.goto());
-    });
+  test.beforeEach(async ({ itemsPage }): Promise<void> => {
+    await test.step('GIVEN the items page is open', (): Promise<void> => itemsPage.goto());
+  });
 
-    test('SCENARIO: remove opens the dialog and cancel closes it', async ({ itemsPage }): Promise<void> => {
-      await test.step('WHEN remove is clicked on the first item', (): Promise<void> => itemsPage.removeFirst());
+  test('SCENARIO: remove opens the dialog and cancel closes it', async ({ itemsPage }): Promise<void> => {
+    await test.step('WHEN remove is clicked on the first item', (): Promise<void> => itemsPage.removeFirst());
 
-      await test.step('THEN the dialog is open', (): Promise<void> => itemsPage.expectDialogOpen());
+    await test.step('THEN the dialog is open', (): Promise<void> => itemsPage.expectDialogOpen());
 
-      await test.step('AND the removal is cancelled', (): Promise<void> => itemsPage.cancelRemoval());
+    await test.step('AND the removal is cancelled', (): Promise<void> => itemsPage.cancelRemoval());
 
-      await test.step('THEN the dialog is closed', (): Promise<void> => itemsPage.expectDialogClosed());
-    });
+    await test.step('THEN the dialog is closed', (): Promise<void> => itemsPage.expectDialogClosed());
   });
 });
 ```
@@ -550,28 +540,26 @@ import { test } from './tasks.fixture';
 import { disableAnimations } from './test/utils/animations.spec.util';
 
 test.describe('FEATURE: task list transitions', () => {
-  test.describe('GIVEN the task list', () => {
-    test.beforeEach(async ({ page, tasksPage }): Promise<void> => {
-      await test.step('GIVEN the task list is open', (): Promise<void> => tasksPage.goto());
+  test.beforeEach(async ({ page, tasksPage }): Promise<void> => {
+    await test.step('GIVEN the task list is open', (): Promise<void> => tasksPage.goto());
 
-      await test.step('AND animations are disabled', (): Promise<void> => disableAnimations(page));
-    });
+    await test.step('AND animations are disabled', (): Promise<void> => disableAnimations(page));
+  });
 
-    test('SCENARIO: adding a task lists it', async ({ tasksPage }): Promise<void> => {
-      await test.step('WHEN a task is added', (): Promise<void> => tasksPage.add('Write tests'));
+  test('SCENARIO: adding a task lists it', async ({ tasksPage }): Promise<void> => {
+    await test.step('WHEN a task is added', (): Promise<void> => tasksPage.add('Write tests'));
 
-      await test.step('THEN the task is listed', (): Promise<void> => tasksPage.expectTask('Write tests'));
-    });
+    await test.step('THEN the task is listed', (): Promise<void> => tasksPage.expectTask('Write tests'));
+  });
 
-    test('SCENARIO: removing a task drops it from the list', async ({ tasksPage }): Promise<void> => {
-      await test.step('GIVEN a task is added', (): Promise<void> => tasksPage.add('Temp item'));
+  test('SCENARIO: removing a task drops it from the list', async ({ tasksPage }): Promise<void> => {
+    await test.step('AND a task is added', (): Promise<void> => tasksPage.add('Temp item'));
 
-      await test.step('AND the task is listed', (): Promise<void> => tasksPage.expectTask('Temp item'));
+    await test.step('AND the task is listed', (): Promise<void> => tasksPage.expectTask('Temp item'));
 
-      await test.step('WHEN the task is removed', (): Promise<void> => tasksPage.remove('Temp item'));
+    await test.step('WHEN the task is removed', (): Promise<void> => tasksPage.remove('Temp item'));
 
-      await test.step('THEN the task is gone', (): Promise<void> => tasksPage.expectNoTask('Temp item'));
-    });
+    await test.step('THEN the task is gone', (): Promise<void> => tasksPage.expectNoTask('Temp item'));
   });
 });
 ```
@@ -587,20 +575,18 @@ test.describe('FEATURE: task list transitions', () => {
 import { test } from './pricing.fixture';
 
 test.describe('FEATURE: pricing calculator', () => {
-  test.describe('GIVEN the pricing page', () => {
-    test.beforeEach(async ({ pricingPage }): Promise<void> => {
-      await test.step('GIVEN the pricing page is open', (): Promise<void> => pricingPage.goto());
-    });
+  test.beforeEach(async ({ pricingPage }): Promise<void> => {
+    await test.step('GIVEN the pricing page is open', (): Promise<void> => pricingPage.goto());
+  });
 
-    test('SCENARIO: changing amount, quantity, and discount updates the computed sum', async ({ pricingPage }): Promise<void> => {
-      await test.step('WHEN amount 50 and quantity 4 are entered', (): Promise<void> => pricingPage.enterOrder(50, 4));
+  test('SCENARIO: changing amount, quantity, and discount updates the computed sum', async ({ pricingPage }): Promise<void> => {
+    await test.step('WHEN amount 50 and quantity 4 are entered', (): Promise<void> => pricingPage.enterOrder(50, 4));
 
-      await test.step('THEN the sum reads $200.00', (): Promise<void> => pricingPage.expectSum('$200.00'));
+    await test.step('THEN the sum reads $200.00', (): Promise<void> => pricingPage.expectSum('$200.00'));
 
-      await test.step('AND a 20 discount is entered', (): Promise<void> => pricingPage.enterDiscount(20));
+    await test.step('AND a 20 discount is entered', (): Promise<void> => pricingPage.enterDiscount(20));
 
-      await test.step('THEN the sum reads $160.00', (): Promise<void> => pricingPage.expectSum('$160.00'));
-    });
+    await test.step('THEN the sum reads $160.00', (): Promise<void> => pricingPage.expectSum('$160.00'));
   });
 });
 ```
@@ -641,48 +627,42 @@ import { expect, test } from './posts.fixture';
 import { fetchItems } from './test/utils/items-api.spec.util';
 
 test.describe('FEATURE: nuxt posts', () => {
-  test.describe('GIVEN the posts page', () => {
-    test('SCENARIO: server rendering delivers ten articles with content', async ({ postsPage }): Promise<void> => {
-      await test.step('WHEN the posts page opens', (): Promise<void> => postsPage.goto());
+  test('SCENARIO: server rendering delivers ten articles with content', async ({ postsPage }): Promise<void> => {
+    await test.step('WHEN the posts page opens', (): Promise<void> => postsPage.goto());
 
-      await test.step('THEN ten articles are rendered', (): Promise<void> => postsPage.expectArticleCount(10));
+    await test.step('THEN ten articles are rendered', (): Promise<void> => postsPage.expectArticleCount(10));
 
-      await test.step('AND the first article has text', (): Promise<void> => postsPage.expectFirstArticleText(/\w+/));
-    });
-
-    test('SCENARIO: following a NuxtLink keeps the document', async ({ homePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
-
-      await test.step('AND the session is marked', (): Promise<void> => homePage.markSpaSession());
-
-      await test.step('WHEN the posts link is followed', (): Promise<void> => homePage.openPosts());
-
-      await test.step('THEN the marker is still present', (): Promise<void> => homePage.expectSpaSessionKept());
-    });
-
-    test('SCENARIO: opening a post sets the title and description through useHead', async ({ page, postsPage }): Promise<void> => {
-      await test.step('WHEN the hello-world post is opened', (): Promise<void> => postsPage.gotoPost('hello-world'));
-
-      await test.step('THEN the title names the post', (): Promise<void> => expect(page).toHaveTitle(/Hello World/));
-
-      await test.step('AND the description is at least 50 characters', (): Promise<void> => postsPage.expectDescriptionLength(50));
-    });
+    await test.step('AND the first article has text', (): Promise<void> => postsPage.expectFirstArticleText(/\w+/));
   });
 
-  test.describe('GIVEN the items server route', () => {
-    test('SCENARIO: requesting the route returns items with ids', async ({ request }): Promise<void> => {
-      const items = await test.step('WHEN the items are fetched', (): Promise<Item[]> => fetchItems(request));
+  test('SCENARIO: following a NuxtLink keeps the document', async ({ homePage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN the first item has an id', (): void => expect(items[0]).toHaveProperty('id'));
-    });
+    await test.step('AND the session is marked', (): Promise<void> => homePage.markSpaSession());
+
+    await test.step('WHEN the posts link is followed', (): Promise<void> => homePage.openPosts());
+
+    await test.step('THEN the marker is still present', (): Promise<void> => homePage.expectSpaSessionKept());
   });
 
-  test.describe('GIVEN no session', () => {
-    test('SCENARIO: opening the admin page redirects to login', async ({ adminPage, page }): Promise<void> => {
-      await test.step('WHEN the admin page is opened', (): Promise<void> => adminPage.goto());
+  test('SCENARIO: opening a post sets the title and description through useHead', async ({ page, postsPage }): Promise<void> => {
+    await test.step('WHEN the hello-world post is opened', (): Promise<void> => postsPage.gotoPost('hello-world'));
 
-      await test.step('THEN the url is the login page', (): Promise<void> => expect(page).toHaveURL(/\/login/));
-    });
+    await test.step('THEN the title names the post', (): Promise<void> => expect(page).toHaveTitle(/Hello World/));
+
+    await test.step('AND the description is at least 50 characters', (): Promise<void> => postsPage.expectDescriptionLength(50));
+  });
+
+  test('SCENARIO: requesting the route returns items with ids', async ({ request }): Promise<void> => {
+    const items = await test.step('WHEN the items are fetched', (): Promise<Item[]> => fetchItems(request));
+
+    await test.step('THEN the first item has an id', (): void => expect(items[0]).toHaveProperty('id'));
+  });
+
+  test('SCENARIO: opening the admin page without a session redirects to login', async ({ adminPage, page }): Promise<void> => {
+    await test.step('WHEN the admin page is opened', (): Promise<void> => adminPage.goto());
+
+    await test.step('THEN the url is the login page', (): Promise<void> => expect(page).toHaveURL(/\/login/));
   });
 });
 ```
@@ -806,14 +786,12 @@ export { expect } from '@playwright/test';
 import { expect, test } from './home.fixture';
 
 test.describe('FEATURE: home page', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: rendering the home page logs no Vue warning', async ({ homePage, vueWarnings }): Promise<void> => {
-      await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
+  test('SCENARIO: rendering the home page logs no Vue warning', async ({ homePage, vueWarnings }): Promise<void> => {
+    await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN the heading is shown', (): Promise<void> => homePage.expectHeading('Home'));
+    await test.step('THEN the heading is shown', (): Promise<void> => homePage.expectHeading('Home'));
 
-      await test.step('AND no Vue warning was logged', (): void => expect(vueWarnings).toEqual([]));
-    });
+    await test.step('AND no Vue warning was logged', (): void => expect(vueWarnings).toEqual([]));
   });
 });
 ```

@@ -219,44 +219,42 @@ import { test } from './signup.fixture';
 import { SIGNUP_USER_STUB } from './test/stubs/signup.stub';
 
 test.describe('FEATURE: signup form validation', () => {
-  test.describe('GIVEN the signup page', () => {
-    test.beforeEach(async ({ signupPage }): Promise<void> => {
-      await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
-    });
+  test.beforeEach(async ({ signupPage }): Promise<void> => {
+    await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
+  });
 
-    test('SCENARIO: an empty email losing focus shows the required error', async ({ signupPage }): Promise<void> => {
-      await test.step('WHEN the empty email field loses focus', (): Promise<void> => signupPage.blurEmailWith(''));
+  test('SCENARIO: an empty email losing focus shows the required error', async ({ signupPage }): Promise<void> => {
+    await test.step('WHEN the empty email field loses focus', (): Promise<void> => signupPage.blurEmailWith(''));
 
-      await test.step('THEN the required error is shown', (): Promise<void> => signupPage.expectError('Email is required'));
-    });
+    await test.step('THEN the required error is shown', (): Promise<void> => signupPage.expectError('Email is required'));
+  });
 
-    test('SCENARIO: an invalid email losing focus shows the format error', async ({ signupPage }): Promise<void> => {
-      await test.step('WHEN the email field loses focus with an invalid value', (): Promise<void> => signupPage.blurEmailWith('invalid'));
+  test('SCENARIO: an invalid email losing focus shows the format error', async ({ signupPage }): Promise<void> => {
+    await test.step('WHEN the email field loses focus with an invalid value', (): Promise<void> => signupPage.blurEmailWith('invalid'));
 
-      await test.step('THEN the format error is shown', (): Promise<void> => signupPage.expectError('Invalid email format'));
-    });
+    await test.step('THEN the format error is shown', (): Promise<void> => signupPage.expectError('Invalid email format'));
+  });
 
-    test('SCENARIO: mismatched passwords show the mismatch error', async ({ signupPage }): Promise<void> => {
-      await test.step('WHEN mismatched passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Mismatch'));
+  test('SCENARIO: mismatched passwords show the mismatch error', async ({ signupPage }): Promise<void> => {
+    await test.step('WHEN mismatched passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Mismatch'));
 
-      await test.step('THEN the mismatch error is shown', (): Promise<void> => signupPage.expectError('Passwords must match'));
-    });
+    await test.step('THEN the mismatch error is shown', (): Promise<void> => signupPage.expectError('Passwords must match'));
+  });
 
-    test('SCENARIO: matching passwords clear the mismatch error', async ({ signupPage }): Promise<void> => {
-      await test.step('GIVEN mismatched passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Mismatch'));
+  test('SCENARIO: matching passwords clear the mismatch error', async ({ signupPage }): Promise<void> => {
+    await test.step('AND mismatched passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Mismatch'));
 
-      await test.step('WHEN matching passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Secret123!'));
+    await test.step('WHEN matching passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Secret123!'));
 
-      await test.step('THEN the mismatch error is gone', (): Promise<void> => signupPage.expectNoError('Passwords must match'));
-    });
+    await test.step('THEN the mismatch error is gone', (): Promise<void> => signupPage.expectNoError('Passwords must match'));
+  });
 
-    test('SCENARIO: a valid form enables register', async ({ signupPage }): Promise<void> => {
-      await test.step('GIVEN register is disabled', (): Promise<void> => signupPage.expectRegisterEnabled(false));
+  test('SCENARIO: a valid form enables register', async ({ signupPage }): Promise<void> => {
+    await test.step('AND register is disabled', (): Promise<void> => signupPage.expectRegisterEnabled(false));
 
-      await test.step('WHEN a valid user is filled', (): Promise<void> => signupPage.fill(SIGNUP_USER_STUB));
+    await test.step('WHEN a valid user is filled', (): Promise<void> => signupPage.fill(SIGNUP_USER_STUB));
 
-      await test.step('THEN register is enabled', (): Promise<void> => signupPage.expectRegisterEnabled(true));
-    });
+    await test.step('THEN register is enabled', (): Promise<void> => signupPage.expectRegisterEnabled(true));
   });
 });
 ```
@@ -292,18 +290,16 @@ import { test } from './signup.fixture';
 import { slowUsernameCheckMock } from './test/mocks/username-check.mock';
 
 test.describe('FEATURE: async username validator', () => {
-  test.describe('GIVEN the username check takes 800ms', () => {
-    test('SCENARIO: a username losing focus shows the loading state and resolves', async ({ signupPage }): Promise<void> => {
-      await test.step('GIVEN the username check is held for 800ms', (): Promise<void> => signupPage.routeUsernameCheck(slowUsernameCheckMock(800)));
+  test('SCENARIO: a slow username check shows the loading state until it resolves', async ({ signupPage }): Promise<void> => {
+    await test.step('GIVEN the username check is held for 800ms', (): Promise<void> => signupPage.routeUsernameCheck(slowUsernameCheckMock(800)));
 
-      await test.step('AND the signup page is open', (): Promise<void> => signupPage.goto());
+    await test.step('AND the signup page is open', (): Promise<void> => signupPage.goto());
 
-      await test.step('WHEN the username field loses focus', (): Promise<void> => signupPage.blurUsernameWith('alice'));
+    await test.step('WHEN the username field loses focus', (): Promise<void> => signupPage.blurUsernameWith('alice'));
 
-      await test.step('THEN the loading indicator is shown', (): Promise<void> => signupPage.expectUsernameLoading());
+    await test.step('THEN the loading indicator is shown', (): Promise<void> => signupPage.expectUsernameLoading());
 
-      await test.step('AND the loading indicator is gone and the name is available', (): Promise<void> => signupPage.expectUsernameAvailable());
-    });
+    await test.step('AND the loading indicator is gone and the name is available', (): Promise<void> => signupPage.expectUsernameAvailable());
   });
 });
 ```
@@ -349,14 +345,12 @@ export class PreferencesPage {
 import { test } from './preferences.fixture';
 
 test.describe('FEATURE: material select', () => {
-  test.describe('GIVEN the preferences page', () => {
-    test('SCENARIO: choosing a language shows it in the select', async ({ preferencesPage }): Promise<void> => {
-      await test.step('GIVEN the preferences page is open', (): Promise<void> => preferencesPage.goto());
+  test('SCENARIO: choosing a language shows it in the select', async ({ preferencesPage }): Promise<void> => {
+    await test.step('GIVEN the preferences page is open', (): Promise<void> => preferencesPage.goto());
 
-      await test.step('WHEN Spanish is chosen', (): Promise<void> => preferencesPage.chooseLanguage('Spanish'));
+    await test.step('WHEN Spanish is chosen', (): Promise<void> => preferencesPage.chooseLanguage('Spanish'));
 
-      await test.step('THEN the select reads Spanish', (): Promise<void> => preferencesPage.expectLanguage('Spanish'));
-    });
+    await test.step('THEN the select reads Spanish', (): Promise<void> => preferencesPage.expectLanguage('Spanish'));
   });
 });
 ```
@@ -407,34 +401,28 @@ export class ItemPage {
 import { expect, test } from './navigation.fixture';
 
 test.describe('FEATURE: angular router', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: following the reports link renders the lazy module', async ({ homePage, reportsPage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('SCENARIO: following the reports link renders the lazy module', async ({ homePage, reportsPage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      await test.step('WHEN the reports link is followed', (): Promise<void> => homePage.openReports());
+    await test.step('WHEN the reports link is followed', (): Promise<void> => homePage.openReports());
 
-      await test.step('THEN the reports dashboard heading is shown', (): Promise<void> => reportsPage.expectHeading());
-    });
+    await test.step('THEN the reports dashboard heading is shown', (): Promise<void> => reportsPage.expectHeading());
   });
 
-  test.describe('GIVEN a signed-out visitor', () => {
-    test('SCENARIO: opening a guarded route redirects to login', async ({ loginPage, page }): Promise<void> => {
-      await test.step('WHEN admin settings are opened', async (): Promise<void> => {
-        await page.goto('/admin/settings');
-      });
-
-      await test.step('THEN the login url is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
-
-      await test.step('AND the sign in heading is shown', (): Promise<void> => loginPage.expectHeading());
+  test('SCENARIO: opening a guarded route while signed out redirects to login', async ({ loginPage, page }): Promise<void> => {
+    await test.step('WHEN admin settings are opened', async (): Promise<void> => {
+      await page.goto('/admin/settings');
     });
+
+    await test.step('THEN the login url is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
+
+    await test.step('AND the sign in heading is shown', (): Promise<void> => loginPage.expectHeading());
   });
 
-  test.describe('GIVEN an item with a resolver', () => {
-    test('SCENARIO: opening the item renders the resolved data', async ({ itemPage }): Promise<void> => {
-      await test.step('WHEN item 42 is opened', (): Promise<void> => itemPage.goto(42));
+  test('SCENARIO: opening an item with a resolver renders the resolved data', async ({ itemPage }): Promise<void> => {
+    await test.step('WHEN item 42 is opened', (): Promise<void> => itemPage.goto(42));
 
-      await test.step('THEN the heading names the item', (): Promise<void> => itemPage.expectHeading('Item'));
-    });
+    await test.step('THEN the heading names the item', (): Promise<void> => itemPage.expectHeading('Item'));
   });
 });
 ```
@@ -494,18 +482,16 @@ import { expect, test } from './analytics.fixture';
 import { chunkErrors } from './test/utils/chunk-errors.spec.util';
 
 test.describe('FEATURE: lazy analytics module', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: following the analytics link loads the chunk without errors', async ({ analyticsPage, consoleErrors, homePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('SCENARIO: following the analytics link loads the chunk without errors', async ({ analyticsPage, consoleErrors, homePage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      await test.step('WHEN the analytics link is followed', (): Promise<void> => homePage.openAnalytics());
+    await test.step('WHEN the analytics link is followed', (): Promise<void> => homePage.openAnalytics());
 
-      await test.step('THEN the analytics heading is shown', (): Promise<void> => analyticsPage.expectHeading());
+    await test.step('THEN the analytics heading is shown', (): Promise<void> => analyticsPage.expectHeading());
 
-      const failures = await test.step('AND the chunk errors are collected', (): string[] => chunkErrors(consoleErrors));
+    const failures = await test.step('AND the chunk errors are collected', (): string[] => chunkErrors(consoleErrors));
 
-      await test.step('AND no chunk error was logged', (): void => expect(failures).toEqual([]));
-    });
+    await test.step('AND no chunk error was logged', (): void => expect(failures).toEqual([]));
   });
 });
 ```
@@ -556,26 +542,24 @@ export class CounterPage {
 import { test } from './counter.fixture';
 
 test.describe('FEATURE: signal counter', () => {
-  test.describe('GIVEN the counter page', () => {
-    test.beforeEach(async ({ counterPage }): Promise<void> => {
-      await test.step('GIVEN the counter page is open', (): Promise<void> => counterPage.goto());
+  test.beforeEach(async ({ counterPage }): Promise<void> => {
+    await test.step('GIVEN the counter page is open', (): Promise<void> => counterPage.goto());
 
-      await test.step('AND the value reads 0', (): Promise<void> => counterPage.expectValue(0));
-    });
+    await test.step('AND the value reads 0', (): Promise<void> => counterPage.expectValue(0));
+  });
 
-    test('SCENARIO: clicking increment raises the value to 1', async ({ counterPage }): Promise<void> => {
-      await test.step('WHEN increment is clicked', (): Promise<void> => counterPage.increment());
+  test('SCENARIO: clicking increment raises the value to 1', async ({ counterPage }): Promise<void> => {
+    await test.step('WHEN increment is clicked', (): Promise<void> => counterPage.increment());
 
-      await test.step('THEN the value reads 1', (): Promise<void> => counterPage.expectValue(1));
-    });
+    await test.step('THEN the value reads 1', (): Promise<void> => counterPage.expectValue(1));
+  });
 
-    test('SCENARIO: clicking reset returns the value to 0', async ({ counterPage }): Promise<void> => {
-      await test.step('GIVEN increment was clicked', (): Promise<void> => counterPage.increment());
+  test('SCENARIO: clicking reset returns the value to 0', async ({ counterPage }): Promise<void> => {
+    await test.step('AND increment was clicked', (): Promise<void> => counterPage.increment());
 
-      await test.step('WHEN reset is clicked', (): Promise<void> => counterPage.reset());
+    await test.step('WHEN reset is clicked', (): Promise<void> => counterPage.reset());
 
-      await test.step('THEN the value reads 0', (): Promise<void> => counterPage.expectValue(0));
-    });
+    await test.step('THEN the value reads 0', (): Promise<void> => counterPage.expectValue(0));
   });
 });
 ```
@@ -635,14 +619,12 @@ export const collectHydrationError = (errors: string[], message: ConsoleMessage)
 import { expect, test } from './home.fixture';
 
 test.describe('FEATURE: server-side rendering', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: clicking the hydrated page logs no hydration error', async ({ homePage, hydrationErrors }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('SCENARIO: clicking the hydrated page logs no hydration error', async ({ homePage, hydrationErrors }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      await test.step('WHEN get started is clicked', (): Promise<void> => homePage.getStarted());
+    await test.step('WHEN get started is clicked', (): Promise<void> => homePage.getStarted());
 
-      await test.step('THEN no hydration error was logged', (): void => expect(hydrationErrors).toEqual([]));
-    });
+    await test.step('THEN no hydration error was logged', (): void => expect(hydrationErrors).toEqual([]));
   });
 });
 ```

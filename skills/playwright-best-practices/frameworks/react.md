@@ -66,22 +66,20 @@ export class PreferencesPage {
 import { test } from './preferences.fixture';
 
 test.describe('FEATURE: theme context', () => {
-  test.describe('GIVEN the preferences page in light mode', () => {
-    test.beforeEach(async ({ preferencesPage }): Promise<void> => {
-      await test.step('GIVEN the preferences page is open', (): Promise<void> => preferencesPage.goto());
+  test.beforeEach(async ({ preferencesPage }): Promise<void> => {
+    await test.step('GIVEN the preferences page is open', (): Promise<void> => preferencesPage.goto());
 
-      await test.step('AND light mode is active', (): Promise<void> => preferencesPage.expectLightMode());
-    });
+    await test.step('AND light mode is active', (): Promise<void> => preferencesPage.expectLightMode());
+  });
 
-    test('SCENARIO: enabling the dark theme applies it across pages', async ({ preferencesPage }): Promise<void> => {
-      await test.step('WHEN the dark theme is enabled', (): Promise<void> => preferencesPage.enableDarkTheme());
+  test('SCENARIO: enabling the dark theme applies it across pages', async ({ preferencesPage }): Promise<void> => {
+    await test.step('WHEN the dark theme is enabled', (): Promise<void> => preferencesPage.enableDarkTheme());
 
-      await test.step('THEN dark mode is active', (): Promise<void> => preferencesPage.expectDarkMode());
+    await test.step('THEN dark mode is active', (): Promise<void> => preferencesPage.expectDarkMode());
 
-      await test.step('AND the dashboard is opened', (): Promise<void> => preferencesPage.openDashboard());
+    await test.step('AND the dashboard is opened', (): Promise<void> => preferencesPage.openDashboard());
 
-      await test.step('THEN dark mode is still active', (): Promise<void> => preferencesPage.expectDarkMode());
-    });
+    await test.step('THEN dark mode is still active', (): Promise<void> => preferencesPage.expectDarkMode());
   });
 });
 ```
@@ -152,44 +150,40 @@ export class HomePage {
 import { expect, test } from './navigation.fixture';
 
 test.describe('FEATURE: client routing', () => {
-  test.describe('GIVEN the home page', () => {
-    test.beforeEach(async ({ homePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
-    });
+  test('SCENARIO: following a router link keeps the document loaded', async ({ homePage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-    test('SCENARIO: following a router link keeps the document loaded', async ({ homePage }): Promise<void> => {
-      await test.step('GIVEN the session is marked', (): Promise<void> => homePage.markSpaSession());
+    await test.step('AND the session is marked', (): Promise<void> => homePage.markSpaSession());
 
-      await test.step('WHEN the inventory link is followed', (): Promise<void> => homePage.openInventory());
+    await test.step('WHEN the inventory link is followed', (): Promise<void> => homePage.openInventory());
 
-      await test.step('THEN the marker is still present', (): Promise<void> => homePage.expectSpaSessionKept());
-    });
-
-    test('SCENARIO: going back twice replays the history', async ({ homePage, page }): Promise<void> => {
-      await test.step('GIVEN the inventory link was followed', (): Promise<void> => homePage.openInventory());
-
-      await test.step('AND the help link was followed', (): Promise<void> => homePage.openHelp());
-
-      await test.step('WHEN the browser goes back', (): Promise<void> => homePage.goBack());
-
-      await test.step('THEN the url is the inventory', (): Promise<void> => expect(page).toHaveURL(/\/inventory/));
-
-      await test.step('AND the browser goes back again', (): Promise<void> => homePage.goBack());
-
-      await test.step('THEN the url is the root', (): Promise<void> => expect(page).toHaveURL(/\/$/));
-    });
+    await test.step('THEN the marker is still present', (): Promise<void> => homePage.expectSpaSessionKept());
   });
 
-  test.describe('GIVEN the account layout', () => {
-    test('SCENARIO: changing the nested route keeps the layout', async ({ accountPage }): Promise<void> => {
-      await test.step('GIVEN the security section is open', (): Promise<void> => accountPage.gotoSection('security'));
+  test('SCENARIO: going back twice replays the history', async ({ homePage, page }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      await test.step('AND the layout heading and section heading are shown', (): Promise<void> => accountPage.expectSection('Security'));
+    await test.step('AND the inventory link was followed', (): Promise<void> => homePage.openInventory());
 
-      await test.step('WHEN the privacy link is followed', (): Promise<void> => accountPage.openSection('Privacy'));
+    await test.step('AND the help link was followed', (): Promise<void> => homePage.openHelp());
 
-      await test.step('THEN the layout heading and section heading are shown', (): Promise<void> => accountPage.expectSection('Privacy'));
-    });
+    await test.step('WHEN the browser goes back', (): Promise<void> => homePage.goBack());
+
+    await test.step('THEN the url is the inventory', (): Promise<void> => expect(page).toHaveURL(/\/inventory/));
+
+    await test.step('AND the browser goes back again', (): Promise<void> => homePage.goBack());
+
+    await test.step('THEN the url is the root', (): Promise<void> => expect(page).toHaveURL(/\/$/));
+  });
+
+  test('SCENARIO: changing the nested route keeps the layout', async ({ accountPage }): Promise<void> => {
+    await test.step('GIVEN the security section is open', (): Promise<void> => accountPage.gotoSection('security'));
+
+    await test.step('AND the layout heading and section heading are shown', (): Promise<void> => accountPage.expectSection('Security'));
+
+    await test.step('WHEN the privacy link is followed', (): Promise<void> => accountPage.openSection('Privacy'));
+
+    await test.step('THEN the layout heading and section heading are shown', (): Promise<void> => accountPage.expectSection('Privacy'));
   });
 });
 ```
@@ -256,16 +250,14 @@ export { expect } from '@playwright/test';
 import { expect, test } from './search.fixture';
 
 test.describe('FEATURE: useDebounce via SearchBox', () => {
-  test.describe('GIVEN the search page', () => {
-    test('SCENARIO: typing a word quickly batches the requests', async ({ searchCalls, searchPage }): Promise<void> => {
-      await test.step('GIVEN the search page is open', (): Promise<void> => searchPage.goto());
+  test('SCENARIO: typing a word quickly batches the requests', async ({ searchCalls, searchPage }): Promise<void> => {
+    await test.step('GIVEN the search page is open', (): Promise<void> => searchPage.goto());
 
-      await test.step('WHEN a query is typed with 40ms between keys', (): Promise<void> => searchPage.typeQuery('testing'));
+    await test.step('WHEN a query is typed with 40ms between keys', (): Promise<void> => searchPage.typeQuery('testing'));
 
-      await test.step('THEN three results are listed', (): Promise<void> => searchPage.expectResultCount(3));
+    await test.step('THEN three results are listed', (): Promise<void> => searchPage.expectResultCount(3));
 
-      await test.step('AND at most two requests were sent', (): void => expect(searchCalls.length).toBeLessThanOrEqual(2));
-    });
+    await test.step('AND at most two requests were sent', (): void => expect(searchCalls.length).toBeLessThanOrEqual(2));
   });
 });
 ```
@@ -363,44 +355,42 @@ import { slowSignupMock } from './test/mocks/signup.mock';
 import { SIGNUP_USER_STUB } from './test/stubs/signup.stub';
 
 test.describe('FEATURE: signup form', () => {
-  test.describe('GIVEN the signup page', () => {
-    test.beforeEach(async ({ signupPage }): Promise<void> => {
-      await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
-    });
+  test.beforeEach(async ({ signupPage }): Promise<void> => {
+    await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
+  });
 
-    test('SCENARIO: submitting the empty form shows the required errors', async ({ signupPage }): Promise<void> => {
-      await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
+  test('SCENARIO: submitting the empty form shows the required errors', async ({ signupPage }): Promise<void> => {
+    await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
 
-      await test.step('THEN the email is required', (): Promise<void> => signupPage.expectError('Email required'));
+    await test.step('THEN the email is required', (): Promise<void> => signupPage.expectError('Email required'));
 
-      await test.step('AND the password is required', (): Promise<void> => signupPage.expectError('Password required'));
-    });
+    await test.step('AND the password is required', (): Promise<void> => signupPage.expectError('Password required'));
+  });
 
-    test('SCENARIO: an invalid email losing focus shows the inline error', async ({ signupPage }): Promise<void> => {
-      await test.step('WHEN the email field is blurred with an invalid value', (): Promise<void> => signupPage.blurEmailWith('invalid'));
+  test('SCENARIO: an invalid email losing focus shows the inline error', async ({ signupPage }): Promise<void> => {
+    await test.step('WHEN the email field is blurred with an invalid value', (): Promise<void> => signupPage.blurEmailWith('invalid'));
 
-      await test.step('THEN the format error is shown', (): Promise<void> => signupPage.expectError('Invalid email format'));
-    });
+    await test.step('THEN the format error is shown', (): Promise<void> => signupPage.expectError('Invalid email format'));
+  });
 
-    test('SCENARIO: submitting a valid form greets the user on the welcome page', async ({ page, signupPage, welcomePage }): Promise<void> => {
-      await test.step('GIVEN a valid user is filled in', (): Promise<void> => signupPage.fill(SIGNUP_USER_STUB));
+  test('SCENARIO: submitting a valid form greets the user on the welcome page', async ({ page, signupPage, welcomePage }): Promise<void> => {
+    await test.step('AND a valid user is filled in', (): Promise<void> => signupPage.fill(SIGNUP_USER_STUB));
 
-      await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
+    await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
 
-      await test.step('THEN the welcome url is shown', (): Promise<void> => expect(page).toHaveURL('/welcome'));
+    await test.step('THEN the welcome url is shown', (): Promise<void> => expect(page).toHaveURL('/welcome'));
 
-      await test.step('AND the greeting names the user', (): Promise<void> => welcomePage.expectGreeting(SIGNUP_USER_STUB.name));
-    });
+    await test.step('AND the greeting names the user', (): Promise<void> => welcomePage.expectGreeting(SIGNUP_USER_STUB.name));
+  });
 
-    test('SCENARIO: a slow request disables the submit button meanwhile', async ({ signupPage }): Promise<void> => {
-      await test.step('GIVEN the signup response is held for 800ms', (): Promise<void> => signupPage.routeSignup(slowSignupMock(800)));
+  test('SCENARIO: a slow request disables the submit button meanwhile', async ({ signupPage }): Promise<void> => {
+    await test.step('AND the signup response is held for 800ms', (): Promise<void> => signupPage.routeSignup(slowSignupMock(800)));
 
-      await test.step('AND a valid user is filled in', (): Promise<void> => signupPage.fill(SIGNUP_USER_STUB));
+    await test.step('AND a valid user is filled in', (): Promise<void> => signupPage.fill(SIGNUP_USER_STUB));
 
-      await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
+    await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
 
-      await test.step('THEN the button is disabled while submitting', (): Promise<void> => signupPage.expectSubmitting());
-    });
+    await test.step('THEN the button is disabled while submitting', (): Promise<void> => signupPage.expectSubmitting());
   });
 });
 ```
@@ -416,30 +406,28 @@ test.describe('FEATURE: signup form', () => {
 import { test } from './items.fixture';
 
 test.describe('FEATURE: portal dialog', () => {
-  test.describe('GIVEN the items page', () => {
-    test.beforeEach(async ({ itemsPage }): Promise<void> => {
-      await test.step('GIVEN the items page is open', (): Promise<void> => itemsPage.goto());
+  test.beforeEach(async ({ itemsPage }): Promise<void> => {
+    await test.step('GIVEN the items page is open', (): Promise<void> => itemsPage.goto());
 
-      await test.step('AND remove is clicked on the first item', (): Promise<void> => itemsPage.removeFirst());
+    await test.step('AND remove is clicked on the first item', (): Promise<void> => itemsPage.removeFirst());
 
-      await test.step('AND the confirm dialog is open', (): Promise<void> => itemsPage.expectDialogOpen());
-    });
+    await test.step('AND the confirm dialog is open', (): Promise<void> => itemsPage.expectDialogOpen());
+  });
 
-    test('SCENARIO: opening the dialog focuses cancel', async ({ itemsPage }): Promise<void> => {
-      await test.step('THEN the cancel button is focused', (): Promise<void> => itemsPage.expectCancelFocused());
-    });
+  test('SCENARIO: opening the dialog focuses cancel', async ({ itemsPage }): Promise<void> => {
+    await test.step('THEN the cancel button is focused', (): Promise<void> => itemsPage.expectCancelFocused());
+  });
 
-    test('SCENARIO: confirming the removal closes the dialog', async ({ itemsPage }): Promise<void> => {
-      await test.step('WHEN the removal is confirmed', (): Promise<void> => itemsPage.confirmRemoval());
+  test('SCENARIO: confirming the removal closes the dialog', async ({ itemsPage }): Promise<void> => {
+    await test.step('WHEN the removal is confirmed', (): Promise<void> => itemsPage.confirmRemoval());
 
-      await test.step('THEN the dialog is closed', (): Promise<void> => itemsPage.expectDialogClosed());
-    });
+    await test.step('THEN the dialog is closed', (): Promise<void> => itemsPage.expectDialogClosed());
+  });
 
-    test('SCENARIO: pressing escape closes the dialog', async ({ itemsPage }): Promise<void> => {
-      await test.step('WHEN escape is pressed', (): Promise<void> => itemsPage.pressEscape());
+  test('SCENARIO: pressing escape closes the dialog', async ({ itemsPage }): Promise<void> => {
+    await test.step('WHEN escape is pressed', (): Promise<void> => itemsPage.pressEscape());
 
-      await test.step('THEN the dialog is closed', (): Promise<void> => itemsPage.expectDialogClosed());
-    });
+    await test.step('THEN the dialog is closed', (): Promise<void> => itemsPage.expectDialogClosed());
   });
 });
 ```
@@ -500,30 +488,26 @@ import { test } from './panel.fixture';
 import { brokenWidgetsMock, recoveringWidgetsMock } from './test/mocks/widgets.mock';
 
 test.describe('FEATURE: widget error boundary', () => {
-  test.describe('GIVEN the widgets endpoint returns a broken payload', () => {
-    test('SCENARIO: rendering the panel shows the fallback and keeps the navigation', async ({ panelPage }): Promise<void> => {
-      await test.step('GIVEN widgets are routed to the broken payload', (): Promise<void> => panelPage.routeWidgets(brokenWidgetsMock()));
+  test('SCENARIO: a broken widgets payload shows the fallback and keeps the navigation', async ({ panelPage }): Promise<void> => {
+    await test.step('GIVEN widgets are routed to the broken payload', (): Promise<void> => panelPage.routeWidgets(brokenWidgetsMock()));
 
-      await test.step('WHEN the panel is opened', (): Promise<void> => panelPage.goto());
+    await test.step('WHEN the panel is opened', (): Promise<void> => panelPage.goto());
 
-      await test.step('THEN the fallback is shown with a retry button', (): Promise<void> => panelPage.expectFallback());
+    await test.step('THEN the fallback is shown with a retry button', (): Promise<void> => panelPage.expectFallback());
 
-      await test.step('AND the navigation is still visible', (): Promise<void> => panelPage.expectNavigation());
-    });
+    await test.step('AND the navigation is still visible', (): Promise<void> => panelPage.expectNavigation());
   });
 
-  test.describe('GIVEN the widgets endpoint fails once', () => {
-    test('SCENARIO: clicking retry recovers the widget', async ({ panelPage }): Promise<void> => {
-      await test.step('GIVEN widgets are routed to fail once', (): Promise<void> => panelPage.routeWidgets(recoveringWidgetsMock()));
+  test('SCENARIO: clicking retry after a failed load recovers the widget', async ({ panelPage }): Promise<void> => {
+    await test.step('GIVEN widgets are routed to fail once', (): Promise<void> => panelPage.routeWidgets(recoveringWidgetsMock()));
 
-      await test.step('AND the panel is open', (): Promise<void> => panelPage.goto());
+    await test.step('AND the panel is open', (): Promise<void> => panelPage.goto());
 
-      await test.step('AND the fallback is shown', (): Promise<void> => panelPage.expectFallback());
+    await test.step('AND the fallback is shown', (): Promise<void> => panelPage.expectFallback());
 
-      await test.step('WHEN retry is clicked', (): Promise<void> => panelPage.retry());
+    await test.step('WHEN retry is clicked', (): Promise<void> => panelPage.retry());
 
-      await test.step('THEN the fallback is gone and the chart is shown', (): Promise<void> => panelPage.expectWidget('Chart'));
-    });
+    await test.step('THEN the fallback is gone and the chart is shown', (): Promise<void> => panelPage.expectWidget('Chart'));
   });
 });
 ```
@@ -578,32 +562,30 @@ import type { StepperHelper } from './helpers/stepper.helper';
 import { mountStepper } from './test/utils/stepper-mount.spec.util';
 
 test.describe('FEATURE: stepper', () => {
-  test.describe('GIVEN a stepper mounted at 0', () => {
-    test('SCENARIO: clicking + reads 1', async ({ mount }): Promise<void> => {
-      const stepper = await test.step('GIVEN the stepper is mounted at 0', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0 }));
+  test('SCENARIO: clicking + reads 1', async ({ mount }): Promise<void> => {
+    const stepper = await test.step('GIVEN the stepper is mounted at 0', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0 }));
 
-      await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
+    await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
 
-      await test.step('THEN the value reads 1', (): Promise<void> => stepper.expectValue(1));
-    });
+    await test.step('THEN the value reads 1', (): Promise<void> => stepper.expectValue(1));
+  });
 
-    test('SCENARIO: clicking + twice passes each value to onChange', async ({ mount }): Promise<void> => {
-      const values: number[] = [];
-      const onChange = (value: number): number => values.push(value);
-      const stepper = await test.step('GIVEN the stepper is mounted at 0 with onChange', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, onChange }));
+  test('SCENARIO: clicking + twice passes each value to onChange', async ({ mount }): Promise<void> => {
+    const values: number[] = [];
+    const onChange = (value: number): number => values.push(value);
+    const stepper = await test.step('GIVEN the stepper is mounted at 0 with onChange', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, onChange }));
 
-      await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
+    await test.step('WHEN + is clicked', (): Promise<void> => stepper.increment());
 
-      await test.step('AND + is clicked again', (): Promise<void> => stepper.increment());
+    await test.step('AND + is clicked again', (): Promise<void> => stepper.increment());
 
-      await test.step('THEN onChange saw 1 then 2', (): void => expect(values).toEqual([1, 2]));
-    });
+    await test.step('THEN onChange saw 1 then 2', (): void => expect(values).toEqual([1, 2]));
+  });
 
-    test('SCENARIO: a value at min disables -', async ({ mount }): Promise<void> => {
-      const stepper = await test.step('GIVEN the stepper is mounted at 0 with min 0', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, min: 0 }));
+  test('SCENARIO: a value at min disables -', async ({ mount }): Promise<void> => {
+    const stepper = await test.step('GIVEN the stepper is mounted at 0 with min 0', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, min: 0 }));
 
-      await test.step('THEN - is disabled', (): Promise<void> => stepper.expectDecrementDisabled());
-    });
+    await test.step('THEN - is disabled', (): Promise<void> => stepper.expectDecrementDisabled());
   });
 });
 ```
@@ -675,14 +657,12 @@ A lazy route renders a Suspense fallback, then the chunk. The web-first assertio
 import { test } from './analytics.fixture';
 
 test.describe('FEATURE: lazy analytics route', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: following the analytics link renders the lazy chunk', async ({ analyticsPage, homePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('SCENARIO: following the analytics link renders the lazy chunk', async ({ analyticsPage, homePage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      await test.step('WHEN the analytics link is followed', (): Promise<void> => homePage.openAnalytics());
+    await test.step('WHEN the analytics link is followed', (): Promise<void> => homePage.openAnalytics());
 
-      await test.step('THEN the analytics heading is shown', (): Promise<void> => analyticsPage.expectHeading());
-    });
+    await test.step('THEN the analytics heading is shown', (): Promise<void> => analyticsPage.expectHeading());
   });
 });
 ```
@@ -730,18 +710,16 @@ export { expect } from '@playwright/test';
 import { expect, test } from './panel.fixture';
 
 test.describe('FEATURE: panel unmount', () => {
-  test.describe('GIVEN the panel', () => {
-    test('SCENARIO: navigating away and back logs no unmounted-state warning', async ({ panelPage, unmountWarnings }): Promise<void> => {
-      await test.step('GIVEN the panel is open', (): Promise<void> => panelPage.goto());
+  test('SCENARIO: navigating away and back logs no unmounted-state warning', async ({ panelPage, unmountWarnings }): Promise<void> => {
+    await test.step('GIVEN the panel is open', (): Promise<void> => panelPage.goto());
 
-      await test.step('WHEN settings is opened', (): Promise<void> => panelPage.openSettings());
+    await test.step('WHEN settings is opened', (): Promise<void> => panelPage.openSettings());
 
-      await test.step('AND the browser goes back', (): Promise<void> => panelPage.goBack());
+    await test.step('AND the browser goes back', (): Promise<void> => panelPage.goBack());
 
-      await test.step('AND profile is opened', (): Promise<void> => panelPage.openProfile());
+    await test.step('AND profile is opened', (): Promise<void> => panelPage.openProfile());
 
-      await test.step('THEN no unmount warning was logged', (): void => expect(unmountWarnings).toEqual([]));
-    });
+    await test.step('THEN no unmount warning was logged', (): void => expect(unmountWarnings).toEqual([]));
   });
 });
 ```

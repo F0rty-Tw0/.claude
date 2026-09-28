@@ -82,14 +82,12 @@ A server component is plain HTML by the time Playwright sees it. Assert on roles
 import { test } from './home.fixture';
 
 test.describe('FEATURE: server components', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: page load shows the server-rendered heading and navigation', async ({ homePage }): Promise<void> => {
-      await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
+  test('SCENARIO: page load shows the server-rendered heading and navigation', async ({ homePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN welcome heading is shown', (): Promise<void> => homePage.expectHeading('Welcome'));
+    await test.step('THEN welcome heading is shown', (): Promise<void> => homePage.expectHeading('Welcome'));
 
-      await test.step('AND main navigation is shown', (): Promise<void> => homePage.expectNavigation('Main'));
-    });
+    await test.step('AND main navigation is shown', (): Promise<void> => homePage.expectNavigation('Main'));
   });
 });
 ```
@@ -124,16 +122,14 @@ import { test } from './dashboard.fixture';
 import { slowStatsMock } from './test/mocks/stats.mock';
 
 test.describe('FEATURE: streaming dashboard', () => {
-  test.describe('GIVEN the stats endpoint takes two seconds', () => {
-    test('SCENARIO: dashboard open shows the loading boundary and resolves it', async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN the stats response is held for 2s', (): Promise<void> => dashboardPage.routeStats(slowStatsMock(2_000)));
+  test('SCENARIO: a slow stats response shows the loading boundary until it resolves', async ({ dashboardPage }): Promise<void> => {
+    await test.step('GIVEN the stats response is held for 2s', (): Promise<void> => dashboardPage.routeStats(slowStatsMock(2_000)));
 
-      await test.step('AND the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN loading boundary is shown', (): Promise<void> => dashboardPage.expectLoading());
+    await test.step('THEN loading boundary is shown', (): Promise<void> => dashboardPage.expectLoading());
 
-      await test.step('AND content replaces the loading boundary', (): Promise<void> => dashboardPage.expectLoaded());
-    });
+    await test.step('AND content replaces the loading boundary', (): Promise<void> => dashboardPage.expectLoaded());
   });
 });
 ```
@@ -201,22 +197,18 @@ import type { Response } from '@playwright/test';
 import { expect, test } from './blog.fixture';
 
 test.describe('FEATURE: blog post routes', () => {
-  test.describe('GIVEN a published post', () => {
-    test('SCENARIO: published slug renders the post', async ({ postPage }): Promise<void> => {
-      await test.step('WHEN the testing guide is opened', (): Promise<Response | null> => postPage.goto('testing-guide'));
+  test('SCENARIO: published slug renders the post', async ({ postPage }): Promise<void> => {
+    await test.step('WHEN the testing guide is opened', (): Promise<Response | null> => postPage.goto('testing-guide'));
 
-      await test.step('THEN post is shown', (): Promise<void> => postPage.expectPost('Testing Guide'));
-    });
+    await test.step('THEN post is shown', (): Promise<void> => postPage.expectPost('Testing Guide'));
   });
 
-  test.describe('GIVEN an unknown slug', () => {
-    test('SCENARIO: unknown slug responds 404', async ({ postPage }): Promise<void> => {
-      const response = await test.step('WHEN a missing post is opened', (): Promise<Response | null> => postPage.goto('nonexistent-post'));
+  test('SCENARIO: unknown slug responds 404', async ({ postPage }): Promise<void> => {
+    const response = await test.step('WHEN a missing post is opened', (): Promise<Response | null> => postPage.goto('nonexistent-post'));
 
-      await test.step('THEN status is 404', (): void => expect(response?.status()).toBe(404));
+    await test.step('THEN status is 404', (): void => expect(response?.status()).toBe(404));
 
-      await test.step('AND 404 heading is shown', (): Promise<void> => postPage.expectNotFound());
-    });
+    await test.step('AND 404 heading is shown', (): Promise<void> => postPage.expectNotFound());
   });
 });
 ```
@@ -246,16 +238,14 @@ import { expect, test } from './products.fixture';
 import { sortedAscending } from './test/utils/prices.spec.util';
 
 test.describe('FEATURE: product filters', () => {
-  test.describe('GIVEN electronics sorted by price ascending', () => {
-    test('SCENARIO: page load lists prices ascending', async ({ productsPage }): Promise<void> => {
-      await test.step('WHEN electronics sorted by price is opened', (): Promise<void> => productsPage.goto('category=electronics&sort=price-asc'));
+  test('SCENARIO: page load lists prices ascending', async ({ productsPage }): Promise<void> => {
+    await test.step('WHEN electronics sorted by price is opened', (): Promise<void> => productsPage.goto('category=electronics&sort=price-asc'));
 
-      await test.step('THEN electronics heading is shown', (): Promise<void> => productsPage.expectHeading('Electronics'));
+    await test.step('THEN electronics heading is shown', (): Promise<void> => productsPage.expectHeading('Electronics'));
 
-      const prices = await test.step('AND the rendered prices are read', (): Promise<number[]> => productsPage.prices());
+    const prices = await test.step('AND the rendered prices are read', (): Promise<number[]> => productsPage.prices());
 
-      await test.step('THEN prices are ascending', (): void => expect(prices).toEqual(sortedAscending(prices)));
-    });
+    await test.step('THEN prices are ascending', (): void => expect(prices).toEqual(sortedAscending(prices)));
   });
 });
 ```
@@ -294,16 +284,14 @@ import { expect, test } from './products.fixture';
 import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
 
 test.describe('FEATURE: products api', () => {
-  test.describe('GIVEN the products route', () => {
-    test('SCENARIO: GET returns a product list', async ({ request }): Promise<void> => {
-      const response = await test.step('WHEN products are fetched', (): Promise<APIResponse> => request.get('/api/products'));
+  test('SCENARIO: GET returns a product list', async ({ request }): Promise<void> => {
+    const response = await test.step('WHEN products are fetched', (): Promise<APIResponse> => request.get('/api/products'));
 
-      await test.step('THEN response is ok', (): void => expect(response.ok()).toBeTruthy());
+    await test.step('THEN response is ok', (): void => expect(response.ok()).toBeTruthy());
 
-      const body = await test.step('AND the body is read', (): Promise<ProductsBody> => response.json());
+    const body = await test.step('AND the body is read', (): Promise<ProductsBody> => response.json());
 
-      await test.step('THEN first product has an id and a name', (): void => expect(body.products[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String) }));
-    });
+    await test.step('THEN first product has an id and a name', (): void => expect(body.products[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String) }));
   });
 });
 ```
@@ -327,14 +315,12 @@ import { test } from './products.fixture';
 import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
 
 test.describe('FEATURE: product form', () => {
-  test.describe('GIVEN the new product page', () => {
-    test('SCENARIO: submitted product is created by the api and confirmed on the page', async ({ newProductPage }): Promise<void> => {
-      await test.step('GIVEN the new product page is open', (): Promise<void> => newProductPage.goto());
+  test('SCENARIO: submitted product is created by the api and confirmed on the page', async ({ newProductPage }): Promise<void> => {
+    await test.step('GIVEN the new product page is open', (): Promise<void> => newProductPage.goto());
 
-      await test.step('WHEN a widget is created', (): Promise<void> => newProductPage.create({ ...NEW_PRODUCT_STUB, name: 'Widget', price: 19.99 }));
+    await test.step('WHEN a widget is created', (): Promise<void> => newProductPage.create({ ...NEW_PRODUCT_STUB, name: 'Widget', price: 19.99 }));
 
-      await test.step('THEN success message is shown', (): Promise<void> => newProductPage.expectCreated());
-    });
+    await test.step('THEN success message is shown', (): Promise<void> => newProductPage.expectCreated());
   });
 });
 ```
@@ -364,18 +350,16 @@ import { expect, test } from './auth.fixture';
 import { returnUrl } from './test/utils/return-url.spec.util';
 
 test.describe('FEATURE: auth middleware', () => {
-  test.describe('GIVEN a signed-out visitor', () => {
-    test('SCENARIO: nested page redirect shows login and keeps the return url', async ({ loginPage, page }): Promise<void> => {
-      await test.step('WHEN dashboard settings is opened', async (): Promise<void> => {
-        await page.goto('/dashboard/settings');
-      });
-
-      await test.step('THEN login url is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
-
-      await test.step('AND the sign-in heading is shown', (): Promise<void> => loginPage.expectHeading());
-
-      await test.step('AND return url points at settings', (): void => expect(returnUrl(page.url())).toContain('/dashboard/settings'));
+  test('SCENARIO: a signed-out visit to a nested page redirects to login and keeps the return url', async ({ loginPage, page }): Promise<void> => {
+    await test.step('WHEN dashboard settings is opened', async (): Promise<void> => {
+      await page.goto('/dashboard/settings');
     });
+
+    await test.step('THEN login url is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
+
+    await test.step('AND the sign-in heading is shown', (): Promise<void> => loginPage.expectHeading());
+
+    await test.step('AND return url points at settings', (): void => expect(returnUrl(page.url())).toContain('/dashboard/settings'));
   });
 });
 ```
@@ -420,14 +404,12 @@ import { test } from './home.fixture';
 import { FRENCH_HEADERS_STUB } from './test/stubs/locale.stub';
 
 test.describe('FEATURE: locale middleware', () => {
-  test.describe('GIVEN a French browser', () => {
-    test('SCENARIO: home page open serves the French copy', async ({ context, homePage }): Promise<void> => {
-      await test.step('WHEN French accept-language is sent', (): Promise<void> => context.setExtraHTTPHeaders(FRENCH_HEADERS_STUB));
+  test('SCENARIO: a French accept-language header serves the French copy', async ({ context, homePage }): Promise<void> => {
+    await test.step('GIVEN French accept-language is sent', (): Promise<void> => context.setExtraHTTPHeaders(FRENCH_HEADERS_STUB));
 
-      await test.step('AND the home page is opened', (): Promise<void> => homePage.goto());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN french welcome is shown', (): Promise<void> => homePage.expectText('Bienvenue'));
-    });
+    await test.step('THEN french welcome is shown', (): Promise<void> => homePage.expectText('Bienvenue'));
   });
 });
 ```
@@ -451,16 +433,14 @@ import { expect, test } from './home.fixture';
 import { hydrationErrors } from './test/utils/hydration.spec.util';
 
 test.describe('FEATURE: hydration', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: hydrated page click logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('SCENARIO: hydrated page click logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      await test.step('WHEN get started is clicked', (): Promise<void> => homePage.getStarted());
+    await test.step('WHEN get started is clicked', (): Promise<void> => homePage.getStarted());
 
-      const mismatches = await test.step('AND the hydration errors are kept', (): string[] => hydrationErrors(consoleErrors));
+    const mismatches = await test.step('AND the hydration errors are kept', (): string[] => hydrationErrors(consoleErrors));
 
-      await test.step('THEN no hydration error was logged', (): void => expect(mismatches).toEqual([]));
-    });
+    await test.step('THEN no hydration error was logged', (): void => expect(mismatches).toEqual([]));
   });
 });
 ```
@@ -521,22 +501,20 @@ export class GalleryPage {
 import { expect, test } from './gallery.fixture';
 
 test.describe('FEATURE: next/image', () => {
-  test.describe('GIVEN the gallery', () => {
-    test.beforeEach(async ({ galleryPage }): Promise<void> => {
-      await test.step('GIVEN the gallery is open', (): Promise<void> => galleryPage.goto());
-    });
+  test.beforeEach(async ({ galleryPage }): Promise<void> => {
+    await test.step('GIVEN the gallery is open', (): Promise<void> => galleryPage.goto());
+  });
 
-    test('SCENARIO: page load renders the hero image eager with a srcset', async ({ galleryPage }): Promise<void> => {
-      await test.step('THEN hero image is eager', (): Promise<void> => galleryPage.expectHeroEager());
-    });
+  test('SCENARIO: page load renders the hero image eager with a srcset', async ({ galleryPage }): Promise<void> => {
+    await test.step('THEN hero image is eager', (): Promise<void> => galleryPage.expectHeroEager());
+  });
 
-    test('SCENARIO: offscreen image loads when scrolled into view', async ({ galleryPage }): Promise<void> => {
-      await test.step('WHEN item 20 is scrolled to', (): Promise<void> => galleryPage.scrollToItem(20));
+  test('SCENARIO: offscreen image loads when scrolled into view', async ({ galleryPage }): Promise<void> => {
+    await test.step('WHEN item 20 is scrolled to', (): Promise<void> => galleryPage.scrollToItem(20));
 
-      const width = await test.step('AND the natural width is read', (): Promise<number> => galleryPage.itemNaturalWidth(20));
+    const width = await test.step('AND the natural width is read', (): Promise<number> => galleryPage.itemNaturalWidth(20));
 
-      await test.step('THEN image has loaded pixels', (): void => expect(width).toBeGreaterThan(0));
-    });
+    await test.step('THEN image has loaded pixels', (): void => expect(width).toBeGreaterThan(0));
   });
 });
 ```
