@@ -59,10 +59,10 @@ Entry adapters. On the frontend these are smart components; on a server, request
 
 | Concern | Rule |
 |---|---|
-| Files | `<name>.component.ts` (smart component), `<name>.guard.ts` (functional `CanActivateFn`), `<name>.seo.config.ts` (page metadata), `<name>.handler.ts` (HTTP / MCP / CLI handler), `<verb-noun>.ts` for a server `preHandler` hook (`require-user.ts`). |
+| Files | `<name>.component.ts` (smart component), `<name>.guard.ts` (functional `CanActivateFn`), `<name>.seo.config.ts` (page metadata), `<name>.handler.ts` (HTTP / MCP / CLI handler), `<verb-noun>.ts` for a server `preHandler` hook (`require-user.ts`), `<name>.plugin.ts` (Fastify `fp(...)` plugin that adds request hooks), `<name>.service.ts` only for a UI-coupled service that opens a `feature` component (dialog). |
 | Injects | `domain-logic` services and state facades only, through `inject()` into `private readonly` fields. |
-| Reads data | A `Signal` from a state facade (`this.favoritesState.getState()`), a `resource()` returned by a service, or `toSignal()` over a service `Observable`. |
-| Triggers work | Calls a service method. Fire-and-forget is `void firstValueFrom(this.service.load$())`. |
+| Reads data | A `Signal` from a state facade (`this.favoritesState.get()`), a `resource()` returned by a service, or `toSignal()` over a service `Observable`. |
+| Triggers work | Calls a service method. Fire-and-forget names the promise, then `void load.catch(ignoreRecordedError)`: the orchestrator already wrote the error to state and rethrew, and the `catch` only stops an unhandled rejection. `ignoreRecordedError` is one shared no-op in `utils/`. |
 | Route input | Route params arrive as `input()` through `withComponentInputBinding()`, not by injecting `ActivatedRoute`. |
 | Owns | Page-level concerns: forms (Signal Forms `form()` on Angular 22+), SEO config, translation (`*transloco`, `t('key')`), `@defer` boundaries. |
 | Feeds `ui` | Passes plain values and already-translated strings as inputs; listens to outputs. |
@@ -81,11 +81,15 @@ export class FavoritesComponent {
   public readonly favorites = this.favoritesState.get();
 
   public constructor() {
-    void firstValueFrom(this.favoritesService.getFavorites$());
+    const load = firstValueFrom(this.favoritesService.getFavorites$());
+
+    void load.catch(ignoreRecordedError);
   }
 
   public onDelete(favoriteId: string): void {
-    void firstValueFrom(this.favoritesService.deleteFavorite$(favoriteId));
+    const deletion = firstValueFrom(this.favoritesService.deleteFavorite$(favoriteId));
+
+    void deletion.catch(ignoreRecordedError);
   }
 }
 ```
@@ -133,7 +137,7 @@ Decides and orchestrates. The only layer that composes I/O with state.
 | `<name>.provider.ts` | `provideX()` for a service, `APP_INITIALIZER`-style setup. | — | `EnvironmentProviders` |
 | `<name>.interceptor.ts`, `<name>.redirect.ts` | Functional interceptors and route redirects. | services | per Angular signature |
 
-Orchestrator flow, in order: `state.loading()` → `api.x$()` → `tap((value) => state.set(value))` → `catchError((error: unknown) => this.fail$(error))`, where the failure path writes `state.error(message)` and rethrows. Session-scoped requests add `takeUntil(this.sessionState.invalidated$(generation))`. A runtime switch (HTTP vs browser messaging) is a branch here, not in `data-access`.
+Orchestrator flow, in order: `defer()` so `state.loading()` runs only on subscribe → `api.x$()` → `tap` into `state.set(value)` → `catchError` into `this.fail$(error)`, which writes `state.error(message)` and rethrows. Never call `state.loading()` eagerly: an Observable that is never subscribed, or cancelled by `switchMap`, leaves the slice stuck in loading. Session-scoped requests add `takeUntil(this.sessionState.invalidated$(generation))`. A runtime switch (HTTP vs browser messaging) is a branch here, not in `data-access`.
 
 A third-party UI service (`MatSnackBar`, `MatDialog` without a component, `Router`) is wrapped by an app service here (`NotifyService`), so `feature` injects the wrapper.
 
@@ -159,12 +163,25 @@ export class GeoLocationService {
   private readonly state = inject(GeoLocationStateService);
 
   public rehydrateProviderLocation$(): Observable<Location> {
+    const request$ = defer(() => this.startRequest$());
+    const setLocation = (location: Location): void => this.state.set(location);
+    const failLocation = (error: unknown): Observable<never> => this.fail$(error);
+
+    return request$.pipe(tap(setLocation), catchError(failLocation));
+  }
+
+  private startRequest$(): Observable<Location> {
     this.state.loading();
 
-    const setLocation = (location: Location): void => this.state.set(location);
-    const failLocation = (error: unknown): Observable<never> => this.handleError$(error);
+    return this.api.getProviderLocation$();
+  }
 
-    return this.api.getProviderLocation$().pipe(tap(setLocation), catchError(failLocation));
+  private fail$(error: unknown): Observable<never> {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+
+    this.state.error(message);
+
+    return throwError(() => error);
   }
 }
 ```
@@ -177,7 +194,7 @@ export class GeoLocationService {
 | Body | Call `data-access`, map rows to domain types with a `utils/*-mapper.util.ts`, return. A thin forwarder is correct. |
 | Errors | Throw a typed exception from `common/` (`ConflictException`). The `feature` handler or the global error handler maps it to a status. |
 | Telemetry | Business context goes to the wide event (`enrichWideEvent({ ... })`); an external call is wrapped in the tracking helper. |
-| Framework plugins | A Fastify plugin that adds hooks (`fp(...)`) is `domain-logic` in a library; the app registers it in its composition root. |
+| Framework plugins | A Fastify plugin that adds request hooks (`fp(...)`) handles `FastifyRequest`, so it is `feature/<name>.plugin.ts`; it calls `domain-logic` for the work. The app registers it in its composition root. |
 | Never | `FastifyRequest` / `FastifyReply`, `fetch`, SQL, an SDK client (`new Polar`, `@ai-sdk/*`, Redis), `process.env`. |
 
 ```ts
@@ -207,7 +224,7 @@ Talks to the outside or remembers. No decisions: no retry policy, no user-facing
 | `<name>.messaging.ts` | Exported functions wrapping `browser.runtime.sendMessage` in an `Observable`, validating the reply with a type predicate. |
 | `<name>.engine.ts` | A storage engine (`StorageEngine` for NGXS, cookie storage for SSR). |
 | `<name>.token.ts` | An `InjectionToken` with a root factory that reads the platform (`IS_EXTENSION_RUNTIME`). |
-| `+state/<name>.state.ts` | `@State({ name: TOKEN, defaults: INITIAL })` + `@Injectable()` (NGXS registers it; not `@Service`). Static `@Selector()`s (`selectState`, `select<Thing>`). `@Action` handlers only `patchState` / `setState`: no I/O, no `dispatch` chains. |
+| `+state/<name>.state.ts` | `@State({ name: TOKEN, defaults: INITIAL })` + `@Injectable({ providedIn: 'root' })`. Not `@Service`: NGXS needs `@Injectable`, and lint-suite `@angular-eslint/use-injectable-provided-in` rejects a bare `@Injectable()`. Static `@Selector()`s (`selectState`, `select<Thing>`). `@Action` handlers only `patchState` / `setState`: no I/O, no `dispatch` chains. |
 | `+state/<name>.state.action.ts` | Action classes: `public static readonly type = '[Scope] Verb'`, payload as a `public readonly` field set in the constructor. |
 | `+state/<name>.state.token.ts` | `new StateToken<NameState>('name')`. |
 | `+state/<name>.state.provider.ts` | `provideNameState = (): EnvironmentProviders => provideStates([NameState], withStorageFeature([...]))`. Session, local, or cookie storage chosen here. |
@@ -267,11 +284,12 @@ Server `routes.ts` per slice: `const router = fastify.withTypeProvider<ZodTypePr
 | Angular | Rule |
 |---|---|
 | 22+ | `@Service()` for every root singleton: `.service.ts`, `.state.service.ts`, `.api.ts`. It implies `providedIn: 'root'` and supports `inject()` only. |
-| 22+ | `@Injectable()` only when `@Service` cannot express it: NGXS `@State` classes, non-root scope, `useClass` / `useExisting` providers, a factory the class cannot own. |
+| 22+ | Non-root scope: `@Service({ autoProvided: false })`, then list it in the route or component `providers`. Custom creation: `@Service({ factory: () => ... })`. |
+| 22+ | `@Injectable({ providedIn: ... })` only where `@Service` cannot go: NGXS `@State` classes, a class used as a `useClass` / `useExisting` target, a class that must keep constructor injection. Never a bare `@Injectable()`: lint-suite `use-injectable-provided-in` rejects it. |
 | 21 and below | `@Injectable({ providedIn: 'root' })` for the same roots. |
 | 22+ | Omit `changeDetection: OnPush` (default). Below 22, set it on every component. |
-| 20+ | Omit `standalone: true` (default). Never `CommonModule`; import the directives the template uses. |
-| All | `inject()`, never constructor injection. `input()` / `output()` / `model()`, never decorators. `host: {}`, never `@HostBinding` / `@HostListener`. `@if` / `@for` / `@switch`, never structural directives. `class` / `style` bindings, never `ngClass` / `ngStyle`. |
+| 19+ | Omit `standalone: true` (default). Never `CommonModule`; import the directives the template uses. |
+| All | `inject()`, never constructor injection. `input()` / `output()` / `model()`, never decorators. `host: {}`, never `@HostBinding` / `@HostListener`. `@if` / `@for` / `@switch`, never `*ngIf` / `*ngFor` / `*ngSwitch`. Library structural directives (`*transloco`) stay. `class` / `style` bindings, never `ngClass` / `ngStyle`. |
 
 Read the version from the workspace catalog or `package.json` before choosing.
 
@@ -280,7 +298,7 @@ Read the version from the workspace catalog or `package.json` before choosing.
 | Concern | Rule |
 |---|---|
 | Root barrel | One `index.ts` at the module root is its public API. Named exports only, `export type { }` on its own line. Start empty; add a symbol only when another module imports it. No `export *`. |
-| Root barrel contents | Services, facades, `provideX()`, and `common/` types. Never an `.api.ts`, a `.db.ts`, or a `+state/` class: a consumer that needs them is skipping `domain-logic`. |
+| Root barrel contents | Services, facades, `provideX()`, `common/` types and constants, and the pure `utils/` functions another module calls. Never an `.api.ts`, a `.db.ts`, or a `+state/` class: a consumer that needs them is skipping `domain-logic`. |
 | Internal imports | No layer barrels inside a module. Import each file directly: `../data-access/geo-location.api.ts`. |
 | Cross-module | Another module is imported only through its root barrel. Lint cannot see through the barrel, so the graph still holds by hand: a `data-access` file imports only another module's `common` / `utils` exports. |
 | Shared modules | Code two feature modules use lives in `shared/<name>/` with the same layers. Never a `shared/` or `api/` facade folder inside a feature. |
@@ -297,9 +315,10 @@ Read the version from the workspace catalog or `package.json` before choosing.
 | Config trio | Repeat per slice | `X` / `XConfig` / `XProviderConfig` |
 | Constant | `NAMESPACE_SCREAMING_SNAKE` | `NAT_TABLE_BUILT_IN_LOCALES` |
 | Default variant | Core drops the infix; variants carry it | core `X_LABELS`, variant `X_CONTROLS_LABELS` |
+| Canonical id | One export, never a duplicate alias | `NAT_EN_LOCALE_ID` |
 | Class vs file | The class name is the file name in PascalCase | `icon.service.ts` → `IconService` |
 
-Renaming a folder or concept renames its types too.
+Renaming a folder or concept renames its types too. A type exported from the root barrel gets a one-line JSDoc on each field (the public-export case of the Comments rule in `typescript-style.md`).
 
 ## Layout
 
@@ -353,7 +372,9 @@ Each row was found in a real module.
 | Mapper in `data-access` | `utils/<name>-mapper.util.ts`, called by `domain-logic`. |
 | `api/` folder re-exporting another layer | Delete it; import the module's root barrel. |
 | Root barrel exports `+state` classes or tokens | Export the facade and `provideXState()`; keep the state class private. |
-| NGXS `@State` with `providedIn: 'root'` | `@Injectable()`; `provideStates` registers it. |
+| NGXS `@State` with a bare `@Injectable()` | `@Injectable({ providedIn: 'root' })`; lint-suite `use-injectable-provided-in` fails otherwise. |
+| `state.loading()` called before the Observable is subscribed | Move it inside `defer()`. |
+| `void firstValueFrom(x$)` with no `catch` while the orchestrator rethrows | Name the promise and `void load.catch(ignoreRecordedError)`. |
 | `process.env` parsed inside each request | Parse once in `config/` at bootstrap. |
 | Stub in `common/`, `+state/`, or a production barrel | `test/stubs/` per `unit-testing.md`. |
 | Global `window` / `document` / `navigator` in a service | Inject `DOCUMENT` or a platform token. |
