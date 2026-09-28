@@ -460,7 +460,7 @@ export { expect } from '@playwright/test';
 import { test } from './catalog.fixture';
 
 test.describe('FEATURE: catalog', () => {
-  test('GIVEN seeded test data, opening the catalog lists the first product', async ({ catalogPage, testProducts, testUser }): Promise<void> => {
+  test('GIVEN a stubbed user and products, opening the catalog greets the user and lists the first product', async ({ catalogPage, testProducts, testUser }): Promise<void> => {
     await test.step('WHEN the catalog is opened', (): Promise<void> => catalogPage.goto());
 
     await test.step('THEN the greeting names the user', (): Promise<void> => catalogPage.expectGreeting(testUser.name));

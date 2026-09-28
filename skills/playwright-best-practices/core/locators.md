@@ -113,7 +113,7 @@ import { defineConfig } from '@playwright/test';
 
 const use = { testIdAttribute: 'data-test' };
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 For `<button data-testid="submit-btn">Submit</button>` the field is `page.getByTestId('submit-btn')`.

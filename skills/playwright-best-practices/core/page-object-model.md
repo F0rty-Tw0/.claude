@@ -21,7 +21,7 @@ Page Object Model encapsulates page structure and interactions, providing:
 
 ### Page Class
 
-Locators are `public readonly` fields, alphabetical, assigned in the constructor. `page` is `private readonly` and declared after them. Action methods never assert; assertions live in `expect*` methods as plain `await expect(…)` lines. A page object never opens a step; the spec's `THEN` step wraps the call.
+Locators are `public readonly` fields, alphabetical, assigned in the constructor. `page` is `private readonly` and declared after them. Action methods never assert; assertions live in `expect*` methods as plain `await expect(…)` lines. A page object never opens a step; the spec's `THEN` step wraps the call. The only method that may branch is the opening call: `goto(options)` takes the page's one `<Page>Options` type and applies each option (a route, a viewport, a clock) before it navigates; see [house-style.md](house-style.md#page-objects).
 
 ```ts
 // e2e/login/pages/login.page.ts
@@ -196,7 +196,7 @@ Not used. A factory returning an object literal of closures cannot follow the me
 - **Inject page objects through fixtures** - The spec never calls `new`
 - **Expose locators as `public readonly`** - The spec can pass them to `expect(page).toHaveScreenshot` or a mask
 - **Use descriptive method names** - `submitOrder()` not `clickButton()`
-- **Keep methods focused** - One action per method; a method with an `if` is two methods
+- **Keep methods focused** - One action per method; a method with an `if` is two methods, except `goto(options)` applying its options
 
 ### Don't
 

@@ -54,7 +54,7 @@ export default defineConfig({
   projects,
   reporter,
   retries: process.env.CI ? 2 : 0,
-  testDir: './e2e',
+  testMatch: '**/*.@(e2e|test).ts',
   use,
   webServer,
   workers: process.env.CI ? 1 : undefined
@@ -67,7 +67,9 @@ Full user journey tests through the browser.
 
 ### Structure
 
-The spec is flat: one `FEATURE`, then `GIVEN <state>, <outcome>` tests made of steps. There are no arrange steps and no `beforeEach` steps: the title names the state, and a fixture or the opening call builds it. Here `filledCartPage` is a fixture that seeds one product into the cart through `request`, opens the cart, and hands over the `CartPage`. Every locator and multi-action flow lives in a page object (`ProductsPage`, `CartPage`, `CheckoutPage`) injected by `checkout.fixture.ts`; see [page-object-model.md](page-object-model.md) and [fixtures-hooks.md](fixtures-hooks.md).
+The spec is flat: one `FEATURE`, then `GIVEN <state>, <outcome>` tests made of steps. There are no arrange steps and no `beforeEach` steps: the title names the state, and a fixture or the opening call builds it. Every locator and multi-action flow lives in a page object (`ProductsPage`, `CartPage`, `CheckoutPage`) injected by `checkout.fixture.ts`; see [page-object-model.md](page-object-model.md) and [fixtures-hooks.md](fixtures-hooks.md).
+
+`guestCartPage` is a fixture that seeds one product into a cart with no session through `request`, opens the cart, and hands over the `CartPage`. Its 'Checkout as guest' button (`checkoutAsGuest()`) opens the shipping form; plain `startCheckout()` without a session asks for sign-in instead (CHK-3 in [annotations.md](annotations.md#requirement-annotation)). `CheckoutPage.pay(cardNumber: string)` takes the card number only.
 
 ```ts
 // e2e/checkout/checkout.e2e.ts
@@ -75,8 +77,8 @@ import { test } from './checkout.fixture';
 import { GUEST_STUB } from './test/stubs/checkout.stub';
 
 test.describe('FEATURE: checkout', () => {
-  test('GIVEN a guest, paying confirms the order', async ({ checkoutPage, filledCartPage }): Promise<void> => {
-    await test.step('WHEN checkout starts', (): Promise<void> => filledCartPage.startCheckout());
+  test('GIVEN a guest cart, paying through guest checkout confirms the order', async ({ checkoutPage, guestCartPage }): Promise<void> => {
+    await test.step('WHEN guest checkout is chosen', (): Promise<void> => guestCartPage.checkoutAsGuest());
 
     await test.step('AND the shipping details are filled', (): Promise<void> => checkoutPage.fillShipping(GUEST_STUB));
 
@@ -85,17 +87,17 @@ test.describe('FEATURE: checkout', () => {
     await test.step('THEN the confirmation heading is shown', (): Promise<void> => checkoutPage.expectConfirmed());
   });
 
-  test('GIVEN a discount code, applying it shows the discount banner', async ({ filledCartPage }): Promise<void> => {
-    await test.step('WHEN the discount code is applied', (): Promise<void> => filledCartPage.applyDiscount('SAVE10'));
+  test('GIVEN a guest cart, applying a discount code shows the discount banner', async ({ guestCartPage }): Promise<void> => {
+    await test.step('WHEN the discount code is applied', (): Promise<void> => guestCartPage.applyDiscount('SAVE10'));
 
-    await test.step('THEN the banner reports the ten percent discount', (): Promise<void> => filledCartPage.expectDiscount('10% discount applied'));
+    await test.step('THEN the banner reports the ten percent discount', (): Promise<void> => guestCartPage.expectDiscount('10% discount applied'));
   });
 });
 ```
 
 ### Journey
 
-A `test.describe('JOURNEY: <user path>')` directly inside the `FEATURE` groups 2+ tests that follow one user path in order, so the report reads the path leg by leg. Each leg is still an independent test: its title names where it starts, and the opening call or a fixture seeds that state instead of the leg before it. The first leg opens the products page in its `WHEN`. `filledCartPage` seeds one product through `request` and opens the cart. `paymentCheckoutPage` seeds the cart and the guest shipping details through `request`, opens the payment step, and hands over the `CheckoutPage`. The legs run in parallel and in any order, and a failure names the leg that broke, so the journey needs no `mode: 'serial'`.
+A `test.describe('JOURNEY: <user path>')` directly inside the `FEATURE` groups 2+ tests that follow one user path in order, so the report reads the path leg by leg. Each leg is still an independent test: its title names where it starts, and the opening call or a fixture seeds that state instead of the leg before it. The first leg opens the products page in its `WHEN`. `guestCartPage` seeds one product through `request` and opens the cart. `paymentCheckoutPage` seeds the cart and the guest shipping details through `request`, opens the payment step, and hands over the `CheckoutPage`. The legs run in parallel and in any order, and a failure names the leg that broke, so the journey needs no `mode: 'serial'`.
 
 ```ts
 // e2e/checkout/guest-checkout.e2e.ts
@@ -112,8 +114,8 @@ test.describe('FEATURE: guest checkout', () => {
       await test.step('THEN the cart badge shows one item', (): Promise<void> => productsPage.expectCartCount(1));
     });
 
-    test('GIVEN one item in the cart, starting checkout asks for shipping details', async ({ checkoutPage, filledCartPage }): Promise<void> => {
-      await test.step('WHEN checkout starts', (): Promise<void> => filledCartPage.startCheckout());
+    test('GIVEN one item in the cart, choosing guest checkout asks for shipping details', async ({ checkoutPage, guestCartPage }): Promise<void> => {
+      await test.step('WHEN guest checkout is chosen', (): Promise<void> => guestCartPage.checkoutAsGuest());
 
       await test.step('THEN the shipping form is shown', (): Promise<void> => checkoutPage.expectShippingForm());
     });
@@ -150,7 +152,7 @@ Test backend APIs without browser.
 
 ### API Mocking Patterns
 
-For E2E tests that need to mock API responses, the route handler is a factory in `test/mocks/`. The spec never installs it in a step and never builds a handler inline: `usersPage.goto(options)` takes a `UsersPageOptions` (`{ readonly delay?: number; readonly failOn?: 'list'; readonly readOnly?: boolean; readonly users?: User[] }`, named in `test/common/users.type.ts`) and routes `**/api/users` with the matching factory before it navigates. Every body it serves comes from `test/stubs/users.stub.ts`, which exports `USER_STUB: User`, `USERS_STUB: User[]`, and `SERVER_ERROR_STUB: ErrorBody`, with `ErrorBody` declared in `test/common/users.type.ts`; the mock file declares no data and no type of its own. `route.fulfill` has no `delay` option; a slow response awaits `node:timers/promises` before fulfilling.
+For E2E tests that need to mock API responses, the route handler is a factory in `test/mocks/`. The spec never installs it in a step and never builds a handler inline: `usersPage.goto(options)` takes a `UsersOptions` (`{ readonly failOn?: 'list'; readonly listDelayMs?: number; readonly readOnly?: boolean; readonly users?: User[] }`, named in `common/users.type.ts`) and routes `**/api/users` with the matching factory before it navigates. Every body it serves comes from `test/stubs/users.stub.ts`, which exports `USER_STUB: User`, `USERS_STUB: User[]`, and `SERVER_ERROR_STUB: ErrorBody`, with `ErrorBody` declared in `test/common/users.type.ts`; the mock file declares no data and no type of its own. Each factory takes its payload first, defaulting to the stub, and the delay after it. `route.fulfill` has no `delay` option; a slow response awaits `node:timers/promises` before fulfilling.
 
 ```ts
 // e2e/users/test/mocks/users.mock.ts
@@ -160,33 +162,27 @@ import type { Route } from '@playwright/test';
 
 import type { RouteHandler } from '../../../common/playwright.type';
 import type { User } from '../../common/users.type';
-import { SERVER_ERROR_STUB, USERS_STUB, USER_STUB } from '../stubs/users.stub';
+import type { ErrorBody } from '../common/users.type';
+import { SERVER_ERROR_STUB, USERS_STUB } from '../stubs/users.stub';
 
-type UsersMockOptions = {
-  readonly delay?: number;
-  readonly users?: User[];
-};
-
-export const usersMock = (options: UsersMockOptions = {}): RouteHandler => {
-  const { delay = 0, users = USERS_STUB } = options;
-
+export const usersMock = (users: User[] = USERS_STUB, delayMs = 0): RouteHandler => {
   return async (route: Route): Promise<void> => {
-    await setTimeout(delay);
+    await setTimeout(delayMs);
     await route.fulfill({ json: users, status: 200 });
   };
 };
 
-export const usersErrorMock = (): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: SERVER_ERROR_STUB, status: 500 });
+export const usersErrorMock = (error: ErrorBody = SERVER_ERROR_STUB): RouteHandler => {
+  return (route: Route): Promise<void> => route.fulfill({ json: error, status: 500 });
 };
 
-export const usersGetOnlyMock = (): RouteHandler => {
+export const usersGetOnlyMock = (users: User[] = USERS_STUB): RouteHandler => {
   return (route: Route): Promise<void> => {
     const isGet = route.request().method() === 'GET';
 
     if (!isGet) return route.continue();
 
-    return route.fulfill({ json: USERS_STUB });
+    return route.fulfill({ json: users });
   };
 };
 ```
@@ -212,7 +208,7 @@ test.describe('FEATURE: users list', () => {
 |---|---|---|---|
 | Error response | `usersErrorMock()` | `usersPage.goto({ failOn: 'list' })` | `usersPage.expectError('Server error')` |
 | Conditional by method | `usersGetOnlyMock()` | `usersPage.goto({ readOnly: true })` | `usersPage.expectUser(...)` after a `POST` passed through |
-| Slow network | `usersMock({ delay: 2000 })` | `usersPage.goto({ delay: 2000 })` | `usersPage.expectLoading()` then `usersPage.expectUser(...)` |
+| Slow network | `usersMock(USERS_STUB, 2000)` | `usersPage.goto({ listDelayMs: 2000 })` | `usersPage.expectLoading()` then `usersPage.expectUser(...)` |
 
 The title names the condition, `'GIVEN a failing users api, opening the page shows the server error'`, and the step stays `'WHEN the users page is opened'`.
 
@@ -224,29 +220,27 @@ Compare screenshots to detect visual changes.
 
 ### Basic Visual Test
 
-`expect(page).toHaveScreenshot` may sit in a spec step because it takes `page`. A screenshot of one element uses a page-object locator, never `page.getBy*` in the spec.
+`expect(page).toHaveScreenshot` may sit in a spec step because it takes `page`. A screenshot of one element uses a page-object locator, never `page.getBy*` in the spec. The first two tests open the dashboard with its default content; the third passes `hideDynamic: true` to the opening call, so its title names the hidden content and no step builds it.
 
 ```ts
-// e2e/dashboard/dashboard.e2e.ts
+// e2e/dashboard/dashboard-visual.e2e.ts
 import { expect, test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard visuals', () => {
-  test('GIVEN the dashboard, the rendered page matches the stored screenshot', async ({ dashboardPage, page }): Promise<void> => {
+  test('GIVEN the default content, the rendered page matches the stored screenshot', async ({ dashboardPage, page }): Promise<void> => {
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
     await test.step('THEN the page matches dashboard.png', (): Promise<void> => expect(page).toHaveScreenshot('dashboard.png'));
   });
 
-  test('GIVEN the primary button, its render matches the stored screenshot', async ({ dashboardPage }): Promise<void> => {
+  test('GIVEN the default content, the primary button matches its stored screenshot', async ({ dashboardPage }): Promise<void> => {
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
     await test.step('THEN the button matches primary-button.png', (): Promise<void> => expect(dashboardPage.primaryButton).toHaveScreenshot('primary-button.png'));
   });
 
   test('GIVEN hidden dynamic content, the page matches the masked screenshot', async ({ dashboardPage }): Promise<void> => {
-    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
-
-    await test.step('AND dynamic content is hidden', (): Promise<void> => dashboardPage.hideDynamicContent());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ hideDynamic: true }));
 
     await test.step('THEN the masked page matches dashboard-stable.png', (): Promise<void> => dashboardPage.expectScreenshot('dashboard-stable.png'));
   });
@@ -255,12 +249,14 @@ test.describe('FEATURE: dashboard visuals', () => {
 
 ### Visual Test Options
 
-Options that need a locator (`mask`) belong in a page-object `expect*` method. Static options are a typed module const, spread and extended per call.
+Options that need a locator (`mask`) belong in a page-object `expect*` method. Static options are a typed module const, spread and extended per call. `DashboardOptions` ([network-advanced.md](../advanced/network-advanced.md)) gains `hideDynamic?: boolean`: `goto` adds a style tag that hides the dynamic regions. It runs after the navigation, because a style tag added to `about:blank` is lost.
 
 ```ts
 // e2e/dashboard/pages/dashboard.page.ts
 import type { Locator, Page, PageAssertionsToHaveScreenshotOptions } from '@playwright/test';
 import { expect } from '@playwright/test';
+
+import type { DashboardOptions } from '../common/dashboard.type';
 
 const SCREENSHOT_OPTIONS: PageAssertionsToHaveScreenshotOptions = {
   animations: 'disabled',
@@ -286,12 +282,10 @@ export class DashboardPage {
     this.timestamp = page.getByTestId('timestamp');
   }
 
-  public async goto(): Promise<void> {
+  public async goto(options: DashboardOptions = {}): Promise<void> {
     await this.page.goto('/dashboard');
-  }
 
-  public async hideDynamicContent(): Promise<void> {
-    await this.page.addStyleTag({ content: HIDE_DYNAMIC_CSS });
+    if (options.hideDynamic) await this.page.addStyleTag({ content: HIDE_DYNAMIC_CSS });
   }
 
   public async expectScreenshot(name: string): Promise<void> {
@@ -314,7 +308,7 @@ export class DashboardPage {
 
 ### Handling Dynamic Content
 
-Two tools, both shown above: `mask` hides elements by locator at compare time; `hideDynamicContent` injects CSS through `page.addStyleTag` so the elements never render. Prefer `mask` for a few elements; prefer CSS when a class marks many.
+Two tools, both shown above: `mask` hides elements by locator at compare time; the `hideDynamic` opening option injects CSS through `page.addStyleTag` so the elements never render. Prefer `mask` for a few elements; prefer CSS when a class marks many.
 
 ### Visual Test Configuration
 
@@ -330,7 +324,7 @@ const viewport = { height: 720, width: 1280 };
 
 const visualChrome = { ...devices['Desktop Chrome'], viewport };
 
-const projects = [{ name: 'visual-chrome', testMatch: /.*visual.*\.spec\.ts/, use: visualChrome }];
+const projects = [{ name: 'visual-chrome', testMatch: '**/*-visual.@(e2e|test).ts', use: visualChrome }];
 
 export default defineConfig({ expect: expectOptions, projects });
 ```
@@ -370,7 +364,7 @@ e2e/
       mocks/
         users.mock.ts
   dashboard/
-    dashboard.e2e.ts               visual cases
+    dashboard-visual.e2e.ts        visual cases
     dashboard.fixture.ts
     pages/
       dashboard.page.ts

@@ -122,7 +122,6 @@ export default defineConfig({
   projects,
   reporter: IS_CI ? ciReporter : localReporter,
   retries: IS_CI ? 2 : 0,
-  testDir: './e2e',
   testMatch: '**/*.@(e2e|test).ts',
   timeout: 30_000,
   use,
@@ -163,7 +162,7 @@ const { baseURL, retries } = ENV_CONFIGS[env];
 
 const use = { baseURL };
 
-export default defineConfig({ retries, testDir: './e2e', use });
+export default defineConfig({ retries, testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ```bash
@@ -191,10 +190,10 @@ const projects = [
   { dependencies: ['setup'], name: 'firefox', use: firefox }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
-The setup file signs in through the page objects of `login.fixture.ts` and saves the storage state. Credentials come from a stub; a secret password reaches the setup through a fixture option set in the config `use` block (see [fixtures-hooks.md](fixtures-hooks.md#fixture-with-options)), never from `process.env` in the setup file.
+The setup file signs in through the page objects of `login.fixture.ts` and saves the storage state. It is not a behaviour spec: the body calls the page objects directly, with no steps, and the title names what it produces. Credentials come from a stub; a secret password reaches the setup through a fixture option set in the config `use` block (see [fixtures-hooks.md](fixtures-hooks.md#fixture-with-options)), never from `process.env` in the setup file.
 
 ```ts
 // e2e/auth/auth.setup.ts
@@ -204,14 +203,11 @@ import { saveStorageState } from './test/utils/storage-state.spec.util';
 
 const STORAGE_STATE = 'e2e/.auth/session.json';
 
-setup('authenticate as the default user', async ({ dashboardPage, loginPage, page }): Promise<void> => {
-  await setup.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
-
-  await setup.step('AND credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
-
-  await setup.step('THEN the home heading is shown', (): Promise<void> => dashboardPage.expectHeading('Home'));
-
-  await setup.step('AND the storage state is saved', (): Promise<void> => saveStorageState(page, STORAGE_STATE));
+setup('saves the default user session', async ({ dashboardPage, loginPage, page }): Promise<void> => {
+  await loginPage.goto();
+  await loginPage.submit(USER_STUB);
+  await dashboardPage.expectHeading('Home');
+  await saveStorageState(page, STORAGE_STATE);
 });
 ```
 
@@ -240,7 +236,7 @@ const webServer = {
 
 const use = { baseURL: 'http://localhost:4000' };
 
-export default defineConfig({ testDir: './e2e', use, webServer });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use, webServer });
 ```
 
 ### globalSetup / globalTeardown
@@ -254,7 +250,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',
-  testDir: './e2e'
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -330,7 +326,7 @@ const IS_CI = Boolean(process.env.CI);
 export default defineConfig({
   grep: IS_CI ? /@smoke|@critical/ : undefined,
   grepInvert: IS_CI ? /@flaky/ : undefined,
-  testDir: './e2e'
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -348,7 +344,7 @@ const projects = [
   { grep: /@critical/, name: 'critical-only', use: desktopChrome }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ```bash
@@ -377,7 +373,7 @@ const use = {
   video: IS_CI ? 'retain-on-failure' : 'off'
 } as const;
 
-export default defineConfig({ testDir: './e2e', use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ## Anti-Patterns
@@ -442,7 +438,7 @@ const webServer = {
   url: 'http://localhost:4000/api/health'
 };
 
-export default defineConfig({ testDir: './e2e', webServer });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', webServer });
 ```
 
 ### Tests Pass Locally But Timeout in CI
@@ -460,7 +456,7 @@ const use = {
   navigationTimeout: IS_CI ? 30_000 : 15_000
 };
 
-export default defineConfig({ testDir: './e2e', use, workers: IS_CI ? '50%' : undefined });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use, workers: IS_CI ? '50%' : undefined });
 ```
 
 ### "Target page, context or browser has been closed"

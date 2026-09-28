@@ -37,20 +37,24 @@ import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: payments', () => {
   test.skip('GIVEN a valid card, charging it lists the amount on the receipt', async ({ paymentsPage }): Promise<void> => {
-    await test.step('WHEN the card is charged', (): Promise<void> => paymentsPage.charge(CARD_STUB));
+    await test.step('WHEN the payments page is opened', (): Promise<void> => paymentsPage.goto());
+
+    await test.step('AND the card is charged', (): Promise<void> => paymentsPage.charge(CARD_STUB));
 
     await test.step('THEN the receipt shows the amount', (): Promise<void> => paymentsPage.expectReceiptAmount(CARD_STUB.amount));
   });
 
-  test('GIVEN a charged card, requesting a refund restores the balance', async ({ paymentsPage }): Promise<void> => {
+  test('GIVEN a charged card, requesting a refund restores the balance', async ({ chargedPaymentsPage }): Promise<void> => {
     test.skip(true, 'Payment gateway in maintenance');
 
-    await test.step('WHEN a refund is requested', (): Promise<void> => paymentsPage.refund(CARD_STUB));
+    await test.step('WHEN a refund is requested', (): Promise<void> => chargedPaymentsPage.refund(CARD_STUB));
 
-    await test.step('THEN the balance shows the original amount', (): Promise<void> => paymentsPage.expectBalance(CARD_STUB.balance));
+    await test.step('THEN the balance shows the original amount', (): Promise<void> => chargedPaymentsPage.expectBalance(CARD_STUB.balance));
   });
 });
 ```
+
+`chargedPaymentsPage` charges `CARD_STUB` through `request`, opens the payments page, and hands over the `PaymentsPage`, so the refund test starts at its first user action.
 
 ### Conditional Skip
 
@@ -93,7 +97,7 @@ Same shape as the conditional skip above; only the condition changes.
 
 ### Skip Describe Block
 
-`test.skip` with a callback at describe level skips every test in the block when the callback returns `true`.
+`test.skip` with a callback at describe level skips every test in the block when the callback returns `true`. Both tests start from the admin session that the admin project's `storageState` provides ([Multiple Auth States](fixtures-hooks.md#multiple-auth-states)), so both titles name it and the outcome tells them apart.
 
 ```ts
 // e2e/admin/admin.e2e.ts
@@ -102,13 +106,13 @@ import { test } from './admin.fixture';
 test.describe('FEATURE: admin', () => {
   test.skip(({ browserName }): boolean => browserName === 'firefox', 'Firefox admin bug');
 
-  test('GIVEN an admin, opening the dashboard shows the metrics panel', async ({ adminPage }): Promise<void> => {
+  test('GIVEN an admin session, opening the dashboard shows the metrics panel', async ({ adminPage }): Promise<void> => {
     await test.step('WHEN the dashboard is opened', (): Promise<void> => adminPage.gotoDashboard());
 
     await test.step('THEN the metrics panel is visible', (): Promise<void> => adminPage.expectMetricsVisible());
   });
 
-  test('GIVEN an admin, opening settings lists the audit log', async ({ adminPage }): Promise<void> => {
+  test('GIVEN an admin session, opening settings lists the audit log', async ({ adminPage }): Promise<void> => {
     await test.step('WHEN settings are opened', (): Promise<void> => adminPage.gotoSettings());
 
     await test.step('THEN the audit log is listed', (): Promise<void> => adminPage.expectAuditLogVisible());
@@ -128,32 +132,34 @@ import { IS_CI } from '../common/playwright.const';
 import { test } from './reports.fixture';
 
 test.describe('FEATURE: reports', () => {
-  test.fixme('GIVEN a report, exporting it downloads the CSV', async ({ reportsPage }): Promise<void> => {
-    await test.step('WHEN the report is exported', (): Promise<void> => reportsPage.exportCsv());
+  test.fixme('GIVEN a generated report, exporting it downloads the CSV', async ({ generatedReportPage }): Promise<void> => {
+    await test.step('WHEN the report is exported', (): Promise<void> => generatedReportPage.exportCsv());
 
-    await test.step('THEN the download completes', (): Promise<void> => reportsPage.expectDownloadComplete());
+    await test.step('THEN the download completes', (): Promise<void> => generatedReportPage.expectDownloadComplete());
   });
 
-  test('GIVEN the chart page, opening it renders the chart', async ({ reportsPage }): Promise<void> => {
+  test('GIVEN a generated report, opening its chart renders the chart', async ({ generatedReportPage }): Promise<void> => {
     test.fixme(IS_CI, 'Investigate CI flakiness - ticket #123');
 
-    await test.step('WHEN the chart page is opened', (): Promise<void> => reportsPage.gotoChart());
+    await test.step('WHEN the chart page is opened', (): Promise<void> => generatedReportPage.gotoChart());
 
-    await test.step('THEN the chart is visible', (): Promise<void> => reportsPage.expectChartVisible());
+    await test.step('THEN the chart is visible', (): Promise<void> => generatedReportPage.expectChartVisible());
   });
 });
 ```
 
+`generatedReportPage` generates a report through `request`, opens it, and hands over the `ReportsPage`; both tests start from that report.
+
 ### Fail - Expected Failures
 
-`test.fail()` runs the body and expects it to fail. When the bug is fixed the test passes and Playwright reports it as a failure, which is the signal to remove the annotation.
+`test.fail()` runs the body and expects it to fail. When the bug is fixed the test passes and Playwright reports it as a failure, which is the signal to remove the annotation. The title's `GIVEN` names the tracked bug, the state the test starts from.
 
 ```ts
 // e2e/render/render.e2e.ts
 import { test } from './render.fixture';
 
 test.describe('FEATURE: render', () => {
-  test('GIVEN the buggy page, opening it reports a working status', async ({ renderPage }): Promise<void> => {
+  test('GIVEN a known status bug, opening the buggy page reports a working status', async ({ renderPage }): Promise<void> => {
     test.fail();
 
     await test.step('WHEN the buggy page is opened', (): Promise<void> => renderPage.gotoBuggy());
@@ -161,7 +167,7 @@ test.describe('FEATURE: render', () => {
     await test.step('THEN the status text reads working', (): Promise<void> => renderPage.expectStatus('Working'));
   });
 
-  test('GIVEN the layout page, opening it renders the box 100px wide', async ({ browserName, renderPage }): Promise<void> => {
+  test('GIVEN WebKit rendering bug #456, opening the layout page renders the box 100px wide', async ({ browserName, renderPage }): Promise<void> => {
     test.fail(browserName === 'webkit', 'WebKit rendering bug #456');
 
     await test.step('WHEN the layout page is opened', (): Promise<void> => renderPage.gotoLayout());
@@ -225,15 +231,17 @@ import { test } from './export.fixture';
 test.describe('FEATURE: export', () => {
   test.describe.configure({ timeout: 60_000 });
 
-  test('GIVEN a full export, starting it downloads the archive', async ({ exportPage }): Promise<void> => {
+  test('GIVEN a large dataset, starting a full export downloads the archive', async ({ largeDatasetExportPage }): Promise<void> => {
     test.setTimeout(120_000);
 
-    await test.step('WHEN the full export is started', (): Promise<void> => exportPage.startFullExport());
+    await test.step('WHEN the full export is started', (): Promise<void> => largeDatasetExportPage.startFullExport());
 
-    await test.step('THEN the archive download completes', (): Promise<void> => exportPage.expectArchiveDownloaded());
+    await test.step('THEN the archive download completes', (): Promise<void> => largeDatasetExportPage.expectArchiveDownloaded());
   });
 });
 ```
+
+`largeDatasetExportPage` seeds the large dataset through `request`, opens the export page, and hands over the `ExportPage`. The dataset's size is why this one test gets 120 seconds.
 
 ## Test Steps
 
@@ -251,14 +259,14 @@ test.describe('FEATURE: checkout', () => {
   test('GIVEN a product in the cart, paying the order shows the confirmation', async ({ filledCheckoutPage }): Promise<void> => {
     await test.step('WHEN shipping info is filled', (): Promise<void> => filledCheckoutPage.fillShipping(ADDRESS_STUB));
 
-    await test.step('AND payment is completed', (): Promise<void> => filledCheckoutPage.pay(CARD_STUB));
+    await test.step('AND payment is completed', (): Promise<void> => filledCheckoutPage.pay(CARD_STUB.number));
 
     await test.step('THEN the order confirmation is visible', (): Promise<void> => filledCheckoutPage.expectOrderConfirmed());
   });
 });
 ```
 
-`filledCheckoutPage` is a fixture that seeds one product into the cart through `request`, opens the checkout page, and hands over the `CheckoutPage`, so the spec starts at the user's first action.
+`filledCheckoutPage` is a fixture that seeds one product into the cart through `request`, opens the checkout page, and hands over the `CheckoutPage`, so the spec starts at the user's first action. `CheckoutPage.pay(cardNumber: string)` takes the card number only.
 
 ### Nested Steps
 
@@ -270,7 +278,7 @@ import { test } from './register.fixture';
 import { REGISTRATION_STUB } from './test/stubs/registration.stub';
 
 test.describe('FEATURE: registration', () => {
-  test('GIVEN the registration form, submitting it shows the welcome message', async ({ registerPage }): Promise<void> => {
+  test('GIVEN valid registration details, submitting them shows the welcome message', async ({ registerPage }): Promise<void> => {
     await test.step('WHEN the registration page is opened', (): Promise<void> => registerPage.goto());
 
     await test.step('AND the registration form is filled', (): Promise<void> => registerPage.fillForm(REGISTRATION_STUB));
@@ -284,15 +292,15 @@ test.describe('FEATURE: registration', () => {
 
 ### Steps with Return Values
 
-A step returns whatever its call returns. Declare the value type on the callback.
+A step returns whatever its call returns. Declare the value type on the callback. `filledCheckoutPage` is the ready-page fixture from [Basic Steps](#basic-steps): the cart is filled through `request` and checkout is open, so the first `WHEN` places the order.
 
 ```ts
 // e2e/orders/orders.e2e.ts
 import { test } from './orders.fixture';
 
 test.describe('FEATURE: orders', () => {
-  test('GIVEN the checkout page, placing the order names it on the order page', async ({ checkoutPage, orderPage }): Promise<void> => {
-    const orderId = await test.step('WHEN the order is placed', (): Promise<string> => checkoutPage.placeOrder());
+  test('GIVEN a filled cart, placing the order names it on the order page', async ({ filledCheckoutPage, orderPage }): Promise<void> => {
+    const orderId = await test.step('WHEN the order is placed', (): Promise<string> => filledCheckoutPage.placeOrder());
 
     await test.step('AND the order page is opened', (): Promise<void> => orderPage.goto(orderId));
 
@@ -301,7 +309,7 @@ test.describe('FEATURE: orders', () => {
 });
 ```
 
-### Step in Page Object
+### Multi-Part Page-Object Method
 
 The page object behind the registration spec. `fillForm` is two plain awaits of private methods, with no step of its own. `expectWelcome` is a plain `await expect(…)`; the spec's `THEN` step is the only step around it.
 
@@ -376,7 +384,7 @@ import { CARD_STUB, DECLINED_CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: checkout', () => {
   test('GIVEN a valid card, paying places the order', { annotation: { description: 'CHK-1', type: 'requirement' } }, async ({ confirmationPage, filledCartPage }): Promise<void> => {
-    await test.step('WHEN the order is paid with a valid card', (): Promise<void> => filledCartPage.payWith(CARD_STUB));
+    await test.step('WHEN the order is paid', (): Promise<void> => filledCartPage.payWith(CARD_STUB));
 
     await test.step('THEN the confirmation shows an order number', (): Promise<void> => confirmationPage.expectOrderNumber());
 
@@ -384,41 +392,39 @@ test.describe('FEATURE: checkout', () => {
   });
 
   test('GIVEN a declined card, paying keeps the cart', { annotation: { description: 'CHK-2', type: 'requirement' } }, async ({ filledCartPage }): Promise<void> => {
-    await test.step('WHEN the order is paid with a declined card', (): Promise<void> => filledCartPage.payWith(DECLINED_CARD_STUB));
+    await test.step('WHEN the order is paid', (): Promise<void> => filledCartPage.payWith(DECLINED_CARD_STUB));
 
     await test.step('THEN the error banner reports the decline', (): Promise<void> => filledCartPage.expectError('Card declined'));
 
     await test.step('AND the cart still holds two items', (): Promise<void> => filledCartPage.header.expectCartCount(2));
   });
 
-  test('GIVEN a guest, starting checkout asks them to sign in', { annotation: { description: 'CHK-3', type: 'requirement' } }, async ({ cartPage, signInPage }): Promise<void> => {
-    await test.step('WHEN the cart page is opened', (): Promise<void> => cartPage.goto());
-
-    await test.step('AND checkout is started', (): Promise<void> => cartPage.startCheckout());
+  test('GIVEN a guest cart, starting checkout asks for sign-in', { annotation: { description: 'CHK-3', type: 'requirement' } }, async ({ guestCartPage, signInPage }): Promise<void> => {
+    await test.step('WHEN checkout is started', (): Promise<void> => guestCartPage.startCheckout());
 
     await test.step('THEN the sign-in page is shown', (): Promise<void> => signInPage.expectShown());
   });
 });
 ```
 
-`filledCartPage` has the ready-page shape of `paymentReadyPage` in [iframes.md](../browser-apis/iframes.md#iframe-fixture): it signs a user in and seeds two cart items through `request`, opens the cart, and hands over the `CartPage`. The shared state is built in that fixture, not in the UI, so the signed-in scenarios start at the payment. `cartPage` alone carries no session, which makes the third scenario a guest; its title says so because none of its steps do. `header` is a helper object both pages expose. `DECLINED_CARD_STUB` spreads `CARD_STUB` with the gateway's decline test number. The final `THEN` asserts the sign-in page rendered through its page object, not only that the URL changed.
+`filledCartPage` has the ready-page shape of `paymentReadyPage` in [iframes.md](../browser-apis/iframes.md#iframe-fixture): it signs a user in and seeds two cart items through `request`, opens the cart, and hands over the `CartPage`. The shared state is built in that fixture, not in the UI, so the signed-in scenarios start at the payment. `guestCartPage` is the fixture from [test-suite-structure.md](test-suite-structure.md#structure): one item in a cart with no session, which makes the third scenario a guest. Starting checkout there asks for sign-in; only 'Checkout as guest' (`checkoutAsGuest()`) goes straight to shipping. `header` is a helper object both pages expose. `DECLINED_CARD_STUB` spreads `CARD_STUB` with the gateway's decline test number. The final `THEN` asserts the sign-in page rendered through its page object, not only that the URL changed.
 
 ### Add Annotations
 
-`testInfo.annotations` is a mutable list of `{ type, description }`. Pushes sit with the other annotation calls above the first step.
+`testInfo.annotations` is a mutable list of `{ type, description }`. Pushes sit with the other annotation calls above the first step. `subscribedBillingPage` seeds an active subscription through `request`, opens billing, and hands over the `BillingPage`.
 
 ```ts
 // e2e/billing/billing.e2e.ts
 import { test } from './billing.fixture';
 
 test.describe('FEATURE: billing', () => {
-  test('GIVEN the invoice page, opening it lists the latest invoice', async ({ billingPage }, testInfo): Promise<void> => {
+  test('GIVEN an active subscription, opening the invoices lists the latest invoice', async ({ subscribedBillingPage }, testInfo): Promise<void> => {
     testInfo.annotations.push({ description: 'high', type: 'priority' });
     testInfo.annotations.push({ description: 'JIRA-123', type: 'ticket' });
 
-    await test.step('WHEN the invoice page is opened', (): Promise<void> => billingPage.gotoInvoices());
+    await test.step('WHEN the invoice page is opened', (): Promise<void> => subscribedBillingPage.gotoInvoices());
 
-    await test.step('THEN the latest invoice is listed', (): Promise<void> => billingPage.expectLatestInvoiceListed());
+    await test.step('THEN the latest invoice is listed', (): Promise<void> => subscribedBillingPage.expectLatestInvoiceListed());
   });
 });
 ```
@@ -539,10 +545,12 @@ test.describe('FEATURE: developer tools', () => {
     await test.step('THEN the disk usage is listed', (): Promise<void> => devtoolsPage.expectDiskUsageListed());
   });
 
-  test('GIVEN the production environment, the production check reports a green status', async ({ devtoolsPage }): Promise<void> => {
+  test('GIVEN the production environment, running the production check reports a green status', async ({ devtoolsPage }): Promise<void> => {
     onlyInEnv('production');
 
-    await test.step('WHEN the production check is run', (): Promise<void> => devtoolsPage.runProductionCheck());
+    await test.step('WHEN the production check page is opened', (): Promise<void> => devtoolsPage.gotoProductionCheck());
+
+    await test.step('AND the production check is run', (): Promise<void> => devtoolsPage.runProductionCheck());
 
     await test.step('THEN the status is green', (): Promise<void> => devtoolsPage.expectStatus('green'));
   });
@@ -561,7 +569,9 @@ test.describe('FEATURE: gallery', () => {
   test('GIVEN a mobile device, swiping the image shows the next image', async ({ galleryPage, isMobile }): Promise<void> => {
     test.skip(!isMobile, 'Mobile only tests');
 
-    await test.step('WHEN the current image is swiped', (): Promise<void> => galleryPage.swipeLeft());
+    await test.step('WHEN the gallery is opened', (): Promise<void> => galleryPage.goto());
+
+    await test.step('AND the current image is swiped', (): Promise<void> => galleryPage.swipeLeft());
 
     await test.step('THEN the next image is shown', (): Promise<void> => galleryPage.expectImageIndex(2));
   });
@@ -569,7 +579,9 @@ test.describe('FEATURE: gallery', () => {
   test('GIVEN a desktop browser, hovering the image shows the caption', async ({ galleryPage, isMobile }): Promise<void> => {
     test.skip(isMobile, 'Desktop only tests');
 
-    await test.step('WHEN the current image is hovered', (): Promise<void> => galleryPage.hoverImage());
+    await test.step('WHEN the gallery is opened', (): Promise<void> => galleryPage.goto());
+
+    await test.step('AND the current image is hovered', (): Promise<void> => galleryPage.hoverImage());
 
     await test.step('THEN the caption is visible', (): Promise<void> => galleryPage.expectCaptionVisible());
   });

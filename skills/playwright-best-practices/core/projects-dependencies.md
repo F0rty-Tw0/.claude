@@ -1,6 +1,6 @@
 # Projects & Dependencies
 
-Every config sample below is `e2e/playwright.config.ts`. Each nested object (`use`, a project's `use`, a viewport) is a named `const` above `defineConfig`, and `projects` is itself a named `const`. Top-level `use`, `timeout`, and `retries` are inherited by every project, so a project's `use` only carries what differs.
+Every config sample below is `e2e/playwright.config.ts`. Each nested object (`use`, a project's `use`, a viewport) is a named `const` above `defineConfig`, and `projects` is itself a named `const`. Top-level `use`, `timeout`, `retries`, and `testMatch` are inherited by every project, so a project's `use` only carries what differs. Paths resolve from the config's folder, so the config sets no top-level `testDir`, and a project's `testDir` is `'./api'`, not `'./e2e/api'`.
 
 ## Table of Contents
 
@@ -27,7 +27,7 @@ const projects = [
   { name: 'webkit', use: devices['Desktop Safari'] }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Environment-Based Projects
@@ -48,7 +48,7 @@ const projects = [
   { name: 'staging', use: staging }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Test Type Projects
@@ -66,12 +66,12 @@ const viewport = { height: 720, width: 1280 };
 const visual = { ...devices['Desktop Chrome'], viewport };
 
 const projects = [
-  { name: 'e2e', testDir: './e2e/features', use: devices['Desktop Chrome'] },
-  { name: 'api', testDir: './e2e/api', use: api },
-  { name: 'visual', testDir: './e2e/visual', use: visual }
+  { name: 'e2e', testDir: './features', use: devices['Desktop Chrome'] },
+  { name: 'api', testDir: './api', use: api },
+  { name: 'visual', testDir: './visual', use: visual }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Project Dependencies
@@ -93,7 +93,7 @@ const projects = [
   { dependencies: ['setup'], name: 'firefox', use: firefox }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Multiple Auth States
@@ -110,12 +110,12 @@ const user = { storageState: 'e2e/.auth/user.json' };
 const projects = [
   { name: 'setup-admin', testMatch: /admin\.setup\.ts/ },
   { name: 'setup-user', testMatch: /user\.setup\.ts/ },
-  { dependencies: ['setup-admin'], name: 'admin-tests', testDir: './e2e/admin', use: admin },
-  { dependencies: ['setup-user'], name: 'user-tests', testDir: './e2e/user', use: user },
-  { dependencies: ['setup-admin', 'setup-user'], name: 'integration-tests', testDir: './e2e/integration' }
+  { dependencies: ['setup-admin'], name: 'admin-tests', testDir: './admin', use: admin },
+  { dependencies: ['setup-user'], name: 'user-tests', testDir: './user', use: user },
+  { dependencies: ['setup-admin', 'setup-user'], name: 'integration-tests', testDir: './integration' }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Chained Dependencies
@@ -130,10 +130,10 @@ const projects = [
   { name: 'db-setup', testMatch: /db\.setup\.ts/ },
   { dependencies: ['db-setup'], name: 'auth-setup', testMatch: /auth\.setup\.ts/ },
   { dependencies: ['auth-setup'], name: 'seed-setup', testMatch: /seed\.setup\.ts/ },
-  { dependencies: ['seed-setup'], name: 'tests', testDir: './e2e' }
+  { dependencies: ['seed-setup'], name: 'tests' }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Setup Projects
@@ -146,7 +146,7 @@ Setup projects are the recommended way to handle authentication. They run before
 
 ### Data Seeding Setup
 
-A setup file is a test file, so its body is steps and each step is one call. The API calls live in a test util; `SEED_COUNTS: SeedCounts` (`{ orders: 100, products: 50, users: 10 }`) lives in `common/playwright.const.ts`.
+A setup file is not a behaviour spec: its body calls the util directly, with no steps, and its title names what it produces. The API calls live in a test util; `SEED_COUNTS: SeedCounts` (`{ orders: 100, products: 50, users: 10 }`) lives in `common/playwright.const.ts`.
 
 ```ts
 // e2e/test/utils/seed.spec.util.ts
@@ -170,8 +170,8 @@ import { test as setup } from '@playwright/test';
 import { SEED_COUNTS } from './common/playwright.const';
 import { seedTestData } from './test/utils/seed.spec.util';
 
-setup('seed test data', async ({ request }): Promise<void> => {
-  await setup.step('WHEN post the seed counts', (): Promise<void> => seedTestData(request, SEED_COUNTS));
+setup('seeds orders, products, and users', async ({ request }): Promise<void> => {
+  await seedTestData(request, SEED_COUNTS);
 });
 ```
 
@@ -185,8 +185,8 @@ import { test as setup } from '@playwright/test';
 
 import { clearTestData } from './test/utils/seed.spec.util';
 
-setup('cleanup previous run', async ({ request }): Promise<void> => {
-  await setup.step('WHEN delete data from the previous run', (): Promise<void> => clearTestData(request));
+setup('clears the data the previous run left', async ({ request }): Promise<void> => {
+  await clearTestData(request);
 });
 ```
 
@@ -226,7 +226,7 @@ const projects = [
   { grepInvert: /@smoke/, name: 'regression', use: devices['Desktop Chrome'] }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Sharing Configuration
@@ -248,7 +248,7 @@ const projects = [
   { name: 'firefox', use: devices['Desktop Firefox'] }
 ];
 
-export default defineConfig({ expect, projects, testDir: './e2e', timeout: 30_000, use });
+export default defineConfig({ expect, projects, testMatch: '**/*.@(e2e|test).ts', timeout: 30_000, use });
 ```
 
 ### Shared Project Settings
@@ -269,10 +269,10 @@ const firefox = { ...browserUse, ...devices['Desktop Firefox'] };
 const projects = [
   { ...browserProject, name: 'chromium', use: chromium },
   { ...browserProject, name: 'firefox', use: firefox },
-  { name: 'api', testDir: './e2e/api' }
+  { name: 'api', testDir: './api' }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Advanced Patterns
@@ -296,7 +296,7 @@ if (process.env.CI) projects.push(firefox);
 
 if (process.env.TEST_MOBILE) projects.push(mobile);
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Project Metadata
@@ -311,7 +311,7 @@ const chromiumMetadata = { browser: 'chromium', platform: 'desktop', priority: '
 
 const projects = [{ metadata: chromiumMetadata, name: 'chromium', use: devices['Desktop Chrome'] }];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ```ts
@@ -325,7 +325,9 @@ test.describe('FEATURE: gallery', () => {
 
     test.skip(metadata.platform !== 'desktop', 'Hover needs a pointer');
 
-    await test.step('WHEN the first image is hovered', (): Promise<void> => galleryPage.hoverImage());
+    await test.step('WHEN the gallery is opened', (): Promise<void> => galleryPage.goto());
+
+    await test.step('AND the first image is hovered', (): Promise<void> => galleryPage.hoverImage());
 
     await test.step('THEN caption is visible', (): Promise<void> => galleryPage.expectCaptionVisible());
   });
@@ -334,7 +336,7 @@ test.describe('FEATURE: gallery', () => {
 
 ### Teardown Projects
 
-A project's `teardown` names another project that runs after every project depending on it has finished.
+A project's `teardown` names another project that runs after every project depending on it has finished. A teardown file follows the setup-file shape: no steps, and a title naming what it leaves behind.
 
 ```ts
 // e2e/playwright.config.ts
@@ -346,7 +348,7 @@ const projects = [
   { dependencies: ['setup'], name: 'tests' }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ```ts
@@ -355,8 +357,8 @@ import { test as teardown } from '@playwright/test';
 
 import { clearTestData } from './test/utils/seed.spec.util';
 
-teardown('cleanup', async ({ request }): Promise<void> => {
-  await teardown.step('delete seeded data', (): Promise<void> => clearTestData(request));
+teardown('clears the seeded data', async ({ request }): Promise<void> => {
+  await clearTestData(request);
 });
 ```
 
