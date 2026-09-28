@@ -15,7 +15,7 @@ Playwright reference set covering E2E, component, API, visual, accessibility, se
 | Debugging | `debugging/` — failures, flaky tests, console errors, error states. |
 | Infrastructure | `infrastructure-ci-cd/` — CI providers, Docker, sharding, performance, reporting, coverage. |
 | Architecture | `architecture/` — POM vs fixtures, test type selection, mock vs real. |
-| Tooling | `scripts/lint-samples.sh` — checks every code sample in this skill against the house rules. |
+| Tooling | `scripts/lint-samples.sh` — checks the TypeScript samples in this skill, or a real spec folder, against the house rules it can read line by line (names, keywords, step order, steps outside specs, bare statements). Titles and prose still need a human read. |
 
 ---
 

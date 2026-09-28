@@ -2,7 +2,7 @@
 
 Read this file before any other reference in this skill. Every code sample in this skill follows these rules; every Playwright file written with this skill follows them too. Where a Playwright doc or an older test in the repo disagrees, this file wins.
 
-**REQUIRED BACKGROUND:** skill:artification. `references/typescript-style.md` applies unchanged. `references/spec-style.md` applies with one override, stated in its Scope section: Playwright has `test.step`, so `WHEN` / `THEN` move from `describe` / `it` into steps and the `test` title is `GIVEN <state>, <outcome>`. This file adds only what Playwright needs on top.
+**REQUIRED BACKGROUND:** skill:artification. `references/typescript-style.md` applies unchanged. `references/spec-style.md` covers `describe` / `it` specs; its Scope section points Playwright specs here. Playwright has `test.step`, so the tree is `FEATURE` → optional `JOURNEY` → `test('GIVEN <state>, <outcome>')`, and `WHEN` / `THEN` / `AND` are steps. This file adds only what Playwright needs on top.
 
 ## Contents
 
@@ -22,22 +22,22 @@ Read this file before any other reference in this skill. Every code sample in th
 
 ## Core Principle
 
-A spec is a list of named steps. A step is one call. The call lives in a page object, a fixture, or a util, so the spec reads as prose and the trace reads as the spec. Only the spec opens steps: the trace is one level deep, and every keyword in it appears once.
+A spec is a list of named steps. A step is one call. The call lives in a page object, a fixture, or a util, so the spec reads as prose and the trace reads as the spec. Only the spec's test bodies open steps: the trace is one level deep, and no step nests inside another.
 
 ## Quick Reference
 
 | Concern | Rule |
 |---|---|
-| Naming tree | `test.describe('FEATURE: <name>')` → optional `test.describe('JOURNEY: <user path>')` → `test('GIVEN <state>, <outcome>')`. One `FEATURE` per spec; `JOURNEY` is the only nested describe, one level deep. The title is the test's only `GIVEN`: it names the state that sets the test apart (`'GIVEN a failed create, saving warns and keeps the sheet open'`). The body is pure Gherkin after it: `WHEN` → `AND`* → `THEN` → `AND`*. Never a `GIVEN` or `WHEN` describe, no `SCENARIO:` prefix, no `GIVEN` step. |
-| Test body | Every statement inside `test(...)` is `await test.step('<prose>', ...)`. No bare `page.*`, `expect(...)`, or page-object call outside a step. |
+| Naming tree | `test.describe('FEATURE: <name>')` → optional `test.describe('JOURNEY: <user path>')` → `test('GIVEN <state>, <outcome>')`. One `FEATURE` per spec; `JOURNEY` is the only nested describe, one level deep. The title is the test's only `GIVEN`: it names the state the test starts from (`'GIVEN a failed create, saving warns and keeps the sheet open'`). The body is Gherkin phases after it: `WHEN` → `AND`* → `THEN` → `AND`*, repeated when the test acts again after a check. Never a `GIVEN` or `WHEN` describe, no `SCENARIO:` prefix, no `GIVEN` step. |
+| Test body | Every statement inside `test(...)` is `await test.step('<prose>', ...)`, except a `const` holding case data above the first step and a `test.skip` / `test.slow` / `test.fixme(condition, reason)` as the first line. No bare `page.*`, `expect(...)`, page-object, or fixture call outside a step. |
 | Step body | One call. `(): Promise<void> => loginPage.submit(user)`. Two or more statements mean a page-object or fixture method is missing. |
-| Step naming | Upper-case keyword, then present-tense prose: `'WHEN the alerts overview is opened'`, `'THEN the delete error toast is shown'`. `WHEN` for the first action, `THEN` for the first assertion, `AND` for each further step of the same kind. |
-| Steps only in the spec | `test.step` appears only in `.e2e.ts` / `.test.ts` bodies and their hooks. Page objects, helper objects, fixtures, and utils never open a step, so no step nests inside another and nothing is boxed. |
+| Step naming | Upper-case keyword, then present-tense prose: `'WHEN the alerts overview is opened'`, `'THEN the delete error toast is shown'`. `WHEN` starts a phase, `THEN` is its first check, `AND` continues whichever kind came before it. |
+| Steps only in the spec | `test.step` appears only in the test bodies of `.e2e.ts` / `.test.ts` / `.test.tsx` specs. Never in hooks, page objects, helper objects, fixtures, mocks, utils, or `*.setup.ts` files, so no step nests inside another and nothing is boxed. |
 | One owner per file | One page object, one helper object, one fixture file, one route-mock file, one stub file per `.ts`. One `FEATURE:` per spec. |
 | File size | Source `.ts` under 150 lines, spec under 300, blank and comment lines skipped. Over means split by concern per `module-size.md`. |
 | Page object | `class` with `private readonly page: Page`, `public readonly` locators assigned in the constructor, `public async` methods returning `Promise<void>`. No parameter properties. `expect` only inside `expect*` methods. |
 | Locator access | Specs never call `page.getBy*` or `page.locator`. Every locator is a page-object or helper-object field. |
-| Spec name | `<feature>.test.ts` when the spec, or a fixture, page object, or mock it imports, routes your own origin: `**/api/**`, `**/graphql`, `**/ws/**`, own assets, `routeFromHAR`. `<feature>.e2e.ts` otherwise, including specs that only stub third-party hosts (payment gateway, analytics, OAuth provider). Component specs are `<feature>.test.tsx`. Never `.spec.ts`; that suffix is the artification unit-test name. |
+| Spec name | `<feature>.test.ts` when a test run routes your own origin (`**/api/**`, `**/graphql`, `**/ws/**`, own assets, `routeFromHAR`): through its own `page.route`, a fixture that routes, or an opening-call option it passes. A page object that can route but is called without that option does not count. `<feature>.e2e.ts` otherwise, including specs that only stub third-party hosts (payment gateway, analytics, OAuth provider). Component specs are `<feature>.test.tsx`. Never `.spec.ts`; that suffix is the artification unit-test name. |
 | Fixtures | One `test.extend` per feature in `<feature>.fixture.ts`. Fixture shape is a named `type <Feature>Fixtures` with `readonly` members. Specs import `test` and `expect` from the fixture file, never from `@playwright/test` when a fixture exists. |
 | Types | `type` never `interface`. Every property `readonly`. Arrays `T[]`. No inline object type literals. Cross-file types in `common/<feature>.type.ts`; types every feature shares in `e2e/common/playwright.type.ts`. |
 | Shared types | `RouteHandler` is declared once, in `e2e/common/playwright.type.ts`, and imported. A `type RouteHandler = …` in a `.mock.ts` is the same type spelled again; two copies drift the day the signature changes. |
@@ -108,7 +108,7 @@ test.describe('FEATURE: login', () => {
   test('GIVEN valid credentials, submitting opens the dashboard', async ({ dashboardPage, loginPage, page }): Promise<void> => {
     await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-    await test.step('AND valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
+    await test.step('AND the credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
 
     await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
 
@@ -120,7 +120,7 @@ test.describe('FEATURE: login', () => {
 
     await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-    await test.step('AND the wrong password is submitted', (): Promise<void> => loginPage.submit(user));
+    await test.step('AND the credentials are submitted', (): Promise<void> => loginPage.submit(user));
 
     await test.step('THEN the error banner reports invalid credentials', (): Promise<void> => loginPage.expectError('Invalid credentials'));
   });
@@ -130,13 +130,13 @@ test.describe('FEATURE: login', () => {
 | Concern | Rule |
 |---|---|
 | `describe` text | Exactly one `test.describe('FEATURE: <name>')` per spec, wrapping every test. Inside it, tests sit directly or in a `test.describe('JOURNEY: <user path>')`. No other nested describe, so no `GIVEN` describe: the report tree is `file → FEATURE → (JOURNEY →) GIVEN <state>, <outcome>`. |
-| Journey | A `JOURNEY` groups 2+ tests that follow one user path in order: `'JOURNEY: a guest buys one item'`. Each leg is independent: its title names where it starts (`'GIVEN one item in the cart, …'`), and the opening call or a fixture seeds that state instead of the leg before it. A leg that cannot be seeded (a real third-party redirect) makes that journey `test.describe.configure({ mode: 'serial' })`, with the reason in the prose above the sample. |
-| State in title | The title's `GIVEN` names the state that distinguishes the test: `'GIVEN a failed list, both lists show a load error'`. A state every test in the spec shares (`the login page is open`) is not what the title names; name the input or condition that differs instead (`'GIVEN a wrong password, submitting shows the error banner'`). |
-| `test` text | `GIVEN`, the distinguishing state, a comma, then the outcome, as one lower-case present-tense sentence: `'GIVEN a wrong password, submitting shows the error banner'`. `WHEN` / `THEN` never appear in the title; they are steps. No "should". |
-| Step keywords | Every step in a spec starts with `WHEN`, `THEN`, or `AND`; `GIVEN` belongs to the title. The first step is `WHEN`, and it is the test's only `WHEN`. A test holds at least one `THEN`. |
-| Step order | `WHEN` → `AND`* (further actions) → `THEN` → `AND`* (further assertions). Consecutive steps of one kind after the first are `AND`, never a second `WHEN` or `THEN`. Independent phases are separate tests. |
-| Arrange | There are no arrange steps. The title's `GIVEN` names the state; the code that builds it runs inside the first `WHEN` call or a fixture. A route, a permission, a clock, or a viewport is an option on the opening call, which applies it before it navigates: `alertsPage.goto({ failOn: 'delete' })` → `'WHEN the alerts overview is opened'`. The `WHEN` does not repeat the title's conditions; the title already names them. API seeding and anything the spec never names lives in a fixture that seeds and hands over the ready page object; see [Requirement Annotation](annotations.md#requirement-annotation). Case-specific data is a `const` above the first step, blank line after. No `beforeEach` steps: each test opens its own page in its `WHEN`, so its step list reads complete on its own. |
-| `test.use` options | `test.use` cannot run inside a test, and there is no describe to scope it. An option the browser can change at runtime is an option on the opening call, applied before it navigates: `page.setViewportSize`, `context.grantPermissions` / `clearPermissions`, `page.clock.install`. An option fixed at context creation (`locale`, `storageState`, `timezoneId`, device) that differs from the rest of the spec moves the scenarios to their own spec with a file-level `test.use` and its own `FEATURE`: `store-finder-denied.e2e.ts`. The same scenarios across several option values are a project per value in `playwright.config`, not a loop of describes. |
+| Journey | A `JOURNEY` groups 2+ tests that follow one user path in order: `'JOURNEY: a guest buys one item'`. Legs are always independent: each title names where the leg starts (`'GIVEN one item in the cart, …'`), and the opening call or a fixture seeds that state instead of the leg before it. A step that cannot be seeded (a real third-party redirect) stays in the previous leg's test as a new phase; serial mode does not carry a page from one test to the next. |
+| State in title | The title's `GIVEN` names the state the test starts from: what the opening call's options, a fixture, or a `const` above the steps set up. When tests in a spec start from different states, name what differs (`'GIVEN a failed list, …'`). When they share one, name that shared state and let the outcome tell them apart (`'GIVEN saved alerts, deleting one removes it from the list'`). Never a page name alone (`'GIVEN the alerts page, …'`), and never a state the test's own steps create (`'GIVEN a confirmed deletion, …'` in a test that confirms the deletion). |
+| `test` text | `GIVEN`, the start state, a comma, then the outcome, as one lower-case present-tense sentence: `'GIVEN a wrong password, submitting shows the error banner'`. `WHEN` / `THEN` never appear in the title; they are steps. No "should". |
+| Step keywords | Every step in a spec starts with `WHEN`, `THEN`, or `AND`; `GIVEN` belongs to the title. The first step is `WHEN`. Every phase holds at least one `THEN`. |
+| Step order | A phase is `WHEN` → `AND`* (more actions) → `THEN` → `AND`* (more checks). A new `WHEN` may only follow a check: it starts the next phase (`'WHEN 30 minutes pass'` after `'THEN the dashboard is shown'`). `WHEN` → `AND` → `WHEN` with no check between, and a second `THEN` in one phase, are wrong: the second step is `AND`. Use a new phase when the test must act again on the state a check just proved: a guard check before a delete, time passing, the network dropping, a second user acting. Phases that do not depend on each other are separate tests. |
+| Arrange | There are no arrange steps. The title's `GIVEN` names the state; the code that builds it runs inside the first `WHEN` call or a fixture. A route, a permission, a clock, a viewport, or headers are options on the opening call, which applies them before it navigates: `alertsPage.goto({ failOn: 'delete' })` → `'WHEN the alerts overview is opened'`. No step repeats the title's condition; the title already names it. API seeding lives in a fixture, which may hand over the page already seeded and open; the first `WHEN` is then the first user action on it (`'WHEN guest checkout is chosen'`). See [Requirement Annotation](annotations.md#requirement-annotation). Case-specific data is a `const` above the first step, blank line after. Hooks never open a step or the page. |
+| `test.use` options | `test.use` cannot run inside a test, and it is never used inside a `JOURNEY`. An option the browser can change at runtime (viewport, permissions, clock, headers) is an option on the opening call. An option fixed at context creation (`locale`, `storageState`, `timezoneId`, device, a fixture option such as `frozenTime`) that differs from the rest of the spec moves those tests to their own spec with a file-level `test.use` and its own `FEATURE`: `store-finder-de.e2e.ts`. The same tests across several context-fixed values are a project per value in `playwright.config`. The same test across several runtime values (breakpoints) is a `for` loop of tests, each title naming its value and each `goto` passing it. |
 | Steps | One step per action or per assertion group. Blank line between steps. |
 | Fixtures in signature | Destructure only what the test uses, alphabetical. |
 | Tags | `test('GIVEN <state>, <outcome>', { tag: ['@smoke'] }, async …)`. Tags are the second argument, never in the title. |
@@ -151,10 +151,11 @@ A step is the unit of the trace and the unit of the spec. Rules:
 |---|---|
 | Body | One expression. `(): Promise<void> => loginPage.submit(user)`. |
 | Assertion step | One `expect` call or one page-object `expect*` method. Two related assertions on one state go in one page-object `expect*` method as two plain `await expect(…)` lines. |
-| Naming | Keyword plus what the user does or what is now true: `'WHEN the item is added to the cart'`, `'THEN the cart badge shows one item'`. |
-| Return value | A step may return a value: `const orderId = await test.step('WHEN the order is placed', (): Promise<string> => checkoutPage.placeOrder());`. |
+| Naming | Keyword plus what the user does or what is now true: `'WHEN the checkout page is opened'`, `'AND the item is added to the cart'`, `'THEN the cart badge shows one item'`. |
+| Return value | A step may return a value: `const orderId = await test.step('AND the order is placed', (): Promise<string> => checkoutPage.placeOrder());`. |
 | Sync `expect` | `expect(value).toBe(…)` on a plain value is synchronous: the step callback is `(): void =>`. Only `expect(locator)` / `expect(page)` matchers and `expect.poll` return promises and take `(): Promise<void> =>`. |
-| Non-void calls | `page.goto` / `reload` / `goBack` return `Promise<Response \| null>`; `route`, `addInitScript`, `exposeFunction`, `exposeBinding` return `Promise<Disposable>` since Playwright 1.63. An expression body cannot be typed `Promise<void>`, so use a block body with one `await`: `async (): Promise<void> => { await page.route('**/api/x', xMock()); }`. Still one call. Same for a util or mock arrow that wraps one of these. |
+| Reads | A value a check needs is read inside the check: the `expect*` method or util reads the body, cookies, or state it asserts. No step only reads a value. An API spec checks the status first (`'THEN the status is 201'`), then the body (`'AND the body names the item'`), each check reading what it asserts. |
+| Non-void calls | `page.goto` / `reload` / `goBack` return `Promise<Response \| null>`; `route`, `addInitScript`, `exposeFunction`, `exposeBinding` return `Promise<Disposable>` since Playwright 1.63. An expression body cannot be typed `Promise<void>`, so use a block body with one `await`: `async (): Promise<void> => { await page.reload(); }`. Still one call. Same for a page-object, util, or mock arrow that wraps one of these. A step never routes; see Arrange. |
 
 Before, a body with no steps and inline locators:
 
@@ -172,12 +173,17 @@ After, the spec is steps and the page object owns the locators:
 
 ```ts
 // e2e/login/login.e2e.ts
-test('GIVEN valid credentials, submitting opens the dashboard', async ({ loginPage, page }): Promise<void> => {
-  await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
+import { expect, test } from './login.fixture';
+import { USER_STUB } from './test/stubs/user.stub';
 
-  await test.step('AND valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
+test.describe('FEATURE: login', () => {
+  test('GIVEN valid credentials, submitting opens the dashboard', async ({ loginPage, page }): Promise<void> => {
+    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-  await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+    await test.step('AND the credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
+
+    await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+  });
 });
 ```
 
@@ -226,7 +232,8 @@ export class LoginPage {
 |---|---|
 | Members | Locators `public readonly`, alphabetical. `page` is `private readonly`, declared after the locators. Accessibility on every member. |
 | Constructor | `public constructor(page: Page)`. Assign every field here. No parameter properties. |
-| Methods | `public async <verb>(): Promise<void>`. One user intent per method. A method that decides (`if`) is doing two intents; split it. |
+| Methods | `public async <verb>(): Promise<void>`. One user intent per method. A method that decides (`if`) is doing two intents; split it. The one exception is the opening call: `goto(options)` may branch on its options to apply them before it navigates. |
+| Opening options | One options type per page object, `<Page>Options` in `common/<feature>.type.ts`, `readonly` and optional. A reference file that needs one more option says so in prose (`AlertsOptions` gains `retry?: boolean`) instead of redeclaring the type. No option means no routing, so a real-backend spec stays unmocked. |
 | Assertions | Only inside `expect*` methods, as plain `await expect(…)` lines with no step around them. Action methods never assert. |
 | Helpers | A widget that appears on several pages is a helper object taking a `Locator` root, in `helpers/`. Pages expose it as a `public readonly` field. |
 | Composition | A page object holds other page or helper objects as fields. It never extends another page object. |
@@ -266,7 +273,8 @@ export { expect } from '@playwright/test';
 | Worker scope | `[fn, { scope: 'worker' }]` tuple for expensive setup; the fixture type carries it in a separate `type <Feature>WorkerFixtures`. |
 | Merge | `e2e/playwright.fixture.ts` exports `mergeTests(loginTest, checkoutTest)` when a spec needs two features. |
 | Re-export | The fixture file re-exports `expect` so a spec has one import source. |
-| Auth | Storage state is produced by a `setup` project and consumed through `use: { storageState }` per project, never per test. |
+| Auth | Storage state is produced by a `setup` project and consumed through `use: { storageState }` per project, or through a file-level `test.use` in a spec whose tests all need another session. Never per test. |
+| Setup files | A `*.setup.ts` file is not a behaviour spec: no steps, and the title names what it produces (`setup('saves the admin session')`). |
 
 ## Test Data and Mocks
 
@@ -357,7 +365,7 @@ export default defineConfig({
   projects,
   reporter: 'list',
   retries: process.env.CI ? 2 : 0,
-  testDir: './e2e',
+  testMatch: '**/*.@(e2e|test).ts',
   use
 });
 ```
@@ -367,6 +375,7 @@ export default defineConfig({
 | Nested values | Every nested object (`use`, each project's `use`, `reporter` arrays) is a named `const` above `defineConfig`. |
 | Env | Environment reads happen once, in the config, and become plain values. Specs never read `process.env`. |
 | Constants | `BASE_URL`, timeouts, and shared paths live in `common/playwright.const.ts`. |
+| Test files | The config sits in `e2e/`, so it sets no `testDir` (that resolves from the config's own folder: `testDir: './e2e'` there means `e2e/e2e`). `testMatch: '**/*.@(e2e|test).ts'` collects both spec kinds; the default pattern skips `.e2e.ts`. |
 
 ## Sample Style in This Skill
 
@@ -374,14 +383,14 @@ Rules for the markdown files in this skill, so every reference reads the same wa
 
 | Concern | Rule |
 |---|---|
-| Fence language | `ts` for TypeScript, `bash` for shell, `yaml` for CI, `json` for JSON. Never `typescript` or `javascript`. |
+| Fence language | `ts` for TypeScript, `tsx` for TSX, `bash` for shell, `yaml` for CI, `json` for JSON. Never `typescript` or `javascript`. One call per line, so the lint can read each step. |
 | Avoid samples | A sample that shows what not to do is fenced `ts avoid`. It is the only sample kind exempt from `scripts/lint-samples.sh`. Keep it short; the "Prefer" sample is the one that teaches. |
 | Lint | `scripts/lint-samples.sh <file.md>` must print `clean` before a reference file is done. |
 | Path comment | First line of every `.ts` sample is `// <path>` under the layout above. Nothing else is commented. |
 | Good / bad | Prose says "Before" and "After" or "Avoid" and "Prefer". No ✅ / ❌ inside code. |
 | Completeness | A sample compiles as shown: imports present, return types present, types named. Elision uses a prose sentence, not `// ...`. |
 | One example | One complete example per pattern. Variants are described in a table, not repeated as code. |
-| Sample length | A sample stays under 60 lines. Longer means the sample hides two patterns. |
+| Sample length | A TypeScript sample stays under 60 lines. Longer means the sample hides two patterns. A CI pipeline file (`yaml`) stays whole so it can be copied. |
 | Prose | Short declarative sentences. Tables for options. No marketing adjectives. |
 
 ## Rationalizations
@@ -392,12 +401,14 @@ Rules for the markdown files in this skill, so every reference reads the same wa
 | "The title already says WHEN and THEN." | The title is `GIVEN <state>, <outcome>`; `WHEN` / `THEN` are steps. Saying it twice is what the rule removes. |
 | "The trace should show where the mock was set up." | A route-only step is 0 ms with nothing under it. The title names the condition; the `WHEN` call applies it. |
 | "The `WHEN` should say which setup ran." | The title says it, directly above the steps. Repeating it in the `WHEN` doubles every condition and drifts the day one of them changes. |
-| "Opening the page is arrange, not the action." | In an e2e test, opening the page is the user's first action. The title carries the state; the one `WHEN` starts the sequence, and the outcome in the title says which part of it the test is about. |
+| "Opening the page is arrange, not the action." | In an e2e test, opening the page is the user's first action. The title carries the state; the `WHEN` starts the sequence, and the outcome in the title says which part of it the test is about. |
 | "A boxed `THEN` in the page object points failures at the spec." | It also nests a second `THEN` under the spec's `THEN`. The stack trace already includes the spec line; one step level beats a prettier location. |
 | "One `page.getByRole` in the spec is fine." | The spec now knows the DOM. Move it to the page object. |
 | "Return types on test callbacks are noise." | The rule has no exception for tests. Consistency is the point. |
 | "Playwright docs use `interface`." | Playwright docs are not this repo. `type` with `readonly`. |
-| "This page object needs an `if`." | A branch in a page object is two user intents. Two methods. |
+| "This page object needs an `if`." | A branch in a page object is two user intents. Two methods. The opening call's options are the one exception: applying them before navigating is still one intent, opening the page in the given state. |
+| "The guard check before the action is noise; drop it." | Without it, `'the alert is gone'` passes when the alert never showed up. Keep the check and start a new phase: `THEN the alert is listed`, `WHEN it is deleted`. |
+| "Every test in this spec starts on the same page, so `GIVEN the alerts page` is honest." | A page is where the test runs, not the state it starts from. Name the data or condition the page shows: `'GIVEN saved alerts, …'`. |
 | "`waitForTimeout(500)` fixes it locally." | It hides a race. Find the state and `expect` it. |
 | "The fixture file is tiny, inline the type." | Inline object types are banned everywhere. Name it. |
 | "`as` is the only way to type `evaluate`." | `page.evaluate<Result>(...)` takes a generic. |
@@ -413,17 +424,19 @@ Rules for the markdown files in this skill, so every reference reads the same wa
 
 Stop and re-check this file when reasoning includes:
 
-- A `test(...)` body with a statement that is not `await test.step(...)`.
+- A `test(...)` body with a statement that is not `await test.step(...)`, apart from a case-data `const` and a first-line `test.skip` / `test.slow` / `test.fixme`.
 - A step callback with braces and two statements.
 - `page.getBy` or `page.locator` inside a `.e2e.ts` or `.test.ts`.
-- `test.describe('Login', ...)` or any describe text with no Gherkin keyword.
+- `test.describe('Login', ...)` or any describe text that is not `FEATURE:` or `JOURNEY:`.
 - `test.describe('WHEN …')` or a test title starting with `WHEN` / `THEN`.
 - `test.describe('GIVEN …')`, a nested describe that is not `JOURNEY:`, or a describe inside a `JOURNEY`.
-- A `JOURNEY` leg that relies on the leg before it without `mode: 'serial'` and a stated reason.
-- Two test titles in one spec that read the same.
-- A `GIVEN` step, a first step that is not `WHEN`, a second `WHEN`, or a step that only calls `page.route`.
-- A `test.step` inside `beforeEach`.
-- `test.step` or `{ box: true }` in a page object, helper object, fixture, or util.
+- A `JOURNEY` leg that relies on the leg before it, or `mode: 'serial'` used to chain tests. Serial mode does not carry the page across tests.
+- Two test titles in one spec that read the same, a title whose `GIVEN` is only a page name, or a `GIVEN` that the test's own steps create.
+- A `GIVEN` step, a first step that is not `WHEN`, a `WHEN` that does not follow a check, a second `THEN` in one phase, a phase with no `THEN`, or a step that routes.
+- A `test.step` inside a hook or a `*.setup.ts` file.
+- A step that only reads a value (`response.json()`, cookies) instead of the check reading what it asserts.
+- An `if` in a page-object method other than the opening call, or a second options type for the same page object.
+- `test.step` or `{ box: true }` in a page object, helper object, fixture, mock, or util.
 - A step whose name has no `WHEN` / `THEN` / `AND`.
 - "should" in a test title.
 - `interface`, `as SomeType`, `any`, or `// ...` inside a sample.
@@ -448,9 +461,12 @@ Stop and re-check this file when reasoning includes:
 | `test.describe('WHEN the order is placed', ...)` | Delete the describe; `'WHEN the order is placed'` is a step. |
 | `test.describe('GIVEN the create api fails', ...)` around tests | Delete the describe. The title names the failure, `'GIVEN a failed create, saving warns and keeps the sheet open'`, and the opening `WHEN` applies it: `priceAlertsPage.goto({ failOn: 'create' })` in `'WHEN the price alerts page is opened'`. |
 | `test.describe('GIVEN notifications are denied', () => { test.use({ permissions: [] }); … })` | Runtime-changeable: an option on the opening call (`alertsPage.goto({ notifications: 'denied' })` runs `context.clearPermissions()` before navigating). Context-fixed (`locale`, `storageState`): a separate spec with a file-level `test.use`. |
-| `test.step('submit credentials', ...)` in a spec | `test.step('WHEN credentials are submitted', ...)`. |
+| `test.step('submit credentials', ...)` in a spec | `test.step('AND the credentials are submitted', ...)` after the opening `WHEN`. |
 | Step with `async () => { await a(); await b(); }` | Add `checkoutPage.placeOrder()` and call it. |
 | `test.step('THEN modal is open', …, { box: true })` in a page object | `await expect(this.modal).toBeVisible();` with no step; the spec's `THEN` step is the only one. |
+| `'AND the alert is deleted'` right after `'THEN the alert is listed'` | `'WHEN the alert is deleted'`: an action after a check starts a new phase. |
+| `const body = await test.step('AND the body is read', …)` then `'THEN the status is ok'` | `'THEN the status is 200'`, then `'AND the body names the item'` through an `expect*` util that reads the body itself. |
+| `test('GIVEN the dashboard, …')` | Name the state the dashboard starts in: `'GIVEN three saved widgets, …'`. |
 | Step named `'Step 1'` or `'Arrange'` | Keyword plus the action: `'WHEN the checkout page is opened'`. |
 | `readonly page: Page` with no accessibility | `private readonly page: Page`. |
 | `constructor(private readonly page: Page)` | Field declaration plus assignment in the body. |
