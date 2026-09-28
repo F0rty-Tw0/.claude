@@ -6,8 +6,8 @@ Playwright reference set covering E2E, component, API, visual, accessibility, se
 
 | Area | Files |
 |---|---|
-| Contract | `core/house-style.md` — one flat `FEATURE` describe per spec, `GIVEN <state>, <outcome>` test titles, `WHEN` / `THEN` / `AND` steps with one call each, only in the spec, page objects own locators, fixtures own page objects, artification TypeScript rules, file layout, size caps. |
-| Core | `core/` — structure, locators, assertions, POM, fixtures, data, config, projects, global setup, annotations, tags. |
+| Contract | `core/house-style.md` — one flat `FEATURE` describe per spec, `GIVEN <state>, <outcome>` test titles, `WHEN` / `THEN` / `AND` steps in phases with one call each, only in spec test bodies, page objects own locators, fixtures own page objects, artification TypeScript rules, file layout, size caps. |
+| Core | `core/` — structure, locators, assertions, POM, fixtures, data, config, projects, global setup, annotations, tags, refactoring an existing suite. |
 | Advanced | `advanced/` — auth flows, multi-user, multi-context, clock, network, third-party, mobile. |
 | Browser APIs | `browser-apis/` — WebSockets, service workers, iframes, geolocation, permissions, clipboard, media. |
 | Patterns | `testing-patterns/` — API, GraphQL, component, visual, canvas, a11y, security, performance, forms, files, drag-drop, i18n, Electron, extensions. |

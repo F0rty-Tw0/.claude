@@ -22,6 +22,7 @@ Reference set for Playwright test development, rewritten to house style: one fla
 | Situation | Read |
 |---|---|
 | New spec, any kind | `core/test-suite-structure.md`, `core/locators.md`, `core/assertions-waiting.md` |
+| Refactoring an existing suite to house style | `core/refactoring.md`, then `scripts/lint-samples.sh e2e/<feature>` on the real files |
 | Page object, helper object | `core/page-object-model.md`, `architecture/pom-vs-fixtures.md` |
 | Fixture, hook, `test.extend`, `mergeTests` | `core/fixtures-hooks.md` |
 | Stubs, builders, seeding, cleanup | `core/test-data.md` |
@@ -69,7 +70,8 @@ Reference set for Playwright test development, rewritten to house style: one fla
 1. `npx playwright test --reporter=list` on the touched specs.
 2. Red: open the trace (`npx playwright show-trace`), fix the locator, wait, or step, re-run.
 3. Green: `npx playwright test --repeat-each=3` on the same specs. Still green means done.
-4. Skill authors: `scripts/lint-samples.sh` must print `clean` after editing any reference file.
+4. Refactoring a real suite: `scripts/lint-samples.sh e2e/<feature>` must print `clean`, and the test and `expect` counts must not drop; see `core/refactoring.md`.
+5. Skill authors: `scripts/lint-samples.sh` must print `clean` after editing any reference file.
 
 ## Common Mistakes
 
