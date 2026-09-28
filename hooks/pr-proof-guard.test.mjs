@@ -150,12 +150,33 @@ const sameCallWrites = [
   ['tee -a', `echo x | tee -a ${okBody} && gh pr create -F ok.md`],
   ['$(cat file) body', 'echo x > ok.md && gh pr create --body "$(cat ok.md)"'],
   ['stdin from cat pipe', 'echo x > ok.md; cat ok.md | gh pr create -F -'],
+  ['cp over the body file', `cp ${badBody} ok.md && gh pr create -F ok.md`],
+  ['cp to a new body file', 'cp bad.md fresh.md && gh pr create -F fresh.md'],
+  ['mv onto the body file', 'mv bad.md ok.md; gh pr create --body-file ok.md'],
+  ['sed -i on the body file', "sed -i 's/Proof/x/' ok.md && gh pr create -F ok.md"],
+  ['clobber redirect', 'echo x >| ok.md && gh pr create -F ok.md'],
 ];
 for (const [name, command] of sameCallWrites) {
   test(`blocks a body file written in the same call: ${name}`, () => {
     const { status, stderr } = run(command);
     assert.strictEqual(status, BLOCK);
     assert.match(stderr, /write the body file in a separate Bash call — the hook reads it before your command runs/i);
+  });
+}
+
+// Round-two targeted review: each of these kills a mutation that the table above let survive.
+const mutationKillers = [
+  ['last stdin redirect wins', `gh pr create -F - < ${okBody} < ${badBody}`, BLOCK],
+  ['only the invocation\'s own heredoc counts', "cat <<'A' >/dev/null\n## Proof\nA\ngh pr create -F - <<'B'\nnope\nB", BLOCK],
+  ['unterminated stdin heredoc is not a body', 'gh pr create -F - <<EOF\n## Proof', BLOCK],
+  ['a write AFTER the invocation is fine', 'gh pr create -F ok.md && echo done > ok.md', ALLOW],
+  ['last short -b wins', 'gh pr create -b "## Proof" -b no', BLOCK],
+  ['reading the body via a cat pipe is not a write', 'cat ok.md | gh pr create -F -', ALLOW],
+];
+for (const [name, command, expected] of mutationKillers) {
+  test(`${expected === ALLOW ? 'allows' : 'blocks'}: ${name}`, () => {
+    const { status, stderr } = run(command);
+    assert.strictEqual(status, expected, stderr);
   });
 }
 

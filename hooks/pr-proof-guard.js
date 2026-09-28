@@ -115,12 +115,14 @@ const check = (inv) => {
   if (!source.isFile && !catFile) return hasProof(value) ? '' : NO_PROOF;
   if (catFile) value = unquote(catFile[1]);
 
+  let scanEnd = inv.index; // earlier mentions of the body file are looked for before here
   if (value === '-') { // body from stdin: judge only this invocation's own stdin, never proof elsewhere in the command
     // a `||` gives an empty pipe source: the backward search stops at its first `|`
     const pipeStart = masked[inv.index] === '|' ? Math.max(...[...'\n;&|(`'].map((c) => masked.lastIndexOf(c, inv.index - 1))) + 1 : inv.index;
     const redirect = lastStdinRedirect(argsStart, argsEnd) || lastStdinRedirect(pipeStart, inv.index);
     const catSource = masked.slice(pipeStart, inv.index).match(/^[ \t]*cat[ \t]+(\S+)[ \t]*$/d);
     const printfSource = masked.slice(pipeStart, inv.index).match(/^[ \t]*printf[ \t]+/);
+    scanEnd = pipeStart; // the pipe source reading the file (`cat pr.md |`) is not a stale write
     if (redirect?.op === '<<<') return hasProof(redirect.word) ? '' : NO_PROOF;
     if (redirect && redirect.op !== '<') {
       const heredoc = heredocs.find((h) => h.op === redirect.index);
@@ -134,10 +136,12 @@ const check = (inv) => {
   }
   if (value.includes('$')) return `pr-proof-guard: cannot resolve body file path \`${value}\` (it expands a variable). Pass a literal path. ${HOW}`;
   const file = path.resolve(baseDir, expandHome(value));
-  // The hook runs before the command, so a body file written earlier in this same command is read stale or missing.
-  const writes = [...masked.slice(0, inv.index).matchAll(/(?:>(?![&>])|(?:^|[\s|;&(])tee(?:[ \t]+-a)?[ \t])[ \t]*([^\s;&|()<>`]+)/dg)];
-  if (writes.some((w) => path.resolve(baseDir, expandHome(unquote(cmd.slice(...w.indices[1])))) === file)) {
-    return `pr-proof-guard: this command writes ${file} before gh reads it. Write the body file in a separate Bash call — ` +
+  // The hook runs before the command, so a body file created or changed earlier in this same command (>, tee, cp, mv,
+  // sed -i, ...) is read stale or missing. ponytail: any earlier mention of the path counts, so a harmless
+  // `ls pr.md && gh pr create -F pr.md` also blocks; the message says how to fix it, which beats a silent wrong allow.
+  const mentions = [...masked.slice(0, scanEnd).matchAll(/[^\s;&|()<>`]+/dg)];
+  if (mentions.some((w) => path.resolve(baseDir, expandHome(unquote(cmd.slice(...w.indices[0])))) === file)) {
+    return `pr-proof-guard: this command touches ${file} before gh reads it. Write the body file in a separate Bash call — ` +
       'the hook reads it before your command runs.';
   }
   let body = '';
