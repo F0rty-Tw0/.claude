@@ -72,13 +72,13 @@ import { CARD_STUB, ITEM_STUB } from './test/stubs/checkout.stub';
 test.describe.configure({ mode: 'serial' });
 
 test.describe('FEATURE: checkout', () => {
-  test('SCENARIO: adding an item shows one item on the cart badge', async ({ cartPage }): Promise<void> => {
+  test('GIVEN an empty cart, adding an item shows one item on the badge', async ({ cartPage }): Promise<void> => {
     await test.step('WHEN the item is added to the cart', (): Promise<void> => cartPage.addItem(ITEM_STUB));
 
     await test.step('THEN the cart badge shows one item', (): Promise<void> => cartPage.expectBadgeCount(1));
   });
 
-  test('SCENARIO: completing payment opens the confirmation page', async ({ checkoutPage, page }): Promise<void> => {
+  test('GIVEN a filled cart, completing payment opens the confirmation page', async ({ checkoutPage, page }): Promise<void> => {
     await test.step('WHEN the card payment is completed', (): Promise<void> => checkoutPage.pay(CARD_STUB));
 
     await test.step('THEN the confirmation url is shown', (): Promise<void> => expect(page).toHaveURL('/confirmation'));
@@ -282,7 +282,7 @@ test.describe('FEATURE: profile settings', () => {
     await test.step('GIVEN the settings page is open', (): Promise<void> => settingsPage.goto(user.id));
   });
 
-  test('SCENARIO: changing the email keeps the new value in the field', async ({ settingsPage }): Promise<void> => {
+  test('GIVEN a new email, changing it keeps the new value in the field', async ({ settingsPage }): Promise<void> => {
     await test.step('WHEN a new email is saved', (): Promise<void> => settingsPage.saveEmail('updated@example.com'));
 
     await test.step('THEN the email field shows the new value', (): Promise<void> => settingsPage.expectEmail('updated@example.com'));
@@ -305,7 +305,7 @@ import { test } from './orders.fixture';
 import { uniqueOrderRef } from './test/utils/order-builder.spec.util';
 
 test.describe('FEATURE: orders', () => {
-  test('SCENARIO: opening a new order shows its reference', async ({ orderPage }, testInfo): Promise<void> => {
+  test('GIVEN a new order, opening it shows its reference', async ({ orderPage }, testInfo): Promise<void> => {
     const orderRef = uniqueOrderRef(testInfo.workerIndex);
 
     await test.step('WHEN a new order is opened', (): Promise<void> => orderPage.gotoNew(orderRef));

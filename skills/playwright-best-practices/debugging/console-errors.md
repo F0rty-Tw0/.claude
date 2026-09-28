@@ -217,7 +217,7 @@ import { test } from './console.fixture';
 import { expectNoConsoleErrors } from './test/utils/console-error.spec.util';
 
 test.describe('FEATURE: console errors', () => {
-  test('SCENARIO: loading data logs no console error', async ({ consoleErrors, dashboardPage }): Promise<void> => {
+  test('GIVEN a healthy data load, the console logs no error', async ({ consoleErrors, dashboardPage }): Promise<void> => {
     await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
     await test.step('WHEN data is loaded', (): Promise<void> => dashboardPage.loadData());
@@ -353,7 +353,7 @@ import { expect, test } from './console.fixture';
 import { brokenDataMock } from './test/mocks/data.mock';
 
 test.describe('FEATURE: error boundary', () => {
-  test('SCENARIO: a null data payload is caught by the error boundary', async ({ dashboardPage, pageErrors }): Promise<void> => {
+  test('GIVEN a null data payload, the error boundary catches it', async ({ dashboardPage, pageErrors }): Promise<void> => {
     await test.step('GIVEN data is routed to a null payload', (): Promise<void> => dashboardPage.routeData(brokenDataMock()));
 
     await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());

@@ -185,7 +185,7 @@ import { parseFrame, waitForFirstFrame } from './test/utils/frame-log.spec.util'
 import { dispatchSocketMessage } from './test/utils/socket-message.spec.util';
 
 test.describe('FEATURE: chat socket', () => {
-  test('SCENARIO: opening the page connects a socket to the chat endpoint', async ({ chatPage }): Promise<void> => {
+  test('GIVEN the chat page, opening it connects a socket to the chat endpoint', async ({ chatPage }): Promise<void> => {
     const socket = await test.step('WHEN the page opens and the socket is captured', (): Promise<WebSocket> => chatPage.gotoAndCaptureSocket());
 
     await test.step('THEN the socket url targets the chat endpoint', (): void => expect(socket.url()).toContain('/ws/chat'));
@@ -201,7 +201,7 @@ The `frameLog` fixture is created before the test body runs, so the listener is 
 
 ```ts
 // e2e/chat/chat.test.ts
-test('SCENARIO: a frame pushed by the server carries a type', async ({ chatPage, frameLog }): Promise<void> => {
+test('GIVEN a server-pushed frame, it carries a type', async ({ chatPage, frameLog }): Promise<void> => {
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
   await test.step('WHEN a frame arrives', (): Promise<void> => expect.poll((): number => frameLog.received.length).toBeGreaterThan(0));
@@ -214,7 +214,7 @@ test('SCENARIO: a frame pushed by the server carries a type', async ({ chatPage,
 
 ```ts
 // e2e/chat/chat.test.ts
-test('SCENARIO: sending a message makes the last sent frame the chat message', async ({ chatPage, frameLog }): Promise<void> => {
+test('GIVEN a chat message, sending it makes it the last sent frame', async ({ chatPage, frameLog }): Promise<void> => {
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
   await test.step('WHEN a greeting is sent', (): Promise<void> => chatPage.send('Hello!'));
@@ -258,7 +258,7 @@ export const dispatchSocketMessage = async (page: Page, message: SocketMessage):
 
 ```ts
 // e2e/chat/chat.test.ts
-test('SCENARIO: a message event dispatched on the app socket shows the message', async ({ chatPage, page }): Promise<void> => {
+test('GIVEN a message event dispatched on the app socket, the chat shows the message', async ({ chatPage, page }): Promise<void> => {
   const message: SocketMessage = { content: 'Hello there!', from: 'Alice', type: 'message' };
 
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
@@ -318,7 +318,7 @@ The `chatSocket` fixture (shown in [WebSocket Basics](#websocket-basics)) regist
 
 ```ts
 // e2e/chat/chat.test.ts
-test('SCENARIO: a message pushed by the mocked server is shown', async ({ chatPage, chatSocket }): Promise<void> => {
+test('GIVEN a message pushed by the mocked server, the chat shows it', async ({ chatPage, chatSocket }): Promise<void> => {
   const message: SocketMessage = { content: 'Hi!', from: 'Bob', type: 'message' };
 
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
@@ -328,7 +328,7 @@ test('SCENARIO: a message pushed by the mocked server is shown', async ({ chatPa
   await test.step('THEN the message from Bob is shown', (): Promise<void> => chatPage.expectMessage('Bob: Hi!'));
 });
 
-test('SCENARIO: sending a reply delivers it to the mocked socket', async ({ chatPage, chatSocket }): Promise<void> => {
+test('GIVEN a reply, sending it delivers it to the mocked socket', async ({ chatPage, chatSocket }): Promise<void> => {
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
   await test.step('WHEN a reply is sent', (): Promise<void> => chatPage.send('Hello Bob!'));
@@ -345,7 +345,7 @@ Every real-time feature test has the same shape: open the page, inject one messa
 
 ```ts
 // e2e/chat/chat.test.ts
-test('SCENARIO: an arriving notification shows the order in the alert', async ({ chatPage, chatSocket }): Promise<void> => {
+test('GIVEN an arriving order notification, the alert shows the order', async ({ chatPage, chatSocket }): Promise<void> => {
   const notification: SocketMessage = { message: 'Order #123 received', title: 'New Order', type: 'notification' };
 
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
@@ -411,7 +411,7 @@ import { eventsMock } from './test/mocks/events.mock';
 const COUNTER_EVENTS = ['{"count":1}', '{"count":2}', '{"count":3}'];
 
 test.describe('FEATURE: live data', () => {
-  test('SCENARIO: three streamed counter events leave the last one on the counter', async ({ liveDataPage, page }): Promise<void> => {
+  test('GIVEN three streamed counter events, the counter shows the last one', async ({ liveDataPage, page }): Promise<void> => {
     await test.step('GIVEN three counter events are served', async (): Promise<void> => {
       await page.route('**/api/events', eventsMock(COUNTER_EVENTS));
     });
@@ -433,7 +433,7 @@ A single-event stream is `eventsMock(['{"type":"update","value":42}'])` with `ex
 
 ```ts
 // e2e/chat/chat.test.ts
-test('SCENARIO: closing the socket shows the reconnecting status', async ({ chatPage, chatSocket }): Promise<void> => {
+test('GIVEN a closed socket, the status shows reconnecting', async ({ chatPage, chatSocket }): Promise<void> => {
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
   await test.step('AND the status shows connected', (): Promise<void> => chatPage.expectStatus('Connected'));
@@ -450,7 +450,7 @@ When the app reconnects, `page.routeWebSocket` calls the handler again for the n
 
 ```ts
 // e2e/chat/chat.test.ts
-test('SCENARIO: closing the socket makes the app reconnect', async ({ chatPage, chatSocket }): Promise<void> => {
+test('GIVEN a closed socket, the app reconnects', async ({ chatPage, chatSocket }): Promise<void> => {
   await test.step('GIVEN the chat page is open', (): Promise<void> => chatPage.goto());
 
   await test.step('WHEN the socket is closed', (): void => chatSocket.close());

@@ -149,7 +149,7 @@ test.describe('FEATURE: booking', () => {
     await test.step('GIVEN the booking page is open', (): Promise<void> => bookingPage.goto());
   });
 
-  test('SCENARIO: reserving a standard room shows the confirmation', async ({ bookingPage }): Promise<void> => {
+  test('GIVEN a standard room, reserving shows the confirmation', async ({ bookingPage }): Promise<void> => {
     const details: BookingDetails = { ...BOOKING_DETAILS_STUB, room: 'standard' };
 
     await test.step('WHEN the booking details are filled', (): Promise<void> => bookingPage.fillDetails(details));
@@ -226,13 +226,13 @@ export { expect } from '@playwright/test';
 import { test } from './booking.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test('SCENARIO: opening the dashboard shows the widgets', async ({ dashboardPage }): Promise<void> => {
+  test('GIVEN the dashboard, opening it shows the widgets', async ({ dashboardPage }): Promise<void> => {
     await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
     await test.step('THEN the dashboard widgets are visible', (): Promise<void> => dashboardPage.expectWidgets());
   });
 
-  test('SCENARIO: opening the dashboard greets the member by email', async ({ dashboardPage, member }): Promise<void> => {
+  test('GIVEN a signed-in member, opening the dashboard greets them by email', async ({ dashboardPage, member }): Promise<void> => {
     await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
     await test.step('THEN the welcome prompt shows the member email', (): Promise<void> => dashboardPage.expectWelcome(member.email));
@@ -314,7 +314,7 @@ test.describe('FEATURE: account settings', () => {
     await test.step('GIVEN the account page is open', (): Promise<void> => accountPage.goto());
   });
 
-  test('SCENARIO: updating the email saves the new address', async ({ accountPage }): Promise<void> => {
+  test('GIVEN a new email, updating saves the new address', async ({ accountPage }): Promise<void> => {
     const newEmail = generateEmail('updated');
 
     await test.step('WHEN the new email is saved', (): Promise<void> => accountPage.updateEmail(newEmail));

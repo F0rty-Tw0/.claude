@@ -91,13 +91,13 @@ import { requestToken } from './test/utils/auth.spec.util';
 import { createProduct, deleteProduct, listProducts } from './test/utils/products-api.spec.util';
 
 test.describe('FEATURE: products API', () => {
-  test('SCENARIO: posting a valid product returns 201', async ({ managerToken, request }): Promise<void> => {
+  test('GIVEN a valid product, posting returns 201', async ({ managerToken, request }): Promise<void> => {
     const response = await test.step('WHEN the product is posted', (): Promise<APIResponse> => createProduct(request, managerToken, PRODUCT_STUB));
 
     await test.step('THEN the status is 201', (): void => expect(response.status()).toBe(201));
   });
 
-  test('SCENARIO: posting the same sku twice returns 409', async ({ managerToken, request }): Promise<void> => {
+  test('GIVEN an existing sku, posting it again returns 409', async ({ managerToken, request }): Promise<void> => {
     await test.step('GIVEN the product is posted', (): Promise<APIResponse> => createProduct(request, managerToken, PRODUCT_STUB));
 
     const response = await test.step('WHEN the same sku is posted again', (): Promise<APIResponse> => createProduct(request, managerToken, PRODUCT_STUB));
@@ -105,13 +105,13 @@ test.describe('FEATURE: products API', () => {
     await test.step('THEN the status is 409', (): void => expect(response.status()).toBe(409));
   });
 
-  test('SCENARIO: a missing sku returns 422', async ({ managerToken, request }): Promise<void> => {
+  test('GIVEN a missing sku, posting returns 422', async ({ managerToken, request }): Promise<void> => {
     const response = await test.step('WHEN a product without a sku is posted', (): Promise<APIResponse> => createProduct(request, managerToken, { name: 'Incomplete' }));
 
     await test.step('THEN the status is 422', (): void => expect(response.status()).toBe(422));
   });
 
-  test('SCENARIO: listing the first page returns at most twenty items', async ({ managerToken, request }): Promise<void> => {
+  test('GIVEN the first page, listing returns at most twenty items', async ({ managerToken, request }): Promise<void> => {
     const response = await test.step('WHEN the first page is listed', (): Promise<APIResponse> => listProducts(request, managerToken, { limit: '20', page: '1' }));
 
     const body = await test.step('AND the body is read', (): Promise<ProductPage> => response.json());
@@ -119,7 +119,7 @@ test.describe('FEATURE: products API', () => {
     await test.step('THEN the items are capped at twenty', (): void => expect(body.items.length).toBeLessThanOrEqual(20));
   });
 
-  test('SCENARIO: deleting a product with a staff token returns 403', async ({ request }): Promise<void> => {
+  test('GIVEN a staff token, deleting a product returns 403', async ({ request }): Promise<void> => {
     const staffToken = await test.step('GIVEN a staff token is requested', (): Promise<string> => requestToken(request, STAFF_STUB));
 
     const response = await test.step('WHEN a product is deleted', (): Promise<APIResponse> => deleteProduct(request, staffToken, '123'));
@@ -183,7 +183,7 @@ import { MESSAGE_STUB } from './test/stubs/message.stub';
 import { mountContactForm, recordInto } from './test/utils/mount.spec.util';
 
 test.describe('FEATURE: contact form', () => {
-  test('SCENARIO: submitting shows both required-field errors', async ({ mount }): Promise<void> => {
+  test('GIVEN an empty form, submitting shows both required-field errors', async ({ mount }): Promise<void> => {
     const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount));
 
     await test.step('WHEN the empty form is submitted', (): Promise<void> => form.submit());
@@ -191,7 +191,7 @@ test.describe('FEATURE: contact form', () => {
     await test.step('THEN the name and email errors are shown', (): Promise<void> => form.expectErrors(['Name is required', 'Email is required']));
   });
 
-  test('SCENARIO: submitting a malformed email shows the email error', async ({ mount }): Promise<void> => {
+  test('GIVEN a malformed email, submitting shows the email error', async ({ mount }): Promise<void> => {
     const message: ContactMessage = { ...MESSAGE_STUB, email: 'invalid-email' };
     const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount));
 
@@ -200,7 +200,7 @@ test.describe('FEATURE: contact form', () => {
     await test.step('THEN the email error is shown', (): Promise<void> => form.expectErrors(['Enter a valid email']));
   });
 
-  test('SCENARIO: submitting valid data calls onSubmit once', async ({ mount }): Promise<void> => {
+  test('GIVEN valid data, submitting calls onSubmit once', async ({ mount }): Promise<void> => {
     const submissions: ContactMessage[] = [];
     const form = await test.step('GIVEN the form is mounted with a recording handler', (): Promise<ContactFormHelper> => mountContactForm(mount, recordInto(submissions)));
 
@@ -209,7 +209,7 @@ test.describe('FEATURE: contact form', () => {
     await test.step('THEN the handler received the message', (): void => expect(submissions).toEqual([MESSAGE_STUB]));
   });
 
-  test('SCENARIO: a submitting form disables the send button', async ({ mount }): Promise<void> => {
+  test('GIVEN a form mid-submit, the send button is disabled', async ({ mount }): Promise<void> => {
     const form = await test.step('WHEN the submitting form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount, noop, true));
 
     await test.step('THEN the send button is disabled', (): Promise<void> => form.expectSubmitting());
@@ -283,7 +283,7 @@ test.describe('FEATURE: subscription upgrade', () => {
     await test.step('AND the upgrade page is open', (): Promise<void> => upgradePage.goto());
   });
 
-  test('SCENARIO: purchasing the premium plan shows the subscription number on the welcome page', async ({ successPage, upgradePage }): Promise<void> => {
+  test('GIVEN the premium plan, purchasing shows the subscription number on the welcome page', async ({ successPage, upgradePage }): Promise<void> => {
     await test.step('WHEN the premium plan is selected', (): Promise<void> => upgradePage.selectPlan('Premium'));
 
     await test.step('AND the billing details are entered', (): Promise<void> => upgradePage.fillBilling(BILLING_STUB));
@@ -310,17 +310,17 @@ Cover every backend logic permutation. Cheap to run and maintain.
 ```text
 e2e/inventory/inventory-api.e2e.ts
   FEATURE: inventory API
-    SCENARIO: a manager posting a valid item gets 201
-    SCENARIO: a manager posting a duplicate sku gets 409
-    SCENARIO: a manager posting an invalid quantity format gets 422
-    SCENARIO: a manager posting without required fields gets 422
-    SCENARIO: a manager listing items gets the page capped at the limit
-    SCENARIO: a manager filtering by category gets only that category
-    SCENARIO: a manager patching a stock level updates the item
-    SCENARIO: a manager archiving an item removes it from the active list
-    SCENARIO: a manager archiving an item with pending orders gets 409
-    SCENARIO: a warehouse-staff token deleting an item gets 403
-    SCENARIO: a request without a token gets 401
+    GIVEN a manager and a valid item, posting gets 201
+    GIVEN a manager and a duplicate sku, posting gets 409
+    GIVEN a manager and an invalid quantity format, posting gets 422
+    GIVEN a manager and missing required fields, posting gets 422
+    GIVEN a manager, listing items gets the page capped at the limit
+    GIVEN a manager and a category filter, listing gets only that category
+    GIVEN a manager and a new stock level, patching updates the item
+    GIVEN a manager, archiving an item removes it from the active list
+    GIVEN a manager and an item with pending orders, archiving gets 409
+    GIVEN a warehouse-staff token, deleting an item gets 403
+    GIVEN no token, any request gets 401
 ```
 
 ### Component Layer (30% of tests)
@@ -330,19 +330,19 @@ Cover every visual state and interaction.
 ```text
 e2e/inventory/inventory-form.test.tsx
   FEATURE: inventory form
-    SCENARIO: submitting an empty form shows validation errors
-    SCENARIO: entering an invalid sku shows an inline error
-    SCENARIO: submitting valid data calls onSubmit
-    SCENARIO: a successful save resets the form
-    SCENARIO: a saving form disables the submit button
+    GIVEN an empty form, submitting shows validation errors
+    GIVEN an invalid sku, entering it shows an inline error
+    GIVEN valid data, submitting calls onSubmit
+    GIVEN a successful save, the form resets
+    GIVEN a save in progress, the submit button is disabled
 
 e2e/inventory/inventory-table.test.tsx
   FEATURE: inventory table
-    SCENARIO: a list of items renders one row per item
-    SCENARIO: clicking a column header sorts rows by that column
-    SCENARIO: clicking archive opens the confirmation modal
-    SCENARIO: stock badges are coloured by level
-    SCENARIO: an empty list shows the empty state
+    GIVEN a list of items, the table renders one row per item
+    GIVEN a column header, clicking it sorts rows by that column
+    GIVEN a row, clicking archive opens the confirmation modal
+    GIVEN mixed stock levels, badges are coloured by level
+    GIVEN an empty list, the table shows the empty state
 ```
 
 ### E2E Layer (10% of tests)
@@ -352,9 +352,9 @@ Cover only critical paths proving full stack works.
 ```text
 e2e/inventory/inventory.e2e.ts
   FEATURE: inventory management
-    SCENARIO: a manager creating an item sees it added to the list
-    SCENARIO: a manager updating a stock level sees the new level in the list
-    SCENARIO: a warehouse-staff member opening admin settings is denied access
+    GIVEN a manager, creating an item adds it to the list
+    GIVEN a manager, updating a stock level shows the new level in the list
+    GIVEN a warehouse-staff member, opening admin settings is denied
 ```
 
 ### Execution Profile
