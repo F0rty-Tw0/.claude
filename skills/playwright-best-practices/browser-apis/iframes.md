@@ -51,7 +51,7 @@ export class CheckoutPage {
     await this.page.goto('/checkout');
   }
 
-  public async pay(cardNumber: string): Promise<void> {
+  public async payWith(cardNumber: string): Promise<void> {
     await this.cardNumberInput.fill(cardNumber);
     await this.payButton.click();
   }
@@ -182,7 +182,7 @@ import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: checkout', () => {
   test('GIVEN a ready payment frame, paying with the test card shows the confirmation', async ({ paymentReadyPage }): Promise<void> => {
-    await test.step('WHEN the test card is paid', (): Promise<void> => paymentReadyPage.pay(CARD_STUB.number));
+    await test.step('WHEN the test card is paid', (): Promise<void> => paymentReadyPage.payWith(CARD_STUB.number));
 
     await test.step('THEN the payment confirmation is shown', (): Promise<void> => paymentReadyPage.expectConfirmed());
   });

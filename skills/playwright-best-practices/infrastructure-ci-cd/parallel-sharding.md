@@ -80,7 +80,7 @@ test.describe('FEATURE: checkout', () => {
   });
 
   test('GIVEN a filled cart, completing payment opens the confirmation page', async ({ filledCheckoutPage, page }): Promise<void> => {
-    await test.step('WHEN the card payment is completed', (): Promise<void> => filledCheckoutPage.pay(CARD_STUB));
+    await test.step('WHEN the card payment is completed', (): Promise<void> => filledCheckoutPage.payWith(CARD_STUB));
 
     await test.step('THEN the confirmation url is shown', (): Promise<void> => expect(page).toHaveURL('/confirmation'));
   });

@@ -259,14 +259,14 @@ test.describe('FEATURE: checkout', () => {
   test('GIVEN a product in the cart, paying the order shows the confirmation', async ({ filledCheckoutPage }): Promise<void> => {
     await test.step('WHEN shipping info is filled', (): Promise<void> => filledCheckoutPage.fillShipping(ADDRESS_STUB));
 
-    await test.step('AND payment is completed', (): Promise<void> => filledCheckoutPage.pay(CARD_STUB.number));
+    await test.step('AND payment is completed', (): Promise<void> => filledCheckoutPage.payWith(CARD_STUB.number));
 
     await test.step('THEN the order confirmation is visible', (): Promise<void> => filledCheckoutPage.expectOrderConfirmed());
   });
 });
 ```
 
-`filledCheckoutPage` is a fixture that seeds one product into the cart through `request`, opens the checkout page, and hands over the `CheckoutPage`, so the spec starts at the user's first action. `CheckoutPage.pay(cardNumber: string)` takes the card number only.
+`filledCheckoutPage` is a fixture that seeds one product into the cart through `request`, opens the checkout page, and hands over the `CheckoutPage`, so the spec starts at the user's first action. `CheckoutPage.payWith(cardNumber: string)` takes the card number only.
 
 ### Nested Steps
 

@@ -69,7 +69,7 @@ Full user journey tests through the browser.
 
 The spec is flat: one `FEATURE`, then `GIVEN <state>, <outcome>` tests made of steps. There are no arrange steps and no `beforeEach` steps: the title names the state, and a fixture or the opening call builds it. Every locator and multi-action flow lives in a page object (`ProductsPage`, `CartPage`, `CheckoutPage`) injected by `checkout.fixture.ts`; see [page-object-model.md](page-object-model.md) and [fixtures-hooks.md](fixtures-hooks.md).
 
-`guestCartPage` is a fixture that seeds one product into a cart with no session through `request`, opens the cart, and hands over the `CartPage`. Its 'Checkout as guest' button (`checkoutAsGuest()`) opens the shipping form; plain `startCheckout()` without a session asks for sign-in instead (CHK-3 in [annotations.md](annotations.md#requirement-annotation)). `CheckoutPage.pay(cardNumber: string)` takes the card number only.
+`guestCartPage` is a fixture that seeds one product into a cart with no session through `request`, opens the cart, and hands over the `CartPage`. Its 'Checkout as guest' button (`checkoutAsGuest()`) opens the shipping form; plain `startCheckout()` without a session asks for sign-in instead (CHK-3 in [annotations.md](annotations.md#requirement-annotation)). `CheckoutPage.payWith(cardNumber: string)` takes the card number only.
 
 ```ts
 // e2e/checkout/checkout.e2e.ts
@@ -82,7 +82,7 @@ test.describe('FEATURE: checkout', () => {
 
     await test.step('AND the shipping details are filled', (): Promise<void> => checkoutPage.fillShipping(GUEST_STUB));
 
-    await test.step('AND the test card pays', (): Promise<void> => checkoutPage.pay(GUEST_STUB.cardNumber));
+    await test.step('AND the test card pays', (): Promise<void> => checkoutPage.payWith(GUEST_STUB.cardNumber));
 
     await test.step('THEN the confirmation heading is shown', (): Promise<void> => checkoutPage.expectConfirmed());
   });
@@ -121,7 +121,7 @@ test.describe('FEATURE: guest checkout', () => {
     });
 
     test('GIVEN a guest order with shipping details, paying confirms the order', async ({ paymentCheckoutPage }): Promise<void> => {
-      await test.step('WHEN the test card pays', (): Promise<void> => paymentCheckoutPage.pay(GUEST_STUB.cardNumber));
+      await test.step('WHEN the test card pays', (): Promise<void> => paymentCheckoutPage.payWith(GUEST_STUB.cardNumber));
 
       await test.step('THEN the confirmation heading is shown', (): Promise<void> => paymentCheckoutPage.expectConfirmed());
     });

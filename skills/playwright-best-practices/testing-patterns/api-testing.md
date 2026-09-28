@@ -13,7 +13,7 @@
 An API object is the page object of an endpoint group: it owns the `APIRequestContext` and the paths, lives in `e2e/<feature>/api/<name>.api.ts`, and every method returns the `APIResponse`. A spec checks the status first, in a `THEN` step, then the body in an `AND` step through `expectBody`, which reads the body inside the check and matches it partially. No step only reads a body.
 
 ```ts
-// e2e/utils/expect-body.util.ts
+// e2e/common/expect-body.spec.util.ts
 import type { APIResponse } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -116,7 +116,7 @@ export { expect } from '@playwright/test';
 // e2e/admin/accounts.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import { expectBody } from '../utils/expect-body.util';
+import { expectBody } from '../common/expect-body.spec.util';
 import { expect, test } from './admin.fixture';
 
 const AT_LEAST_ONE_ACCOUNT = { accounts: expect.arrayContaining([expect.anything()]) };
@@ -234,7 +234,7 @@ The `item` fixture in `items.fixture.ts` stores `ITEM_STUB`, a `Hammer` in `tool
 // e2e/items/items.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import { expectBody } from '../utils/expect-body.util';
+import { expectBody } from '../common/expect-body.spec.util';
 import type { ItemPatch, NewItem } from './common/items.type';
 import { expect, test } from './items.fixture';
 import { ITEM_STUB } from './test/stubs/items.stub';
@@ -327,7 +327,7 @@ export const expectIsoCreatedAt = async (response: APIResponse): Promise<void> =
 // e2e/items/item-shape.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import { expectBody } from '../utils/expect-body.util';
+import { expectBody } from '../common/expect-body.spec.util';
 import { expect, test } from './items.fixture';
 import { expectFeaturedTags, expectIsoCreatedAt } from './test/utils/item-body.spec.util';
 
@@ -520,7 +520,7 @@ export const expectRateLimited = (responses: APIResponse[]): void => {
 // e2e/items/items-errors.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import { expectBody } from '../utils/expect-body.util';
+import { expectBody } from '../common/expect-body.spec.util';
 import type { NewItem } from './common/items.type';
 import { expect, test } from './items.fixture';
 import { expectRateLimited } from './test/utils/rate-limit.spec.util';
@@ -603,7 +603,7 @@ import { resolve } from 'node:path';
 
 import type { APIResponse } from '@playwright/test';
 
-import { expectBody } from '../utils/expect-body.util';
+import { expectBody } from '../common/expect-body.spec.util';
 import type { UploadFile, UploadMeta } from './common/documents.type';
 import { expect, test } from './documents.fixture';
 
@@ -703,7 +703,7 @@ export class ShopApi {
 // e2e/orders/checkout.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import { expectBody } from '../utils/expect-body.util';
+import { expectBody } from '../common/expect-body.spec.util';
 import { expect, test } from './orders.fixture';
 
 const ORDER_TOTAL = { total: 149.97 };

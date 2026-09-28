@@ -78,7 +78,7 @@ NEXTAUTH_SECRET=test-secret-local
 A server component is plain HTML by the time Playwright sees it. Assert on roles as on any page.
 
 ```ts
-// e2e/home/home.e2e.ts
+// e2e/home/home-server-components.e2e.ts
 import { test } from './home.fixture';
 
 test.describe('FEATURE: server components', () => {
@@ -92,7 +92,7 @@ test.describe('FEATURE: server components', () => {
 });
 ```
 
-`HomePage` (`e2e/home/pages/home.page.ts`) is shared by every `home.e2e.ts` below. `goto(options?)` opens `/`. `HomeOptions` gains `headers?: RequestHeaders`, which `goto` applies with `page.setExtraHTTPHeaders` before it navigates. `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
+`HomePage` (`e2e/home/pages/home.page.ts`) is shared by every `home-*.e2e.ts` spec below. `goto(options?)` opens `/`. `HomeOptions` gains `headers?: RequestHeaders`, which `goto` applies with `page.setExtraHTTPHeaders` before it navigates. `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
 
 ### Loading States with Streaming
 
@@ -400,7 +400,7 @@ export const FRENCH_HEADERS_STUB: RequestHeaders = { 'Accept-Language': 'fr-FR,f
 ```
 
 ```ts
-// e2e/home/home.e2e.ts
+// e2e/home/home-locale.e2e.ts
 import { test } from './home.fixture';
 import { FRENCH_HEADERS_STUB } from './test/stubs/locale.stub';
 
@@ -433,7 +433,7 @@ export const expectNoHydrationErrors = (errors: string[]): void => {
 ```
 
 ```ts
-// e2e/home/home.e2e.ts
+// e2e/home/home-hydration.e2e.ts
 import { test } from './home.fixture';
 import { expectNoHydrationErrors } from './test/utils/hydration.spec.util';
 
@@ -450,7 +450,7 @@ test.describe('FEATURE: hydration', () => {
 
 ### Interactive Elements After Hydration
 
-A click that changes state proves hydration finished. `counterPage.goto()`, `counterPage.increment()`, `counterPage.expectValue(1)` on the `counter-value` test ID; the page object is the one in [angular.md](angular.md#signals-and-observables).
+A click that changes state proves hydration finished. `counterPage.goto()`, `counterPage.increment()`, `counterPage.expectValue(1)` on the `value` test ID; the page object is the one in [angular.md](angular.md#signals-and-observables).
 
 ## next/image Testing
 
