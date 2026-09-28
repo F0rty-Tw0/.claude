@@ -72,7 +72,7 @@ If the fix changed an API that upper PRs call, fix those call sites during the r
 
 ## Parent merged (new user request needed)
 
-Merge-commit or rebase-merge repos: retarget, then a plain `git merge origin/<default>` into the child is the whole restack. The rest of this section is for **squash** merges.
+Which merge method was used: `git rev-list --parents -n1 $(gh pr view <parent> --json mergeCommit -q .mergeCommit.oid)`. Two parents = merge commit: retarget, then a plain `git merge origin/<default>` into the child is the whole restack. One parent = squash or rebase: follow the rest of this section. For a **rebase** merge of an N-commit parent PR (`gh pr view <parent> --json commits -q '.commits | length'`), use `$SQUASH~N` wherever it says `$SQUASH^`.
 
 ### Squash
 
@@ -92,7 +92,7 @@ git merge -s ours "$SQUASH"                    # 2. mark the squash merged; cont
 git merge origin/<default>                     # 3. anything after the squash
 <test>
 git diff --stat origin/<default>...<stack>/2-<name>   # must show only this slice's files
-git diff "$SQUASH" HEAD -- <parent's files>          # content check: empty, or only this slice's intended edits (--stat can't see a revert inside a shared file)
+git diff origin/<default> HEAD -- $(git diff --name-only "$SQUASH^" "$SQUASH")   # content check on the parent's files: empty, or only this slice's intended edits (--stat can't see a revert inside a shared file)
 git push origin <stack>/2-<name>
 gh pr diff <child> --name-only                  # same check on GitHub
 # pass it up: merge <stack>/2-<name> into its children, test, push

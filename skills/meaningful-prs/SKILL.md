@@ -38,7 +38,7 @@ This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
 - **Independent PRs off the default branch by default.** They merge in parallel. Exception: siblings that share a partial file (a flag registry) — the second one needs `git merge origin/<default>` after the first lands.
 - **Stack only on a real dependency.** The child imports or migrates on top of the parent.
 - A PR has **one** base. If a PR needs two parents, put them in a line: `money ← ledger ← credits`.
-  - This creates a fake edge: `ledger` now waits on `money` without importing it. If that wait hurts, open both parents off `main` and open the child after one merges. Say which option you picked in the split plan.
+  - This creates a fake edge: `ledger` now waits on `money` without importing it. If that wait hurts, open both parents off `<default>` and open the child after one merges. Say which option you picked in the split plan.
 - Maximum depth is 3. Past 3, merge the bottom PR before stacking more.
 
 ## Procedure
@@ -86,9 +86,9 @@ After a squash, merge in this order: `<default>` as it was just before the squas
 | Mistake | Fix |
 |---|---|
 | Cherry-picking interleaved commits | Slice by path from the synced source branch |
-| Stacking everything in one line | Independent off `main` unless a real import/migration dependency exists |
+| Stacking everything in one line | Independent off `<default>` unless a real import/migration dependency exists |
 | Flag line shipped in a different PR than the code that reads it | Flag line goes with its reader |
-| Reviewing a child PR against `main` | Diff against the parent, and give the reviewer the stack map |
+| Reviewing a child PR against `<default>` | Diff against the parent, and give the reviewer the stack map |
 | `git merge -s ours <squash>` straight away | Merge `<squash>^` first, or unrelated default-branch drift is lost |
 | Assuming the default branch is `main` | `defaultBranchRef` from `gh repo view` |
 | Rebase + force-push after every review fix | Merge the parent into the child; push normally |
