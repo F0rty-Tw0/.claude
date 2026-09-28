@@ -22,20 +22,18 @@ import type { Download } from '@playwright/test';
 import { expect, test } from './exports.fixture';
 
 test.describe('FEATURE: exports basic download', () => {
-  test.describe('GIVEN the exports page', () => {
-    test.beforeEach(async ({ exportsPage }): Promise<void> => {
-      await test.step('GIVEN the exports page is open', (): Promise<void> => exportsPage.goto());
-    });
+  test.beforeEach(async ({ exportsPage }): Promise<void> => {
+    await test.step('GIVEN the exports page is open', (): Promise<void> => exportsPage.goto());
+  });
 
-    test('SCENARIO: downloading the PDF report offers report.pdf', async ({ exportsPage }, testInfo): Promise<void> => {
-      const savePath = testInfo.outputPath('report.pdf');
+  test('SCENARIO: downloading the PDF report offers report.pdf', async ({ exportsPage }, testInfo): Promise<void> => {
+    const savePath = testInfo.outputPath('report.pdf');
 
-      const download = await test.step('WHEN the PDF report is downloaded', (): Promise<Download> => exportsPage.download('Download PDF'));
+    const download = await test.step('WHEN the PDF report is downloaded', (): Promise<Download> => exportsPage.download('Download PDF'));
 
-      await test.step('THEN the filename is report.pdf', (): void => expect(download.suggestedFilename()).toBe('report.pdf'));
+    await test.step('THEN the filename is report.pdf', (): void => expect(download.suggestedFilename()).toBe('report.pdf'));
 
-      await test.step('AND it is saved into the test output directory', (): Promise<void> => download.saveAs(savePath));
-    });
+    await test.step('AND it is saved into the test output directory', (): Promise<void> => download.saveAs(savePath));
   });
 });
 ```
@@ -128,22 +126,20 @@ import { pdfCount } from './test/utils/download-count.spec.util';
 const BATCH_TIMEOUT = 30_000;
 
 test.describe('FEATURE: batch export', () => {
-  test.describe('GIVEN the batch export page', () => {
-    test.beforeEach(async ({ batchExportPage }): Promise<void> => {
-      await test.step('GIVEN the batch export page is open', (): Promise<void> => batchExportPage.goto());
-    });
+  test.beforeEach(async ({ batchExportPage }): Promise<void> => {
+    await test.step('GIVEN the batch export page is open', (): Promise<void> => batchExportPage.goto());
+  });
 
-    test('SCENARIO: downloading all items yields five PDFs', async ({ batchExportPage }): Promise<void> => {
-      const downloads = await test.step('GIVEN downloads are collected', (): Download[] => batchExportPage.collectDownloads());
+  test('SCENARIO: downloading all items yields five PDFs', async ({ batchExportPage }): Promise<void> => {
+    const downloads = await test.step('AND downloads are collected', (): Download[] => batchExportPage.collectDownloads());
 
-      await test.step('WHEN all items are selected', (): Promise<void> => batchExportPage.selectAll());
+    await test.step('WHEN all items are selected', (): Promise<void> => batchExportPage.selectAll());
 
-      await test.step('AND the selection is downloaded', (): Promise<void> => batchExportPage.downloadSelected());
+    await test.step('AND the selection is downloaded', (): Promise<void> => batchExportPage.downloadSelected());
 
-      await test.step('THEN five downloads arrive', (): Promise<void> => expect.poll((): number => downloads.length, { timeout: BATCH_TIMEOUT }).toBe(5));
+    await test.step('THEN five downloads arrive', (): Promise<void> => expect.poll((): number => downloads.length, { timeout: BATCH_TIMEOUT }).toBe(5));
 
-      await test.step('AND every download is a PDF', (): void => expect(pdfCount(downloads)).toBe(5));
-    });
+    await test.step('AND every download is a PDF', (): void => expect(pdfCount(downloads)).toBe(5));
   });
 });
 ```
@@ -207,22 +203,20 @@ import path from 'node:path';
 import { expect, test } from './profile.fixture';
 
 test.describe('FEATURE: profile picture upload', () => {
-  test.describe('GIVEN the profile settings page', () => {
-    test.beforeEach(async ({ profilePage }): Promise<void> => {
-      await test.step('GIVEN the profile page is open', (): Promise<void> => profilePage.goto());
-    });
+  test.beforeEach(async ({ profilePage }): Promise<void> => {
+    await test.step('GIVEN the profile page is open', (): Promise<void> => profilePage.goto());
+  });
 
-    test('SCENARIO: saving the profile with avatar.png updates it', async ({ profilePage }): Promise<void> => {
-      const avatarPath = path.join(__dirname, 'test/fixtures/avatar.png');
+  test('SCENARIO: saving the profile with avatar.png updates it', async ({ profilePage }): Promise<void> => {
+    const avatarPath = path.join(__dirname, 'test/fixtures/avatar.png');
 
-      await test.step('GIVEN avatar.png is selected', (): Promise<void> => profilePage.selectPicture(avatarPath));
+    await test.step('AND avatar.png is selected', (): Promise<void> => profilePage.selectPicture(avatarPath));
 
-      await test.step('AND the preview is shown', (): Promise<void> => profilePage.expectPreview());
+    await test.step('AND the preview is shown', (): Promise<void> => profilePage.expectPreview());
 
-      await test.step('WHEN the profile is saved', (): Promise<void> => profilePage.save());
+    await test.step('WHEN the profile is saved', (): Promise<void> => profilePage.save());
 
-      await test.step('THEN the alert confirms the update', (): Promise<void> => expect(profilePage.alert).toContainText('Profile updated'));
-    });
+    await test.step('THEN the alert confirms the update', (): Promise<void> => expect(profilePage.alert).toContainText('Profile updated'));
   });
 });
 ```
@@ -250,24 +244,22 @@ const OLD_PDF = { ...PDF_FILE_STUB, name: 'old.pdf' };
 const NEW_PDF = { ...PDF_FILE_STUB, name: 'new.pdf' };
 
 test.describe('FEATURE: attachments replace', () => {
-  test.describe('GIVEN the attachments page', () => {
-    test.beforeEach(async ({ attachmentsPage }): Promise<void> => {
-      await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
-    });
+  test.beforeEach(async ({ attachmentsPage }): Promise<void> => {
+    await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
+  });
 
-    test('SCENARIO: clearing and refilling the selection lists only the new file', async ({ attachmentsPage }): Promise<void> => {
-      await test.step('GIVEN old.pdf is selected', (): Promise<void> => attachmentsPage.select(OLD_PDF));
+  test('SCENARIO: clearing and refilling the selection lists only the new file', async ({ attachmentsPage }): Promise<void> => {
+    await test.step('AND old.pdf is selected', (): Promise<void> => attachmentsPage.select(OLD_PDF));
 
-      await test.step('AND old.pdf is listed', (): Promise<void> => attachmentsPage.expectListed('old.pdf'));
+    await test.step('AND old.pdf is listed', (): Promise<void> => attachmentsPage.expectListed('old.pdf'));
 
-      await test.step('WHEN the selection is cleared', (): Promise<void> => attachmentsPage.clearSelection());
+    await test.step('WHEN the selection is cleared', (): Promise<void> => attachmentsPage.clearSelection());
 
-      await test.step('AND new.pdf is selected', (): Promise<void> => attachmentsPage.select(NEW_PDF));
+    await test.step('AND new.pdf is selected', (): Promise<void> => attachmentsPage.select(NEW_PDF));
 
-      await test.step('THEN new.pdf is listed', (): Promise<void> => attachmentsPage.expectListed('new.pdf'));
+    await test.step('THEN new.pdf is listed', (): Promise<void> => attachmentsPage.expectListed('new.pdf'));
 
-      await test.step('AND old.pdf is gone', (): Promise<void> => attachmentsPage.expectNotListed('old.pdf'));
-    });
+    await test.step('AND old.pdf is gone', (): Promise<void> => attachmentsPage.expectNotListed('old.pdf'));
   });
 });
 ```
@@ -314,16 +306,14 @@ import { PDF_FILE_STUB } from './test/stubs/attachments.stub';
 import { dropFile } from './test/utils/drop-file.spec.util';
 
 test.describe('FEATURE: attachments drop event', () => {
-  test.describe('GIVEN the attachments page', () => {
-    test.beforeEach(async ({ attachmentsPage }): Promise<void> => {
-      await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
-    });
+  test.beforeEach(async ({ attachmentsPage }): Promise<void> => {
+    await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
+  });
 
-    test('SCENARIO: dropping report.pdf on the zone reports the upload', async ({ attachmentsPage, page }): Promise<void> => {
-      await test.step('WHEN report.pdf is dropped on the zone', (): Promise<void> => dropFile(page, attachmentsPage.dropZone.root, PDF_FILE_STUB));
+  test('SCENARIO: dropping report.pdf on the zone reports the upload', async ({ attachmentsPage, page }): Promise<void> => {
+    await test.step('WHEN report.pdf is dropped on the zone', (): Promise<void> => dropFile(page, attachmentsPage.dropZone.root, PDF_FILE_STUB));
 
-      await test.step('THEN the alert reports the upload', (): Promise<void> => expect(attachmentsPage.alert).toContainText('report.pdf uploaded'));
-    });
+    await test.step('THEN the alert reports the upload', (): Promise<void> => expect(attachmentsPage.alert).toContainText('report.pdf uploaded'));
   });
 });
 ```
@@ -431,20 +421,18 @@ import { expect, test } from './exports.fixture';
 import { readPdfText } from './test/utils/pdf-text.spec.util';
 
 test.describe('FEATURE: exports formats', () => {
-  test.describe('GIVEN the exports page', () => {
-    test.beforeEach(async ({ exportsPage }): Promise<void> => {
-      await test.step('GIVEN the exports page is open', (): Promise<void> => exportsPage.goto());
-    });
+  test.beforeEach(async ({ exportsPage }): Promise<void> => {
+    await test.step('GIVEN the exports page is open', (): Promise<void> => exportsPage.goto());
+  });
 
-    test('SCENARIO: downloading the invoice yields a PDF whose text names it', async ({ exportsPage }): Promise<void> => {
-      const download = await test.step('WHEN the invoice is downloaded', (): Promise<Download> => exportsPage.download('Download Invoice'));
+  test('SCENARIO: downloading the invoice yields a PDF whose text names it', async ({ exportsPage }): Promise<void> => {
+    const download = await test.step('WHEN the invoice is downloaded', (): Promise<Download> => exportsPage.download('Download Invoice'));
 
-      const text = await test.step('AND the PDF text is parsed', (): Promise<string> => readPdfText(download));
+    const text = await test.step('AND the PDF text is parsed', (): Promise<string> => readPdfText(download));
 
-      await test.step('THEN the invoice number is present', (): void => expect(text).toContain('Invoice #123'));
+    await test.step('THEN the invoice number is present', (): void => expect(text).toContain('Invoice #123'));
 
-      await test.step('AND the total is present', (): void => expect(text).toContain('Total: $99.99'));
-    });
+    await test.step('AND the total is present', (): void => expect(text).toContain('Total: $99.99'));
   });
 });
 ```

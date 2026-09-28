@@ -217,38 +217,36 @@ const NEW_PASSWORD = 'NewPassword456!';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: password reset', () => {
-  test.describe('GIVEN the forgot-password endpoint is passed through with token capture', () => {
-    test('SCENARIO: requesting and following the reset link updates the password', async ({ forgotPasswordPage, page, resetPasswordPage }): Promise<void> => {
-      const capture = tokenCapture('resetToken');
+  test('SCENARIO: requesting and following the reset link updates the password', async ({ forgotPasswordPage, page, resetPasswordPage }): Promise<void> => {
+    const capture = tokenCapture('resetToken');
 
-      await test.step('GIVEN the forgot-password response token is captured', async (): Promise<void> => {
-        await page.route('**/api/auth/forgot-password', capture.handler);
-      });
-
-      await test.step('AND the forgot password page is open', (): Promise<void> => forgotPasswordPage.goto());
-
-      await test.step('WHEN a reset link is requested', (): Promise<void> => forgotPasswordPage.requestLink(TEST_USER.email));
-
-      await test.step('THEN the reset email sent message is shown', (): Promise<void> => forgotPasswordPage.expectEmailSent());
-
-      const token = await test.step('AND the captured token is read', (): Promise<string> => capture.token);
-
-      await test.step('AND the reset link is opened', (): Promise<void> => resetPasswordPage.goto(token));
-
-      await test.step('AND the new password is submitted', (): Promise<void> => resetPasswordPage.submit(NEW_PASSWORD));
-
-      await test.step('THEN the password updated message is shown', (): Promise<void> => resetPasswordPage.expectUpdated());
+    await test.step('GIVEN the forgot-password response token is captured', async (): Promise<void> => {
+      await page.route('**/api/auth/forgot-password', capture.handler);
     });
+
+    await test.step('AND the forgot password page is open', (): Promise<void> => forgotPasswordPage.goto());
+
+    await test.step('WHEN a reset link is requested', (): Promise<void> => forgotPasswordPage.requestLink(TEST_USER.email));
+
+    await test.step('THEN the reset email sent message is shown', (): Promise<void> => forgotPasswordPage.expectEmailSent());
+
+    const token = await test.step('AND the captured token is read', (): Promise<string> => capture.token);
+
+    await test.step('AND the reset link is opened', (): Promise<void> => resetPasswordPage.goto(token));
+
+    await test.step('AND the new password is submitted', (): Promise<void> => resetPasswordPage.submit(NEW_PASSWORD));
+
+    await test.step('THEN the password updated message is shown', (): Promise<void> => resetPasswordPage.expectUpdated());
   });
 });
 ```
 
-Expired-token and strength cases are separate `GIVEN`s in the same spec, each one test of three steps: `GIVEN resetPasswordPage.goto(token)`, `WHEN resetPasswordPage.submit(password)`, then the assertion.
+Expired-token and strength cases are further tests in the same spec, each one test of three steps: `GIVEN resetPasswordPage.goto(token)`, `WHEN resetPasswordPage.submit(password)`, then the assertion. The title names the token, since the `GIVEN` step is hidden until steps are expanded.
 
-| `GIVEN` | Token | Password | `THEN` |
+| Scenario title | Token | Password | `THEN` |
 |---|---|---|---|
-| an expired reset token | `'expired-token'` | `NEW_PASSWORD` | `resetPasswordPage.expectError(/expired\|invalid/i)`; `expectError` takes a `RegExp` so the message can be either |
-| a valid reset token | `'valid-token'` | `'weak'` | `resetPasswordPage.expectStrengthHint()` |
+| `'SCENARIO: an expired reset token shows the expired error'` | `'expired-token'` | `NEW_PASSWORD` | `resetPasswordPage.expectError(/expired\|invalid/i)`; `expectError` takes a `RegExp` so the message can be either |
+| `'SCENARIO: a weak password on a valid token shows the strength hint'` | `'valid-token'` | `'weak'` | `resetPasswordPage.expectStrengthHint()` |
 
 ## Session Timeout
 
@@ -287,22 +285,20 @@ import { clearSessionCookie } from './test/utils/session-cookie.spec.util';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: session timeout', () => {
-  test.describe('GIVEN a logged-in user', () => {
-    test.beforeEach(async ({ loginPage }): Promise<void> => {
-      await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
+  test.beforeEach(async ({ loginPage }): Promise<void> => {
+    await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
-      await test.step('AND the user is logged in on home', (): Promise<void> => loginPage.submitAndWaitForHome(TEST_USER));
-    });
+    await test.step('AND the user is logged in on home', (): Promise<void> => loginPage.submitAndWaitForHome(TEST_USER));
+  });
 
-    test('SCENARIO: a missing session cookie redirects a protected route to login', async ({ context, loginPage, page, profilePage }): Promise<void> => {
-      await test.step('WHEN the session cookie is removed', (): Promise<void> => clearSessionCookie(context));
+  test('SCENARIO: a missing session cookie redirects a protected route to login', async ({ context, loginPage, page, profilePage }): Promise<void> => {
+    await test.step('WHEN the session cookie is removed', (): Promise<void> => clearSessionCookie(context));
 
-      await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
+    await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
 
-      await test.step('THEN the login url is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
+    await test.step('THEN the login url is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
 
-      await test.step('AND the session expired message is shown', (): Promise<void> => loginPage.expectSessionExpired());
-    });
+    await test.step('AND the session expired message is shown', (): Promise<void> => loginPage.expectSessionExpired());
   });
 });
 ```
@@ -321,28 +317,26 @@ import { sessionMock } from './test/mocks/session.mock';
 test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: session extension', () => {
-  test.describe('GIVEN the session expires in 60 seconds', () => {
-    test('SCENARIO: extend calls the refresh endpoint and hides the warning', async ({ homePage, page }): Promise<void> => {
-      const refresh = refreshMock();
+  test('SCENARIO: extend calls the refresh endpoint and hides the warning', async ({ homePage, page }): Promise<void> => {
+    const refresh = refreshMock();
 
-      await test.step('GIVEN the session endpoint is mocked', async (): Promise<void> => {
-        await page.route('**/api/auth/session', sessionMock(60));
-      });
-
-      await test.step('AND the refresh endpoint is mocked', async (): Promise<void> => {
-        await page.route('**/api/auth/refresh', refresh.handler);
-      });
-
-      await test.step('AND the home page is open', (): Promise<void> => homePage.goto());
-
-      await test.step('AND the session warning and extend button are shown', (): Promise<void> => homePage.expectSessionWarning());
-
-      await test.step('WHEN extend is clicked', (): Promise<void> => homePage.extendSession());
-
-      await test.step('THEN the refresh endpoint was called once', (): Promise<void> => expect.poll((): number => refresh.calls.length).toBe(1));
-
-      await test.step('AND the session warning is hidden', (): Promise<void> => homePage.expectSessionWarningHidden());
+    await test.step('GIVEN the session endpoint is mocked', async (): Promise<void> => {
+      await page.route('**/api/auth/session', sessionMock(60));
     });
+
+    await test.step('AND the refresh endpoint is mocked', async (): Promise<void> => {
+      await page.route('**/api/auth/refresh', refresh.handler);
+    });
+
+    await test.step('AND the home page is open', (): Promise<void> => homePage.goto());
+
+    await test.step('AND the session warning and extend button are shown', (): Promise<void> => homePage.expectSessionWarning());
+
+    await test.step('WHEN extend is clicked', (): Promise<void> => homePage.extendSession());
+
+    await test.step('THEN the refresh endpoint was called once', (): Promise<void> => expect.poll((): number => refresh.calls.length).toBe(1));
+
+    await test.step('AND the session warning is hidden', (): Promise<void> => homePage.expectSessionWarningHidden());
   });
 });
 ```
@@ -390,26 +384,24 @@ import { loginWithRememberMe, openPageWithState } from './test/utils/remember-me
 const REMEMBERED_STATE_PATH = `${AUTH_DIR}/remembered.json`;
 
 test.describe('FEATURE: remember me', () => {
-  test.describe('GIVEN a login with keep me signed in checked', () => {
-    test('SCENARIO: a fresh browser from the saved state opens home without login', async ({ browser }): Promise<void> => {
-      await test.step('GIVEN a login with remember me saved the state', (): Promise<void> => loginWithRememberMe(browser, REMEMBERED_STATE_PATH));
+  test('SCENARIO: a fresh browser from the saved state opens home without login', async ({ browser }): Promise<void> => {
+    await test.step('GIVEN a login with remember me saved the state', (): Promise<void> => loginWithRememberMe(browser, REMEMBERED_STATE_PATH));
 
-      const page = await test.step('WHEN a fresh browser starts from the saved state', (): Promise<Page> => openPageWithState(browser, REMEMBERED_STATE_PATH));
-      const homePage = new HomePage(page);
+    const page = await test.step('WHEN a fresh browser starts from the saved state', (): Promise<Page> => openPageWithState(browser, REMEMBERED_STATE_PATH));
+    const homePage = new HomePage(page);
 
-      await test.step('AND the home page is opened', (): Promise<void> => homePage.goto());
+    await test.step('AND the home page is opened', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN the home url is shown', (): Promise<void> => expect(page).toHaveURL('/home'));
+    await test.step('THEN the home url is shown', (): Promise<void> => expect(page).toHaveURL('/home'));
 
-      await test.step('AND the welcome message is shown', (): Promise<void> => homePage.expectWelcome());
+    await test.step('AND the welcome message is shown', (): Promise<void> => homePage.expectWelcome());
 
-      await test.step('AND the fresh browser is closed', (): Promise<void> => page.context().close());
-    });
+    await test.step('AND the fresh browser is closed', (): Promise<void> => page.context().close());
   });
 });
 ```
 
-Session-only login: a second `GIVEN a login with keep me signed in unchecked` in the same spec uses two more util functions of the same shape. `persistentCookiesAfterLogin(browser)` is `loginWithRememberMe` with `uncheck()` and, instead of saving state, returns `cookies.filter((cookie: Cookie): boolean => cookie.expires > 0)`; session cookies have `expires: -1`, so the filter drops them. `openPageWithCookies(browser, cookies)` is `openPageWithState` with `EMPTY_STORAGE_STATE` plus `context.addCookies(cookies)`. The test then opens home and asserts `expect(page).toHaveURL(/\/login/)`.
+Session-only login: a second test in the same spec, `'SCENARIO: a login without keep me signed in leaves no persistent cookie'`, opens with `GIVEN a login with keep me signed in unchecked` and uses two more util functions of the same shape. `persistentCookiesAfterLogin(browser)` is `loginWithRememberMe` with `uncheck()` and, instead of saving state, returns `cookies.filter((cookie: Cookie): boolean => cookie.expires > 0)`; session cookies have `expires: -1`, so the filter drops them. `openPageWithCookies(browser, cookies)` is `openPageWithState` with `EMPTY_STORAGE_STATE` plus `context.addCookies(cookies)`. The test then opens home and asserts `expect(page).toHaveURL(/\/login/)`.
 
 ## Logout Patterns
 
@@ -426,29 +418,27 @@ import { sessionCookies } from './test/utils/session-cookie.spec.util';
 test.use({ storageState: SESSION_STATE_PATH });
 
 test.describe('FEATURE: logout', () => {
-  test.describe('GIVEN a logged-in user', () => {
-    test('SCENARIO: sign out clears the session', async ({ context, homePage, page }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('SCENARIO: sign out clears the session', async ({ context, homePage, page }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
-      await test.step('WHEN sign out is clicked in the account menu', (): Promise<void> => homePage.signOut());
+    await test.step('WHEN sign out is clicked in the account menu', (): Promise<void> => homePage.signOut());
 
-      await test.step('THEN the login url is shown', (): Promise<void> => expect(page).toHaveURL('/login'));
+    await test.step('THEN the login url is shown', (): Promise<void> => expect(page).toHaveURL('/login'));
 
-      const cookies = await test.step('AND the remaining session cookies are read', (): Promise<Cookie[]> => sessionCookies(context));
+    const cookies = await test.step('AND the remaining session cookies are read', (): Promise<Cookie[]> => sessionCookies(context));
 
-      await test.step('AND no session cookies remain', (): void => expect(cookies).toHaveLength(0));
+    await test.step('AND no session cookies remain', (): void => expect(cookies).toHaveLength(0));
 
-      await test.step('AND the home page is opened again', (): Promise<void> => homePage.goto());
+    await test.step('AND the home page is opened again', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN home redirects to login', (): Promise<void> => expect(page).toHaveURL(/\/login/));
-    });
+    await test.step('THEN home redirects to login', (): Promise<void> => expect(page).toHaveURL(/\/login/));
   });
 });
 ```
 
 ### Logout from All Devices
 
-A second test in the same `GIVEN` follows `session-extension.test.ts`: `const logoutAll = logoutAllMock()`, `GIVEN page.route('**/api/auth/logout-all', logoutAll.handler)`, `AND securitySettingsPage.goto()`, `WHEN securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
+A second test in the same spec, `'SCENARIO: sign out everywhere calls logout-all and opens login'`, follows `session-extension.test.ts`: `const logoutAll = logoutAllMock()`, `GIVEN page.route('**/api/auth/logout-all', logoutAll.handler)`, `AND securitySettingsPage.goto()`, `WHEN securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
 
 ## Tips
 

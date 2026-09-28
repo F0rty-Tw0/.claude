@@ -242,12 +242,10 @@ Every test in the `chromium` project now starts logged in.
 import { test } from './auth.fixture';
 
 test.describe('FEATURE: home', () => {
-  test.describe('GIVEN a saved session', () => {
-    test('SCENARIO: the home page shows the heading', async ({ homePage }): Promise<void> => {
-      await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
+  test('SCENARIO: a saved session opens the home page with its heading', async ({ homePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN the home heading is shown', (): Promise<void> => homePage.expectHeading());
-    });
+    await test.step('THEN the home heading is shown', (): Promise<void> => homePage.expectHeading());
   });
 });
 ```
@@ -360,14 +358,12 @@ export { expect } from '@playwright/test';
 import { test } from './settings.fixture';
 
 test.describe('FEATURE: profile settings', () => {
-  test.describe('GIVEN a worker-scoped authenticated session', () => {
-    test('SCENARIO: saving the display name shows a confirmation', async ({ settingsPage }): Promise<void> => {
-      await test.step('GIVEN the profile settings are open', (): Promise<void> => settingsPage.goto());
+  test('SCENARIO: saving the display name shows a confirmation', async ({ settingsPage }): Promise<void> => {
+    await test.step('GIVEN the profile settings are open', (): Promise<void> => settingsPage.goto());
 
-      await test.step('WHEN a new display name is saved', (): Promise<void> => settingsPage.saveDisplayName('Updated Name'));
+    await test.step('WHEN a new display name is saved', (): Promise<void> => settingsPage.saveDisplayName('Updated Name'));
 
-      await test.step('THEN the profile saved message is shown', (): Promise<void> => settingsPage.expectSaved());
-    });
+    await test.step('THEN the profile saved message is shown', (): Promise<void> => settingsPage.expectSaved());
   });
 });
 ```
@@ -425,22 +421,20 @@ export default defineConfig({ projects, testDir: './e2e' });
 import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin panel', () => {
-  test.describe('GIVEN an admin session', () => {
-    test('SCENARIO: user management enables the remove button', async ({ adminUsersPage }): Promise<void> => {
-      await test.step('WHEN user management is opened', (): Promise<void> => adminUsersPage.goto());
+  test('SCENARIO: an admin session enables the remove button in user management', async ({ adminUsersPage }): Promise<void> => {
+    await test.step('WHEN user management is opened', (): Promise<void> => adminUsersPage.goto());
 
-      await test.step('THEN the remove user button is enabled', (): Promise<void> => adminUsersPage.expectRemoveEnabled());
-    });
+    await test.step('THEN the remove user button is enabled', (): Promise<void> => adminUsersPage.expectRemoveEnabled());
   });
 });
 ```
 
-The other role specs differ only in suffix, `GIVEN`, and assertion:
+The other role specs differ only in suffix, scenario title, and assertion. The role is set by the project, not a step, so the title names it:
 
-| File | `GIVEN` | Assertion step |
+| File | Scenario title | Assertion step |
 |---|---|---|
-| `admin-panel.guest.e2e.ts` | `GIVEN a guest session` | `adminUsersPage.expectAccessDenied()` |
-| `admin-panel.member.e2e.ts` | `GIVEN a member session` | Whatever the member is allowed to see |
+| `admin-panel.guest.e2e.ts` | `'SCENARIO: a guest session is denied user management'` | `adminUsersPage.expectAccessDenied()` |
+| `admin-panel.member.e2e.ts` | `'SCENARIO: a member session sees <what the member may see>'` | Whatever the member is allowed to see |
 
 **Alternative**: a `loginAs(role)` fixture when one spec must switch roles. It opens one context per call and closes them all after the test.
 
@@ -496,21 +490,19 @@ import { AdminUsersPage } from './pages/admin-users.page';
 import { test } from './role.fixture';
 
 test.describe('FEATURE: admin panel access', () => {
-  test.describe('GIVEN saved admin and guest sessions', () => {
-    test('SCENARIO: only the admin sees the remove button in user management', async ({ loginAs }): Promise<void> => {
-      const adminPage = await test.step('GIVEN a page is open as admin', (): Promise<Page> => loginAs('admin'));
-      const guestPage = await test.step('AND a page is open as guest', (): Promise<Page> => loginAs('guest'));
-      const adminUsers = new AdminUsersPage(adminPage);
-      const guestUsers = new AdminUsersPage(guestPage);
+  test('SCENARIO: only the admin sees the remove button in user management', async ({ loginAs }): Promise<void> => {
+    const adminPage = await test.step('GIVEN a page is open as admin', (): Promise<Page> => loginAs('admin'));
+    const guestPage = await test.step('AND a page is open as guest', (): Promise<Page> => loginAs('guest'));
+    const adminUsers = new AdminUsersPage(adminPage);
+    const guestUsers = new AdminUsersPage(guestPage);
 
-      await test.step('WHEN user management is opened as admin', (): Promise<void> => adminUsers.goto());
+    await test.step('WHEN user management is opened as admin', (): Promise<void> => adminUsers.goto());
 
-      await test.step('AND user management is opened as guest', (): Promise<void> => guestUsers.goto());
+    await test.step('AND user management is opened as guest', (): Promise<void> => guestUsers.goto());
 
-      await test.step('THEN the remove user button is enabled for the admin', (): Promise<void> => adminUsers.expectRemoveEnabled());
+    await test.step('THEN the remove user button is enabled for the admin', (): Promise<void> => adminUsers.expectRemoveEnabled());
 
-      await test.step('AND access denied is shown to the guest', (): Promise<void> => guestUsers.expectAccessDenied());
-    });
+    await test.step('AND access denied is shown to the guest', (): Promise<void> => guestUsers.expectAccessDenied());
   });
 });
 ```
@@ -572,22 +564,20 @@ import { oauthCallbackMock } from './test/mocks/oauth.mock';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: oauth login', () => {
-  test.describe('GIVEN the provider authorize page is short-circuited', () => {
-    test.beforeEach(async ({ page }): Promise<void> => {
-      await test.step('GIVEN provider requests redirect to the callback route', async (): Promise<void> => {
-        await page.route(PROVIDER_AUTHORIZE_URL, oauthCallbackMock());
-      });
+  test.beforeEach(async ({ page }): Promise<void> => {
+    await test.step('GIVEN provider requests redirect to the callback route', async (): Promise<void> => {
+      await page.route(PROVIDER_AUTHORIZE_URL, oauthCallbackMock());
     });
+  });
 
-    test('SCENARIO: signing in with the provider opens the home page', async ({ homePage, loginPage, page }): Promise<void> => {
-      await test.step('AND the login page is open', (): Promise<void> => loginPage.goto());
+  test('SCENARIO: signing in with the provider opens the home page', async ({ homePage, loginPage, page }): Promise<void> => {
+    await test.step('AND the login page is open', (): Promise<void> => loginPage.goto());
 
-      await test.step('WHEN the provider sign in is started', (): Promise<void> => loginPage.signInWithProvider());
+    await test.step('WHEN the provider sign in is started', (): Promise<void> => loginPage.signInWithProvider());
 
-      await test.step('THEN the home url is shown', (): Promise<void> => expect(page).toHaveURL('/home'));
+    await test.step('THEN the home url is shown', (): Promise<void> => expect(page).toHaveURL('/home'));
 
-      await test.step('AND the home heading is shown', (): Promise<void> => homePage.expectHeading());
-    });
+    await test.step('AND the home heading is shown', (): Promise<void> => homePage.expectHeading());
   });
 });
 ```
@@ -632,18 +622,16 @@ import { OAUTH_SESSION_STUB } from './test/stubs/auth.stub';
 import { saveSessionState } from './test/utils/session.spec.util';
 
 test.describe('FEATURE: oauth session injection', () => {
-  test.describe('GIVEN a test-only session endpoint', () => {
-    test('SCENARIO: an api-created session opens the home page without the provider', async ({ homePage, page }): Promise<void> => {
-      const response = await test.step('GIVEN a session is created server-side', (): Promise<APIResponse> => page.request.post('/api/test/create-session', { data: OAUTH_SESSION_STUB }));
+  test('SCENARIO: an api-created session opens the home page without the provider', async ({ homePage, page }): Promise<void> => {
+    const response = await test.step('GIVEN a session is created server-side', (): Promise<APIResponse> => page.request.post('/api/test/create-session', { data: OAUTH_SESSION_STUB }));
 
-      await test.step('AND the session endpoint responds ok', (): Promise<void> => expect(response).toBeOK());
+    await test.step('AND the session endpoint responds ok', (): Promise<void> => expect(response).toBeOK());
 
-      await test.step('AND the injected session is saved', (): Promise<void> => saveSessionState(page.context(), `${AUTH_DIR}/oauth-user.json`));
+    await test.step('AND the injected session is saved', (): Promise<void> => saveSessionState(page.context(), `${AUTH_DIR}/oauth-user.json`));
 
-      await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN the home heading is shown', (): Promise<void> => homePage.expectHeading());
-    });
+    await test.step('THEN the home heading is shown', (): Promise<void> => homePage.expectHeading());
   });
 });
 ```
@@ -686,20 +674,18 @@ import { generateTotp } from './utils/totp.util';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: mfa login', () => {
-  test.describe('GIVEN a user with totp enabled', () => {
-    test('SCENARIO: submitting the current code opens the home page', async ({ homePage, loginPage, mfaPage, page }): Promise<void> => {
-      await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
+  test('SCENARIO: submitting the current code opens the home page', async ({ homePage, loginPage, mfaPage, page }): Promise<void> => {
+    await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
-      await test.step('AND credentials are submitted', (): Promise<void> => loginPage.submit(MFA_USER_STUB));
+    await test.step('AND credentials are submitted', (): Promise<void> => loginPage.submit(MFA_USER_STUB));
 
-      await test.step('AND the authentication code prompt is shown', (): Promise<void> => mfaPage.expectPrompt());
+    await test.step('AND the authentication code prompt is shown', (): Promise<void> => mfaPage.expectPrompt());
 
-      await test.step('WHEN the current totp code is submitted', (): Promise<void> => mfaPage.submitCode(generateTotp(MFA_TOTP_SECRET)));
+    await test.step('WHEN the current totp code is submitted', (): Promise<void> => mfaPage.submitCode(generateTotp(MFA_TOTP_SECRET)));
 
-      await test.step('THEN the home url is shown', (): Promise<void> => expect(page).toHaveURL('/home'));
+    await test.step('THEN the home url is shown', (): Promise<void> => expect(page).toHaveURL('/home'));
 
-      await test.step('AND the home heading is shown', (): Promise<void> => homePage.expectHeading());
-    });
+    await test.step('AND the home heading is shown', (): Promise<void> => homePage.expectHeading());
   });
 });
 ```
@@ -841,7 +827,7 @@ export class LoginPage {
 }
 ```
 
-Every case is one test under the shared `GIVEN`; its `WHEN` and `THEN` are steps, never a nested describe.
+Every case is one flat test under `FEATURE`. The page opening is shared by every test, so it stays a `FEATURE`-level `beforeEach` `GIVEN` step; each test's `WHEN` and `THEN` are steps, never a nested describe.
 
 ```ts
 // e2e/auth/login.e2e.ts
@@ -852,34 +838,32 @@ import { USER_STUB } from './test/stubs/auth.stub';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: login', () => {
-  test.describe('GIVEN the login page is open', () => {
-    test.beforeEach(async ({ loginPage }): Promise<void> => {
-      await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
-    });
+  test.beforeEach(async ({ loginPage }): Promise<void> => {
+    await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
+  });
 
-    test('SCENARIO: valid credentials open the home page', async ({ homePage, loginPage }): Promise<void> => {
-      await test.step('WHEN credentials are submitted and home opens', (): Promise<void> => loginPage.submitAndWaitForHome(USER_STUB));
+  test('SCENARIO: valid credentials open the home page', async ({ homePage, loginPage }): Promise<void> => {
+    await test.step('WHEN credentials are submitted and home opens', (): Promise<void> => loginPage.submitAndWaitForHome(USER_STUB));
 
-      await test.step('THEN the home heading is shown', (): Promise<void> => homePage.expectHeading());
-    });
+    await test.step('THEN the home heading is shown', (): Promise<void> => homePage.expectHeading());
+  });
 
-    test('SCENARIO: wrong password shows the error message', async ({ loginPage }): Promise<void> => {
-      await test.step('WHEN a wrong password is submitted', (): Promise<void> => loginPage.submit({ ...USER_STUB, password: 'wrong-password' }));
+  test('SCENARIO: wrong password shows the error message', async ({ loginPage }): Promise<void> => {
+    await test.step('WHEN a wrong password is submitted', (): Promise<void> => loginPage.submit({ ...USER_STUB, password: 'wrong-password' }));
 
-      await test.step('THEN the error names invalid credentials', (): Promise<void> => loginPage.expectError('Invalid username or password'));
-    });
+    await test.step('THEN the error names invalid credentials', (): Promise<void> => loginPage.expectError('Invalid username or password'));
+  });
 
-    test('SCENARIO: empty form reports the username as required', async ({ loginPage }): Promise<void> => {
-      await test.step('WHEN the empty form is submitted', (): Promise<void> => loginPage.submitEmpty());
+  test('SCENARIO: empty form reports the username as required', async ({ loginPage }): Promise<void> => {
+    await test.step('WHEN the empty form is submitted', (): Promise<void> => loginPage.submitEmpty());
 
-      await test.step('THEN the username field reports required', (): Promise<void> => loginPage.expectFieldError(loginPage.usernameInput, 'Username is required'));
-    });
+    await test.step('THEN the username field reports required', (): Promise<void> => loginPage.expectFieldError(loginPage.usernameInput, 'Username is required'));
+  });
 
-    test('SCENARIO: forgot password link opens the reset page', async ({ loginPage, page }): Promise<void> => {
-      await test.step('WHEN the forgot password link is followed', (): Promise<void> => loginPage.openForgotPassword());
+  test('SCENARIO: forgot password link opens the reset page', async ({ loginPage, page }): Promise<void> => {
+    await test.step('WHEN the forgot password link is followed', (): Promise<void> => loginPage.openForgotPassword());
 
-      await test.step('THEN the forgot password url is shown', (): Promise<void> => expect(page).toHaveURL('/forgot-password'));
-    });
+    await test.step('THEN the forgot password url is shown', (): Promise<void> => expect(page).toHaveURL('/forgot-password'));
   });
 });
 ```
@@ -950,55 +934,61 @@ export { expect } from '@playwright/test';
 **Use when**: Testing the login page, signup flow, password reset, public pages, or redirect behavior for unauthenticated users.
 **Avoid when**: The test requires a logged-in user.
 
-When your config sets a default `storageState`, you must clear it explicitly for unauthenticated tests. The expired-session case needs a real session first, so it sits under its own `GIVEN` with its own `test.use`. `buildSignup()` in `test/utils/signup-builder.spec.util.ts` spreads `SIGNUP_STUB` and sets `email` to `test-${Date.now()}@example.com` so each run creates a new account.
+When your config sets a default `storageState`, you must clear it explicitly for unauthenticated tests. `storageState` is fixed at context creation, so the spec clears it with a file-level `test.use`. `buildSignup()` in `test/utils/signup-builder.spec.util.ts` spreads `SIGNUP_STUB` and sets `email` to `test-${Date.now()}@example.com` so each run creates a new account.
 
 ```ts
 // e2e/auth/public-pages.e2e.ts
 import { expect, test } from './auth.fixture';
-import { EMPTY_STORAGE_STATE, SESSION_STATE_PATH } from './common/auth.const';
+import { EMPTY_STORAGE_STATE } from './common/auth.const';
 import { buildSignup } from './test/utils/signup-builder.spec.util';
 
+test.use({ storageState: EMPTY_STORAGE_STATE });
+
 test.describe('FEATURE: public pages', () => {
-  test.describe('GIVEN no stored session', () => {
-    test.use({ storageState: EMPTY_STORAGE_STATE });
+  test('SCENARIO: the landing page shows the welcome heading and log in link', async ({ landingPage }): Promise<void> => {
+    await test.step('WHEN the landing page is opened', (): Promise<void> => landingPage.goto());
 
-    test('SCENARIO: the landing page shows the welcome heading and log in link', async ({ landingPage }): Promise<void> => {
-      await test.step('WHEN the landing page is opened', (): Promise<void> => landingPage.goto());
-
-      await test.step('THEN the welcome heading and log in link are shown', (): Promise<void> => landingPage.expectWelcome());
-    });
-
-    test('SCENARIO: a protected route opens the login page with a redirect param', async ({ homePage, page }): Promise<void> => {
-      await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
-
-      await test.step('THEN the login url carries the redirect target', (): Promise<void> => expect(page).toHaveURL(/\/login.*redirect=%2Fhome/));
-    });
-
-    test('SCENARIO: signup greets the new user in onboarding', async ({ page, signupPage }): Promise<void> => {
-      const signup = buildSignup();
-
-      await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
-
-      await test.step('WHEN the signup form is submitted', (): Promise<void> => signupPage.submit(signup));
-
-      await test.step('THEN the onboarding url is shown', (): Promise<void> => expect(page).toHaveURL('/onboarding'));
-
-      await test.step('AND the welcome message names the new user', (): Promise<void> => signupPage.expectOnboardingWelcome(signup.name));
-    });
+    await test.step('THEN the welcome heading and log in link are shown', (): Promise<void> => landingPage.expectWelcome());
   });
 
-  test.describe('GIVEN a stored session', () => {
-    test.use({ storageState: SESSION_STATE_PATH });
+  test('SCENARIO: a protected route opens the login page with a redirect param', async ({ homePage, page }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-    test('SCENARIO: vanished session cookies report an expired session', async ({ context, homePage, loginPage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+    await test.step('THEN the login url carries the redirect target', (): Promise<void> => expect(page).toHaveURL(/\/login.*redirect=%2Fhome/));
+  });
 
-      await test.step('WHEN every cookie is cleared', (): Promise<void> => context.clearCookies());
+  test('SCENARIO: signup greets the new user in onboarding', async ({ page, signupPage }): Promise<void> => {
+    const signup = buildSignup();
 
-      await test.step('AND the home page is opened again', (): Promise<void> => homePage.goto());
+    await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
 
-      await test.step('THEN the expired session message is shown', (): Promise<void> => loginPage.expectError('Your session has expired'));
-    });
+    await test.step('WHEN the signup form is submitted', (): Promise<void> => signupPage.submit(signup));
+
+    await test.step('THEN the onboarding url is shown', (): Promise<void> => expect(page).toHaveURL('/onboarding'));
+
+    await test.step('AND the welcome message names the new user', (): Promise<void> => signupPage.expectOnboardingWelcome(signup.name));
+  });
+});
+```
+
+The expired-session case needs a real session first. A different `storageState` cannot be set inside a test, so it is its own spec with its own file-level `test.use` and `FEATURE`.
+
+```ts
+// e2e/auth/public-pages-expired.e2e.ts
+import { test } from './auth.fixture';
+import { SESSION_STATE_PATH } from './common/auth.const';
+
+test.use({ storageState: SESSION_STATE_PATH });
+
+test.describe('FEATURE: expired session', () => {
+  test('SCENARIO: vanished session cookies report an expired session', async ({ context, homePage, loginPage }): Promise<void> => {
+    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+
+    await test.step('WHEN every cookie is cleared', (): Promise<void> => context.clearCookies());
+
+    await test.step('AND the home page is opened again', (): Promise<void> => homePage.goto());
+
+    await test.step('THEN the expired session message is shown', (): Promise<void> => loginPage.expectError('Your session has expired'));
   });
 });
 ```

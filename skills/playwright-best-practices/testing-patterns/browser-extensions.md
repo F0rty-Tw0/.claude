@@ -148,12 +148,10 @@ A Manifest V3 extension registers a service worker whose URL starts with `chrome
 import { expect, test } from './extension.fixture';
 
 test.describe('FEATURE: extension loading', () => {
-  test.describe('GIVEN the unpacked extension is loaded', () => {
-    test('SCENARIO: the registered service worker has an extension url', async ({ serviceWorker }): Promise<void> => {
-      const url = await test.step('WHEN the service worker url is read', (): string => serviceWorker.url());
+  test('SCENARIO: the registered service worker has an extension url', async ({ serviceWorker }): Promise<void> => {
+    const url = await test.step('WHEN the service worker url is read', (): string => serviceWorker.url());
 
-      await test.step('THEN the url starts with chrome-extension://', (): void => expect(url).toContain('chrome-extension://'));
-    });
+    await test.step('THEN the url starts with chrome-extension://', (): void => expect(url).toContain('chrome-extension://'));
   });
 });
 ```
@@ -285,24 +283,22 @@ import type { PopupPage } from './pages/popup.page';
 import { expect, test } from './extension.fixture';
 
 test.describe('FEATURE: extension popup', () => {
-  test.describe('GIVEN the popup is open', () => {
-    test('SCENARIO: clicking Enable reports Enabled', async ({ openPopup }): Promise<void> => {
-      const popup = await test.step('GIVEN the popup is open', (): Promise<PopupPage> => openPopup());
+  test('SCENARIO: clicking Enable reports Enabled', async ({ openPopup }): Promise<void> => {
+    const popup = await test.step('GIVEN the popup is open', (): Promise<PopupPage> => openPopup());
 
-      await test.step('AND the heading names the extension', (): Promise<void> => expect(popup.heading).toHaveText('My Extension'));
+    await test.step('AND the heading names the extension', (): Promise<void> => expect(popup.heading).toHaveText('My Extension'));
 
-      await test.step('WHEN Enable is clicked', (): Promise<void> => popup.enable());
+    await test.step('WHEN Enable is clicked', (): Promise<void> => popup.enable());
 
-      await test.step('THEN the Enabled label is shown', (): Promise<void> => expect(popup.enabledLabel).toBeVisible());
-    });
+    await test.step('THEN the Enabled label is shown', (): Promise<void> => expect(popup.enabledLabel).toBeVisible());
+  });
 
-    test('SCENARIO: clicking Fetch Data gets an answer from the background', async ({ openPopup }): Promise<void> => {
-      const popup = await test.step('GIVEN the popup is open', (): Promise<PopupPage> => openPopup());
+  test('SCENARIO: clicking Fetch Data gets an answer from the background', async ({ openPopup }): Promise<void> => {
+    const popup = await test.step('GIVEN the popup is open', (): Promise<PopupPage> => openPopup());
 
-      const response = await test.step('WHEN Fetch Data is clicked', (): Promise<unknown> => popup.fetchData());
+    const response = await test.step('WHEN Fetch Data is clicked', (): Promise<unknown> => popup.fetchData());
 
-      await test.step('THEN the RESPONSE carries data', (): void => expect(response).toBeDefined());
-    });
+    await test.step('THEN the RESPONSE carries data', (): void => expect(response).toBeDefined());
   });
 });
 ```
@@ -320,18 +316,16 @@ import { expect, test } from './extension.fixture';
 import { sendRuntimeMessage } from './test/utils/runtime-message.spec.util';
 
 test.describe('FEATURE: extension background messages', () => {
-  test.describe('GIVEN a page on example.com', () => {
-    test.beforeEach(async ({ contentPage }): Promise<void> => {
-      await test.step('GIVEN example.com is open', (): Promise<void> => contentPage.goto());
-    });
+  test.beforeEach(async ({ contentPage }): Promise<void> => {
+    await test.step('GIVEN example.com is open', (): Promise<void> => contentPage.goto());
+  });
 
-    test('SCENARIO: GET_STATUS reports the worker as active', async ({ extensionId, page }): Promise<void> => {
-      const request: RuntimeRequest = { extensionId, type: 'GET_STATUS' };
+  test('SCENARIO: GET_STATUS reports the worker as active', async ({ extensionId, page }): Promise<void> => {
+    const request: RuntimeRequest = { extensionId, type: 'GET_STATUS' };
 
-      const response = await test.step('WHEN GET_STATUS is sent to the extension', (): Promise<unknown> => sendRuntimeMessage(page, request));
+    const response = await test.step('WHEN GET_STATUS is sent to the extension', (): Promise<unknown> => sendRuntimeMessage(page, request));
 
-      await test.step('THEN the status is active', (): void => expect(response).toEqual({ status: 'active' }));
-    });
+    await test.step('THEN the status is active', (): void => expect(response).toEqual({ status: 'active' }));
   });
 });
 ```
@@ -372,14 +366,12 @@ import { readLocalStorage } from './test/utils/extension-storage.spec.util';
 const TEST_ALARM: AlarmRequest = { delayInMinutes: 0.01, name: 'test-alarm' };
 
 test.describe('FEATURE: extension alarms', () => {
-  test.describe('GIVEN the service worker is running', () => {
-    test('SCENARIO: a fired test-alarm is recorded by the handler', async ({ serviceWorker }): Promise<void> => {
-      await test.step('WHEN test-alarm is created and fires', (): Promise<void> => createAndAwaitAlarm(serviceWorker, TEST_ALARM));
+  test('SCENARIO: a fired test-alarm is recorded by the handler', async ({ serviceWorker }): Promise<void> => {
+    await test.step('WHEN test-alarm is created and fires', (): Promise<void> => createAndAwaitAlarm(serviceWorker, TEST_ALARM));
 
-      const items = await test.step('AND alarmTriggered is read from storage', (): Promise<StorageItems> => readLocalStorage(serviceWorker, ['alarmTriggered']));
+    const items = await test.step('AND alarmTriggered is read from storage', (): Promise<StorageItems> => readLocalStorage(serviceWorker, ['alarmTriggered']));
 
-      await test.step('THEN alarmTriggered is true', (): void => expect(items.alarmTriggered).toBe(true));
-    });
+    await test.step('THEN alarmTriggered is true', (): void => expect(items.alarmTriggered).toBe(true));
   });
 });
 ```
@@ -451,26 +443,24 @@ import { expect, test } from './extension.fixture';
 import { injectedStyleCount } from './test/utils/injected-styles.spec.util';
 
 test.describe('FEATURE: extension content script', () => {
-  test.describe('GIVEN a page on example.com', () => {
-    test.beforeEach(async ({ contentPage }): Promise<void> => {
-      await test.step('GIVEN example.com is open', (): Promise<void> => contentPage.goto());
-    });
+  test.beforeEach(async ({ contentPage }): Promise<void> => {
+    await test.step('GIVEN example.com is open', (): Promise<void> => contentPage.goto());
+  });
 
-    test('SCENARIO: clicking the widget button reports Success', async ({ contentPage }): Promise<void> => {
-      await test.step('GIVEN the widget is injected', (): Promise<void> => expect(contentPage.widget).toBeVisible());
+  test('SCENARIO: clicking the widget button reports Success', async ({ contentPage }): Promise<void> => {
+    await test.step('AND the widget is injected', (): Promise<void> => expect(contentPage.widget).toBeVisible());
 
-      await test.step('WHEN the widget button is clicked', (): Promise<void> => contentPage.clickWidgetButton());
+    await test.step('WHEN the widget button is clicked', (): Promise<void> => contentPage.clickWidgetButton());
 
-      await test.step('THEN the widget result reads Success', (): Promise<void> => contentPage.expectWidgetResult('Success'));
-    });
+    await test.step('THEN the widget result reads Success', (): Promise<void> => contentPage.expectWidgetResult('Success'));
+  });
 
-    test('SCENARIO: page load injects extension styles and marks elements', async ({ contentPage, page }): Promise<void> => {
-      const styleCount = await test.step('WHEN the injected style tags are counted', (): Promise<number> => injectedStyleCount(page, 'my-ext'));
+  test('SCENARIO: page load injects extension styles and marks elements', async ({ contentPage, page }): Promise<void> => {
+    const styleCount = await test.step('WHEN the injected style tags are counted', (): Promise<number> => injectedStyleCount(page, 'my-ext'));
 
-      await test.step('THEN at least one style tag is injected', (): void => expect(styleCount).toBeGreaterThan(0));
+    await test.step('THEN at least one style tag is injected', (): void => expect(styleCount).toBeGreaterThan(0));
 
-      await test.step('AND at least one element is marked', (): Promise<void> => expect(contentPage.modifiedElements).not.toHaveCount(0));
-    });
+    await test.step('AND at least one element is marked', (): Promise<void> => expect(contentPage.modifiedElements).not.toHaveCount(0));
   });
 });
 ```
@@ -510,14 +500,12 @@ import { readLocalStorage, writeLocalStorage } from './test/utils/extension-stor
 const LOCAL_ITEMS: StorageItems = { count: 42, key: 'value' };
 
 test.describe('FEATURE: extension storage api', () => {
-  test.describe('GIVEN the service worker is running', () => {
-    test('SCENARIO: written local items read back', async ({ serviceWorker }): Promise<void> => {
-      await test.step('WHEN key and count are written to local storage', (): Promise<void> => writeLocalStorage(serviceWorker, LOCAL_ITEMS));
+  test('SCENARIO: written local items read back', async ({ serviceWorker }): Promise<void> => {
+    await test.step('WHEN key and count are written to local storage', (): Promise<void> => writeLocalStorage(serviceWorker, LOCAL_ITEMS));
 
-      const items = await test.step('AND key and count are read', (): Promise<StorageItems> => readLocalStorage(serviceWorker, ['key', 'count']));
+    const items = await test.step('AND key and count are read', (): Promise<StorageItems> => readLocalStorage(serviceWorker, ['key', 'count']));
 
-      await test.step('THEN the items match what was written', (): void => expect(items).toEqual(LOCAL_ITEMS));
-    });
+    await test.step('THEN the items match what was written', (): void => expect(items).toEqual(LOCAL_ITEMS));
   });
 });
 ```
@@ -553,18 +541,16 @@ import { expect, test } from './extension.fixture';
 import { queryTabs, sendTabMessage } from './test/utils/tabs.spec.util';
 
 test.describe('FEATURE: extension tabs api', () => {
-  test.describe('GIVEN a page on example.com', () => {
-    test.beforeEach(async ({ contentPage }): Promise<void> => {
-      await test.step('GIVEN example.com is open', (): Promise<void> => contentPage.goto());
-    });
+  test.beforeEach(async ({ contentPage }): Promise<void> => {
+    await test.step('GIVEN example.com is open', (): Promise<void> => contentPage.goto());
+  });
 
-    test('SCENARIO: querying tabs by url finds the page and messages it', async ({ serviceWorker }): Promise<void> => {
-      const tabs = await test.step('WHEN tabs on example.com are queried', (): Promise<chrome.tabs.Tab[]> => queryTabs(serviceWorker, '*://example.com/*'));
+  test('SCENARIO: querying tabs by url finds the page and messages it', async ({ serviceWorker }): Promise<void> => {
+    const tabs = await test.step('WHEN tabs on example.com are queried', (): Promise<chrome.tabs.Tab[]> => queryTabs(serviceWorker, '*://example.com/*'));
 
-      await test.step('THEN one tab matches', (): void => expect(tabs.length).toBeGreaterThan(0));
+    await test.step('THEN one tab matches', (): void => expect(tabs.length).toBeGreaterThan(0));
 
-      await test.step('AND PING reaches the tab', (): Promise<void> => sendTabMessage(serviceWorker, tabs[0], 'PING'));
-    });
+    await test.step('AND PING reaches the tab', (): Promise<void> => sendTabMessage(serviceWorker, tabs[0], 'PING'));
   });
 });
 ```
@@ -630,14 +616,12 @@ import { hasOriginPermission, requestOriginPermission } from './test/utils/permi
 const GITHUB_ORIGIN = 'https://*.github.com/*';
 
 test.describe('FEATURE: extension permissions api', () => {
-  test.describe('GIVEN the service worker is running', () => {
-    test('SCENARIO: requesting the github origin reports the grant', async ({ serviceWorker }): Promise<void> => {
-      await test.step('WHEN the github origin is requested', (): Promise<boolean> => requestOriginPermission(serviceWorker, GITHUB_ORIGIN));
+  test('SCENARIO: requesting the github origin reports the grant', async ({ serviceWorker }): Promise<void> => {
+    await test.step('WHEN the github origin is requested', (): Promise<boolean> => requestOriginPermission(serviceWorker, GITHUB_ORIGIN));
 
-      const granted = await test.step('AND the github origin is checked', (): Promise<boolean> => hasOriginPermission(serviceWorker, GITHUB_ORIGIN));
+    const granted = await test.step('AND the github origin is checked', (): Promise<boolean> => hasOriginPermission(serviceWorker, GITHUB_ORIGIN));
 
-      await test.step('THEN the grant state is a boolean', (): void => expect(typeof granted).toBe('boolean'));
-    });
+    await test.step('THEN the grant state is a boolean', (): void => expect(typeof granted).toBe('boolean'));
   });
 });
 ```

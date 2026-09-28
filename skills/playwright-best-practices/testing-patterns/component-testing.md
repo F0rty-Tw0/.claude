@@ -146,25 +146,22 @@ import type { ButtonHelper } from './helpers/button.helper';
 import { mountButton } from './test/utils/button-mount.spec.util';
 
 test.describe('FEATURE: button', () => {
-  test.describe('GIVEN default props', () => {
-    test('SCENARIO: mounting renders the label', async ({ mount }): Promise<void> => {
-      const button = await test.step('WHEN the button is mounted', (): Promise<ButtonHelper> => mountButton(mount, {}, 'Click me'));
+  test('SCENARIO: mounting with default props renders the label', async ({ mount }): Promise<void> => {
+    const button = await test.step('WHEN the button is mounted', (): Promise<ButtonHelper> => mountButton(mount, {}, 'Click me'));
 
-      await test.step('THEN the label reads Click me', (): Promise<void> => button.expectText('Click me'));
-    });
+    await test.step('THEN the label reads Click me', (): Promise<void> => button.expectText('Click me'));
   });
 
-  test.describe('GIVEN a primary large button with an icon', () => {
-    test('SCENARIO: mounting renders the variant classes and the icon', async ({ mount }): Promise<void> => {
-      const props: ButtonProps = { icon: 'check', size: 'large', variant: 'primary' };
-      const button = await test.step('WHEN the button is mounted', (): Promise<ButtonHelper> => mountButton(mount, props, 'Submit'));
+  test('SCENARIO: mounting a primary large button with an icon renders the variant classes and the icon', async ({ mount }): Promise<void> => {
+    const props: ButtonProps = { icon: 'check', size: 'large', variant: 'primary' };
 
-      await test.step('THEN the primary class is applied', (): Promise<void> => button.expectVariant('primary'));
+    const button = await test.step('WHEN the button is mounted', (): Promise<ButtonHelper> => mountButton(mount, props, 'Submit'));
 
-      await test.step('AND the large class is applied', (): Promise<void> => button.expectVariant('large'));
+    await test.step('THEN the primary class is applied', (): Promise<void> => button.expectVariant('primary'));
 
-      await test.step('AND the icon is visible', (): Promise<void> => button.expectIcon());
-    });
+    await test.step('AND the large class is applied', (): Promise<void> => button.expectVariant('large'));
+
+    await test.step('AND the icon is visible', (): Promise<void> => button.expectIcon());
   });
 });
 ```
@@ -230,15 +227,13 @@ import { mountButton } from './test/utils/button-mount.spec.util';
 const VARIANTS = ['danger', 'ghost', 'primary', 'secondary'] as const;
 
 test.describe('FEATURE: button variants', () => {
-  test.describe('GIVEN each variant', () => {
-    for (const variant of VARIANTS) {
-      test(`SCENARIO: mounting the ${variant} variant applies the ${variant} class`, async ({ mount }): Promise<void> => {
-        const button = await test.step(`WHEN the ${variant} button is mounted`, (): Promise<ButtonHelper> => mountButton(mount, { variant }, 'Button'));
+  for (const variant of VARIANTS) {
+    test(`SCENARIO: mounting the ${variant} variant applies the ${variant} class`, async ({ mount }): Promise<void> => {
+      const button = await test.step(`WHEN the ${variant} button is mounted`, (): Promise<ButtonHelper> => mountButton(mount, { variant }, 'Button'));
 
-        await test.step(`THEN the ${variant} class is applied`, (): Promise<void> => button.expectVariant(variant));
-      });
-    }
-  });
+      await test.step(`THEN the ${variant} class is applied`, (): Promise<void> => button.expectVariant(variant));
+    });
+  }
 });
 ```
 
@@ -290,24 +285,22 @@ import type { CounterHelper } from './helpers/counter.helper';
 import { mountCounter } from './test/utils/counter-mount.spec.util';
 
 test.describe('FEATURE: counter', () => {
-  test.describe('GIVEN a counter mounted at 0', () => {
-    test('SCENARIO: updating initialCount to 10 makes the count read 10', async ({ mount }): Promise<void> => {
-      const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterHelper> => mountCounter(mount, { initialCount: 0 }));
+  test('SCENARIO: updating initialCount to 10 makes the count read 10', async ({ mount }): Promise<void> => {
+    const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterHelper> => mountCounter(mount, { initialCount: 0 }));
 
-      await test.step('AND the count reads 0', (): Promise<void> => counter.expectCount(0));
+    await test.step('AND the count reads 0', (): Promise<void> => counter.expectCount(0));
 
-      await test.step('WHEN initialCount is updated to 10', (): Promise<void> => counter.update({ initialCount: 10 }));
+    await test.step('WHEN initialCount is updated to 10', (): Promise<void> => counter.update({ initialCount: 10 }));
 
-      await test.step('THEN the count reads 10', (): Promise<void> => counter.expectCount(10));
-    });
+    await test.step('THEN the count reads 10', (): Promise<void> => counter.expectCount(10));
+  });
 
-    test('SCENARIO: clicking + makes the count read 1', async ({ mount }): Promise<void> => {
-      const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterHelper> => mountCounter(mount, { initialCount: 0 }));
+  test('SCENARIO: clicking + makes the count read 1', async ({ mount }): Promise<void> => {
+    const counter = await test.step('GIVEN the counter is mounted at 0', (): Promise<CounterHelper> => mountCounter(mount, { initialCount: 0 }));
 
-      await test.step('WHEN + is clicked', (): Promise<void> => counter.increment());
+    await test.step('WHEN + is clicked', (): Promise<void> => counter.increment());
 
-      await test.step('THEN the count reads 1', (): Promise<void> => counter.expectCount(1));
-    });
+    await test.step('THEN the count reads 1', (): Promise<void> => counter.expectCount(1));
   });
 });
 ```
@@ -386,15 +379,13 @@ import { CREDENTIALS_STUB } from './test/stubs/login-form.stub';
 import { mountLoginForm, recordInto } from './test/utils/login-form-mount.spec.util';
 
 test.describe('FEATURE: login form', () => {
-  test.describe('GIVEN a form with a recording onSubmit', () => {
-    test('SCENARIO: submitting credentials passes them to onSubmit once', async ({ mount }): Promise<void> => {
-      const submissions: Credentials[] = [];
-      const form = await test.step('GIVEN the form is mounted', (): Promise<LoginFormHelper> => mountLoginForm(mount, recordInto(submissions)));
+  test('SCENARIO: submitting credentials passes them to onSubmit once', async ({ mount }): Promise<void> => {
+    const submissions: Credentials[] = [];
+    const form = await test.step('GIVEN the form is mounted', (): Promise<LoginFormHelper> => mountLoginForm(mount, recordInto(submissions)));
 
-      await test.step('WHEN credentials are submitted', (): Promise<void> => form.submit(CREDENTIALS_STUB));
+    await test.step('WHEN credentials are submitted', (): Promise<void> => form.submit(CREDENTIALS_STUB));
 
-      await test.step('THEN onSubmit received the credentials once', (): void => expect(submissions).toEqual([CREDENTIALS_STUB]));
-    });
+    await test.step('THEN onSubmit received the credentials once', (): void => expect(submissions).toEqual([CREDENTIALS_STUB]));
   });
 });
 ```
@@ -449,14 +440,12 @@ import { MODAL_SLOTS_STUB } from './test/stubs/modal.stub';
 import { mountModal } from './test/utils/modal-mount.spec.util';
 
 test.describe('FEATURE: modal slots', () => {
-  test.describe('GIVEN header, default, and footer slots', () => {
-    test('SCENARIO: mounting renders each slot', async ({ mount }): Promise<void> => {
-      const modal = await test.step('WHEN the modal is mounted with all slots', (): Promise<ModalHelper> => mountModal(mount, MODAL_SLOTS_STUB));
+  test('SCENARIO: mounting renders each slot', async ({ mount }): Promise<void> => {
+    const modal = await test.step('WHEN the modal is mounted with all slots', (): Promise<ModalHelper> => mountModal(mount, MODAL_SLOTS_STUB));
 
-      await test.step('THEN the heading reads Modal Title', (): Promise<void> => modal.expectHeading('Modal Title'));
+    await test.step('THEN the heading reads Modal Title', (): Promise<void> => modal.expectHeading('Modal Title'));
 
-      await test.step('AND the footer button reads Close', (): Promise<void> => modal.expectButton('Close'));
-    });
+    await test.step('AND the footer button reads Close', (): Promise<void> => modal.expectButton('Close'));
   });
 });
 ```
@@ -502,21 +491,19 @@ import type { FeatureBannerHelper } from './helpers/feature-banner.helper';
 import { mountFeatureBanner } from './test/utils/feature-banner-mount.spec.util';
 
 test.describe('FEATURE: feature banner', () => {
-  test.describe('GIVEN the newFeature flag is on', () => {
-    test('SCENARIO: mounting shows the new feature text', async ({ mount }): Promise<void> => {
-      const featureFlags: FeatureFlags = { newFeature: true };
-      const hooksConfig: HooksConfig = { featureFlags };
-      const banner = await test.step('WHEN the banner is mounted with the flag on', (): Promise<FeatureBannerHelper> => mountFeatureBanner(mount, hooksConfig));
+  test('SCENARIO: mounting with the newFeature flag on shows the new feature text', async ({ mount }): Promise<void> => {
+    const featureFlags: FeatureFlags = { newFeature: true };
+    const hooksConfig: HooksConfig = { featureFlags };
+    const banner = await test.step('WHEN the banner is mounted with the flag on', (): Promise<FeatureBannerHelper> => mountFeatureBanner(mount, hooksConfig));
 
-      await test.step('THEN the new feature text is shown', (): Promise<void> => banner.expectText('New Feature'));
-    });
+    await test.step('THEN the new feature text is shown', (): Promise<void> => banner.expectText('New Feature'));
   });
 });
 ```
 
 ### Mocking API Calls
 
-A component that fetches on mount needs the route installed before `mount`. The handler is a factory in `test/mocks/`; the `GIVEN` installs it in `beforeEach` as a step. `User` is named in `common/user-profile.type.ts`; `USER_STUB` is in `test/stubs/user.stub.ts`.
+A component that fetches on mount needs the route installed before `mount`. The handler is a factory in `test/mocks/`; a `GIVEN` step in the `FEATURE`-level `beforeEach` installs it. `User` is named in `common/user-profile.type.ts`; `USER_STUB` is in `test/stubs/user.stub.ts`.
 
 ```ts
 // e2e/user-profile/test/mocks/user.mock.ts
@@ -541,18 +528,16 @@ import { USER_STUB } from './test/stubs/user.stub';
 import { mountUserProfile } from './test/utils/user-profile-mount.spec.util';
 
 test.describe('FEATURE: user profile', () => {
-  test.describe('GIVEN the user api returns a user', () => {
-    test.beforeEach(async ({ page }): Promise<void> => {
-      await test.step('GIVEN the user api is stubbed', async (): Promise<void> => {
-        await page.route('**/api/user', userMock(USER_STUB));
-      });
+  test.beforeEach(async ({ page }): Promise<void> => {
+    await test.step('GIVEN the user api is stubbed', async (): Promise<void> => {
+      await page.route('**/api/user', userMock(USER_STUB));
     });
+  });
 
-    test('SCENARIO: mounting shows the user name', async ({ mount }): Promise<void> => {
-      const profile = await test.step('WHEN the profile is mounted', (): Promise<UserProfileHelper> => mountUserProfile(mount, USER_STUB.id));
+  test('SCENARIO: mounting shows the user name', async ({ mount }): Promise<void> => {
+    const profile = await test.step('WHEN the profile is mounted', (): Promise<UserProfileHelper> => mountUserProfile(mount, USER_STUB.id));
 
-      await test.step('THEN the user name is shown', (): Promise<void> => profile.expectName(USER_STUB.name));
-    });
+    await test.step('THEN the user name is shown', (): Promise<void> => profile.expectName(USER_STUB.name));
   });
 });
 ```
@@ -601,16 +586,14 @@ import type { TextInputHelper } from './helpers/text-input.helper';
 import { mountTextInput } from './test/utils/text-input-mount.spec.util';
 
 test.describe('FEATURE: text input v-model', () => {
-  test.describe('GIVEN an empty model', () => {
-    test('SCENARIO: typing text emits update:modelValue with the text', async ({ mount }): Promise<void> => {
-      const values: string[] = [];
-      const onUpdate = (value: string): number => values.push(value);
-      const input = await test.step('GIVEN the input is mounted with an empty model', (): Promise<TextInputHelper> => mountTextInput(mount, '', onUpdate));
+  test('SCENARIO: typing text emits update:modelValue with the text', async ({ mount }): Promise<void> => {
+    const values: string[] = [];
+    const onUpdate = (value: string): number => values.push(value);
+    const input = await test.step('GIVEN the input is mounted with an empty model', (): Promise<TextInputHelper> => mountTextInput(mount, '', onUpdate));
 
-      await test.step('WHEN test is typed', (): Promise<void> => input.fill('test'));
+    await test.step('WHEN test is typed', (): Promise<void> => input.fill('test'));
 
-      await test.step('THEN the model received test', (): void => expect(values).toEqual(['test']));
-    });
+    await test.step('THEN the model received test', (): void => expect(values).toEqual(['test']));
   });
 });
 ```
