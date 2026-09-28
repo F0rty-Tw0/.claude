@@ -25,7 +25,7 @@ Proof = an artifact a reviewer can inspect or re-run. No artifact → no proof.
 
 1. List every claim in the PR description ("fixed X", "verified Y", "no regressions").
 2. For each claim, find the artifact. Missing → proof gap.
-3. **Re-run** the claimed commands yourself. Paste exit code and pass/fail counts. A claim that does not reproduce is a blocker, not a nit.
+3. **Re-run** the claimed commands yourself. Paste exit code and pass/fail counts. A claim that does not reproduce is a **proof gap** that blocks the merge, not a nit.
 4. **Base-failure check** (bug fixes): run the new test against the base tree. If it passes on base, it does not prove the fix.
    - Isolated copy: `WT=$(mktemp -d <scratch-dir>/review-base.XXXX) && git worktree add --detach "$WT" <base-sha>`, copy the test in, run it, then `git worktree remove --force "$WT"`. Never modify the user's working tree.
 5. **Mutation probe** (any change with tests): in a scratch copy, break one line of the code under test (flip a condition, drop an `await`, return early). Re-run tests. Still green → the tests are vanity (see `vanity-tests.md`).

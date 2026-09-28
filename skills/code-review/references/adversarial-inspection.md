@@ -64,8 +64,9 @@ Do **not** report formatting, naming taste, `var` vs `const`, semicolons, line l
 
 | Tier | Meaning | Merge? |
 |---|---|---|
-| **Blocker** | Data loss/corruption, security hole, money wrong, crash on hot path, migration that fails, proof gap on trunk, ungated trunk behavior in a repo with flags | No |
-| **Should-fix** | Edge case mishandled on branch/leaf code, missing error handling off the hot path, proof gap on branch code | Fix or ticket before launch |
+| **Blocker** | Data loss/corruption, security hole, money wrong, crash on hot path, migration that fails, ungated trunk behavior in a repo with flags | No |
+| **Proof gap** | The class's proof bar (`proof.md`) is unmet: vanity tests on Branch/Trunk code, a claim with no artifact, a claim that does not reproduce | No, until the proof exists |
+| **Should-fix** | Edge case mishandled on branch/leaf code, missing error handling off the hot path | Fix or ticket before launch |
 | **Note** | Real but minor; pre-existing issues surfaced by the review (label `pre-existing`) | Author's call |
 
 Every finding: `file:line`, **Confirmed** (you traced or reproduced it — name the command/read) or **Inferred** (say what would confirm it), concrete fix.

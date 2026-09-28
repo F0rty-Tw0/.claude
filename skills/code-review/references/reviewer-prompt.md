@@ -45,7 +45,7 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 
 - Auth / input handling / secrets / migrations touched → `security-reviewer`, same material, prompt: "Security pass on this diff. Severity × exploitability × blast radius. Confirmed vs Inferred. No style."
 - Hot path / loops over data / new queries / caching → `performance-reviewer`, prompt: "Performance pass on the hot-path hunks. Quantify; measure before recommending. Confirmed vs Inferred."
-- Optional cross-model check (different model = less shared bias): if the `agentic-mcp` tools are available (`ToolSearch("agentic-mcp")`), send the same material to `review_codex`. Never block if unavailable.
+- Optional cross-model check (different model = less shared bias), **only if the user opted in for this repo** (it sends the diff to an external provider): if the `agentic-mcp` tools are available (`ToolSearch("agentic-mcp")`), send the same material to `review_codex`. Never block if unavailable.
 
 ## Why a fresh context
 

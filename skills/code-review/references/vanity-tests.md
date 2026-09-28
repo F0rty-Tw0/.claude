@@ -52,6 +52,6 @@ Other invariant shapes: "balance never negative", "sum of ledger entries = balan
 
 ## Reporting
 
-Report vanity tests as a **proof gap** that blocks merge on trunk/branch code, with the exact missing assertion:
+Report vanity tests on trunk/branch code as a **Proof gap** (the tier in `adversarial-inspection.md`), with the exact missing assertion:
 
 `wallet.test.mjs:9 — mock-echo: store.get mocked to balance 10, asserts 15. Never exercises real store round-trip, so the race at wallet.mjs:5-7 is invisible. Add the concurrent-credit invariant test against the real store.`
