@@ -1,14 +1,28 @@
 #!/usr/bin/env bash
-# Lints markdown code samples in this skill against core/house-style.md.
-# Usage: scripts/lint-samples.sh [file.md ...]   (default: every .md in the skill)
+# Lints Playwright code against core/house-style.md.
+# Usage: scripts/lint-samples.sh [file.md | file.ts | dir ...]
+#   no args   every .md in this skill (the code samples inside its fences)
+#   file.md   the ts samples inside its fences
+#   file.ts   a real spec, page object, fixture, or mock (sample-only rules skipped)
+#   dir       every .ts under it, node_modules excluded
 set -u
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-files=("$@")
-[ ${#files[@]} -eq 0 ] && mapfile -t files < <(find "$root" -name '*.md' ! -name 'LICENSE.md' | sort)
+files=()
+for arg in "$@"; do
+  if [ -d "$arg" ]; then
+    mapfile -t -O "${#files[@]}" files < <(find "$arg" -name '*.ts' -not -path '*/node_modules/*' | sort)
+  else
+    files+=("$arg")
+  fi
+done
+[ $# -eq 0 ] && mapfile -t files < <(find "$root" -name '*.md' ! -name 'LICENSE.md' | sort)
 
 out="$(for f in "${files[@]}"; do
-  awk -v file="$f" '
+  real=0
+  case "$f" in *.ts) real=1 ;; esac
+  awk -v file="$f" -v real="$real" '
+    BEGIN { if (real) { infence = 1; lang = "ts"; first = 0; spec = (file ~ /\.(e2e|test|ct)\.ts$/) } }
     /^```/ {
       if (infence) { infence = 0; spec = 0; instep = 0; next }
       infence = 1; lang = substr($0, 4); fence_line = NR
@@ -25,9 +39,9 @@ out="$(for f in "${files[@]}"; do
         if (lang == "ts" && line !~ /^\/\/ [A-Za-z0-9_.\/-]+\.ts$/ && line !~ /^\/\/ [A-Za-z0-9_.\/-]+\.(json|yml|yaml|js|mjs|cjs)$/) print file ":" NR ": ts sample missing `// <path>` first line"
       }
       if (lang != "ts") next
-      if (line ~ /^[[:space:]]*\/\/ / && line !~ /^\/\/ [A-Za-z0-9_.\/-]+\.[a-z]+$/) print file ":" NR ": comment inside sample"
-      if (line ~ /\/\/ \.\.\.|\/\* \.\.\. \*\//) print file ":" NR ": elision `// ...`"
-      if (line ~ /(✅|❌|👍|👎)/) print file ":" NR ": emoji marker inside sample"
+      if (!real && line ~ /^[[:space:]]*\/\/ / && line !~ /^\/\/ [A-Za-z0-9_.\/-]+\.[a-z]+$/) print file ":" NR ": comment inside sample"
+      if (!real && line ~ /\/\/ \.\.\.|\/\* \.\.\. \*\//) print file ":" NR ": elision `// ...`"
+      if (!real && line ~ /(✅|❌|👍|👎)/) print file ":" NR ": emoji marker inside sample"
       if (line ~ /(^|[^A-Za-z])interface [A-Z]/) print file ":" NR ": `interface`, use `type`"
       if (line ~ / as [A-Z][A-Za-z<>\[\]]*[;,)]?[[:space:]]*$/ && line !~ / as const/) print file ":" NR ": `as` cast"
       if (line ~ / as unknown as /) print file ":" NR ": `as unknown as`"
