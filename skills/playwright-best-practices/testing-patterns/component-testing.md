@@ -22,7 +22,7 @@ npm init playwright@latest -- --ct
 
 ### Configuration
 
-Every nested object is a named const. `ctViteConfig` carries the `@` alias so component imports match the app. Specs end in `.ct.ts` so they never run under the E2E config.
+Every nested object is a named const. `ctViteConfig` carries the `@` alias so component imports match the app. Specs end in `.ct.ts` so they never run under the E2E config. The config sits in `e2e/`, so it sets no `testDir` and `snapshotDir` is relative to that folder.
 
 ```ts
 // e2e/playwright-ct.config.ts
@@ -44,8 +44,7 @@ const projects = [
 
 export default defineConfig({
   projects,
-  snapshotDir: './e2e/__snapshots__',
-  testDir: './e2e',
+  snapshotDir: './__snapshots__',
   testMatch: '**/*.ct.ts',
   use
 });
@@ -239,7 +238,7 @@ test.describe('FEATURE: button variants', () => {
 
 ### Updating Props and Internal State
 
-`MountResult.update` re-renders with new props. The helper object keeps the root as `MountResult` and owns `update`, so the spec step stays one call. Internal state is asserted through the DOM (`aria-checked`, text), never through the instance.
+`MountResult.update` re-renders with new props. The helper object keeps the root as `MountResult` and owns `update`, so the spec step stays one call. Internal state is asserted through the DOM (`aria-checked`, text), never through the instance. `mountCounter(mount, props)` in `test/utils/counter-mount.spec.util.ts` has the `mountButton` shape and returns a `CounterHelper`.
 
 ```ts
 // e2e/counter/helpers/counter.helper.ts
@@ -285,10 +284,12 @@ import type { CounterHelper } from './helpers/counter.helper';
 import { mountCounter } from './test/utils/counter-mount.spec.util';
 
 test.describe('FEATURE: counter', () => {
-  test('GIVEN initialCount updated to 10, the count reads 10', async ({ mount }): Promise<void> => {
+  test('GIVEN a count of 0, updating initialCount to 10 makes the count read 10', async ({ mount }): Promise<void> => {
     const counter = await test.step('WHEN the counter is mounted', (): Promise<CounterHelper> => mountCounter(mount, { initialCount: 0 }));
 
-    await test.step('AND initialCount is updated to 10', (): Promise<void> => counter.update({ initialCount: 10 }));
+    await test.step('THEN the count reads 0', (): Promise<void> => counter.expectCount(0));
+
+    await test.step('WHEN initialCount is updated to 10', (): Promise<void> => counter.update({ initialCount: 10 }));
 
     await test.step('THEN the count reads 10', (): Promise<void> => counter.expectCount(10));
   });
@@ -377,7 +378,7 @@ import { CREDENTIALS_STUB } from './test/stubs/login-form.stub';
 import { mountLoginForm, recordInto } from './test/utils/login-form-mount.spec.util';
 
 test.describe('FEATURE: login form', () => {
-  test('GIVEN entered credentials, submitting passes them to onSubmit once', async ({ mount }): Promise<void> => {
+  test('GIVEN valid credentials, submitting them passes them to onSubmit once', async ({ mount }): Promise<void> => {
     const submissions: Credentials[] = [];
     const form = await test.step('WHEN the form is mounted', (): Promise<LoginFormHelper> => mountLoginForm(mount, recordInto(submissions)));
 
@@ -525,7 +526,7 @@ import { USER_STUB } from './test/stubs/user.stub';
 import { mountUserProfile } from './test/utils/user-profile-mount.spec.util';
 
 test.describe('FEATURE: user profile', () => {
-  test('GIVEN a stored user, mounting shows the user name', async ({ mount, page }): Promise<void> => {
+  test('GIVEN a stubbed user api, mounting shows the user name', async ({ mount, page }): Promise<void> => {
     const profile = await test.step('WHEN the profile is mounted', (): Promise<UserProfileHelper> => mountUserProfile(mount, page, USER_STUB));
 
     await test.step('THEN the user name is shown', (): Promise<void> => profile.expectName(USER_STUB.name));

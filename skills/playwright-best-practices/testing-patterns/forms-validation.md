@@ -69,12 +69,14 @@ export class ProductSearchPage {
 import { expect, test } from './product-search.fixture';
 
 test.describe('FEATURE: product typeahead', () => {
-  test('GIVEN a partial query, picking a suggestion fills the search box with its value', async ({ productSearchPage }): Promise<void> => {
+  test('GIVEN an empty search box, picking a suggestion for a partial query fills the box with it', async ({ productSearchPage }): Promise<void> => {
     await test.step('WHEN the products page is opened', (): Promise<void> => productSearchPage.goto());
 
     await test.step('AND a partial query is typed', (): Promise<void> => productSearchPage.typeQuery('lapt'));
 
-    await test.step('AND Laptop Pro is picked', (): Promise<void> => productSearchPage.pickSuggestion('Laptop Pro'));
+    await test.step('THEN the suggestion list opens', (): Promise<void> => expect(productSearchPage.suggestionList).toBeVisible());
+
+    await test.step('WHEN Laptop Pro is picked', (): Promise<void> => productSearchPage.pickSuggestion('Laptop Pro'));
 
     await test.step('THEN the search box holds Laptop Pro', (): Promise<void> => expect(productSearchPage.searchBox).toHaveValue('Laptop Pro'));
   });
@@ -140,11 +142,11 @@ export class LoanApplicationPage {
 
 ```ts
 // e2e/loan/loan-application.e2e.ts
-import { expect, test } from './loan.fixture';
+import { test } from './loan.fixture';
 import { BUSINESS_STUB } from './test/stubs/loan.stub';
 
 test.describe('FEATURE: loan application', () => {
-  test('GIVEN the loan form, choosing corporate shows the business fields', async ({ loanApplicationPage }): Promise<void> => {
+  test('GIVEN an individual applicant, choosing corporate shows the business fields', async ({ loanApplicationPage }): Promise<void> => {
     await test.step('WHEN the application form is opened', (): Promise<void> => loanApplicationPage.goto());
 
     await test.step('AND corporate is chosen', (): Promise<void> => loanApplicationPage.chooseApplicantType('corporate'));
@@ -152,7 +154,7 @@ test.describe('FEATURE: loan application', () => {
     await test.step('THEN the business fields are visible', (): Promise<void> => loanApplicationPage.expectBusinessFieldsVisible());
   });
 
-  test('GIVEN corporate was chosen, switching back to individual hides the business fields', async ({ loanApplicationPage }): Promise<void> => {
+  test('GIVEN an individual applicant, switching to corporate and back hides the business fields', async ({ loanApplicationPage }): Promise<void> => {
     await test.step('WHEN the application form is opened', (): Promise<void> => loanApplicationPage.goto());
 
     await test.step('AND corporate is chosen', (): Promise<void> => loanApplicationPage.chooseApplicantType('corporate'));
@@ -237,19 +239,21 @@ import { expect, test } from './booking.fixture';
 import { GUEST_STUB, ROOM_STUB } from './test/stubs/booking.stub';
 
 test.describe('FEATURE: booking wizard', () => {
-  test('GIVEN guest and room entered, the confirmation step repeats them', async ({ bookingWizardPage }): Promise<void> => {
+  test('GIVEN an empty wizard, entering guest and room shows them on the confirmation step', async ({ bookingWizardPage }): Promise<void> => {
     await test.step('WHEN the wizard is opened', (): Promise<void> => bookingWizardPage.goto());
 
     await test.step('AND guest information is entered', (): Promise<void> => bookingWizardPage.fillGuestInfo(GUEST_STUB));
 
-    await test.step('AND room options are selected', (): Promise<void> => bookingWizardPage.selectRoom(ROOM_STUB));
+    await test.step('THEN the wizard shows Room Selection', (): Promise<void> => bookingWizardPage.expectStep('Room Selection'));
+
+    await test.step('WHEN room options are selected', (): Promise<void> => bookingWizardPage.selectRoom(ROOM_STUB));
 
     await test.step('THEN the wizard shows Confirmation', (): Promise<void> => bookingWizardPage.expectStep('Confirmation'));
 
     await test.step('AND the summary repeats the entries', (): Promise<void> => bookingWizardPage.expectSummary(GUEST_STUB, ROOM_STUB));
   });
 
-  test('GIVEN every step completed, the booking is confirmed', async ({ bookingWizardPage }): Promise<void> => {
+  test('GIVEN an empty wizard, completing every step confirms the booking', async ({ bookingWizardPage }): Promise<void> => {
     await test.step('WHEN the wizard is opened', (): Promise<void> => bookingWizardPage.goto());
 
     await test.step('AND guest information is entered', (): Promise<void> => bookingWizardPage.fillGuestInfo(GUEST_STUB));
@@ -261,7 +265,7 @@ test.describe('FEATURE: booking wizard', () => {
     await test.step('THEN the wizard shows Booking complete', (): Promise<void> => bookingWizardPage.expectStep('Booking complete'));
   });
 
-  test('GIVEN an empty step, clicking Next stays and reports the gap', async ({ bookingWizardPage }): Promise<void> => {
+  test('GIVEN an empty wizard, clicking Next stays on Guest Info and reports the gap', async ({ bookingWizardPage }): Promise<void> => {
     await test.step('WHEN the wizard is opened', (): Promise<void> => bookingWizardPage.goto());
 
     await test.step('AND Next is clicked with nothing filled', (): Promise<void> => bookingWizardPage.nextButton.click());
@@ -271,7 +275,7 @@ test.describe('FEATURE: booking wizard', () => {
     await test.step('AND the full name is reported missing', (): Promise<void> => expect(bookingWizardPage.fullName).toHaveAccessibleDescription(/required/i));
   });
 
-  test('GIVEN filled steps, going back keeps the entries', async ({ bookingWizardPage }): Promise<void> => {
+  test('GIVEN an empty wizard, going back after the guest step keeps the entries', async ({ bookingWizardPage }): Promise<void> => {
     await test.step('WHEN the wizard is opened', (): Promise<void> => bookingWizardPage.goto());
 
     await test.step('AND guest information is entered', (): Promise<void> => bookingWizardPage.fillGuestInfo(GUEST_STUB));
@@ -285,7 +289,7 @@ test.describe('FEATURE: booking wizard', () => {
 });
 ```
 
-When the error is plain text rather than an accessible description, assert it with `expect(page.getByText('Full name is required')).toBeVisible()` inside a page-object `expect*` method.
+When the error is plain text rather than an accessible description, assert it with `expect(this.page.getByText('Full name is required')).toBeVisible()` inside a page-object `expect*` method.
 
 ### Form Submission and Response Handling
 
@@ -301,6 +305,7 @@ import { expect } from '@playwright/test';
 import type { Feedback } from '../common/feedback.type';
 
 export class FeedbackPage {
+  public readonly confirmation: Locator;
   public readonly details: Locator;
   public readonly email: Locator;
   public readonly subject: Locator;
@@ -310,6 +315,7 @@ export class FeedbackPage {
 
   public constructor(page: Page) {
     this.page = page;
+    this.confirmation = page.getByText('Feedback received');
     this.details = page.getByLabel('Details');
     this.email = page.getByLabel('Email');
     this.subject = page.getByLabel('Subject');
@@ -354,7 +360,7 @@ import { expect, test } from './feedback.fixture';
 import { FEEDBACK_STUB } from './test/stubs/feedback.stub';
 
 test.describe('FEATURE: feedback form', () => {
-  test('GIVEN a filled form, submitting is accepted and shows a confirmation', async ({ feedbackPage, page }): Promise<void> => {
+  test('GIVEN valid feedback, submitting it is accepted and shows a confirmation', async ({ feedbackPage }): Promise<void> => {
     await test.step('WHEN the feedback form is opened', (): Promise<void> => feedbackPage.goto());
 
     await test.step('AND the form is filled', (): Promise<void> => feedbackPage.fill(FEEDBACK_STUB));
@@ -363,10 +369,10 @@ test.describe('FEATURE: feedback form', () => {
 
     await test.step('THEN the server responds 200', (): void => expect(response.status()).toBe(200));
 
-    await test.step('AND the confirmation is shown', (): Promise<void> => expect(page.getByText('Feedback received')).toBeVisible());
+    await test.step('AND the confirmation is shown', (): Promise<void> => expect(feedbackPage.confirmation).toBeVisible());
   });
 
-  test('GIVEN a filled form, submitting shows the in-flight button state', async ({ feedbackPage }): Promise<void> => {
+  test('GIVEN valid feedback, submitting it shows the in-flight button state', async ({ feedbackPage }): Promise<void> => {
     await test.step('WHEN the feedback form is opened', (): Promise<void> => feedbackPage.goto());
 
     await test.step('AND the form is filled', (): Promise<void> => feedbackPage.fill(FEEDBACK_STUB));
@@ -472,12 +478,16 @@ import { expect, test } from './signup.fixture';
 import { SIGNUP_STUB } from './test/stubs/signup.stub';
 
 test.describe('FEATURE: signup form', () => {
-  test('GIVEN every field filled, submitting opens the welcome page', async ({ signupPage }): Promise<void> => {
+  test('GIVEN complete signup details, filling and submitting them opens the welcome page', async ({ signupPage }): Promise<void> => {
     await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto());
 
     await test.step('AND the form is filled', (): Promise<void> => signupPage.fill(SIGNUP_STUB));
 
-    await test.step('AND the form is submitted', (): Promise<void> => signupPage.submit());
+    await test.step('THEN the terms are accepted', (): Promise<void> => expect(signupPage.acceptTerms).toBeChecked());
+
+    await test.step('AND annual billing is selected', (): Promise<void> => expect(signupPage.annualBilling).toBeChecked());
+
+    await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit());
 
     await test.step('THEN the welcome heading is shown', (): Promise<void> => expect(signupPage.welcomeHeading).toBeVisible());
   });
@@ -490,14 +500,14 @@ test.describe('FEATURE: signup form', () => {
 
 Native inputs take ISO strings through `fill()`. A third-party picker is driven through its own controls.
 
-`ReservationPage` owns `eventDate`, `reminder`, `reservationDate` and `timeSlot`, each a `getByLabel` locator, plus `goto()`. `fillNativeInputs(date, time, reminder)` fills the three native inputs. `pickEventDateNextMonth(day)` clicks `eventDate`, then `getByRole('button', { name: 'Next month' })`, then `getByRole('gridcell', { name: day })`.
+`ReservationPage` owns `eventDate`, `reminder`, `reservationDate` and `timeSlot`, each a `getByLabel` locator, plus `goto(options)`. `ReservationOptions` in `common/reservation.type.ts` is `{ readonly time?: string }`; with `time`, `goto` calls `page.clock.setFixedTime(time)` before it navigates, so "next month" in the picker is the same month on every run. `fillNativeInputs(date, time, reminder)` fills the three native inputs. `pickEventDateNextMonth(day)` clicks `eventDate`, then `getByRole('button', { name: 'Next month' })`, then `getByRole('gridcell', { name: day })`.
 
 ```ts
 // e2e/reservation/reservation.e2e.ts
 import { expect, test } from './reservation.fixture';
 
 test.describe('FEATURE: reservation dates', () => {
-  test('GIVEN native date inputs, filling them stores the ISO date value', async ({ reservationPage }): Promise<void> => {
+  test('GIVEN an empty reservation form, filling the native inputs stores the ISO date value', async ({ reservationPage }): Promise<void> => {
     await test.step('WHEN the reservation form is opened', (): Promise<void> => reservationPage.goto());
 
     await test.step('AND date, time and reminder are filled', (): Promise<void> => reservationPage.fillNativeInputs('2025-07-10', '18:00', '2025-07-10T17:30'));
@@ -505,8 +515,8 @@ test.describe('FEATURE: reservation dates', () => {
     await test.step('THEN the reservation date holds 2025-07-10', (): Promise<void> => expect(reservationPage.reservationDate).toHaveValue('2025-07-10'));
   });
 
-  test('GIVEN the calendar picker, picking a day fills the input with the date', async ({ reservationPage }): Promise<void> => {
-    await test.step('WHEN the reservation form is opened', (): Promise<void> => reservationPage.goto());
+  test('GIVEN a clock in June 2025, picking the 25th of next month fills a 2025 event date', async ({ reservationPage }): Promise<void> => {
+    await test.step('WHEN the reservation form is opened', (): Promise<void> => reservationPage.goto({ time: '2025-06-10T09:00:00' }));
 
     await test.step('AND the 25th of next month is picked', (): Promise<void> => reservationPage.pickEventDateNextMonth('25'));
 
@@ -519,16 +529,16 @@ test.describe('FEATURE: reservation dates', () => {
 
 **Use when**: Testing that the form shows appropriate error messages when required fields are empty.
 
-`emailValidationMessage()` reads the native HTML5 constraint message through `evaluate` with a typed element parameter, so no cast is needed.
+The native HTML5 constraint message is the input's `validationMessage` property, so `expect(inquiryPage.email).not.toHaveJSProperty('validationMessage', '')` reads it inside the check and retries; no step reads it and no `evaluate` is needed.
 
-`InquiryPage` owns `email`, `name`, `nameError` (`getByText('Name is required')`) and `sendButton`, plus `goto()` and `send()`. `fillNameAndLeave(name)` fills the name and calls `this.email.focus()`. `emailValidationMessage(): Promise<string>` returns `this.email.evaluate((element: HTMLInputElement): string => element.validationMessage)`. `expectRequiredErrors()` asserts `nameError`, `Email is required` and `Question is required` are visible, one plain `await expect(…)` line each.
+`InquiryPage` owns `email`, `name`, `nameError` (`getByText('Name is required')`) and `sendButton`, plus `goto()` and `send()`. `fillNameAndLeave(name)` fills the name and calls `this.email.focus()`. `expectRequiredErrors()` asserts `nameError`, `Email is required` and `Question is required` are visible, one plain `await expect(…)` line each.
 
 ```ts
 // e2e/inquiry/inquiry.e2e.ts
 import { expect, test } from './inquiry.fixture';
 
 test.describe('FEATURE: inquiry validation', () => {
-  test('GIVEN an empty form, sending it reports every required field and stays', async ({ inquiryPage, page }): Promise<void> => {
+  test('GIVEN an empty inquiry form, sending it reports every required field and stays', async ({ inquiryPage, page }): Promise<void> => {
     await test.step('WHEN the inquiry form is opened', (): Promise<void> => inquiryPage.goto());
 
     await test.step('AND the empty form is sent', (): Promise<void> => inquiryPage.send());
@@ -538,24 +548,24 @@ test.describe('FEATURE: inquiry validation', () => {
     await test.step('AND the url is still /inquiry', (): Promise<void> => expect(page).toHaveURL(/\/inquiry/));
   });
 
-  test('GIVEN a reported field, filling it clears its error', async ({ inquiryPage }): Promise<void> => {
+  test('GIVEN an empty inquiry form, filling a reported field clears its error', async ({ inquiryPage }): Promise<void> => {
     await test.step('WHEN the inquiry form is opened', (): Promise<void> => inquiryPage.goto());
 
     await test.step('AND the empty form is sent', (): Promise<void> => inquiryPage.send());
 
-    await test.step('AND the name is filled and left', (): Promise<void> => inquiryPage.fillNameAndLeave('Carol Brown'));
+    await test.step('THEN the name error is shown', (): Promise<void> => expect(inquiryPage.nameError).toBeVisible());
+
+    await test.step('WHEN the name is filled and left', (): Promise<void> => inquiryPage.fillNameAndLeave('Carol Brown'));
 
     await test.step('THEN the name error is gone', (): Promise<void> => expect(inquiryPage.nameError).not.toBeVisible());
   });
 
-  test('GIVEN an empty form, sending it sets the native constraint message', async ({ inquiryPage }): Promise<void> => {
+  test('GIVEN an empty inquiry form, sending it sets the native constraint message', async ({ inquiryPage }): Promise<void> => {
     await test.step('WHEN the inquiry form is opened', (): Promise<void> => inquiryPage.goto());
 
     await test.step('AND the empty form is sent', (): Promise<void> => inquiryPage.send());
 
-    const message = await test.step('AND the email validation message is read', (): Promise<string> => inquiryPage.emailValidationMessage());
-
-    await test.step('THEN the message is non-empty', (): void => expect(message).toBeTruthy());
+    await test.step('THEN the email carries a constraint message', (): Promise<void> => expect(inquiryPage.email).not.toHaveJSProperty('validationMessage', ''));
   });
 });
 ```
@@ -608,14 +618,14 @@ The same fill-blur-assert shape covers other rules. Each row is one test.
 
 **Use when**: Testing "clear form" or "reset" functionality, verifying that fields return to their default values.
 
-`PreferencesPage` owns `emailAlerts`, `language`, `nickname` and `resetButton`, plus `goto()`. `changeEverything()` fills the nickname, `selectOption('es')` on language and `uncheck()` on email alerts. `reset()` clicks Reset. `expectDefaults()` asserts `toHaveValue('')`, `toHaveValue('en')` and `toBeChecked()` as three plain `await expect(…)` lines under the spec's one `THEN` step.
+`PreferencesPage` owns `emailAlerts`, `language`, `nickname` and `resetButton`, plus `goto()`. `changeEverything()` fills the nickname, `selectOption('es')` on language and `uncheck()` on email alerts. `reset()` clicks Reset. `expectDefaults()` asserts `toHaveValue('')`, `toHaveValue('en')` and `toBeChecked()` as three plain `await expect(…)` lines under the spec's one `THEN` step. Every Playwright action fails loudly when it cannot act, so `changeEverything()` needs no guard check before Reset.
 
 ```ts
 // e2e/preferences/preferences.e2e.ts
 import { test } from './preferences.fixture';
 
 test.describe('FEATURE: preferences reset', () => {
-  test('GIVEN every field changed, clicking Reset returns every field to its default', async ({ preferencesPage }): Promise<void> => {
+  test('GIVEN default preferences, changing every field and clicking Reset restores the defaults', async ({ preferencesPage }): Promise<void> => {
     await test.step('WHEN the preferences page is opened', (): Promise<void> => preferencesPage.goto());
 
     await test.step('AND every field is changed', (): Promise<void> => preferencesPage.changeEverything());
@@ -642,7 +652,7 @@ A reset guarded by a confirm dialog registers the handler before the click, insi
 | Date input (native) | `fill()` with ISO format | `this.date.fill('2025-03-15')` |
 | Date picker (third-party) | Click to open, navigate, select day | `this.page.getByRole('gridcell', { name: '15' }).click()` |
 | Validation errors | Submit, then assert error text | `expectRequiredErrors()` |
-| Multi-step wizard | One page-object method per wizard step, `expectStep(heading)` after the last | `test.step('AND guest information is entered', (): Promise<void> => wizard.fillGuestInfo(GUEST_STUB))` |
+| Multi-step wizard | One page-object method per wizard step; after an `expectStep(heading)` check, the next wizard step opens a new phase with `WHEN` | `test.step('WHEN room options are selected', (): Promise<void> => wizard.selectRoom(ROOM_STUB))` |
 | Conditional/dynamic fields | Change trigger field, assert new field visibility | `expect(locator).toBeVisible()` / `.not.toBeVisible()` |
 | Form submission | `waitForResponse` registered before the click, inside `submit()` | `submit(): Promise<Response>` |
 | Auto-complete | `pressSequentially()`, wait for listbox, select option | `pickSuggestion(name)` |
@@ -659,7 +669,7 @@ A reset guarded by a confirm dialog registers the handler before the click, insi
 | Testing every invalid input in one test | Test becomes huge, slow, and hard to debug | One test per value; loop outside the `test` body |
 | `expect(await input.inputValue()).toBe('value')` | Resolves once — no retry. Race condition. | `await expect(input).toHaveValue('value')` |
 | Filling fields with `page.evaluate()` | Bypasses event handlers (no `input`, `change` events fire) | `fill()` or `pressSequentially()` |
-| Not waiting for conditional fields before filling | `fill()` fails on hidden/detached elements | `await expect(field).toBeVisible()` first |
+| `await expect(field).toBeVisible()` inside an action method before `fill()` | An action method that asserts; `fill()` already waits until the field is visible and editable | Let `fill()` wait; to prove a conditional field appeared, check it in a `THEN` and fill it in the next `WHEN` |
 | Hardcoding wait after selecting a dropdown | `waitForTimeout(500)` is flaky and slow | Wait for the dependent element with `expect(...).toBeVisible()` |
 | Skipping server-side validation tests | Client-side validation can be bypassed | Test both client-side UX and server response |
 | `page.getByLabel(...)` inside a spec | Spec knows the DOM | Locator on the page object, method for the action |

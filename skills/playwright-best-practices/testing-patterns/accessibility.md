@@ -30,7 +30,7 @@ import type { AxeResults } from 'axe-core';
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: accessibility', () => {
-  test('GIVEN the home page, scanning reports no axe violations', async ({ homePage, makeAxeBuilder }): Promise<void> => {
+  test('GIVEN the WCAG 2.1 A and AA rules, scanning the home page reports no violations', async ({ homePage, makeAxeBuilder }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     const results = await test.step('AND the page is scanned with axe', (): Promise<AxeResults> => makeAxeBuilder().analyze());
@@ -138,69 +138,78 @@ The spec calls it as its assertion step: `await test.step('THEN no violations ar
 
 ### Tab Order Testing
 
-The page object owns the expected order as a `Locator[]` and walks it in `expectTabOrder()`, pressing Tab and asserting focus for each target. It opens no step; the spec's `THEN` is the only one.
+Pressing Tab is the user's action, so `tabThrough(stops)` presses it once per stop and returns what each press focused: the `ariaSnapshot()` of the `:focus` locator, which names the element by role and accessible name (`- textbox "Email"`). The spec's `THEN` compares that list with the expected order, so a failure prints the order a keyboard user actually met.
 
 ```ts
 // e2e/accessibility/pages/signup.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect } from '@playwright/test';
 
 export class SignupPage {
-  public readonly emailInput: Locator;
-  public readonly passwordInput: Locator;
-  public readonly submitButton: Locator;
-  public readonly tabOrder: Locator[];
+  public readonly focused: Locator;
 
   private readonly page: Page;
 
   public constructor(page: Page) {
     this.page = page;
-    this.emailInput = page.getByLabel('Email');
-    this.passwordInput = page.getByLabel('Password');
-    this.submitButton = page.getByRole('button', { name: 'Sign up' });
-    this.tabOrder = [this.emailInput, this.passwordInput, this.submitButton];
+    this.focused = page.locator(':focus');
   }
 
   public async goto(): Promise<void> {
     await this.page.goto('/signup');
   }
 
-  public async expectTabOrder(): Promise<void> {
-    for (const target of this.tabOrder) {
+  public async tabThrough(stops: number): Promise<string[]> {
+    const visited: string[] = [];
+
+    for (let stop = 0; stop < stops; stop += 1) {
       await this.page.keyboard.press('Tab');
-      await expect(target).toBeFocused();
+
+      const snapshot = await this.focused.ariaSnapshot();
+
+      visited.push(snapshot);
     }
+
+    return visited;
   }
 }
 ```
 
 ```ts
 // e2e/accessibility/signup-keyboard.e2e.ts
-import { test } from './accessibility.fixture';
+import { expect, test } from './accessibility.fixture';
+
+const TAB_ORDER: string[] = ['- textbox "Email"', '- textbox "Password"', '- button "Sign up"'];
 
 test.describe('FEATURE: signup keyboard navigation', () => {
-  test('GIVEN the signup page, tabbing from the page start visits email, password, sign up in order', async ({ signupPage }): Promise<void> => {
+  test('GIVEN focus at the page start, tabbing visits email, password, sign up in order', async ({ signupPage }): Promise<void> => {
     await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto());
 
-    await test.step('THEN tabbing from the page start visits email, password, sign up in order', (): Promise<void> => signupPage.expectTabOrder());
+    const visited = await test.step('AND tab is pressed once per control', (): Promise<string[]> => signupPage.tabThrough(TAB_ORDER.length));
+
+    await test.step('THEN focus visits email, password, sign up in order', (): void => expect(visited).toEqual(TAB_ORDER));
   });
 });
 ```
 
 ### Keyboard-Only Interaction and Skip Links
 
-A keyboard flow is a page-object method per user intent; the key sequence stays inside the method and the spec step names the intent. A shop flow reads `WHEN the shop is opened` → `shopPage.goto()`, `AND the first product is opened with tab and enter` → `shopPage.openFirstProductByKeyboard()` (Tab twice, then Enter), `AND it is added to the cart by keyboard` → `addToCartByKeyboard()`, `THEN` `expect(page).toHaveURL(/\/products\/\d+/)`, `AND` `expect(shopPage.toast).toContainText('Added to cart')`.
+A keyboard flow is a page-object method per user intent; the key sequence stays inside the method and the spec step names the intent. A shop flow reads `WHEN the shop is opened` → `shopPage.goto()`, `AND the first product is opened with tab and enter` → `shopPage.openFirstProductByKeyboard()` (Tab twice, then Enter), `THEN` `expect(page).toHaveURL(/\/products\/\d+/)`; the next phase acts on the product page that check proved: `WHEN it is added to the cart by keyboard` → `addToCartByKeyboard()`, `THEN` `expect(shopPage.toast).toContainText('Added to cart')`.
 
 `HomePage` also carries the landmark locators used under [Color & Contrast](#color--contrast). `goto()` takes `HomeOptions`, applied with `page.emulateMedia` before it navigates, so a media preference is part of the opening call.
+
+```ts
+// e2e/accessibility/common/accessibility.type.ts
+export type HomeOptions = {
+  readonly forcedColors?: 'active';
+  readonly reducedMotion?: 'reduce';
+};
+```
 
 ```ts
 // e2e/accessibility/pages/home.page.ts
 import type { Locator, Page } from '@playwright/test';
 
-type HomeOptions = {
-  readonly forcedColors?: 'active';
-  readonly reducedMotion?: 'reduce';
-};
+import type { HomeOptions } from '../common/accessibility.type';
 
 export class HomePage {
   public readonly hero: Locator;
@@ -230,10 +239,6 @@ export class HomePage {
   public async pressEnter(): Promise<void> {
     await this.page.keyboard.press('Enter');
   }
-
-  public async heroAnimationDuration(): Promise<string> {
-    return this.hero.evaluate((element: HTMLElement): string => getComputedStyle(element).animationDuration);
-  }
 }
 ```
 
@@ -242,12 +247,14 @@ export class HomePage {
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: skip link', () => {
-  test('GIVEN the skip link, activating it moves focus to the main landmark', async ({ homePage }): Promise<void> => {
+  test('GIVEN focus at the page start, the skip link moves focus to the main landmark', async ({ homePage }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('AND tab is pressed', (): Promise<void> => homePage.pressTab());
 
-    await test.step('AND enter is pressed', (): Promise<void> => homePage.pressEnter());
+    await test.step('THEN the skip link is focused', (): Promise<void> => expect(homePage.skipLink).toBeFocused());
+
+    await test.step('WHEN enter is pressed', (): Promise<void> => homePage.pressEnter());
 
     await test.step('THEN the main landmark is focused', (): Promise<void> => expect(homePage.main).toBeFocused());
   });
@@ -309,12 +316,14 @@ export class DashboardPage {
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: settings dialog keyboard handling', () => {
-  test('GIVEN an open dialog, pressing escape closes it and returns focus to the trigger', async ({ dashboardPage }): Promise<void> => {
+  test('GIVEN a closed settings dialog, escape after opening it closes it and refocuses the trigger', async ({ dashboardPage }): Promise<void> => {
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
     await test.step('AND the settings dialog is opened', (): Promise<void> => dashboardPage.openSettings());
 
-    await test.step('AND escape is pressed', (): Promise<void> => dashboardPage.pressEscape());
+    await test.step('THEN the dialog is visible', (): Promise<void> => expect(dashboardPage.settingsDialog).toBeVisible());
+
+    await test.step('WHEN escape is pressed', (): Promise<void> => dashboardPage.pressEscape());
 
     await test.step('THEN the dialog is hidden', (): Promise<void> => expect(dashboardPage.settingsDialog).toBeHidden());
 
@@ -325,7 +334,7 @@ test.describe('FEATURE: settings dialog keyboard handling', () => {
 
 ## ARIA Validation
 
-Every ARIA check is the shape of `settings-dialog.e2e.ts`: the `WHEN` step opens the page, an `AND` step calls one page-object action, a `THEN` step asserts one locator. Roles are locators on the page object; several roles that describe one state are asserted together in one `expect*` method as plain `await expect(…)` lines.
+Every ARIA check is one phase: the `WHEN` step opens the page, an `AND` step calls one page-object action, a `THEN` step asserts one locator. Roles are locators on the page object; several roles that describe one state are asserted together in one `expect*` method as plain `await expect(…)` lines.
 
 | Check | Page-object member | Action after `WHEN` | `THEN` |
 |---|---|---|---|
@@ -337,33 +346,38 @@ Every ARIA check is the shape of `settings-dialog.e2e.ts`: the `WHEN` step opens
 
 ### Focus Trap in Modal
 
-A dialog is a helper object scoped to its root locator. Tabbing one past the focusable count proves focus wrapped instead of leaving the dialog.
+A dialog is a helper object scoped to its root locator. Tabbing one past the focusable count proves focus wrapped instead of leaving the dialog. The presses are the action: `tabPastLastControl()` records after each press whether the root still contains the focused element, and the spec's `THEN` checks the record.
 
 ```ts
 // e2e/accessibility/helpers/dialog.helper.ts
 import type { Locator } from '@playwright/test';
-import { expect } from '@playwright/test';
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+const containsFocus = (root: Element): boolean => root.contains(document.activeElement);
+
 export class DialogHelper {
   public readonly focusable: Locator;
-  public readonly focused: Locator;
   public readonly root: Locator;
 
   public constructor(root: Locator) {
     this.root = root;
     this.focusable = root.locator(FOCUSABLE);
-    this.focused = root.locator(':focus');
   }
 
-  public async expectFocusTrapped(): Promise<void> {
+  public async tabPastLastControl(): Promise<boolean[]> {
     const count = await this.focusable.count();
+    const inside: boolean[] = [];
 
     for (let index = 0; index <= count; index += 1) {
       await this.root.page().keyboard.press('Tab');
-      await expect(this.focused).toHaveCount(1);
+
+      const focusInside = await this.root.evaluate(containsFocus);
+
+      inside.push(focusInside);
     }
+
+    return inside;
   }
 }
 ```
@@ -375,14 +389,16 @@ export class DialogHelper {
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: items page focus management', () => {
-  test('GIVEN an open dialog, pressing tab keeps focus inside it', async ({ itemsPage }): Promise<void> => {
+  test('GIVEN a closed item dialog, tabbing through it after opening never leaves it', async ({ itemsPage }): Promise<void> => {
     await test.step('WHEN the items page is opened', (): Promise<void> => itemsPage.goto());
 
     await test.step('AND the dialog is opened', (): Promise<void> => itemsPage.openDialog());
 
     await test.step('THEN the dialog is visible', (): Promise<void> => expect(itemsPage.dialog.root).toBeVisible());
 
-    await test.step('AND focus is trapped in the dialog', (): Promise<void> => itemsPage.dialog.expectFocusTrapped());
+    const inside = await test.step('WHEN tab is pressed once past the last control', (): Promise<boolean[]> => itemsPage.dialog.tabPastLastControl());
+
+    await test.step('THEN focus never leaves the dialog', (): void => expect(inside).not.toContain(false));
   });
 });
 ```
@@ -391,14 +407,14 @@ Focus restoration: the last step of `settings-dialog.e2e.ts` covers it: the trig
 
 ## Color & Contrast
 
-`page.emulateMedia` runs inside `homePage.goto(options)` before it navigates, so the preference is an option on the opening call and the `WHEN` stays `'WHEN the home page is opened'`. A spec where every test shares one preference can use a file-level `test.use({ reducedMotion: 'reduce' })` instead.
+`page.emulateMedia` runs inside `homePage.goto(options)` before it navigates, so the preference is an option on the opening call and the `WHEN` stays `'WHEN the home page is opened'`. Media emulation can change at runtime, so it stays an option on the opening call even when every test in a spec shares it, never a `test.use`.
 
 | Emulation | Opening call | `THEN` |
 |---|---|---|
 | High contrast | `homePage.goto({ forcedColors: 'active' })` | `expect(homePage.navigation).toBeVisible()`, then `expect(page).toHaveScreenshot('high-contrast.png')` |
 | Reduced motion | `homePage.goto({ reducedMotion: 'reduce' })` | shown below |
 
-The computed `animationDuration` is read by a page-object method with a typed `evaluate`, returned from a step, and asserted in the next step.
+`toHaveCSS('animation-duration', '0s')` reads the computed style inside the check and retries until it matches, so no step reads the value first.
 
 ```ts
 // e2e/accessibility/reduced-motion.e2e.ts
@@ -408,16 +424,14 @@ test.describe('FEATURE: reduced motion', () => {
   test('GIVEN a reduced motion preference, the hero animation is disabled', async ({ homePage }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto({ reducedMotion: 'reduce' }));
 
-    const duration = await test.step('AND the hero animation duration is read', (): Promise<string> => homePage.heroAnimationDuration());
-
-    await test.step('THEN the animation duration is zero', (): void => expect(duration).toBe('0s'));
+    await test.step('THEN the hero animation lasts 0s', (): Promise<void> => expect(homePage.hero).toHaveCSS('animation-duration', '0s'));
   });
 });
 ```
 
 ## CI Integration
 
-A dedicated project matches `*.a11y.e2e.ts` so CI can run accessibility specs on their own.
+A dedicated project collects every spec under `e2e/accessibility/`, so CI can run the accessibility specs on their own.
 
 ```ts
 // e2e/playwright.config.ts
@@ -425,9 +439,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 const a11yUse = { ...devices['Desktop Chrome'] };
 
-const projects = [{ name: 'a11y', testMatch: /.*\.a11y\.spec\.ts/, use: a11yUse }];
+const projects = [{ name: 'a11y', testMatch: 'accessibility/**/*.e2e.ts', use: a11yUse }];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ```yaml

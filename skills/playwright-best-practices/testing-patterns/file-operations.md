@@ -22,7 +22,7 @@ import type { Download } from '@playwright/test';
 import { expect, test } from './exports.fixture';
 
 test.describe('FEATURE: exports basic download', () => {
-  test('GIVEN the PDF report, downloading it offers report.pdf', async ({ exportsPage }, testInfo): Promise<void> => {
+  test('GIVEN a PDF report export, downloading it offers report.pdf', async ({ exportsPage }, testInfo): Promise<void> => {
     const savePath = testInfo.outputPath('report.pdf');
 
     await test.step('WHEN the exports page is opened', (): Promise<void> => exportsPage.goto());
@@ -177,7 +177,7 @@ export const test = base.extend<ExportsFixtures>({
 export { expect } from '@playwright/test';
 ```
 
-A spec destructures `downloadDir`, computes `path.join(downloadDir, download.suggestedFilename())` as a `const`, and passes it to `download.saveAs` in one step, as in the basic download spec above.
+A spec destructures `downloadDir` and saves in one step, `download.saveAs(path.join(downloadDir, download.suggestedFilename()))`, so no statement sits outside a step.
 
 ## File Uploads
 
@@ -201,11 +201,11 @@ test.describe('FEATURE: profile picture upload', () => {
 
     await test.step('AND avatar.png is selected', (): Promise<void> => profilePage.selectPicture(avatarPath));
 
-    await test.step('AND the profile is saved', (): Promise<void> => profilePage.save());
+    await test.step('THEN the preview is shown', (): Promise<void> => profilePage.expectPreview());
+
+    await test.step('WHEN the profile is saved', (): Promise<void> => profilePage.save());
 
     await test.step('THEN the alert confirms the update', (): Promise<void> => expect(profilePage.alert).toContainText('Profile updated'));
-
-    await test.step('AND the preview is shown', (): Promise<void> => profilePage.expectPreview());
   });
 });
 ```
@@ -221,7 +221,7 @@ test.describe('FEATURE: profile picture upload', () => {
 | One path | `attachmentsPage.select(path.join(__dirname, 'test/fixtures/document.pdf'))` | `file-upload-download.md` "From Fixture File or In-Memory Buffer" |
 | Several paths | `attachmentsPage.select(DOC_PATHS)` with `const DOC_PATHS: string[] = ['doc1.pdf', 'doc2.pdf'].map(…)` | `file-upload-download.md` "Multiple File Upload" |
 | In-memory buffer | `attachmentsPage.select({ ...CSV_FILE_STUB, buffer: Buffer.from('Name,Email\nJohn,john@example.com'), name: 'users.csv' })` | `file-upload-download.md` "From Fixture File or In-Memory Buffer" |
-| Native chooser | `const chooser = await test.step('AND the native chooser is opened', (): Promise<FileChooser> => avatarPage.openFileChooser());` then `chooser.setFiles(documentPath)`, same arguments as `setInputFiles` | `file-upload-download.md` "File Chooser Dialog" |
+| Native chooser | `const chooser = await test.step('AND the native chooser is opened', (): Promise<FileChooser> => avatarPage.openFileChooser());` after the opening `WHEN`, then `chooser.setFiles(documentPath)`, same arguments as `setInputFiles` | `file-upload-download.md` "File Chooser Dialog" |
 | Clear and replace | `attachmentsPage.clearSelection()` then `attachmentsPage.select(NEW_PDF)` | below |
 
 ```ts
@@ -233,12 +233,14 @@ const OLD_PDF = { ...PDF_FILE_STUB, name: 'old.pdf' };
 const NEW_PDF = { ...PDF_FILE_STUB, name: 'new.pdf' };
 
 test.describe('FEATURE: attachments replace', () => {
-  test('GIVEN a selected file, clearing and refilling lists only the new file', async ({ attachmentsPage }): Promise<void> => {
+  test('GIVEN old.pdf and new.pdf, clearing the first and selecting the second lists only new.pdf', async ({ attachmentsPage }): Promise<void> => {
     await test.step('WHEN the attachments page is opened', (): Promise<void> => attachmentsPage.goto());
 
     await test.step('AND old.pdf is selected', (): Promise<void> => attachmentsPage.select(OLD_PDF));
 
-    await test.step('AND the selection is cleared', (): Promise<void> => attachmentsPage.clearSelection());
+    await test.step('THEN old.pdf is listed', (): Promise<void> => attachmentsPage.expectListed('old.pdf'));
+
+    await test.step('WHEN the selection is cleared', (): Promise<void> => attachmentsPage.clearSelection());
 
     await test.step('AND new.pdf is selected', (): Promise<void> => attachmentsPage.select(NEW_PDF));
 
@@ -307,16 +309,14 @@ Most drop zones wrap a hidden `input[type="file"]`. `setInputFiles` works on a h
 
 ## File Content Verification
 
-Each parser reads the file Playwright already saved at `download.path()`; `readDownload` (in `file-upload-download.md`) reads the stream instead, so no file touches disk. One util per format returns a typed value, the spec parses in an `AND` step and asserts in `THEN` steps. The PDF spec below is the shape; the other formats swap the util, the step return type, and the assertions.
+Each parser reads the file Playwright already saved at `download.path()`; `readDownload` (in `file-upload-download.md`) reads the stream instead, so no file touches disk. One util per format returns a typed value. Each check calls it inside `expect.poll`, so the check reads what it asserts and no step only parses the file: `expect.poll((): Promise<string> => readPdfText(download)).toContain('Invoice #123')`. The PDF spec below is the shape; the other formats swap the util, its return type, and the matchers.
 
-| Format | Util | Step returns | Assertions |
+| Format | Util | Returns | Matchers |
 |---|---|---|---|
-| PDF text | `readPdfText(download)` | `Promise<string>` | `expect(text).toContain('Invoice #123')` |
-| Excel rows | `readSheetRows(download)` | `Promise<ExportRow[]>` | `expect(rows).toHaveLength(10)`, `expect(rows[0]).toHaveProperty('Name')` |
-| JSON payload | `readJsonPayload(download)` | `Promise<ExportPayload>` | `expect(payload.users).toHaveLength(5)`, `expect(payload.exportDate).toBeDefined()` |
-| CSV text | `readDownload(download)` | `Promise<string>` | `expect(content).toContain('Name,Email,Status')`, `expect(content.trim().split('\n').length).toBeGreaterThan(1)` |
-
-Each parser reads the file Playwright already saved at `download.path()`. One util per format returns a typed value; the spec asserts on it.
+| PDF text | `readPdfText(download)` | `Promise<string>` | `toContain('Invoice #123')` |
+| Excel rows | `readSheetRows(download)` | `Promise<ExportRow[]>` | `toHaveLength(10)`, then `toHaveProperty('0.Name')` |
+| JSON payload | `readJsonPayload(download)` | `Promise<ExportPayload>` | `toHaveProperty('users.length', 5)`, then `toHaveProperty('exportDate')` |
+| CSV text | `readDownload(download)` | `Promise<string>` | `toContain('Name,Email,Status')`, then `toMatch(/\n.+/)` for a data row |
 
 ### Verify PDF Content
 
@@ -338,11 +338,15 @@ export const readPdfText = async (download: Download): Promise<string> => {
 
 ### Verify Excel Content
 
-`sheet_to_json` takes the row type as a generic. Column headers become keys, so `ExportRow` keeps their case. `ExportResult` is the type `AnalyticsPage.exportPdf()` in `file-upload-download.md` returns.
+`sheet_to_json` takes the row type as a generic. Column headers become keys, so `ExportRow` keeps their case. `ExportResult` is the type `AnalyticsPage.exportPdf()` in `file-upload-download.md` returns, and `AnalyticsOptions` is the one options type its `goto()` takes.
 
 ```ts
 // e2e/exports/common/exports.type.ts
 import type { Download, Response } from '@playwright/test';
+
+export type AnalyticsOptions = {
+  readonly failOn?: 'export';
+};
 
 export type ExportResult = {
   readonly download: Download;
@@ -404,16 +408,14 @@ import { expect, test } from './exports.fixture';
 import { readPdfText } from './test/utils/pdf-text.spec.util';
 
 test.describe('FEATURE: exports formats', () => {
-  test('GIVEN the invoice, downloading it yields a PDF whose text names it', async ({ exportsPage }): Promise<void> => {
+  test('GIVEN an invoice export, downloading it yields a PDF whose text names it', async ({ exportsPage }): Promise<void> => {
     await test.step('WHEN the exports page is opened', (): Promise<void> => exportsPage.goto());
 
     const download = await test.step('AND the invoice is downloaded', (): Promise<Download> => exportsPage.download('Download Invoice'));
 
-    const text = await test.step('AND the PDF text is parsed', (): Promise<string> => readPdfText(download));
+    await test.step('THEN the invoice number is present', (): Promise<void> => expect.poll((): Promise<string> => readPdfText(download)).toContain('Invoice #123'));
 
-    await test.step('THEN the invoice number is present', (): void => expect(text).toContain('Invoice #123'));
-
-    await test.step('AND the total is present', (): void => expect(text).toContain('Total: $99.99'));
+    await test.step('AND the total is present', (): Promise<void> => expect.poll((): Promise<string> => readPdfText(download)).toContain('Total: $99.99'));
   });
 });
 ```
