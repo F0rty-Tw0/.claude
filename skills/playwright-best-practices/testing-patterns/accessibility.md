@@ -30,7 +30,7 @@ import type { AxeResults } from 'axe-core';
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: accessibility', () => {
-  test('SCENARIO: scanning the home page reports no axe violations', async ({ homePage, makeAxeBuilder }): Promise<void> => {
+  test('GIVEN the home page, scanning reports no axe violations', async ({ homePage, makeAxeBuilder }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     const results = await test.step('WHEN the page is scanned with axe', (): Promise<AxeResults> => makeAxeBuilder().analyze());
@@ -183,7 +183,7 @@ export class SignupPage {
 import { test } from './accessibility.fixture';
 
 test.describe('FEATURE: signup keyboard navigation', () => {
-  test('SCENARIO: tabbing from the page start visits email, password, sign up in order', async ({ signupPage }): Promise<void> => {
+  test('GIVEN the signup page, tabbing from the page start visits email, password, sign up in order', async ({ signupPage }): Promise<void> => {
     await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
 
     await test.step('WHEN tab is pressed from the page start THEN focus visits email, password, sign up in order', (): Promise<void> => signupPage.expectTabOrder());
@@ -248,7 +248,7 @@ export class HomePage {
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: skip link', () => {
-  test('SCENARIO: activating the skip link moves focus to the main landmark', async ({ homePage }): Promise<void> => {
+  test('GIVEN the skip link, activating it moves focus to the main landmark', async ({ homePage }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     await test.step('AND tab is pressed', (): Promise<void> => homePage.pressTab());
@@ -319,7 +319,7 @@ export class DashboardPage {
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: settings dialog keyboard handling', () => {
-  test('SCENARIO: pressing escape closes the dialog and returns focus to the trigger', async ({ dashboardPage }): Promise<void> => {
+  test('GIVEN an open dialog, pressing escape closes it and returns focus to the trigger', async ({ dashboardPage }): Promise<void> => {
     await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
     await test.step('AND the settings dialog is open', (): Promise<void> => dashboardPage.openSettings());
@@ -391,7 +391,7 @@ export class DialogHelper {
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: items page focus management', () => {
-  test('SCENARIO: an open dialog keeps tab inside it', async ({ itemsPage }): Promise<void> => {
+  test('GIVEN an open dialog, pressing tab keeps focus inside it', async ({ itemsPage }): Promise<void> => {
     await test.step('GIVEN the items page is open', (): Promise<void> => itemsPage.goto());
 
     await test.step('WHEN the dialog is opened', (): Promise<void> => itemsPage.openDialog());
@@ -421,7 +421,7 @@ The computed `animationDuration` is read by a page-object method with a typed `e
 import { expect, test } from './accessibility.fixture';
 
 test.describe('FEATURE: reduced motion', () => {
-  test('SCENARIO: preferring reduced motion disables the hero animation', async ({ homePage }): Promise<void> => {
+  test('GIVEN a reduced motion preference, the hero animation is disabled', async ({ homePage }): Promise<void> => {
     await test.step('GIVEN reduced motion is emulated', (): Promise<void> => homePage.emulateReducedMotion());
 
     await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());

@@ -182,11 +182,11 @@ import type { SettingsWindowPage } from './pages/settings-window.page';
 import { expect, test } from './desktop.fixture';
 
 test.describe('FEATURE: desktop windows', () => {
-  test('SCENARIO: app start names the app in the main window', async ({ mainWindow }): Promise<void> => {
+  test('GIVEN app start, the main window names the app', async ({ mainWindow }): Promise<void> => {
     await test.step('THEN window shows My App', (): Promise<void> => mainWindow.expectText('My App'));
   });
 
-  test('SCENARIO: Open Settings opens a second window', async ({ electronApp, mainWindow }): Promise<void> => {
+  test('GIVEN the main window, clicking Open Settings opens a second window', async ({ electronApp, mainWindow }): Promise<void> => {
     const settingsWindow = await test.step('WHEN the settings window is opened', (): Promise<SettingsWindowPage> => mainWindow.openSettings());
 
     await test.step('THEN settings heading reads Settings', (): Promise<void> => expect(settingsWindow.heading).toHaveText('Settings'));
@@ -244,13 +244,13 @@ import { appVersion, windowBounds } from './test/utils/main-process.spec.util';
 const SEMVER = /^\d+\.\d+\.\d+$/;
 
 test.describe('FEATURE: desktop main process', () => {
-  test('SCENARIO: app reports a semver version', async ({ electronApp }): Promise<void> => {
+  test('GIVEN the running app, its version is semver', async ({ electronApp }): Promise<void> => {
     const version = await test.step('WHEN the app version is read', (): Promise<string> => appVersion(electronApp));
 
     await test.step('THEN version is semver', (): void => expect(version).toMatch(SEMVER));
   });
 
-  test('SCENARIO: main window has bounds', async ({ electronApp }): Promise<void> => {
+  test('GIVEN the main window, its bounds are reported', async ({ electronApp }): Promise<void> => {
     const bounds = await test.step('WHEN the window bounds are read', (): Promise<Rectangle> => windowBounds(electronApp));
 
     await test.step('THEN window has a width', (): void => expect(bounds.width).toBeGreaterThan(0));
@@ -340,7 +340,7 @@ With `nodeIntegration: true` the renderer exposes `process.version` and `require
 import { expect, test } from './desktop.fixture';
 
 test.describe('FEATURE: desktop renderer', () => {
-  test('SCENARIO: context isolation exposes the preload api', async ({ renderer }): Promise<void> => {
+  test('GIVEN context isolation, the preload api is exposed', async ({ renderer }): Promise<void> => {
     const hasApi = await test.step('WHEN electronAPI is checked', (): Promise<boolean> => renderer.hasElectronApi());
 
     await test.step('THEN electronAPI is exposed', (): void => expect(hasApi).toBe(true));
@@ -391,19 +391,19 @@ import { installIpcMock, roundTripFromMain } from './test/utils/ipc.spec.util';
 import { FETCH_DATA_STUB } from './test/stubs/ipc.stub';
 
 test.describe('FEATURE: desktop ipc', () => {
-  test('SCENARIO: user-settings response has a theme', async ({ renderer }): Promise<void> => {
+  test('GIVEN a user-settings request, the response has a theme', async ({ renderer }): Promise<void> => {
     const settings = await test.step('WHEN getData is invoked for user-settings', (): Promise<UserSettings | undefined> => renderer.userSettings('user-settings'));
 
     await test.step('THEN settings carry a theme', (): void => expect(settings).toHaveProperty('theme'));
   });
 
-  test('SCENARIO: message from main reaches the renderer', async ({ electronApp, renderer }): Promise<void> => {
+  test('GIVEN a message from main, it reaches the renderer', async ({ electronApp, renderer }): Promise<void> => {
     const message = await test.step('WHEN Hello from main! is sent and awaited', (): Promise<string> => roundTripFromMain(electronApp, renderer, 'Hello from main!'));
 
     await test.step('THEN renderer received the text', (): void => expect(message).toBe('Hello from main!'));
   });
 
-  test('SCENARIO: mocked fetch-data reaches the renderer', async ({ electronApp, renderer }): Promise<void> => {
+  test('GIVEN a mocked fetch-data handler, its response reaches the renderer', async ({ electronApp, renderer }): Promise<void> => {
     await test.step('GIVEN the fetch-data mock is installed', (): Promise<void> => installIpcMock(electronApp, FETCH_DATA_STUB));
 
     const result = await test.step('WHEN fetchData is invoked', (): Promise<FetchData | undefined> => renderer.fetchData());
@@ -446,7 +446,7 @@ import { test } from './desktop.fixture';
 import { installOpenDialogMock } from './test/utils/dialog.spec.util';
 
 test.describe('FEATURE: desktop dialogs', () => {
-  test('SCENARIO: Open File opens the mocked file', async ({ electronApp, mainWindow }): Promise<void> => {
+  test('GIVEN a mocked open dialog, clicking Open File opens the mocked file', async ({ electronApp, mainWindow }): Promise<void> => {
     await test.step('GIVEN the open dialog resolves with file.txt', (): Promise<void> => installOpenDialogMock(electronApp, ['/mock/path/file.txt']));
 
     await test.step('WHEN Open File is clicked', (): Promise<void> => mainWindow.openFileButton.click());
@@ -558,7 +558,7 @@ import { readClipboard, writeClipboard } from './test/utils/clipboard.spec.util'
 import { installNotificationSpy, lastNotification } from './test/utils/notification.spec.util';
 
 test.describe('FEATURE: desktop native features', () => {
-  test('SCENARIO: Notify creates a notification titled New Message', async ({ electronApp, mainWindow }): Promise<void> => {
+  test('GIVEN the main window, clicking Notify creates a notification titled New Message', async ({ electronApp, mainWindow }): Promise<void> => {
     await test.step('WHEN Notification is spied on', (): Promise<void> => installNotificationSpy(electronApp));
 
     await test.step('AND Notify is clicked', (): Promise<void> => mainWindow.notifyButton.click());
@@ -568,7 +568,7 @@ test.describe('FEATURE: desktop native features', () => {
     await test.step('THEN title is New Message', (): void => expect(notification?.title).toBe('New Message'));
   });
 
-  test('SCENARIO: pasted text stays on the clipboard', async ({ electronApp, mainWindow }): Promise<void> => {
+  test('GIVEN pasted text, it stays on the clipboard', async ({ electronApp, mainWindow }): Promise<void> => {
     await test.step('WHEN the clipboard is written', (): Promise<void> => writeClipboard(electronApp, 'Test clipboard content'));
 
     await test.step('AND the textbox receives a paste', (): Promise<void> => mainWindow.pasteIntoTextbox());

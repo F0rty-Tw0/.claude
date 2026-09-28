@@ -76,7 +76,7 @@ test.describe('FEATURE: exports', () => {
     await test.step('GIVEN the exports page is open', (): Promise<void> => exportsPage.goto());
   });
 
-  test('SCENARIO: downloading transactions.csv yields the header and data rows', async ({ exportsPage }): Promise<void> => {
+  test('GIVEN transactions.csv, downloading it yields the header and data rows', async ({ exportsPage }): Promise<void> => {
     const download = await test.step('WHEN transactions.csv is downloaded', (): Promise<Download> => exportsPage.download('transactions.csv'));
 
     const content = await test.step('AND the download is read from its stream', (): Promise<string> => readDownload(download));
@@ -244,7 +244,7 @@ test.describe('FEATURE: attachments upload', () => {
     await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
   });
 
-  test('SCENARIO: uploading a fixture file lists it as an attachment', async ({ attachmentsPage }): Promise<void> => {
+  test('GIVEN a fixture file, uploading it lists it as an attachment', async ({ attachmentsPage }): Promise<void> => {
     const invoicePath = path.join(__dirname, 'test/fixtures/invoice.pdf');
 
     await test.step('WHEN invoice.pdf is selected from disk', (): Promise<void> => attachmentsPage.select(invoicePath));
@@ -256,7 +256,7 @@ test.describe('FEATURE: attachments upload', () => {
     await test.step('THEN the alert confirms the upload', (): Promise<void> => expect(attachmentsPage.alert).toContainText('uploaded successfully'));
   });
 
-  test('SCENARIO: clearing the selection removes the file', async ({ attachmentsPage }): Promise<void> => {
+  test('GIVEN a selected file, clearing the selection removes it', async ({ attachmentsPage }): Promise<void> => {
     await test.step('WHEN the CSV is selected', (): Promise<void> => attachmentsPage.select(CSV_FILE_STUB));
 
     await test.step('THEN contacts.csv is listed', (): Promise<void> => attachmentsPage.expectListed(CSV_FILE_STUB.name));
@@ -320,7 +320,7 @@ test.describe('FEATURE: attachments multiple upload', () => {
     await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
   });
 
-  test('SCENARIO: uploading three files together reports all three', async ({ attachmentsPage }): Promise<void> => {
+  test('GIVEN three files, uploading them together reports all three', async ({ attachmentsPage }): Promise<void> => {
     await test.step('WHEN three PDFs are selected', (): Promise<void> => attachmentsPage.select(THREE_PDFS));
 
     await test.step('THEN the summary counts three files', (): Promise<void> => attachmentsPage.expectListed('3 files selected'));
@@ -382,7 +382,7 @@ test.describe('FEATURE: attachments drop zone', () => {
     await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
   });
 
-  test('SCENARIO: a drag entering and leaving moves the highlight with it', async ({ attachmentsPage }): Promise<void> => {
+  test('GIVEN a drag that enters and leaves, the highlight follows it', async ({ attachmentsPage }): Promise<void> => {
     await test.step('WHEN a drag enters the zone', (): Promise<void> => attachmentsPage.dropZone.dragEnter());
 
     await test.step('THEN the zone highlights the drag', (): Promise<void> => attachmentsPage.dropZone.expectActive());
@@ -465,7 +465,7 @@ test.describe('FEATURE: avatar upload', () => {
     await test.step('GIVEN the avatar page is open', (): Promise<void> => avatarPage.goto());
   });
 
-  test('SCENARIO: choosing a file through the native chooser lists it', async ({ avatarPage }): Promise<void> => {
+  test('GIVEN the native file chooser, choosing a file lists it', async ({ avatarPage }): Promise<void> => {
     const selected = { ...PDF_FILE_STUB, name: 'selected.pdf' };
 
     const chooser = await test.step('WHEN the native chooser is opened', (): Promise<FileChooser> => avatarPage.openFileChooser());
@@ -477,7 +477,7 @@ test.describe('FEATURE: avatar upload', () => {
     await test.step('THEN selected.pdf is listed', (): Promise<void> => avatarPage.expectListed('selected.pdf'));
   });
 
-  test('SCENARIO: selecting a photo renders a preview', async ({ avatarPage }): Promise<void> => {
+  test('GIVEN a photo, selecting it renders a preview', async ({ avatarPage }): Promise<void> => {
     const photoPath = path.join(__dirname, 'test/fixtures/photo.jpg');
 
     await test.step('WHEN photo.jpg is selected', (): Promise<void> => avatarPage.select(photoPath));
@@ -576,7 +576,7 @@ test.describe('FEATURE: attachments upload progress', () => {
     await test.step('AND the attachments page is open', (): Promise<void> => attachmentsPage.goto());
   });
 
-  test('SCENARIO: cancelling a stalled upload attaches nothing', async ({ attachmentsPage }): Promise<void> => {
+  test('GIVEN a stalled upload, cancelling it attaches nothing', async ({ attachmentsPage }): Promise<void> => {
     await test.step('AND the 5 MB file is selected', (): Promise<void> => attachmentsPage.select(LARGE_FILE_STUB));
 
     await test.step('AND the selection is uploaded', (): Promise<void> => attachmentsPage.upload());
@@ -634,7 +634,7 @@ import { flakyUploadMock } from './test/mocks/flaky-upload.mock';
 import { CSV_FILE_STUB } from './test/stubs/attachments.stub';
 
 test.describe('FEATURE: attachments upload retry', () => {
-  test('SCENARIO: retrying an upload that failed once succeeds on the second attempt', async ({ attachmentsPage, page }): Promise<void> => {
+  test('GIVEN an upload that fails once, retrying succeeds on the second attempt', async ({ attachmentsPage, page }): Promise<void> => {
     const flaky = flakyUploadMock();
 
     await test.step('GIVEN the upload endpoint fails once', async (): Promise<void> => {
@@ -674,7 +674,7 @@ test.describe('FEATURE: attachments upload restrictions', () => {
     await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
   });
 
-  test('SCENARIO: selecting a disallowed type rejects it', async ({ attachmentsPage }): Promise<void> => {
+  test('GIVEN a disallowed file type, selecting it rejects it', async ({ attachmentsPage }): Promise<void> => {
     await test.step('WHEN malware.exe is selected', (): Promise<void> => attachmentsPage.select(EXE_FILE_STUB));
 
     await test.step('THEN the alert rejects the type', (): Promise<void> => expect(attachmentsPage.alert).toContainText(/not allowed|unsupported file type|only .pdf, .doc/i));
