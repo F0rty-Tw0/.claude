@@ -9,7 +9,7 @@
 5. [Input Validation](#input-validation)
 6. [Security Headers](#security-headers)
 
-Every sample lives under `e2e/security/`. Malicious inputs are typed constants in `common/security.const.ts`; page objects encode and submit them; the spec asserts that nothing executed, nothing leaked, and the server refused. `common/security.type.ts` holds `Credentials`, `HeaderMap` (`Record<string, string>`), `LoginOptions`, and `SettingsPatch`; `test/stubs/security.stub.ts` holds `USER_STUB`.
+Every sample lives under `e2e/security/`. Malicious inputs are typed constants in `common/security.const.ts`; page objects encode and submit them; the spec asserts that nothing executed, nothing leaked, and the server refused. `common/security.type.ts` holds `Credentials`, `LoginOptions`, and `SettingsPatch`; `test/stubs/security.stub.ts` holds `USER_STUB`.
 
 ```ts
 // e2e/security/common/security.const.ts
@@ -29,19 +29,26 @@ export const SQL_PAYLOADS: string[] = [
 ];
 ```
 
-Two fixtures collect browser events for the whole test: `dialogs` records every `alert`, `confirm`, and `prompt` the page opens, and `cspViolations` records console messages that mention the Content Security Policy. Both are plain arrays the spec asserts on in a step.
+The feature has one fixture file. Two members collect browser events for the whole test: `dialogs` records every `alert`, `confirm`, and `prompt` the page opens, and `cspViolations` records console messages that mention the Content Security Policy. Both are plain arrays the spec asserts on in a step. `secondLoginPage` is a `LoginPage` on a fresh browser context. `settingsApi` wraps `page.request`, which shares the context's cookies. The page objects `adminUsersPage`, `dashboardPage`, `forgotPasswordPage`, `homePage`, `loginPage`, `postEditorPage`, `postPage`, `profilePage`, `resetPasswordPage`, and `settingsPage` are further members in the same shape as `searchPage`.
 
 ```ts
-// e2e/security/browser-events.fixture.ts
+// e2e/security/security.fixture.ts
 import type { ConsoleMessage, Dialog } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
-type BrowserEventFixtures = {
+import { SettingsApi } from './api/settings.api';
+import { LoginPage } from './pages/login.page';
+import { SearchPage } from './pages/search.page';
+
+type SecurityFixtures = {
   readonly cspViolations: string[];
   readonly dialogs: string[];
+  readonly searchPage: SearchPage;
+  readonly secondLoginPage: LoginPage;
+  readonly settingsApi: SettingsApi;
 };
 
-export const test = base.extend<BrowserEventFixtures>({
+export const test = base.extend<SecurityFixtures>({
   cspViolations: async ({ page }, use): Promise<void> => {
     const violations: string[] = [];
     const record = (message: ConsoleMessage): void => {
@@ -63,46 +70,9 @@ export const test = base.extend<BrowserEventFixtures>({
 
     page.on('dialog', record);
     await use(messages);
-  }
-});
-```
-
-The auth page objects live in their own fixture. `secondLoginPage` is a `LoginPage` on a fresh browser context.
-
-```ts
-// e2e/security/auth-pages.fixture.ts
-import { test as base } from '@playwright/test';
-
-import { DashboardPage } from './pages/dashboard.page';
-import { ForgotPasswordPage } from './pages/forgot-password.page';
-import { LoginPage } from './pages/login.page';
-import { ProfilePage } from './pages/profile.page';
-import { ResetPasswordPage } from './pages/reset-password.page';
-
-type AuthPageFixtures = {
-  readonly dashboardPage: DashboardPage;
-  readonly forgotPasswordPage: ForgotPasswordPage;
-  readonly loginPage: LoginPage;
-  readonly profilePage: ProfilePage;
-  readonly resetPasswordPage: ResetPasswordPage;
-  readonly secondLoginPage: LoginPage;
-};
-
-export const test = base.extend<AuthPageFixtures>({
-  dashboardPage: async ({ page }, use): Promise<void> => {
-    await use(new DashboardPage(page));
   },
-  forgotPasswordPage: async ({ page }, use): Promise<void> => {
-    await use(new ForgotPasswordPage(page));
-  },
-  loginPage: async ({ page }, use): Promise<void> => {
-    await use(new LoginPage(page));
-  },
-  profilePage: async ({ page }, use): Promise<void> => {
-    await use(new ProfilePage(page));
-  },
-  resetPasswordPage: async ({ page }, use): Promise<void> => {
-    await use(new ResetPasswordPage(page));
+  searchPage: async ({ page }, use): Promise<void> => {
+    await use(new SearchPage(page));
   },
   secondLoginPage: async ({ browser }, use): Promise<void> => {
     const context = await browser.newContext();
@@ -110,57 +80,9 @@ export const test = base.extend<AuthPageFixtures>({
 
     await use(new LoginPage(page));
     await context.close();
-  }
-});
-```
-
-`security.fixture.ts` merges both with `mergeTests` and adds the content page objects; the API objects wrap `page.request`, which shares the context's cookies.
-
-```ts
-// e2e/security/security.fixture.ts
-import { mergeTests } from '@playwright/test';
-
-import { SettingsApi } from './api/settings.api';
-import { test as authPagesTest } from './auth-pages.fixture';
-import { test as browserEventsTest } from './browser-events.fixture';
-import { AdminUsersPage } from './pages/admin-users.page';
-import { HomePage } from './pages/home.page';
-import { PostEditorPage } from './pages/post-editor.page';
-import { PostPage } from './pages/post.page';
-import { SearchPage } from './pages/search.page';
-import { SettingsPage } from './pages/settings.page';
-
-type SecurityFixtures = {
-  readonly adminUsersPage: AdminUsersPage;
-  readonly homePage: HomePage;
-  readonly postEditorPage: PostEditorPage;
-  readonly postPage: PostPage;
-  readonly searchPage: SearchPage;
-  readonly settingsApi: SettingsApi;
-  readonly settingsPage: SettingsPage;
-};
-
-export const test = mergeTests(authPagesTest, browserEventsTest).extend<SecurityFixtures>({
-  adminUsersPage: async ({ page }, use): Promise<void> => {
-    await use(new AdminUsersPage(page));
-  },
-  homePage: async ({ page }, use): Promise<void> => {
-    await use(new HomePage(page));
-  },
-  postEditorPage: async ({ page }, use): Promise<void> => {
-    await use(new PostEditorPage(page));
-  },
-  postPage: async ({ page }, use): Promise<void> => {
-    await use(new PostPage(page));
-  },
-  searchPage: async ({ page }, use): Promise<void> => {
-    await use(new SearchPage(page));
   },
   settingsApi: async ({ page }, use): Promise<void> => {
     await use(new SettingsApi(page.request));
-  },
-  settingsPage: async ({ page }, use): Promise<void> => {
-    await use(new SettingsPage(page));
   }
 });
 
@@ -248,7 +170,7 @@ import { test } from './security.fixture';
 const STORED_PAYLOAD = '<script>alert("xss")</script>Hello';
 
 test.describe('FEATURE: stored XSS', () => {
-  test('GIVEN a post with a script tag, creating it renders it sanitized', async ({ postEditorPage, postPage }): Promise<void> => {
+  test('GIVEN a post body with a script tag, publishing it renders it sanitized', async ({ postEditorPage, postPage }): Promise<void> => {
     await test.step('WHEN the post editor is opened', (): Promise<void> => postEditorPage.goto());
 
     await test.step('AND a post containing a script tag is submitted', (): Promise<void> => postEditorPage.submit(STORED_PAYLOAD));
@@ -271,13 +193,13 @@ The token is a hidden input named `_csrf` or `csrf_token`. `SettingsPage.csrfInp
 import { test } from './security.fixture';
 
 test.describe('FEATURE: CSRF token', () => {
-  test('GIVEN the settings page, opening it renders a form with a csrf token', async ({ settingsPage }): Promise<void> => {
+  test('GIVEN a fresh session, the settings form renders a csrf token', async ({ settingsPage }): Promise<void> => {
     await test.step('WHEN the settings page is opened', (): Promise<void> => settingsPage.goto());
 
     await test.step('THEN the form carries a csrf token', (): Promise<void> => settingsPage.expectCsrfToken());
   });
 
-  test('GIVEN a theme choice, saving it through the form saves the settings', async ({ settingsPage }): Promise<void> => {
+  test('GIVEN a fresh session, saving the dark theme through the form saves the settings', async ({ settingsPage }): Promise<void> => {
     await test.step('WHEN the settings page is opened', (): Promise<void> => settingsPage.goto());
 
     await test.step('AND the dark theme is saved', (): Promise<void> => settingsPage.saveTheme('dark'));
@@ -334,7 +256,7 @@ const DARK_THEME: SettingsPatch = { theme: 'dark' };
 
 test.describe('FEATURE: CSRF validation', () => {
   test('GIVEN no csrf token, posting settings answers 403', async ({ settingsApi }): Promise<void> => {
-    const response = await test.step('WHEN settings are posted without a token', (): Promise<APIResponse> => settingsApi.updateWithoutToken(DARK_THEME));
+    const response = await test.step('WHEN the settings are posted', (): Promise<APIResponse> => settingsApi.updateWithoutToken(DARK_THEME));
 
     await test.step('THEN the status is 403', (): void => expect(response.status()).toBe(403));
   });
@@ -345,7 +267,7 @@ test.describe('FEATURE: CSRF validation', () => {
 
 ### Test Session Expiry
 
-`LoginPage.login(credentials)` opens `/login`, fills `Email` and `Password`, and clicks Sign in; `expectSessionExpired` asserts the `Session expired` text is visible. `login` takes an optional `LoginOptions` (`type LoginOptions = { readonly installClock?: boolean }`); with `installClock` set it runs `page.clock.install()` before it navigates, so the opening call applies the clock (see [clock-mocking.md](../advanced/clock-mocking.md)). The two-hour jump through `page.clock.fastForward` happens after sign-in, so it stays an `AND` action step. The next navigation, `ProfilePage.goto()` to `/profile`, must land on the login page with the expiry notice.
+`LoginPage.login(credentials)` opens `/login`, fills `Email` and `Password`, and clicks Sign in; `expectSessionExpired` asserts the `Session expired` text is visible. `login` takes an optional `LoginOptions` (`type LoginOptions = { readonly installClock?: boolean }`); with `installClock` set it runs `page.clock.install()` before it navigates, so the opening call applies the clock (see [clock-mocking.md](../advanced/clock-mocking.md)). The two-hour jump through `page.clock.fastForward` comes after the dashboard check, so it starts a new phase with its own `WHEN`. The next navigation, `ProfilePage.goto()` to `/profile`, must land on the login page with the expiry notice.
 
 ```ts
 // e2e/security/session-expiry.e2e.ts
@@ -356,12 +278,12 @@ import { USER_STUB } from './test/stubs/security.stub';
 const CLOCK_INSTALLED: LoginOptions = { installClock: true };
 
 test.describe('FEATURE: session expiry', () => {
-  test('GIVEN a session idle for two hours, the next navigation goes to the login page', async ({ loginPage, page, profilePage }): Promise<void> => {
+  test('GIVEN a controlled clock, two idle hours after sign-in send the next navigation to the login page', async ({ loginPage, page, profilePage }): Promise<void> => {
     await test.step('WHEN the user signs in', (): Promise<void> => loginPage.login(USER_STUB, CLOCK_INSTALLED));
 
     await test.step('THEN the dashboard is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
 
-    await test.step('AND the clock advances two hours', (): Promise<void> => page.clock.fastForward('02:00:00'));
+    await test.step('WHEN the clock advances two hours', (): Promise<void> => page.clock.fastForward('02:00:00'));
 
     await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
 
@@ -382,7 +304,7 @@ import { test } from './security.fixture';
 import { USER_STUB } from './test/stubs/security.stub';
 
 test.describe('FEATURE: concurrent session limit', () => {
-  test('GIVEN a session in one browser, signing in from a second ends the first', async ({ dashboardPage, loginPage, secondLoginPage }): Promise<void> => {
+  test('GIVEN one user and two browsers, signing in from the second ends the session in the first', async ({ dashboardPage, loginPage, secondLoginPage }): Promise<void> => {
     await test.step('WHEN the user signs in from the first browser', (): Promise<void> => loginPage.login(USER_STUB));
 
     await test.step('AND the same user signs in from a second browser', (): Promise<void> => secondLoginPage.login(USER_STUB));
@@ -406,7 +328,7 @@ import { USER_STUB } from './test/stubs/security.stub';
 const RESET_TOKEN = 'mock-reset-token';
 
 test.describe('FEATURE: password reset token', () => {
-  test('GIVEN a used reset token, reusing it rejects it as invalid or expired', async ({ forgotPasswordPage, resetPasswordPage }): Promise<void> => {
+  test('GIVEN a single-use reset token, a second use is rejected as invalid or expired', async ({ forgotPasswordPage, resetPasswordPage }): Promise<void> => {
     await test.step('WHEN a password reset is requested', (): Promise<void> => forgotPasswordPage.request(USER_STUB.email));
 
     await test.step('AND the reset page is opened with the token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
@@ -415,7 +337,7 @@ test.describe('FEATURE: password reset token', () => {
 
     await test.step('THEN the password updated notice is shown', (): Promise<void> => resetPasswordPage.expectUpdated());
 
-    await test.step('AND the reset page is opened again with the used token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
+    await test.step('WHEN the reset page is opened again with the used token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
 
     await test.step('THEN the invalid or expired token notice is shown', (): Promise<void> => resetPasswordPage.expectInvalidToken());
   });
@@ -515,25 +437,22 @@ export class HomePage {
 // e2e/security/security-headers.e2e.ts
 import type { Response } from '@playwright/test';
 
-import type { HeaderMap } from './common/security.type';
 import { expect, test } from './security.fixture';
 
 test.describe('FEATURE: security headers', () => {
-  test('GIVEN the home page response, reading the headers finds the policy headers set', async ({ homePage }): Promise<void> => {
+  test('GIVEN the app security policy, the home page response sets the policy headers', async ({ homePage }): Promise<void> => {
     const response = await test.step('WHEN the home page is opened', (): Promise<Response> => homePage.open());
 
-    const headers = await test.step('AND the response headers are read', (): HeaderMap => response.headers());
+    await test.step('THEN the content security policy is set', (): void => expect(response.headers()['content-security-policy']).toBeTruthy());
 
-    await test.step('THEN the content security policy is set', (): void => expect(headers['content-security-policy']).toBeTruthy());
+    await test.step('AND x-frame-options denies framing', (): void => expect(response.headers()['x-frame-options']).toMatch(/DENY|SAMEORIGIN/));
 
-    await test.step('AND x-frame-options denies framing', (): void => expect(headers['x-frame-options']).toMatch(/DENY|SAMEORIGIN/));
+    await test.step('AND x-content-type-options is nosniff', (): void => expect(response.headers()['x-content-type-options']).toBe('nosniff'));
 
-    await test.step('AND x-content-type-options is nosniff', (): void => expect(headers['x-content-type-options']).toBe('nosniff'));
-
-    await test.step('AND x-xss-protection is set', (): void => expect(headers['x-xss-protection']).toBeTruthy());
+    await test.step('AND x-xss-protection is set', (): void => expect(response.headers()['x-xss-protection']).toBeTruthy());
   });
 
-  test('GIVEN an injected inline script, the policy reports a violation', async ({ cspViolations, homePage }): Promise<void> => {
+  test('GIVEN the app security policy, an injected inline script is reported as a violation', async ({ cspViolations, homePage }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<Response> => homePage.open());
 
     await test.step('AND an inline script is injected', (): Promise<void> => homePage.injectInlineScript());

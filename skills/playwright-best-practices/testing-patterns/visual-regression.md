@@ -75,7 +75,7 @@ The mask list is a named const above the step because it is a nested array insid
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: analytics panel snapshot', () => {
-  test('GIVEN masked volatile elements, the panel matches its snapshot', async ({ analyticsPage, page }): Promise<void> => {
+  test('GIVEN volatile panel elements, masking them makes the panel match its snapshot', async ({ analyticsPage, page }): Promise<void> => {
     const mask = [analyticsPage.lastUpdated, analyticsPage.profileAvatar, analyticsPage.activeUsers, analyticsPage.promoBanner];
 
     await test.step('WHEN the analytics page opens', (): Promise<void> => analyticsPage.goto());
@@ -97,7 +97,7 @@ test.describe('FEATURE: analytics panel snapshot', () => {
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: analytics panel snapshot with frozen timestamps', () => {
-  test('GIVEN frozen timestamps, the panel matches its snapshot', async ({ analyticsPage, page }): Promise<void> => {
+  test('GIVEN live timestamps, freezing them makes the panel match its snapshot', async ({ analyticsPage, page }): Promise<void> => {
     await test.step('WHEN the analytics page is opened', (): Promise<void> => analyticsPage.goto());
 
     await test.step('AND the timestamps are frozen', (): Promise<void> => analyticsPage.freezeTimestamps());
@@ -116,7 +116,7 @@ test.describe('FEATURE: analytics panel snapshot with frozen timestamps', () => 
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: home page snapshot', () => {
-  test('GIVEN disabled animations, the home page matches its snapshot', async ({ homePage, page }): Promise<void> => {
+  test('GIVEN CSS animations on the home page, a capture with animations disabled matches its snapshot', async ({ homePage, page }): Promise<void> => {
     await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
 
     await test.step('THEN the page matches home.png', (): Promise<void> => expect(page).toHaveScreenshot('home.png', { animations: 'disabled' }));
@@ -134,7 +134,7 @@ const toHaveScreenshot = { animations: 'disabled' } as const;
 
 const expectOptions = { toHaveScreenshot };
 
-export default defineConfig({ expect: expectOptions });
+export default defineConfig({ expect: expectOptions, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 When `animations: 'disabled'` is set, Playwright injects CSS forcing animation/transition duration to 0s, waits for running animations to finish, then captures.
@@ -172,7 +172,7 @@ export class HeroPage {
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: animated hero snapshot', () => {
-  test('GIVEN a settled JS animation, the hero matches its snapshot', async ({ heroPage, page }): Promise<void> => {
+  test('GIVEN a JS-animated hero, it matches its snapshot once the animation settles', async ({ heroPage, page }): Promise<void> => {
     await test.step('WHEN the animated hero opens', (): Promise<void> => heroPage.goto());
 
     await test.step('THEN the hero banner has settled', (): Promise<void> => heroPage.expectSettled());
@@ -201,7 +201,7 @@ import { expect, test } from './visual.fixture';
 const PIXEL_PERFECT = { maxDiffPixels: 0, threshold: 0 };
 
 test.describe('FEATURE: brand logo snapshot', () => {
-  test('GIVEN the brand logo, it matches its baseline pixel for pixel', async ({ brandPage }): Promise<void> => {
+  test('GIVEN zero pixel tolerance, the brand logo matches its baseline exactly', async ({ brandPage }): Promise<void> => {
     await test.step('WHEN the brand page opens', (): Promise<void> => brandPage.goto());
 
     await test.step('THEN the logo matches brand-logo.png exactly', (): Promise<void> => expect(brandPage.logo).toHaveScreenshot('brand-logo.png', PIXEL_PERFECT));
@@ -225,7 +225,7 @@ const toHaveScreenshot = { animations: 'disabled', maxDiffPixelRatio: 0.01, thre
 
 const expectOptions = { toHaveScreenshot };
 
-export default defineConfig({ expect: expectOptions });
+export default defineConfig({ expect: expectOptions, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### CI Configuration
@@ -316,7 +316,7 @@ export default defineConfig({ projects, snapshotPathTemplate });
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: snapshot scope', () => {
-  test('GIVEN the home page, it matches its viewport and full-page snapshots', async ({ homePage, page }): Promise<void> => {
+  test('GIVEN the default viewport, the home page matches its viewport and full-page snapshots', async ({ homePage, page }): Promise<void> => {
     await test.step('WHEN the home page opens', (): Promise<void> => homePage.goto());
 
     await test.step('THEN the viewport matches home-viewport.png', (): Promise<void> => expect(page).toHaveScreenshot('home-viewport.png'));
@@ -324,7 +324,7 @@ test.describe('FEATURE: snapshot scope', () => {
     await test.step('AND the full page matches home-full.png', (): Promise<void> => expect(page).toHaveScreenshot('home-full.png', { fullPage: true }));
   });
 
-  test('GIVEN the component catalog, each component matches its element snapshot', async ({ catalogPage }): Promise<void> => {
+  test('GIVEN the seeded catalog, the table and the featured item match their element snapshots', async ({ catalogPage }): Promise<void> => {
     await test.step('WHEN the catalog opens', (): Promise<void> => catalogPage.goto());
 
     await test.step('THEN the table matches catalog-table.png', (): Promise<void> => expect(catalogPage.table).toHaveScreenshot('catalog-table.png'));
@@ -340,10 +340,12 @@ test.describe('FEATURE: snapshot scope', () => {
 
 **Use when**: Application has responsive breakpoints requiring verification at different viewport sizes.
 
-Viewport size can change at runtime, so each breakpoint is a looped test whose opening call applies it: `LandingPage.goto(options?: LandingOptions)` calls `page.setViewportSize(options.viewport)` before it navigates when a viewport is given. Projects per breakpoint, below, are the alternative when every visual spec must run at every size.
+A breakpoint is a viewport, and a viewport can change at runtime, so the same test across breakpoints is a `for` loop of tests: each title names its breakpoint and each `goto` passes it. `LandingPage.goto(options: LandingOptions = {})` calls `page.setViewportSize(options.viewport)` before it navigates when a viewport is given. `Breakpoint` adds the `name` the title and the snapshot use; `setViewportSize` ignores it.
 
 ```ts
 // e2e/visual/common/visual.type.ts
+import type { ViewportSize } from '@playwright/test';
+
 export type Breakpoint = {
   readonly height: number;
   readonly name: string;
@@ -351,7 +353,7 @@ export type Breakpoint = {
 };
 
 export type LandingOptions = {
-  readonly viewport?: Breakpoint;
+  readonly viewport?: ViewportSize;
 };
 ```
 
@@ -379,7 +381,7 @@ test.describe('FEATURE: landing page breakpoints', () => {
 });
 ```
 
-**Alternative: use projects for responsive testing**. Each project's `use` is a named const.
+**Projects per device** cover what a viewport cannot: `isMobile`, `hasTouch`, `deviceScaleFactor`, and the user agent are fixed at context creation, so each device is a project and every visual spec runs under each. Use them when the page must be emulated as a device, not only resized. Each project's `use` is a named const.
 
 ```ts
 // e2e/playwright.config.ts
@@ -449,7 +451,7 @@ test.describe('FEATURE: button visual states', () => {
     await test.step('AND the button matches btn-primary.png', (): Promise<void> => expect(storyPage.button).toHaveScreenshot('btn-primary.png', STILL));
   });
 
-  test('GIVEN a hovered primary button, it matches btn-primary-hover.png', async ({ storyPage }): Promise<void> => {
+  test('GIVEN the primary button story, hovering the button matches btn-primary-hover.png', async ({ storyPage }): Promise<void> => {
     await test.step('WHEN the primary button story is opened', (): Promise<void> => storyPage.goto('button--primary'));
 
     await test.step('AND the button is hovered', (): Promise<void> => storyPage.hoverButton());
@@ -510,7 +512,7 @@ npx playwright test --project=chromium --update-snapshots
 import { expect, test } from './visual.fixture';
 
 test.describe('FEATURE: landing page snapshot', () => {
-  test('GIVEN the landing page, it matches landing.png', { tag: ['@visual'] }, async ({ landingPage, page }): Promise<void> => {
+  test('GIVEN the default viewport, the landing page matches landing.png', { tag: ['@visual'] }, async ({ landingPage, page }): Promise<void> => {
     await test.step('WHEN the landing page opens', (): Promise<void> => landingPage.goto());
 
     await test.step('THEN the page matches landing.png', (): Promise<void> => expect(page).toHaveScreenshot('landing.png', { animations: 'disabled' }));
@@ -548,7 +550,7 @@ const projects = [
   { name: 'webkit', use: webkit }
 ];
 
-export default defineConfig({ expect: expectOptions, projects });
+export default defineConfig({ expect: expectOptions, projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 **Strategy**: Run visual tests in a single browser (Chromium on Linux in CI) to minimize snapshot count. Add other browsers only when you have actual cross-browser rendering bugs. The `visual` project matches `*.visual.e2e.ts`; the functional projects ignore it.
@@ -567,7 +569,7 @@ const projects = [
   { name: 'firefox', testIgnore: '**/*.visual.e2e.ts', use: firefox }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Decision Guide
@@ -659,7 +661,7 @@ import { defineConfig } from '@playwright/test';
 
 const snapshotPathTemplate = '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{-projectName}{ext}';
 
-export default defineConfig({ snapshotPathTemplate });
+export default defineConfig({ snapshotPathTemplate, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Too many snapshot files to maintain

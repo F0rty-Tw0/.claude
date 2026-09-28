@@ -10,7 +10,21 @@
 > **When to use**: Testing REST APIs directly — validating endpoints, seeding test data, or verifying backend behavior without browser overhead.
 > **See also**: [graphql-testing.md](graphql-testing.md) for GraphQL-specific patterns.
 
-An API object is the page object of an endpoint group: it owns the `APIRequestContext` and the paths, lives in `e2e/<feature>/api/<name>.api.ts`, and every method returns the `APIResponse`. Specs read the body in a step through `readJson`, so status checks stay in the spec where they are asserted.
+An API object is the page object of an endpoint group: it owns the `APIRequestContext` and the paths, lives in `e2e/<feature>/api/<name>.api.ts`, and every method returns the `APIResponse`. A spec checks the status first, in a `THEN` step, then the body in an `AND` step through `expectBody`, which reads the body inside the check and matches it partially. No step only reads a body.
+
+```ts
+// e2e/utils/expect-body.util.ts
+import type { APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+export const expectBody = async (response: APIResponse, shape: Record<string, unknown>): Promise<void> => {
+  const body: unknown = await response.json();
+
+  expect(body).toMatchObject(shape);
+};
+```
+
+A fixture that needs a value from a response, such as a session token or a seeded id, reads it through `readJson`.
 
 ```ts
 // e2e/utils/read-json.util.ts
@@ -102,19 +116,18 @@ export { expect } from '@playwright/test';
 // e2e/admin/accounts.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import { readJson } from '../utils/read-json.util';
+import { expectBody } from '../utils/expect-body.util';
 import { expect, test } from './admin.fixture';
-import type { AccountList } from './common/admin.type';
+
+const AT_LEAST_ONE_ACCOUNT = { accounts: expect.arrayContaining([expect.anything()]) };
 
 test.describe('FEATURE: admin accounts api', () => {
   test('GIVEN an admin client, listing accounts returns at least one account', async ({ adminApi }): Promise<void> => {
-    const response = await test.step('WHEN accounts are listed as admin', (): Promise<APIResponse> => adminApi.get('/admin/accounts'));
-
-    const body = await test.step('AND the body is read', (): Promise<AccountList> => readJson<AccountList>(response));
+    const response = await test.step('WHEN the accounts are listed', (): Promise<APIResponse> => adminApi.get('/admin/accounts'));
 
     await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-    await test.step('AND accounts are present', (): void => expect(body.accounts.length).toBeGreaterThan(0));
+    await test.step('AND the body lists at least one account', (): Promise<void> => expectBody(response, AT_LEAST_ONE_ACCOUNT));
   });
 });
 ```
@@ -134,10 +147,18 @@ export type NewItem = {
   readonly title: string;
 };
 
+type ItemMetadata = {
+  readonly rating: number | null;
+  readonly views: number;
+};
+
 export type Item = {
   readonly category: string;
+  readonly createdAt: string;
   readonly id: number;
+  readonly metadata: ItemMetadata;
   readonly price: number;
+  readonly tags: string[];
   readonly title: string;
 };
 
@@ -164,7 +185,7 @@ export type ValidationError = {
 // e2e/items/api/items.api.ts
 import type { APIRequestContext, APIResponse } from '@playwright/test';
 
-import type { Item, ItemPatch, ItemQuery, NewItem } from '../common/items.type';
+import type { ItemPatch, ItemQuery, NewItem } from '../common/items.type';
 
 export class ItemsApi {
   private readonly request: APIRequestContext;
@@ -207,27 +228,29 @@ export class ItemsApi {
 | `multipart` | `multipart/form-data` body | See [File Upload via API](#file-upload-via-api) |
 | `headers` | Per-request headers | `{ headers: { Authorization: '' } }` |
 
-The `item` fixture in `items.fixture.ts` creates `ITEM_STUB` through `itemsApi.create`, reads it with `readJson<Item>`, hands it to `use`, and calls `itemsApi.remove(item.id)` after. The spec has no hooks and asserts one outcome per test. `remove` returns the response instead of throwing, so the teardown delete is safe after the delete test.
+The `item` fixture in `items.fixture.ts` stores `ITEM_STUB`, a `Hammer` in `tools`, through `itemsApi.create`, reads it with `readJson<Item>`, hands it to `use`, and calls `itemsApi.remove(item.id)` after. The spec has no hooks. `remove` returns the response instead of throwing, so the teardown delete is safe after the delete test. The delete test checks the delete before it reads again, so the 404 is only asserted once the delete is proven.
 
 ```ts
 // e2e/items/items.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import { readJson } from '../utils/read-json.util';
-import type { Item, NewItem } from './common/items.type';
+import { expectBody } from '../utils/expect-body.util';
+import type { ItemPatch, NewItem } from './common/items.type';
 import { expect, test } from './items.fixture';
 import { ITEM_STUB } from './test/stubs/items.stub';
 
+const PRICE_PATCH: ItemPatch = { price: 22.5 };
+
 test.describe('FEATURE: items api', () => {
-  test('GIVEN a created item, patching the price returns the new price', async ({ item, itemsApi }): Promise<void> => {
-    const response = await test.step('WHEN the price is patched', (): Promise<APIResponse> => itemsApi.update(item.id, { price: 22.5 }));
+  test('GIVEN a stored hammer, patching its price returns the new price', async ({ item, itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN the price is patched to 22.5', (): Promise<APIResponse> => itemsApi.update(item.id, PRICE_PATCH));
 
-    const patched = await test.step('AND the patched item is read', (): Promise<Item> => readJson<Item>(response));
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-    await test.step('THEN the price is updated', (): void => expect(patched.price).toBe(22.5));
+    await test.step('AND the body carries the new price', (): Promise<void> => expectBody(response, PRICE_PATCH));
   });
 
-  test('GIVEN a created item, replacing it succeeds', async ({ item, itemsApi }): Promise<void> => {
+  test('GIVEN a stored hammer, replacing it with a claw hammer succeeds', async ({ item, itemsApi }): Promise<void> => {
     const replacement: NewItem = { ...ITEM_STUB, price: 24.99, title: 'Claw Hammer' };
 
     const response = await test.step('WHEN the item is replaced', (): Promise<APIResponse> => itemsApi.replace(item.id, replacement));
@@ -235,14 +258,14 @@ test.describe('FEATURE: items api', () => {
     await test.step('THEN the response is ok', (): void => expect(response.ok()).toBeTruthy());
   });
 
-  test('GIVEN a created item, deleting it makes a later read return 404', async ({ item, itemsApi }): Promise<void> => {
+  test('GIVEN a stored hammer, deleting it makes a later read return 404', async ({ item, itemsApi }): Promise<void> => {
     const deleted = await test.step('WHEN the item is deleted', (): Promise<APIResponse> => itemsApi.remove(item.id));
-
-    const read = await test.step('AND the deleted item is read', (): Promise<APIResponse> => itemsApi.get(item.id));
 
     await test.step('THEN the delete returns 204', (): void => expect(deleted.status()).toBe(204));
 
-    await test.step('AND the read returns 404', (): void => expect(read.status()).toBe(404));
+    const read = await test.step('WHEN the deleted item is read', (): Promise<APIResponse> => itemsApi.get(item.id));
+
+    await test.step('THEN the read returns 404', (): void => expect(read.status()).toBe(404));
   });
 });
 ```
@@ -251,7 +274,7 @@ test.describe('FEATURE: items api', () => {
 
 **Use when**: Writing dedicated API test suites that do not need a browser.
 
-API specs are named `*.api.e2e.ts` and matched by project; `testDir` per project works the same way when API specs live in their own tree.
+API specs are named `*.api.e2e.ts` and matched by project; the `e2e` project inherits the top-level `testMatch` and ignores them. `testDir` per project works the same way when API specs live in their own tree.
 
 ```ts
 // e2e/playwright.config.ts
@@ -264,11 +287,11 @@ const apiUse = { baseURL: 'https://api.myapp.io', extraHTTPHeaders: apiHeaders }
 const e2eUse = { baseURL: 'https://myapp.io', browserName: 'chromium' } as const;
 
 const projects = [
-  { name: 'api', testMatch: /.*\.api\.spec\.ts/, use: apiUse },
-  { name: 'e2e', testIgnore: /.*\.api\.spec\.ts/, use: e2eUse }
+  { name: 'api', testMatch: /.*\.api\.e2e\.ts/, use: apiUse },
+  { name: 'e2e', testIgnore: /.*\.api\.e2e\.ts/, use: e2eUse }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Response Assertions
@@ -276,65 +299,81 @@ export default defineConfig({ projects });
 **Use when**: Validating response status, headers, and body structure.
 **Avoid when**: Never skip these — every API test should assert on status and body.
 
-Status first, then headers, then body. Matcher shapes are module-level consts so each test is one step per assertion.
+Status first, then headers, then body, each check reading what it asserts. Matcher shapes are module-level consts, so each body check is one `expectBody` step. The item is widget 101 from the database seed. The two checks a partial shape cannot express, a tag that must be absent and a date that must round-trip, are `expect*` utils that read the body themselves.
+
+```ts
+// e2e/items/test/utils/item-body.spec.util.ts
+import type { APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import type { Item } from '../../common/items.type';
+
+export const expectFeaturedTags = async (response: APIResponse): Promise<void> => {
+  const item: Item = await response.json();
+
+  expect(item.tags).toContain('featured');
+  expect(item.tags).not.toContain('deprecated');
+};
+
+export const expectIsoCreatedAt = async (response: APIResponse): Promise<void> => {
+  const item: Item = await response.json();
+  const roundTrip = new Date(item.createdAt).toISOString();
+
+  expect(roundTrip).toBe(item.createdAt);
+};
+```
 
 ```ts
 // e2e/items/item-shape.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import { readJson } from '../utils/read-json.util';
-import type { Item } from './common/items.type';
+import { expectBody } from '../utils/expect-body.util';
 import { expect, test } from './items.fixture';
+import { expectFeaturedTags, expectIsoCreatedAt } from './test/utils/item-body.spec.util';
 
-const KNOWN_FIELDS = { id: 101, status: expect.stringMatching(/^(active|inactive|archived)$/), title: 'Widget' };
-
+const WIDGET_ID = 101;
+const KNOWN_FIELDS = { id: WIDGET_ID, status: expect.stringMatching(/^(active|inactive|archived)$/), title: 'Widget' };
 const FIELD_TYPES = { createdAt: expect.any(String), id: expect.any(Number), tags: expect.any(Array), title: expect.any(String) };
-
 const METADATA_SHAPE = { rating: expect.any(Number), views: expect.any(Number) };
+const METADATA = { metadata: METADATA_SHAPE };
 
 test.describe('FEATURE: item response shape', () => {
-  test('GIVEN a stored item, fetching it returns 200', async ({ itemsApi }): Promise<void> => {
-    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
+  test('GIVEN seeded widget 101, fetching it returns 200 with json and a cache policy', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN the widget is fetched', (): Promise<APIResponse> => itemsApi.get(WIDGET_ID));
 
     await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
-  });
 
-  test('GIVEN a stored item, fetching it names json and a cache policy in the headers', async ({ itemsApi }): Promise<void> => {
-    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
-
-    await test.step('THEN the content type is json', (): void => expect(response.headers()['content-type']).toContain('application/json'));
+    await test.step('AND the content type is json', (): void => expect(response.headers()['content-type']).toContain('application/json'));
 
     await test.step('AND cache control sets a max age', (): void => expect(response.headers()['cache-control']).toMatch(/max-age=\d+/));
   });
 
-  test('GIVEN a stored item, fetching it matches known fields and every field type', async ({ itemsApi }): Promise<void> => {
-    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
+  test('GIVEN seeded widget 101, fetching it matches known fields and every field type', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN the widget is fetched', (): Promise<APIResponse> => itemsApi.get(WIDGET_ID));
 
-    const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-    await test.step('THEN the known fields match', (): void => expect(item).toMatchObject(KNOWN_FIELDS));
+    await test.step('AND the known fields match', (): Promise<void> => expectBody(response, KNOWN_FIELDS));
 
-    await test.step('AND the field types match', (): void => expect(item).toMatchObject(FIELD_TYPES));
+    await test.step('AND the field types match', (): Promise<void> => expectBody(response, FIELD_TYPES));
 
-    await test.step('AND the metadata has views and rating', (): void => expect(item.metadata).toMatchObject(METADATA_SHAPE));
+    await test.step('AND the metadata has views and rating', (): Promise<void> => expectBody(response, METADATA));
   });
 
-  test('GIVEN a stored item, fetching it tags it featured and not deprecated', async ({ itemsApi }): Promise<void> => {
-    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
+  test('GIVEN seeded widget 101, fetching it tags it featured and not deprecated', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN the widget is fetched', (): Promise<APIResponse> => itemsApi.get(WIDGET_ID));
 
-    const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-    await test.step('THEN the featured tag is present', (): void => expect(item.tags).toEqual(expect.arrayContaining(['featured'])));
-
-    await test.step('AND the deprecated tag is absent', (): void => expect(item.tags).not.toContain('deprecated'));
+    await test.step('AND the tags include featured and not deprecated', (): Promise<void> => expectFeaturedTags(response));
   });
 
-  test('GIVEN a stored item, fetching it returns an ISO createdAt', async ({ itemsApi }): Promise<void> => {
-    const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
+  test('GIVEN seeded widget 101, fetching it returns an ISO createdAt', async ({ itemsApi }): Promise<void> => {
+    const response = await test.step('WHEN the widget is fetched', (): Promise<APIResponse> => itemsApi.get(WIDGET_ID));
 
-    const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-    await test.step('THEN createdAt round-trips through Date', (): void => expect(new Date(item.createdAt).toISOString()).toBe(item.createdAt));
+    await test.step('AND createdAt round-trips through Date', (): Promise<void> => expectIsoCreatedAt(response));
   });
 });
 ```
@@ -348,7 +387,7 @@ test.describe('FEATURE: item response shape', () => {
 | `expect.objectContaining({...})` | Member of an array or nested value matches partially. |
 | `expect(list.pagination).toEqual({ page: 1, limit: 10, total: expect.any(Number), totalPages: expect.any(Number) })` | Exact keys, typed values. |
 
-For a list body, assert `toHaveLength(10)` in one step and pass `body.items` to a `test/utils/items-shape.spec.util.ts` function that loops `toMatchObject(FIELD_TYPES)` in the next.
+For a list body, `THEN the status is 200` comes first, then one `AND` step calls an `expect*` util in `test/utils/items-shape.spec.util.ts` that reads the body, asserts `toHaveLength(10)` on `items`, and loops `toMatchObject(FIELD_TYPES)` over them.
 
 ### API Data Seeding
 
@@ -439,7 +478,7 @@ The same seed-then-observe shape covers "API + E2E hybrid" flows: create through
 
 **Use when**: Every API has error paths — test them. A missing 401 test today is a security hole tomorrow.
 
-One spec per feature holds the error cases. The 400 case reads the body; the 429 case bursts requests through an API-object method and filters in a step.
+One spec per feature holds the error cases. The 400 case checks the status, then the body through `expectBody`; the 429 case bursts requests through an API-object method, and `expectRateLimited` filters the 429s inside the check.
 
 ```ts
 // e2e/search/api/search.api.ts
@@ -463,50 +502,63 @@ export class SearchApi {
 ```
 
 ```ts
+// e2e/items/test/utils/rate-limit.spec.util.ts
+import type { APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+const isRateLimited = (response: APIResponse): boolean => response.status() === 429;
+
+export const expectRateLimited = (responses: APIResponse[]): void => {
+  const limited = responses.filter(isRateLimited);
+
+  expect(limited.length).toBeGreaterThan(0);
+  expect(limited[0]?.headers()['retry-after']).toBeDefined();
+};
+```
+
+```ts
 // e2e/items/items-errors.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import type { NewItem, ValidationError } from './common/items.type';
+import { expectBody } from '../utils/expect-body.util';
+import type { NewItem } from './common/items.type';
 import { expect, test } from './items.fixture';
+import { expectRateLimited } from './test/utils/rate-limit.spec.util';
 
 const INVALID_ITEM: NewItem = { category: 'tools', price: -5, title: '' };
-
 const TITLE_ISSUE = expect.objectContaining({ field: 'title', message: expect.any(String) });
-
 const PRICE_ISSUE = expect.objectContaining({ field: 'price', message: expect.any(String) });
+const VALIDATION_ERROR = { error: 'Validation Error' };
+const TITLE_AND_PRICE_ISSUES = { details: expect.arrayContaining([TITLE_ISSUE, PRICE_ISSUE]) };
 
 test.describe('FEATURE: items api error responses', () => {
   test('GIVEN an invalid item, posting it returns 400 with one issue per field', async ({ itemsApi }): Promise<void> => {
-    const response = await test.step('WHEN an invalid item is posted', (): Promise<APIResponse> => itemsApi.create(INVALID_ITEM));
-
-    const body = await test.step('AND the body is read', (): Promise<ValidationError> => response.json());
+    const response = await test.step('WHEN the item is posted', (): Promise<APIResponse> => itemsApi.create(INVALID_ITEM));
 
     await test.step('THEN the status is 400', (): void => expect(response.status()).toBe(400));
 
-    await test.step('AND the error names a validation error', (): void => expect(body.error).toBe('Validation Error'));
+    await test.step('AND the error names a validation error', (): Promise<void> => expectBody(response, VALIDATION_ERROR));
 
-    await test.step('AND the details cover title and price', (): void => expect(body.details).toEqual(expect.arrayContaining([TITLE_ISSUE, PRICE_ISSUE])));
+    await test.step('AND the details cover title and price', (): Promise<void> => expectBody(response, TITLE_AND_PRICE_ISSUES));
   });
 
-  test('GIVEN fifty searches at once, the api rate limits them with retry-after', async ({ searchApi }): Promise<void> => {
-    const responses = await test.step('WHEN fifty searches are sent', (): Promise<APIResponse[]> => searchApi.burst(50));
+  test('GIVEN a rate-limited search endpoint, fifty searches at once get a 429 with retry-after', async ({ searchApi }): Promise<void> => {
+    const responses = await test.step('WHEN fifty searches are sent at once', (): Promise<APIResponse[]> => searchApi.burst(50));
 
-    const rateLimited = await test.step('AND the 429 responses are collected', (): APIResponse[] => responses.filter((response: APIResponse): boolean => response.status() === 429));
-
-    await test.step('THEN at least one request was rate limited', (): void => expect(rateLimited.length).toBeGreaterThan(0));
-
-    await test.step('AND the retry-after header is set', (): void => expect(rateLimited[0]?.headers()['retry-after']).toBeDefined());
+    await test.step('THEN at least one search gets a 429 with retry-after', (): void => expectRateLimited(responses));
   });
 });
 ```
 
-| Status | Request | Assert |
+Every other error status is the same test with its own request. The body shape is a named const in the spec, shown inline here.
+
+| Status | Request | `AND` body check after `THEN the status is <code>` |
 |---|---|---|
-| 401 | `get('/api/protected/resource', { headers: { Authorization: '' } })` | `expect(body.error).toMatch(/unauthorized\|unauthenticated/i)` |
-| 403 | `delete('/api/admin/items/1')` as a non-admin | `expect(body.error).toMatch(/forbidden\|insufficient permissions/i)` |
-| 404 | `get('/api/items/999999')` | `expect(body).toMatchObject({ error: expect.stringMatching(/not found/i) })` |
-| 409 | `post('/api/items', { data: { title: 'Duplicate', sku } })` after one with the same `sku` | `expect(response.status()).toBe(409)` |
-| 422 | `post('/api/orders', { data: { items: [] } })` | `expect(body.error).toContain('at least one item')` |
+| 401 | `get('/api/protected/resource', { headers: { Authorization: '' } })` | `expectBody(response, { error: expect.stringMatching(/unauthorized\|unauthenticated/i) })` |
+| 403 | `delete('/api/admin/items/1')` as a non-admin | `expectBody(response, { error: expect.stringMatching(/forbidden\|insufficient permissions/i) })` |
+| 404 | `get('/api/items/999999')` | `expectBody(response, { error: expect.stringMatching(/not found/i) })` |
+| 409 | `post('/api/items', { data: { title: 'Duplicate', sku } })` after one with the same `sku` | None; the status is the check |
+| 422 | `post('/api/orders', { data: { items: [] } })` | `expectBody(response, { error: expect.stringContaining('at least one item') })` |
 
 ### File Upload via API
 
@@ -551,8 +603,8 @@ import { resolve } from 'node:path';
 
 import type { APIResponse } from '@playwright/test';
 
-import { readJson } from '../utils/read-json.util';
-import type { UploadFile, UploadMeta, UploadedDocument } from './common/documents.type';
+import { expectBody } from '../utils/expect-body.util';
+import type { UploadFile, UploadMeta } from './common/documents.type';
 import { expect, test } from './documents.fixture';
 
 const REPORT_PATH = resolve('e2e/documents/test/fixtures/report.pdf');
@@ -566,18 +618,16 @@ const ELEVEN_MB = 11 * 1024 * 1024;
 const OVERSIZED: UploadFile = { buffer: Buffer.alloc(ELEVEN_MB), mimeType: 'application/octet-stream', name: 'large-file.bin' };
 
 test.describe('FEATURE: document upload api', () => {
-  test('GIVEN a pdf, uploading it as multipart returns 201 describing the stored file', async ({ documentsApi }): Promise<void> => {
+  test('GIVEN a pdf report, uploading it as multipart returns 201 describing the stored file', async ({ documentsApi }): Promise<void> => {
     const response = await test.step('WHEN the report is uploaded', (): Promise<APIResponse> => documentsApi.uploadFile(REPORT_PATH, 'application/pdf', REPORT_META));
-
-    const body = await test.step('AND the body is read', (): Promise<UploadedDocument> => readJson<UploadedDocument>(response));
 
     await test.step('THEN the status is 201', (): void => expect(response.status()).toBe(201));
 
-    await test.step('AND the body describes the stored file', (): void => expect(body).toMatchObject(UPLOADED_SHAPE));
+    await test.step('AND the body describes the stored file', (): Promise<void> => expectBody(response, UPLOADED_SHAPE));
   });
 
   test('GIVEN an eleven megabyte file, uploading it returns 413', async ({ documentsApi }): Promise<void> => {
-    const response = await test.step('WHEN an oversized file is uploaded', (): Promise<APIResponse> => documentsApi.uploadBuffer(OVERSIZED, REPORT_META));
+    const response = await test.step('WHEN the file is uploaded', (): Promise<APIResponse> => documentsApi.uploadBuffer(OVERSIZED, REPORT_META));
 
     await test.step('THEN the status is 413', (): void => expect(response.status()).toBe(413));
   });
@@ -589,7 +639,14 @@ test.describe('FEATURE: document upload api', () => {
 **Use when**: Testing multi-step workflows — create, read, update, delete sequences; order flows; state machine transitions.
 **Avoid when**: You can test each endpoint in isolation and the interactions are trivial.
 
-A chain is a flat spec: the `product` fixture in `orders.fixture.ts` seeds the arrange link (`shopApi.createProduct(PRODUCT_STUB)`, read with `readJson<Product>`) and deletes the product after `use`; each `test` performs the action links as `WHEN` / `AND` steps and asserts one outcome; `afterEach` deletes the order the test created, with plain calls and no step.
+A chain is a flat spec of independent links. The fixtures in `orders.fixture.ts` seed every link before the one under test, so no test depends on another test, and cleanup never depends on a test reaching its end:
+
+| Fixture | Seeds | After `use` |
+|---|---|---|
+| `product` | `shopApi.createProduct(PRODUCT_STUB)`, a product priced 49.99 with 50 in stock, read with `readJson<Product>` | `shopApi.deleteProduct(product.id)` |
+| `order` | `shopApi.createCart` with `ORDER_QUANTITY` (3) of `product`, then `shopApi.checkout(cart.id, ADDRESS_STUB)`, each read with `readJson` | `shopApi.deleteOrder(order.id)` |
+
+Each test runs one call as its `WHEN` and checks what it returns; reading the placed order back checks what checkout stored. The order body carries `items`, `status`, and `total`. The numbers in the titles are the stub's: three at 49.99 total 149.97.
 
 ```ts
 // e2e/orders/api/shop.api.ts
@@ -624,6 +681,10 @@ export class ShopApi {
     return this.request.get('/api/orders');
   }
 
+  public async order(id: number): Promise<APIResponse> {
+    return this.request.get(`/api/orders/${id}`);
+  }
+
   public async product(id: number): Promise<APIResponse> {
     return this.request.get(`/api/products/${id}`);
   }
@@ -642,63 +703,48 @@ export class ShopApi {
 // e2e/orders/checkout.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import { readJson } from '../utils/read-json.util';
-import type { Cart, CartLine, Order } from './common/orders.type';
+import { expectBody } from '../utils/expect-body.util';
 import { expect, test } from './orders.fixture';
-import { ADDRESS_STUB } from './test/stubs/orders.stub';
+
+const ORDER_TOTAL = { total: 149.97 };
+const PENDING = { status: 'pending' };
+const ONE_LINE = [expect.anything()];
+const ONE_LINE_ORDER = { items: ONE_LINE };
 
 test.describe('FEATURE: checkout api', () => {
-  let order: Order;
+  test('GIVEN an order of three 49.99 products, reading it shows the 149.97 total', async ({ order, shopApi }): Promise<void> => {
+    const response = await test.step('WHEN the order is read', (): Promise<APIResponse> => shopApi.order(order.id));
 
-  test.afterEach(async ({ shopApi }): Promise<void> => {
-    await shopApi.deleteOrder(order.id);
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
+
+    await test.step('AND the total is 149.97', (): Promise<void> => expectBody(response, ORDER_TOTAL));
   });
 
-  test('GIVEN a filled cart, checking out totals three times the price', async ({ product, shopApi }): Promise<void> => {
-    const lines: CartLine[] = [{ productId: product.id, quantity: 3 }];
+  test('GIVEN an order of three 49.99 products, reading it shows one pending line', async ({ order, shopApi }): Promise<void> => {
+    const response = await test.step('WHEN the order is read', (): Promise<APIResponse> => shopApi.order(order.id));
 
-    const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-    const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
+    await test.step('AND the order status is pending', (): Promise<void> => expectBody(response, PENDING));
 
-    const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
-
-    order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
-
-    await test.step('THEN the cart total is 149.97', (): void => expect(cart.total).toBe(149.97));
-  });
-
-  test('GIVEN a filled cart, checking out creates a pending order with one line', async ({ product, shopApi }): Promise<void> => {
-    const lines: CartLine[] = [{ productId: product.id, quantity: 3 }];
-
-    const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
-
-    const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
-
-    const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
-
-    order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
-
-    await test.step('THEN the order status is pending', (): void => expect(order.status).toBe('pending'));
-
-    await test.step('AND the order has one line', (): void => expect(order.items).toHaveLength(1));
+    await test.step('AND the order has one line', (): Promise<void> => expectBody(response, ONE_LINE_ORDER));
   });
 });
 ```
 
-Two more outcomes of the same chain are one scenario each: the four checkout steps, then one extra read.
+Two more links read what the checkout changed, with the same fixtures and `THEN the status is 200` first. A shape that needs a fixture value, such as `order.id`, is a `const` above the steps.
 
-| Title | Extra `AND` steps | THEN |
+| Title | `WHEN` | `AND` body check |
 |---|---|---|
-| GIVEN a filled cart, checking out lists the order | `shopApi.listOrders()`, read as `OrderList` | the listed ids contain `order.id` |
-| GIVEN a filled cart, checking out drops the product stock to 47 | `shopApi.product(product.id)`, read as `Product` | `stock` is 47 |
+| GIVEN a placed order, listing orders includes it | `shopApi.listOrders()` | `expectBody(response, listed)`, where `listed` holds `orders: expect.arrayContaining([expect.objectContaining({ id: order.id })])` |
+| GIVEN an order of three from a stock of 50, reading the product shows 47 left | `shopApi.product(product.id)` | `expectBody(response, { stock: 47 })` |
 
 A state machine is the same flat spec with one test per starting state: a fixture seeds the state through the API, one `WHEN` step runs the transition, and the title names both (`'GIVEN an article in review, publishing it succeeds'`). For an article publish workflow through `patch('/api/articles/:id/status', { data: { status } })`:
 
-| GIVEN | WHEN status is set to | THEN |
+| GIVEN | WHEN status is set to | THEN, then AND |
 |---|---|---|
-| a draft article | `in_review` | response ok, body status `in_review` |
-| an article in review | `published` | response ok, body status `published` |
+| a draft article | `in_review` | status 200, then body status `in_review` |
+| an article in review | `published` | status 200, then body status `published` |
 | a published article | `draft` | status 422; publish is not reversible |
 
 ### Schema Validation with Zod
@@ -738,12 +784,27 @@ export const PAGINATED_ITEMS_SCHEMA = z.object({
 });
 ```
 
-`parse` throws a `ZodError` whose message lists every issue with its path, so `not.toThrow()` reports the full diff without a hand-written formatter.
+`expectSchema` reads the body inside the check. `parse` throws a `ZodError` whose message lists every issue with its path, so `not.toThrow()` reports the full diff without a hand-written formatter.
+
+```ts
+// e2e/utils/expect-schema.util.ts
+import type { APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
+import type { ZodType } from 'zod';
+
+export const expectSchema = async (response: APIResponse, schema: ZodType): Promise<void> => {
+  const body: unknown = await response.json();
+  const parse = (): unknown => schema.parse(body);
+
+  expect(parse).not.toThrow();
+};
+```
 
 ```ts
 // e2e/items/items-schema.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
+import { expectSchema } from '../utils/expect-schema.util';
 import { PAGINATED_ITEMS_SCHEMA } from './common/item-schema.const';
 import type { ItemQuery } from './common/items.type';
 import { expect, test } from './items.fixture';
@@ -754,11 +815,9 @@ test.describe('FEATURE: items api contract', () => {
   test('GIVEN a tools query, fetching the item list matches the paginated items schema', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN the item list is fetched', (): Promise<APIResponse> => itemsApi.list(LIST_QUERY));
 
-    const body = await test.step('AND the body is read', (): Promise<unknown> => response.json());
-
     await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());
 
-    await test.step('AND the body matches the schema', (): void => expect((): unknown => PAGINATED_ITEMS_SCHEMA.parse(body)).not.toThrow());
+    await test.step('AND the body matches the schema', (): Promise<void> => expectSchema(response, PAGINATED_ITEMS_SCHEMA));
   });
 });
 ```
@@ -810,14 +869,14 @@ const webServer = { command: 'npm run start:api', reuseExistingServer: !process.
 
 const use = { baseURL: 'http://localhost:3000' };
 
-export default defineConfig({ use, webServer });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use, webServer });
 ```
 
 ### "response.json() failed — body is not valid JSON"
 
 **Cause**: The endpoint returned HTML (error page), plain text, or an empty body instead of JSON.
 
-**Fix**: Check `response.status()` first — a 500 or 302 often returns HTML. `readJson` at the top of this file throws with the status and the raw `response.text()` when the status is not 2xx. Verify the `Accept: application/json` header is set.
+**Fix**: Check `response.status()` first — a 500 or 302 often returns HTML. A spec whose `THEN the status is 200` step runs before its body check fails on the status, not on the parse. `readJson` at the top of this file throws with the status and the raw `response.text()` when the status is not 2xx. Verify the `Accept: application/json` header is set.
 
 ### "401 Unauthorized" when using `request` fixture
 
@@ -841,7 +900,7 @@ const extraHTTPHeaders = { Authorization: `Bearer ${API_TOKEN}` };
 
 const use = { extraHTTPHeaders };
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ### Tests pass locally but fail in CI

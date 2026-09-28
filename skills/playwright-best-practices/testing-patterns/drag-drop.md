@@ -156,9 +156,9 @@ export class BoardColumn {
 }
 ```
 
-Workflow progression is `dragCardTo` once per stage, then `expectNoCard` on every earlier column. Same-column reorder is `card('Item Z').dragTo(card('Item X'))` followed by `expect(cards).toContainText(['Item Z', 'Item X'])`; the array form matches a subset in order, see `expectOrder` under [Sortable Lists](#sortable-lists-reordering). Card counts come from `cards.count()` in a value-returning `AND` step after the board opens and `expect(cards).toHaveCount(n)` after the drag.
+Workflow progression is `dragCardTo` once per stage, then `expectNoCard` on every earlier column. Same-column reorder is `card('Item Z').dragTo(card('Item X'))` followed by `expect(cards).toContainText(['Item Z', 'Item X'])`; the array form matches a subset in order, see `expectOrder` under [Sortable Lists](#sortable-lists-reordering). Card counts are `expect(cards).toHaveCount(n)` checks against the seeded counts: one `THEN` after the board opens, then a new `WHEN` for the drag and a `THEN` with the new counts.
 
-The page object composes the columns and owns the persistence check: `waitForResponse` starts before the drag, and the parsed `PATCH` body is returned so the spec can assert on it.
+The page object composes the columns and starts `waitForResponse` before the drag, so the `PATCH` that saves the move cannot be missed; it returns that response, and the check reads its body.
 
 ```ts
 // e2e/board/common/board.type.ts
@@ -174,7 +174,6 @@ export type Ticket = {
 import type { Locator, Page, Response } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-import type { Ticket } from '../common/board.type';
 import { BoardColumn } from '../helpers/board-column.helper';
 import { DragPreview } from '../helpers/drag-preview.helper';
 
@@ -211,21 +210,34 @@ export class BoardPage {
     await this.page.reload();
   }
 
-  public async moveCardAndAwaitSave(title: string, from: BoardColumn, to: BoardColumn): Promise<Ticket> {
+  public async moveCardAndAwaitSave(title: string, from: BoardColumn, to: BoardColumn): Promise<Response> {
     const saved = this.page.waitForResponse(isTicketSaved);
 
     await from.dragCardTo(title, to);
 
-    const response = await saved;
-    const ticket: Ticket = await response.json();
-
-    return ticket;
+    return saved;
   }
 
   public async expectTicketDragging(id: string): Promise<void> {
     await expect(this.ticket(id)).toHaveClass(/dragging|placeholder/);
   }
 }
+```
+
+`expectSavedColumn` reads the saved ticket from that response inside the check.
+
+```ts
+// e2e/board/test/utils/ticket-save.spec.util.ts
+import type { Response } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import type { Ticket } from '../../common/board.type';
+
+export const expectSavedColumn = async (response: Response, column: string): Promise<void> => {
+  const ticket: Ticket = await response.json();
+
+  expect(ticket.column).toBe(column);
+};
 ```
 
 `DragPreview` is defined in [Custom Drag Preview](#custom-drag-preview). The fixture injects the page object; every other feature in this file uses the same fixture shape with its own page object.
@@ -257,17 +269,19 @@ export { expect } from '@playwright/test';
 | Canvas editor | `e2e/design-tool/design-tool.fixture.ts` | `designToolPage: DesignToolPage` |
 | Cross-frame | `e2e/composer/composer.fixture.ts` | `composerPage: ComposerPage` |
 
-The second test returns the saved ticket from the drag step and reloads to prove persistence.
+The second test returns the save response from the drag step and checks it, then reloads in a new phase to prove persistence.
 
 ```ts
 // e2e/board/board.e2e.ts
-import type { Ticket } from './common/board.type';
-import { expect, test } from './board.fixture';
+import type { Response } from '@playwright/test';
+
+import { test } from './board.fixture';
+import { expectSavedColumn } from './test/utils/ticket-save.spec.util';
 
 const TICKET = 'Update API docs';
 
 test.describe('FEATURE: kanban board', () => {
-  test('GIVEN a backlog ticket, dragging it to active moves it out of the backlog', async ({ boardPage }): Promise<void> => {
+  test('GIVEN the Update API docs ticket in the backlog, dragging it to active moves it out of the backlog', async ({ boardPage }): Promise<void> => {
     await test.step('WHEN the board is opened', (): Promise<void> => boardPage.goto());
 
     await test.step('AND the ticket is dragged to active', (): Promise<void> => boardPage.backlogColumn.dragCardTo(TICKET, boardPage.activeColumn));
@@ -277,16 +291,16 @@ test.describe('FEATURE: kanban board', () => {
     await test.step('AND the backlog hides the ticket', (): Promise<void> => boardPage.backlogColumn.expectNoCard(TICKET));
   });
 
-  test('GIVEN a backlog ticket, dragging it to active saves the move across a reload', async ({ boardPage }): Promise<void> => {
+  test('GIVEN the Update API docs ticket in the backlog, dragging it to active saves the move across a reload', async ({ boardPage }): Promise<void> => {
     await test.step('WHEN the board is opened', (): Promise<void> => boardPage.goto());
 
-    const ticket = await test.step('AND the ticket is dragged to active and the save completes', (): Promise<Ticket> => boardPage.moveCardAndAwaitSave(TICKET, boardPage.backlogColumn, boardPage.activeColumn));
+    const saved = await test.step('AND the ticket is dragged to active and the save completes', (): Promise<Response> => boardPage.moveCardAndAwaitSave(TICKET, boardPage.backlogColumn, boardPage.activeColumn));
 
-    await test.step('AND the board is reloaded', (): Promise<void> => boardPage.reload());
+    await test.step('THEN the saved ticket names the active column', (): Promise<void> => expectSavedColumn(saved, 'active'));
 
-    await test.step('THEN the saved ticket names the active column', (): void => expect(ticket.column).toBe('active'));
+    await test.step('WHEN the board is reloaded', (): Promise<void> => boardPage.reload());
 
-    await test.step('AND active still shows the ticket', (): Promise<void> => boardPage.activeColumn.expectCard(TICKET));
+    await test.step('THEN active still shows the ticket', (): Promise<void> => boardPage.activeColumn.expectCard(TICKET));
   });
 });
 ```
@@ -343,7 +357,7 @@ test.describe('FEATURE: priority list ordering', () => {
 
     await test.step('THEN the list starts in the seeded order', (): Promise<void> => prioritiesPage.expectOrder(SEEDED_ORDER));
 
-    await test.step('AND C is dragged onto A', (): Promise<void> => prioritiesPage.dragItemBefore('Priority C', 'Priority A'));
+    await test.step('WHEN C is dragged onto A', (): Promise<void> => prioritiesPage.dragItemBefore('Priority C', 'Priority A'));
 
     await test.step('THEN the list reads C, A, B', (): Promise<void> => prioritiesPage.expectOrder(REORDERED));
   });
@@ -439,7 +453,7 @@ export class DragExamplePage {
 import { test } from './drag-example.fixture';
 
 test.describe('FEATURE: native HTML5 drag and drop', () => {
-  test('GIVEN element 1, dragging it to area B lists it there', async ({ dragExamplePage }): Promise<void> => {
+  test('GIVEN element 1 in its source area, dragging it to area B lists it there', async ({ dragExamplePage }): Promise<void> => {
     await test.step('WHEN the drag example is opened', (): Promise<void> => dragExamplePage.goto());
 
     await test.step('AND element 1 is dragged to area B', (): Promise<void> => dragExamplePage.dragElementTo(dragExamplePage.areaB));
@@ -447,14 +461,14 @@ test.describe('FEATURE: native HTML5 drag and drop', () => {
     await test.step('THEN area B lists element 1', (): Promise<void> => dragExamplePage.areaB.expectItem('Element 1'));
   });
 
-  test('GIVEN an element held over the zone, the zone highlights until release', async ({ dragExamplePage }): Promise<void> => {
+  test('GIVEN element 1 in its source area, holding it over the target zone highlights the zone until release', async ({ dragExamplePage }): Promise<void> => {
     await test.step('WHEN the drag example is opened', (): Promise<void> => dragExamplePage.goto());
 
     await test.step('AND the element is held over the target zone', (): Promise<void> => dragExamplePage.holdElementOverZone());
 
     await test.step('THEN the target zone is highlighted', (): Promise<void> => dragExamplePage.dropZone.expectHighlighted());
 
-    await test.step('AND the element is released', (): Promise<void> => dragExamplePage.releaseElement());
+    await test.step('WHEN the element is released', (): Promise<void> => dragExamplePage.releaseElement());
 
     await test.step('THEN the highlight is gone', (): Promise<void> => dragExamplePage.dropZone.expectIdle());
 
@@ -565,7 +579,7 @@ import type { BoundingBox, Point } from '../common/drag.type';
 import { test } from './design-tool.fixture';
 
 test.describe('FEATURE: design tool shape dragging', () => {
-  test('GIVEN a shape, dragging it to a canvas point centers it there', async ({ designToolPage }): Promise<void> => {
+  test('GIVEN one shape on the editor canvas, dragging it to a canvas point centers it there', async ({ designToolPage }): Promise<void> => {
     await test.step('WHEN the design tool is opened', (): Promise<void> => designToolPage.goto());
 
     const target = await test.step('AND the shape is dragged 300px right and 200px down', (): Promise<Point> => designToolPage.dragShapeToCanvasOffset(300, 200));
@@ -573,7 +587,7 @@ test.describe('FEATURE: design tool shape dragging', () => {
     await test.step('THEN the shape is centered on the target', (): Promise<void> => designToolPage.shape.expectCenteredAt(target));
   });
 
-  test('GIVEN a shape, dragging its resize handle grows it by the drag distance', async ({ designToolPage }): Promise<void> => {
+  test('GIVEN one shape on the editor canvas, dragging its resize handle grows it by the drag distance', async ({ designToolPage }): Promise<void> => {
     await test.step('WHEN the design tool is opened', (): Promise<void> => designToolPage.goto());
 
     const before = await test.step('AND the handle is dragged 100px right and 80px down', (): Promise<BoundingBox> => designToolPage.resizeShapeBy(100, 80));
@@ -624,7 +638,7 @@ import { dropOn, holdBetween } from '../test/utils/drag.spec.util';
 import { test } from './board.fixture';
 
 test.describe('FEATURE: kanban drag preview', () => {
-  test('GIVEN a card held between columns, the preview shows until the drop', async ({ boardPage, page }): Promise<void> => {
+  test('GIVEN ticket 1 in the backlog, holding it between columns shows the preview until the drop', async ({ boardPage, page }): Promise<void> => {
     await test.step('WHEN the board is opened', (): Promise<void> => boardPage.goto());
 
     await test.step('AND ticket 1 is held between backlog and active', (): Promise<void> => holdBetween(page, boardPage.ticket('ticket-1'), boardPage.activeColumn.root));
@@ -633,14 +647,14 @@ test.describe('FEATURE: kanban drag preview', () => {
 
     await test.step('AND ticket 1 shows its dragging state', (): Promise<void> => boardPage.expectTicketDragging('ticket-1'));
 
-    await test.step('AND the card is dropped on the active column', (): Promise<void> => dropOn(page, boardPage.activeColumn.root));
+    await test.step('WHEN the card is dropped on the active column', (): Promise<void> => dropOn(page, boardPage.activeColumn.root));
 
     await test.step('THEN the drag preview is gone', (): Promise<void> => boardPage.dragPreview.expectHidden());
   });
 });
 ```
 
-Multi-select drag is an `AND` step after the board opens that clicks ticket 1 then tickets 2 and 3 with `click({ modifiers: ['Shift'] })`, `holdBetween` on ticket 1 toward the target column root, `expect(dragPreview.root).toContainText('3 items')`, then `dropOn` and `expectCard` for each ticket. `BoardColumn.expectCard` filters by text; when tickets carry only a `data-testid`, add an `expectTicket(id)` method on the column that filters with `{ has: this.root.getByTestId(id) }` instead.
+Multi-select drag is an `AND` step after the board opens that clicks ticket 1 then tickets 2 and 3 with `click({ modifiers: ['Shift'] })`, then `holdBetween` on ticket 1 toward the target column root, and `expect(dragPreview.root).toContainText('3 items')` as the `THEN`; a new `WHEN` phase runs `dropOn` and checks `expectCard` for each ticket. `BoardColumn.expectCard` filters by text; when tickets carry only a `data-testid`, add an `expectTicket(id)` method on the column that filters with `{ has: this.root.getByTestId(id) }` instead.
 
 ---
 
