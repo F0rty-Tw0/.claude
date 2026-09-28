@@ -36,7 +36,8 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   globalSetup: './global-setup.ts',
-  globalTeardown: './global-teardown.ts'
+  globalTeardown: './global-teardown.ts',
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -362,7 +363,7 @@ const projects = [
   { dependencies: ['setup'], name: 'firefox', use: firefox }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 > **For complete authentication setup patterns**, see [fixtures-hooks.md](fixtures-hooks.md#authentication-patterns).
@@ -385,7 +386,8 @@ const projects = [
 export default defineConfig({
   globalSetup: './global-setup.ts',
   globalTeardown: './global-teardown.ts',
-  projects
+  projects,
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 

@@ -51,7 +51,7 @@ export default defineConfig({
   fullyParallel: true,
   projects,
   retries: IS_CI ? 2 : 0,
-  testDir: './e2e',
+  testMatch: '**/*.@(e2e|test).ts',
   use,
   webServer,
   workers: IS_CI ? '50%' : undefined
@@ -78,23 +78,21 @@ NEXTAUTH_SECRET=test-secret-local
 A server component is plain HTML by the time Playwright sees it. Assert on roles as on any page.
 
 ```ts
-// e2e/home/home.e2e.ts
+// e2e/home/home-server-components.e2e.ts
 import { test } from './home.fixture';
 
 test.describe('FEATURE: server components', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: page load shows the server-rendered heading and navigation', async ({ homePage }): Promise<void> => {
-      await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
+  test('GIVEN server-rendered HTML, the home page shows the heading and navigation', async ({ homePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-      await test.step('THEN welcome heading is shown', (): Promise<void> => homePage.expectHeading('Welcome'));
+    await test.step('THEN welcome heading is shown', (): Promise<void> => homePage.expectHeading('Welcome'));
 
-      await test.step('AND main navigation is shown', (): Promise<void> => homePage.expectNavigation('Main'));
-    });
+    await test.step('AND main navigation is shown', (): Promise<void> => homePage.expectNavigation('Main'));
   });
 });
 ```
 
-`HomePage` is shared by every `home.e2e.ts` below: `goto()` opens `/`; `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
+`HomePage` (`e2e/home/pages/home.page.ts`) is shared by every `home-*.e2e.ts` spec below. `goto(options?)` opens `/`. `HomeOptions` gains `headers?: RequestHeaders`, which `goto` applies with `page.setExtraHTTPHeaders` before it navigates. `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
 
 ### Loading States with Streaming
 
@@ -116,31 +114,26 @@ export const slowStatsMock = (delayMs: number): RouteHandler => {
 };
 ```
 
-`DashboardPage` owns `heading` (`getByRole('heading', { name: 'Dashboard' })`), `progressbar` (`getByRole('progressbar')`) and `sidebar` (`getByRole('navigation', { name: 'Dashboard' })`). `goto(path = '/dashboard')` navigates; `routeStats(handler: RouteHandler)` wraps `page.route('**/api/stats', handler)`; `expectLoading` asserts the progressbar visible; `expectLoaded` asserts the heading visible and the progressbar hidden in one boxed step; `openSection(name)` clicks the sidebar link then `waitForURL('/dashboard/<name>')`; `expectSection(name)` asserts the sidebar and the section heading.
+`DashboardPage` owns `heading` (`getByRole('heading', { name: 'Dashboard' })`), `progressbar` (`getByRole('progressbar')`) and `sidebar` (`getByRole('navigation', { name: 'Dashboard' })`). `goto(options?)` opens `/dashboard`; `DashboardOptions` gains `statsDelayMs?: number`, which `goto` turns into `slowStatsMock(statsDelayMs)` on `**/api/stats` before it navigates, so the spec passes a number and the page object picks the mock. `gotoSection(name)` opens `/dashboard/<name>`; `expectLoading` asserts the progressbar visible; `expectLoaded` asserts the heading visible and the progressbar hidden as two plain `expect` lines; `openSection(name)` clicks the sidebar link then `waitForURL('/dashboard/<name>')`; `expectSection(name)` asserts the sidebar and the section heading.
 
 ```ts
 // e2e/dashboard/dashboard.test.ts
 import { test } from './dashboard.fixture';
-import { slowStatsMock } from './test/mocks/stats.mock';
 
 test.describe('FEATURE: streaming dashboard', () => {
-  test.describe('GIVEN the stats endpoint takes two seconds', () => {
-    test('SCENARIO: dashboard open shows the loading boundary and resolves it', async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN the stats response is held for 2s', (): Promise<void> => dashboardPage.routeStats(slowStatsMock(2_000)));
+  test('GIVEN a slow stats response, the loading boundary shows until it resolves', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ statsDelayMs: 2_000 }));
 
-      await test.step('AND the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+    await test.step('THEN loading boundary is shown', (): Promise<void> => dashboardPage.expectLoading());
 
-      await test.step('THEN loading boundary is shown', (): Promise<void> => dashboardPage.expectLoading());
-
-      await test.step('AND content replaces the loading boundary', (): Promise<void> => dashboardPage.expectLoaded());
-    });
+    await test.step('AND content replaces the loading boundary', (): Promise<void> => dashboardPage.expectLoaded());
   });
 });
 ```
 
 ### Nested Layouts
 
-A nested layout stays mounted while its child route changes. `dashboardPage.goto('/dashboard/analytics')`, `expectSection('Analytics')`, `openSection('Settings')`, `expectSection('Settings')` walk the same page object.
+A nested layout stays mounted while its child route changes. `dashboardPage.gotoSection('analytics')`, `openSection('Settings')`, `expectSection('Settings')` walk the same page object.
 
 ## Pages Router Patterns
 
@@ -161,7 +154,7 @@ Same shape: `aboutPage.goto()`, `expectHeading('About Us')`, `expectText('Founde
 ```ts
 // e2e/blog/pages/post.page.ts
 import type { Locator, Page, Response } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class PostPage {
   public readonly heading: Locator;
@@ -182,14 +175,12 @@ export class PostPage {
   }
 
   public async expectPost(title: string): Promise<void> {
-    await test.step(`THEN post "${title}" is shown`, async (): Promise<void> => {
-      await expect(this.heading).toContainText(title);
-      await expect(this.notFoundText).toBeHidden();
-    }, { box: true });
+    await expect(this.heading).toContainText(title);
+    await expect(this.notFoundText).toBeHidden();
   }
 
   public async expectNotFound(): Promise<void> {
-    await test.step('THEN 404 heading is shown', (): Promise<void> => expect(this.notFoundHeading).toBeVisible(), { box: true });
+    await expect(this.notFoundHeading).toBeVisible();
   }
 }
 ```
@@ -201,22 +192,18 @@ import type { Response } from '@playwright/test';
 import { expect, test } from './blog.fixture';
 
 test.describe('FEATURE: blog post routes', () => {
-  test.describe('GIVEN a published post', () => {
-    test('SCENARIO: published slug renders the post', async ({ postPage }): Promise<void> => {
-      await test.step('WHEN the testing guide is opened', (): Promise<Response | null> => postPage.goto('testing-guide'));
+  test('GIVEN a published slug, opening it renders the post', async ({ postPage }): Promise<void> => {
+    await test.step('WHEN the testing guide is opened', (): Promise<Response | null> => postPage.goto('testing-guide'));
 
-      await test.step('THEN post is shown', (): Promise<void> => postPage.expectPost('Testing Guide'));
-    });
+    await test.step('THEN post is shown', (): Promise<void> => postPage.expectPost('Testing Guide'));
   });
 
-  test.describe('GIVEN an unknown slug', () => {
-    test('SCENARIO: unknown slug responds 404', async ({ postPage }): Promise<void> => {
-      const response = await test.step('WHEN a missing post is opened', (): Promise<Response | null> => postPage.goto('nonexistent-post'));
+  test('GIVEN an unknown slug, opening it responds 404', async ({ postPage }): Promise<void> => {
+    const response = await test.step('WHEN the post page is opened', (): Promise<Response | null> => postPage.goto('nonexistent-post'));
 
-      await test.step('THEN status is 404', (): void => expect(response?.status()).toBe(404));
+    await test.step('THEN status is 404', (): void => expect(response?.status()).toBe(404));
 
-      await test.step('AND 404 heading is shown', (): Promise<void> => postPage.expectNotFound());
-    });
+    await test.step('AND 404 heading is shown', (): Promise<void> => postPage.expectNotFound());
   });
 });
 ```
@@ -227,7 +214,7 @@ test.describe('FEATURE: blog post routes', () => {
 
 ### Query Parameters
 
-Query parameters drive the filter and the sort. The page object returns the rendered prices as numbers; the util decides whether they are ascending.
+Query parameters drive the filter and the sort. The page object's `expectPricesAscending()` reads the rendered prices and compares them with the util's sorted copy.
 
 ```ts
 // e2e/products/test/utils/prices.spec.util.ts
@@ -242,31 +229,26 @@ export const sortedAscending = (prices: number[]): number[] => [...prices].sort(
 
 ```ts
 // e2e/products/products.e2e.ts
-import { expect, test } from './products.fixture';
-import { sortedAscending } from './test/utils/prices.spec.util';
+import { test } from './products.fixture';
 
 test.describe('FEATURE: product filters', () => {
-  test.describe('GIVEN electronics sorted by price ascending', () => {
-    test('SCENARIO: page load lists prices ascending', async ({ productsPage }): Promise<void> => {
-      await test.step('WHEN electronics sorted by price is opened', (): Promise<void> => productsPage.goto('category=electronics&sort=price-asc'));
+  test('GIVEN electronics sorted by price, the page lists prices ascending', async ({ productsPage }): Promise<void> => {
+    await test.step('WHEN the products page is opened', (): Promise<void> => productsPage.goto('category=electronics&sort=price-asc'));
 
-      await test.step('THEN electronics heading is shown', (): Promise<void> => productsPage.expectHeading('Electronics'));
+    await test.step('THEN electronics heading is shown', (): Promise<void> => productsPage.expectHeading('Electronics'));
 
-      const prices = await test.step('AND the rendered prices are read', (): Promise<number[]> => productsPage.prices());
-
-      await test.step('THEN prices are ascending', (): void => expect(prices).toEqual(sortedAscending(prices)));
-    });
+    await test.step('AND prices are ascending', (): Promise<void> => productsPage.expectPricesAscending());
   });
 });
 ```
 
-`productsPage.goto(query)` opens `/products?${query}`; `expectHeading(name)` asserts the level-1 heading; `prices()` reads `getByTestId('product-price').allTextContents()` and returns `toPrices(texts)`.
+`productsPage.goto(query)` opens `/products?${query}`; `expectHeading(name)` asserts the level-1 heading; `expectPricesAscending()` reads `getByTestId('product-price').allTextContents()`, converts the texts with `toPrices`, and asserts `expect(prices).toEqual(sortedAscending(prices))`.
 
 ## API Routes
 
 ### Direct API Testing
 
-The `request` fixture hits the route without a browser. A typed body replaces `toHaveProperty` checks: reading `response.json()` into a `ProductsBody` const makes the shape part of the contract.
+The `request` fixture hits the route without a browser. The spec checks the status first, then the body. The body check is an `expect*` util that reads `response.json()` into a `ProductsBody` const, so the shape is part of the contract.
 
 ```ts
 // e2e/products/common/products.type.ts
@@ -286,31 +268,40 @@ export type CreatedProductBody = {
 ```
 
 ```ts
+// e2e/products/test/utils/products-api.spec.util.ts
+import type { APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import type { ProductsBody } from '../../common/products.type';
+
+export const expectProductList = async (response: APIResponse): Promise<void> => {
+  const body: ProductsBody = await response.json();
+
+  expect(body.products[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String) });
+};
+```
+
+```ts
 // e2e/products/products-api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import type { CreatedProductBody, ProductsBody } from './common/products.type';
 import { expect, test } from './products.fixture';
-import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
+import { expectProductList } from './test/utils/products-api.spec.util';
 
 test.describe('FEATURE: products api', () => {
-  test.describe('GIVEN the products route', () => {
-    test('SCENARIO: GET returns a product list', async ({ request }): Promise<void> => {
-      const response = await test.step('WHEN products are fetched', (): Promise<APIResponse> => request.get('/api/products'));
+  test('GIVEN stored products, a GET returns them as a list', async ({ request }): Promise<void> => {
+    const response = await test.step('WHEN products are fetched', (): Promise<APIResponse> => request.get('/api/products'));
 
-      await test.step('THEN response is ok', (): void => expect(response.ok()).toBeTruthy());
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-      const body = await test.step('AND the body is read', (): Promise<ProductsBody> => response.json());
-
-      await test.step('THEN first product has an id and a name', (): void => expect(body.products[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String) }));
-    });
+    await test.step('AND the first product has an id and a name', (): Promise<void> => expectProductList(response));
   });
 });
 ```
 
-`NEW_PRODUCT_STUB` is `{ name: 'Test Product', price: 29.99 }` in `test/stubs/products.stub.ts`. The write cases follow the same four steps:
+`NEW_PRODUCT_STUB` is `{ name: 'Test Product', price: 29.99 }` in `test/stubs/products.stub.ts`. The write cases follow the same three steps. Each body check is a util of the same shape that reads the body it asserts:
 
-| Case | Call | Status | Body |
+| Case | Call | Status | Body check |
 |---|---|---|---|
 | Create | `request.post('/api/products', { data: NEW_PRODUCT_STUB })` | `201` | `CreatedProductBody`; `body.product.name` is `NEW_PRODUCT_STUB.name` |
 | Validation | `request.post('/api/products', { data: { ...NEW_PRODUCT_STUB, name: '' } })` | `400` | `body.error` contains `expect.objectContaining({ field: 'name' })` |
@@ -327,14 +318,12 @@ import { test } from './products.fixture';
 import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
 
 test.describe('FEATURE: product form', () => {
-  test.describe('GIVEN the new product page', () => {
-    test('SCENARIO: submitted product is created by the api and confirmed on the page', async ({ newProductPage }): Promise<void> => {
-      await test.step('GIVEN the new product page is open', (): Promise<void> => newProductPage.goto());
+  test('GIVEN a new product, submitting creates it in the api and confirms it on the page', async ({ newProductPage }): Promise<void> => {
+    await test.step('WHEN the new product page is opened', (): Promise<void> => newProductPage.goto());
 
-      await test.step('WHEN a widget is created', (): Promise<void> => newProductPage.create({ ...NEW_PRODUCT_STUB, name: 'Widget', price: 19.99 }));
+    await test.step('AND a widget is created', (): Promise<void> => newProductPage.create({ ...NEW_PRODUCT_STUB, name: 'Widget', price: 19.99 }));
 
-      await test.step('THEN success message is shown', (): Promise<void> => newProductPage.expectCreated());
-    });
+    await test.step('THEN success message is shown', (): Promise<void> => newProductPage.expectCreated());
   });
 });
 ```
@@ -364,18 +353,16 @@ import { expect, test } from './auth.fixture';
 import { returnUrl } from './test/utils/return-url.spec.util';
 
 test.describe('FEATURE: auth middleware', () => {
-  test.describe('GIVEN a signed-out visitor', () => {
-    test('SCENARIO: nested page redirect shows login and keeps the return url', async ({ loginPage, page }): Promise<void> => {
-      await test.step('WHEN dashboard settings is opened', async (): Promise<void> => {
-        await page.goto('/dashboard/settings');
-      });
-
-      await test.step('THEN login url is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
-
-      await test.step('AND the sign-in heading is shown', (): Promise<void> => loginPage.expectHeading());
-
-      await test.step('AND return url points at settings', (): void => expect(returnUrl(page.url())).toContain('/dashboard/settings'));
+  test('GIVEN no session, visiting a nested page redirects to login and keeps the return url', async ({ loginPage, page }): Promise<void> => {
+    await test.step('WHEN dashboard settings is opened', async (): Promise<void> => {
+      await page.goto('/dashboard/settings');
     });
+
+    await test.step('THEN login url is shown', (): Promise<void> => expect(page).toHaveURL(/\/login/));
+
+    await test.step('AND the sign-in heading is shown', (): Promise<void> => loginPage.expectHeading());
+
+    await test.step('AND return url points at settings', (): void => expect(returnUrl(page.url())).toContain('/dashboard/settings'));
   });
 });
 ```
@@ -384,24 +371,22 @@ test.describe('FEATURE: auth middleware', () => {
 
 ### Security Headers
 
-The navigation response carries the middleware headers. Both assertions describe one state, so they share a boxed step in the util.
+The navigation response carries the middleware headers. Both assertions describe one state, so the util holds them as two plain `expect` lines.
 
 ```ts
 // e2e/auth/test/utils/security-headers.spec.util.ts
 import type { Response } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
-export const expectSecurityHeaders = async (response: Response | null): Promise<void> => {
+export const expectSecurityHeaders = (response: Response | null): void => {
   const headers = response?.headers() ?? {};
 
-  await test.step('THEN security headers are set', (): void => {
-    expect(headers['x-frame-options']).toBe('DENY');
-    expect(headers['x-content-type-options']).toBe('nosniff');
-  }, { box: true });
+  expect(headers['x-frame-options']).toBe('DENY');
+  expect(headers['x-content-type-options']).toBe('nosniff');
 };
 ```
 
-The spec reads `const response = await test.step('WHEN the home page is opened', (): Promise<Response | null> => page.goto('/'));` then `await test.step('THEN security headers are set', (): Promise<void> => expectSecurityHeaders(response));`.
+The spec reads `const response = await test.step('WHEN the home page is opened', (): Promise<Response | null> => page.goto('/'));` then `await test.step('THEN security headers are set', (): void => expectSecurityHeaders(response));`.
 
 ### Locale Rewrites
 
@@ -415,19 +400,15 @@ export const FRENCH_HEADERS_STUB: RequestHeaders = { 'Accept-Language': 'fr-FR,f
 ```
 
 ```ts
-// e2e/home/home.e2e.ts
+// e2e/home/home-locale.e2e.ts
 import { test } from './home.fixture';
 import { FRENCH_HEADERS_STUB } from './test/stubs/locale.stub';
 
 test.describe('FEATURE: locale middleware', () => {
-  test.describe('GIVEN a French browser', () => {
-    test('SCENARIO: home page open serves the French copy', async ({ context, homePage }): Promise<void> => {
-      await test.step('WHEN French accept-language is sent', (): Promise<void> => context.setExtraHTTPHeaders(FRENCH_HEADERS_STUB));
+  test('GIVEN a French accept-language header, the home page serves the French copy', async ({ homePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto({ headers: FRENCH_HEADERS_STUB }));
 
-      await test.step('AND the home page is opened', (): Promise<void> => homePage.goto());
-
-      await test.step('THEN french welcome is shown', (): Promise<void> => homePage.expectText('Bienvenue'));
-    });
+    await test.step('THEN french welcome is shown', (): Promise<void> => homePage.expectText('Bienvenue'));
   });
 });
 ```
@@ -436,47 +417,49 @@ test.describe('FEATURE: locale middleware', () => {
 
 ### Console Error Detection
 
-A hydration mismatch is a console error mentioning `Hydration`, `hydration`, or `did not match`. The `consoleErrors` fixture from [console-errors.md](console-errors.md#fail-test-on-any-error) collects every error; the util keeps the hydration ones.
+A hydration mismatch is a console error mentioning `Hydration`, `hydration`, or `did not match`. The `consoleErrors` fixture from [console-errors.md](../debugging/console-errors.md#fail-test-on-any-error) collects every error; the `expect*` util keeps the hydration ones and asserts there are none.
 
 ```ts
 // e2e/home/test/utils/hydration.spec.util.ts
+import { expect } from '@playwright/test';
+
 const isHydrationError = (error: string): boolean => error.includes('Hydration') || error.includes('hydration') || error.includes('did not match');
 
-export const hydrationErrors = (errors: string[]): string[] => errors.filter(isHydrationError);
+export const expectNoHydrationErrors = (errors: string[]): void => {
+  const mismatches = errors.filter(isHydrationError);
+
+  expect(mismatches).toEqual([]);
+};
 ```
 
 ```ts
-// e2e/home/home.e2e.ts
-import { expect, test } from './home.fixture';
-import { hydrationErrors } from './test/utils/hydration.spec.util';
+// e2e/home/home-hydration.e2e.ts
+import { test } from './home.fixture';
+import { expectNoHydrationErrors } from './test/utils/hydration.spec.util';
 
 test.describe('FEATURE: hydration', () => {
-  test.describe('GIVEN the home page', () => {
-    test('SCENARIO: hydrated page click logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+  test('GIVEN server-rendered HTML, clicking the hydrated page logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-      await test.step('WHEN get started is clicked', (): Promise<void> => homePage.getStarted());
+    await test.step('AND get started is clicked', (): Promise<void> => homePage.getStarted());
 
-      const mismatches = await test.step('AND the hydration errors are kept', (): string[] => hydrationErrors(consoleErrors));
-
-      await test.step('THEN no hydration error was logged', (): void => expect(mismatches).toEqual([]));
-    });
+    await test.step('THEN no hydration error was logged', (): void => expectNoHydrationErrors(consoleErrors));
   });
 });
 ```
 
 ### Interactive Elements After Hydration
 
-A click that changes state proves hydration finished. `counterPage.expectValue(0)`, `counterPage.increment()`, `counterPage.expectValue(1)` on the `counter-value` test ID; the page object is the one in [angular.md](angular.md#signals-and-observables).
+A click that changes state proves hydration finished. `counterPage.goto()`, `counterPage.increment()`, `counterPage.expectValue(1)` on the `value` test ID; the page object is the one in [angular.md](angular.md#signals-and-observables).
 
 ## next/image Testing
 
-`next/image` emits a `srcset` with `w=` descriptors and sets `loading="lazy"` on everything but priority images. Web-first attribute assertions cover both; `naturalWidth` proves a lazy image actually loaded after scrolling.
+`next/image` emits a `srcset` with `w=` descriptors and sets `loading="lazy"` on everything but priority images. Web-first attribute assertions cover both; `expect.poll` on `naturalWidth` proves a lazy image actually loaded after scrolling, and the `expect*` method reads the width itself.
 
 ```ts
 // e2e/gallery/pages/gallery.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const naturalWidth = (image: HTMLImageElement): number => image.naturalWidth;
 
@@ -498,45 +481,42 @@ export class GalleryPage {
     await this.item(index).scrollIntoViewIfNeeded();
   }
 
-  public async itemNaturalWidth(index: number): Promise<number> {
-    return this.item(index).evaluate(naturalWidth);
-  }
-
   private item(index: number): Locator {
     return this.page.getByRole('img', { name: `Gallery item ${index}` });
   }
 
   public async expectHeroEager(): Promise<void> {
-    await test.step('THEN hero image is visible, has a srcset, and is not lazy', async (): Promise<void> => {
-      await expect(this.heroImage).toBeVisible();
-      await expect(this.heroImage).toHaveAttribute('srcset', /w=/);
-      await expect(this.heroImage).not.toHaveAttribute('loading', 'lazy');
-    }, { box: true });
+    await expect(this.heroImage).toBeVisible();
+    await expect(this.heroImage).toHaveAttribute('srcset', /w=/);
+    await expect(this.heroImage).not.toHaveAttribute('loading', 'lazy');
+  }
+
+  public async expectItemLoaded(index: number): Promise<void> {
+    const item = this.item(index);
+    const readWidth = (): Promise<number> => item.evaluate(naturalWidth);
+
+    await expect.poll(readWidth).toBeGreaterThan(0);
   }
 }
 ```
 
 ```ts
 // e2e/gallery/gallery.e2e.ts
-import { expect, test } from './gallery.fixture';
+import { test } from './gallery.fixture';
 
 test.describe('FEATURE: next/image', () => {
-  test.describe('GIVEN the gallery', () => {
-    test.beforeEach(async ({ galleryPage }): Promise<void> => {
-      await test.step('GIVEN the gallery is open', (): Promise<void> => galleryPage.goto());
-    });
+  test('GIVEN a priority hero image, the gallery renders it eager with a srcset', async ({ galleryPage }): Promise<void> => {
+    await test.step('WHEN the gallery is opened', (): Promise<void> => galleryPage.goto());
 
-    test('SCENARIO: page load renders the hero image eager with a srcset', async ({ galleryPage }): Promise<void> => {
-      await test.step('THEN hero image is eager', (): Promise<void> => galleryPage.expectHeroEager());
-    });
+    await test.step('THEN hero image is eager', (): Promise<void> => galleryPage.expectHeroEager());
+  });
 
-    test('SCENARIO: offscreen image loads when scrolled into view', async ({ galleryPage }): Promise<void> => {
-      await test.step('WHEN item 20 is scrolled to', (): Promise<void> => galleryPage.scrollToItem(20));
+  test('GIVEN an offscreen image, scrolling it into view loads it', async ({ galleryPage }): Promise<void> => {
+    await test.step('WHEN the gallery is opened', (): Promise<void> => galleryPage.goto());
 
-      const width = await test.step('AND the natural width is read', (): Promise<number> => galleryPage.itemNaturalWidth(20));
+    await test.step('AND item 20 is scrolled to', (): Promise<void> => galleryPage.scrollToItem(20));
 
-      await test.step('THEN image has loaded pixels', (): void => expect(width).toBeGreaterThan(0));
-    });
+    await test.step('THEN image has loaded pixels', (): Promise<void> => galleryPage.expectItemLoaded(20));
   });
 });
 ```
@@ -545,7 +525,7 @@ test.describe('FEATURE: next/image', () => {
 
 ### Setup Project
 
-The `setup` project logs in once and writes storage state; the `authenticated` project depends on it. Unauthenticated specs match `*.unauth.e2e.ts` and run without state.
+The `setup` project logs in once and writes storage state; the `authenticated` project depends on it and ignores the unauthenticated specs. Unauthenticated specs match `*.unauth.e2e.ts` and run without state.
 
 ```ts
 // e2e/playwright.config.ts
@@ -557,11 +537,11 @@ const authenticated = { storageState: USER_STATE_PATH };
 
 const projects = [
   { name: 'setup', testMatch: /auth\.setup\.ts/ },
-  { dependencies: ['setup'], name: 'authenticated', use: authenticated },
+  { dependencies: ['setup'], name: 'authenticated', testIgnore: '**/*.unauth.e2e.ts', use: authenticated },
   { name: 'unauthenticated', testMatch: '**/*.unauth.e2e.ts' }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Auth Setup

@@ -6,8 +6,8 @@ Playwright reference set covering E2E, component, API, visual, accessibility, se
 
 | Area | Files |
 |---|---|
-| Contract | `core/house-style.md` — `FEATURE` / `GIVEN` describes, `SCENARIO:` titles, `GIVEN` / `WHEN` / `THEN` steps with one call each, page objects own locators, fixtures own page objects, artification TypeScript rules, file layout, size caps. |
-| Core | `core/` — structure, locators, assertions, POM, fixtures, data, config, projects, global setup, annotations, tags. |
+| Contract | `core/house-style.md` — one flat `FEATURE` describe per spec, `GIVEN <state>, <outcome>` test titles, `WHEN` / `THEN` / `AND` steps in phases with one call each, only in spec test bodies, page objects own locators, fixtures own page objects, artification TypeScript rules, file layout, size caps. |
+| Core | `core/` — structure, locators, assertions, POM, fixtures, data, config, projects, global setup, annotations, tags, refactoring an existing suite. |
 | Advanced | `advanced/` — auth flows, multi-user, multi-context, clock, network, third-party, mobile. |
 | Browser APIs | `browser-apis/` — WebSockets, service workers, iframes, geolocation, permissions, clipboard, media. |
 | Patterns | `testing-patterns/` — API, GraphQL, component, visual, canvas, a11y, security, performance, forms, files, drag-drop, i18n, Electron, extensions. |
@@ -15,7 +15,7 @@ Playwright reference set covering E2E, component, API, visual, accessibility, se
 | Debugging | `debugging/` — failures, flaky tests, console errors, error states. |
 | Infrastructure | `infrastructure-ci-cd/` — CI providers, Docker, sharding, performance, reporting, coverage. |
 | Architecture | `architecture/` — POM vs fixtures, test type selection, mock vs real. |
-| Tooling | `scripts/lint-samples.sh` — checks every code sample in this skill against the house rules. |
+| Tooling | `scripts/lint-samples.sh` — checks the TypeScript samples in this skill, or a real spec folder, against the house rules it can read line by line (names, keywords, step order, steps outside specs, bare statements). Titles and prose still need a human read. |
 
 ---
 

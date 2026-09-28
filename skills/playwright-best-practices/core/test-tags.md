@@ -33,18 +33,16 @@ Prefer the details object as the second argument. A single tag is a string; seve
 import { test } from './login.fixture';
 
 test.describe('FEATURE: login', () => {
-  test.describe('GIVEN a visitor', () => {
-    test('SCENARIO: login page shows the heading', { tag: '@fast' }, async ({ loginPage }): Promise<void> => {
-      await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
+  test('GIVEN a visitor, opening the login page shows the heading', { tag: '@fast' }, async ({ loginPage }): Promise<void> => {
+    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-      await test.step('THEN heading is visible', (): Promise<void> => loginPage.expectHeadingVisible());
-    });
+    await test.step('THEN heading is visible', (): Promise<void> => loginPage.expectHeadingVisible());
+  });
 
-    test('SCENARIO: dashboard renders the charts', { tag: ['@slow', '@smoke'] }, async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+  test('GIVEN a visitor, opening the dashboard renders the charts', { tag: ['@slow', '@smoke'] }, async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN charts are visible', (): Promise<void> => dashboardPage.expectChartsVisible());
-    });
+    await test.step('THEN charts are visible', (): Promise<void> => dashboardPage.expectChartsVisible());
   });
 });
 ```
@@ -57,25 +55,25 @@ A tag on `test.describe` is inherited by every test inside.
 
 ### Combine Group and Test Tags
 
-Test-level tags add to the inherited ones. The second test below carries `@admin`, `@critical`, and `@slow`.
+Test-level tags add to the inherited ones. The second test below carries `@admin`, `@critical`, and `@slow`. Both tests start from the admin session the admin project's `storageState` provides ([Multiple Auth States](fixtures-hooks.md#multiple-auth-states)), so both titles name it.
 
 ```ts
 // e2e/admin/admin.e2e.ts
 import { test } from './admin.fixture';
 
 test.describe('FEATURE: admin', { tag: '@admin' }, () => {
-  test.describe('GIVEN an admin session', () => {
-    test('SCENARIO: dashboard lists the metrics', async ({ adminPage }): Promise<void> => {
-      await test.step('WHEN the dashboard is opened', (): Promise<void> => adminPage.gotoDashboard());
+  test('GIVEN an admin session, opening the dashboard lists the metrics', async ({ adminPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => adminPage.gotoDashboard());
 
-      await test.step('THEN metrics are listed', (): Promise<void> => adminPage.expectMetricsListed());
-    });
+    await test.step('THEN metrics are listed', (): Promise<void> => adminPage.expectMetricsListed());
+  });
 
-    test('SCENARIO: saved settings are recorded in the audit log', { tag: ['@critical', '@slow'] }, async ({ adminPage }): Promise<void> => {
-      await test.step('WHEN the settings are saved', (): Promise<void> => adminPage.saveSettings());
+  test('GIVEN an admin session, saving the settings records the change in the audit log', { tag: ['@critical', '@slow'] }, async ({ adminPage }): Promise<void> => {
+    await test.step('WHEN the settings are opened', (): Promise<void> => adminPage.gotoSettings());
 
-      await test.step('THEN audit log lists the change', (): Promise<void> => adminPage.expectAuditEntry('settings saved'));
-    });
+    await test.step('AND the settings are saved', (): Promise<void> => adminPage.saveSettings());
+
+    await test.step('THEN audit log lists the change', (): Promise<void> => adminPage.expectAuditEntry('settings saved'));
   });
 });
 ```
@@ -135,7 +133,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   grep: /@smoke/,
   grepInvert: /@flaky/,
-  testDir: './e2e'
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -153,7 +151,7 @@ const projects = [
   { grep: /@critical/, name: 'critical-only' }
 ];
 
-export default defineConfig({ projects, testDir: './e2e' });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Environment-Based Filtering
@@ -170,7 +168,7 @@ const grep = isCi ? /@smoke|@critical/ : undefined;
 
 const grepInvert = isCi ? /@flaky/ : undefined;
 
-export default defineConfig({ grep, grepInvert, testDir: './e2e' });
+export default defineConfig({ grep, grepInvert, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Tag Organization Patterns
@@ -185,18 +183,20 @@ import { test } from './payments.fixture';
 import { CARD_STUB } from './test/stubs/card.stub';
 
 test.describe('FEATURE: payments', { tag: '@payments' }, () => {
-  test.describe('GIVEN a saved card', () => {
-    test('SCENARIO: charged card shows the receipt', { tag: ['@critical', '@p0'] }, async ({ paymentsPage }): Promise<void> => {
-      await test.step('WHEN the card is charged', (): Promise<void> => paymentsPage.charge(CARD_STUB));
+  test('GIVEN a valid card, charging it shows the receipt', { tag: ['@critical', '@p0'] }, async ({ paymentsPage }): Promise<void> => {
+    await test.step('WHEN the payments page is opened', (): Promise<void> => paymentsPage.goto());
 
-      await test.step('THEN receipt is visible', (): Promise<void> => paymentsPage.expectReceiptVisible());
-    });
+    await test.step('AND the card is charged', (): Promise<void> => paymentsPage.charge(CARD_STUB));
 
-    test('SCENARIO: PayPal selection opens the redirect', { tag: ['@critical', '@slow'] }, async ({ paymentsPage }): Promise<void> => {
-      await test.step('WHEN PayPal is selected', (): Promise<void> => paymentsPage.selectPaypal());
+    await test.step('THEN receipt is visible', (): Promise<void> => paymentsPage.expectReceiptVisible());
+  });
 
-      await test.step('THEN PayPal redirect is open', (): Promise<void> => paymentsPage.expectPaypalRedirect());
-    });
+  test('GIVEN an unpaid order, selecting PayPal opens the redirect', { tag: ['@critical', '@slow'] }, async ({ paymentsPage }): Promise<void> => {
+    await test.step('WHEN the payments page is opened', (): Promise<void> => paymentsPage.goto());
+
+    await test.step('AND PayPal is selected', (): Promise<void> => paymentsPage.selectPaypal());
+
+    await test.step('THEN PayPal redirect is open', (): Promise<void> => paymentsPage.expectPaypalRedirect());
   });
 });
 ```

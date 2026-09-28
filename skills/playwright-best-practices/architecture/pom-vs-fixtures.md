@@ -87,7 +87,7 @@ export type Member = MemberDraft & {
 ```ts
 // e2e/booking/pages/booking.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { BookingDetails } from '../common/booking.type';
 
@@ -127,11 +127,11 @@ export class BookingPage {
   }
 
   public async expectConfirmed(): Promise<void> {
-    await test.step('THEN confirmation message is shown', (): Promise<void> => expect(this.confirmationText).toBeVisible(), { box: true });
+    await expect(this.confirmationText).toBeVisible();
   }
 
   public async expectPrice(amount: string): Promise<void> {
-    await test.step(`THEN total price reads ${amount}`, (): Promise<void> => expect(this.totalPrice).toHaveText(amount), { box: true });
+    await expect(this.totalPrice).toHaveText(amount);
   }
 }
 ```
@@ -145,20 +145,16 @@ import { test } from './booking.fixture';
 import { BOOKING_DETAILS_STUB } from './test/stubs/booking.stub';
 
 test.describe('FEATURE: booking', () => {
-  test.describe('GIVEN the booking page is open', () => {
-    test.beforeEach(async ({ bookingPage }): Promise<void> => {
-      await test.step('GIVEN the booking page is open', (): Promise<void> => bookingPage.goto());
-    });
+  test('GIVEN a standard room, reserving shows the confirmation', async ({ bookingPage }): Promise<void> => {
+    const details: BookingDetails = { ...BOOKING_DETAILS_STUB, room: 'standard' };
 
-    test('SCENARIO: reserving a standard room shows the confirmation', async ({ bookingPage }): Promise<void> => {
-      const details: BookingDetails = { ...BOOKING_DETAILS_STUB, room: 'standard' };
+    await test.step('WHEN the booking page is opened', (): Promise<void> => bookingPage.goto());
 
-      await test.step('WHEN the booking details are filled', (): Promise<void> => bookingPage.fillDetails(details));
+    await test.step('AND the booking details are filled', (): Promise<void> => bookingPage.fillDetails(details));
 
-      await test.step('AND the room is reserved', (): Promise<void> => bookingPage.reserve());
+    await test.step('AND the room is reserved', (): Promise<void> => bookingPage.reserve());
 
-      await test.step('THEN the confirmation message is shown', (): Promise<void> => bookingPage.expectConfirmed());
-    });
+    await test.step('THEN the confirmation message is shown', (): Promise<void> => bookingPage.expectConfirmed());
   });
 });
 ```
@@ -169,11 +165,11 @@ test.describe('FEATURE: booking', () => {
 - Locators are `public readonly` fields, alphabetical, assigned in the constructor
 - Methods represent user intent (`reserve`, `fillDetails`), not low-level clicks
 - Navigation methods (`goto`) belong on the page object
-- Assertions live only in `expect*` methods, each a boxed `test.step`
+- Assertions live only in `expect*` methods, as plain `await expect(…)` lines; only the spec opens steps
 
 ## Custom Fixtures
 
-Best for resources needing setup before and teardown after tests: auth state, database connections, API clients, test users. The `member` fixture seeds through `request` and deletes after `use`; `dashboardPage` depends on `member`, logs in through the login page object, and hands the spec a page object already on the dashboard, so no locator appears in the fixture file.
+Best for resources needing setup before and teardown after tests: auth state, database connections, API clients, test users. The `member` fixture seeds through `request` and deletes after `use`; `dashboardPage` depends on `member`, signs the member in through `page.request` (it shares the page's cookies), and hands the spec the dashboard page object without opening it. Each test opens the dashboard in its own `WHEN`, so nothing navigates twice and no locator appears in the fixture file.
 
 ```ts
 // e2e/booking/booking.fixture.ts
@@ -183,7 +179,6 @@ import type { Member } from './common/booking.type';
 import { AccountPage } from './pages/account.page';
 import { BookingPage } from './pages/booking.page';
 import { DashboardPage } from './pages/dashboard.page';
-import { LoginPage } from './pages/login.page';
 import { memberDraft } from './test/utils/member-builder.spec.util';
 
 type BookingFixtures = {
@@ -201,11 +196,7 @@ export const test = base.extend<BookingFixtures>({
     await use(new BookingPage(page));
   },
   dashboardPage: async ({ member, page }, use): Promise<void> => {
-    const loginPage = new LoginPage(page);
-
-    await loginPage.goto();
-    await loginPage.submit(member);
-    await page.waitForURL('/dashboard');
+    await page.request.post('/api/login', { data: member });
     await use(new DashboardPage(page));
   },
   member: async ({ request }, use): Promise<void> => {
@@ -221,25 +212,23 @@ export const test = base.extend<BookingFixtures>({
 export { expect } from '@playwright/test';
 ```
 
-`DashboardPage` and `LoginPage` follow the page-object sample above; `DashboardPage` exposes `goto()` plus `expectWidgets()` and `expectWelcome(email)` as boxed steps.
+`DashboardPage` follows the page-object sample above and exposes `goto()` plus `expectWidgets()` and `expectWelcome(email)` as plain `expect*` methods. Both tests start from the same signed-in member, so the outcome tells them apart.
 
 ```ts
 // e2e/booking/dashboard.e2e.ts
 import { test } from './booking.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN a logged-in member', () => {
-    test('SCENARIO: opening the dashboard shows the widgets', async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+  test('GIVEN a signed-in member, opening the dashboard shows the widgets', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN the dashboard widgets are visible', (): Promise<void> => dashboardPage.expectWidgets());
-    });
+    await test.step('THEN the dashboard widgets are visible', (): Promise<void> => dashboardPage.expectWidgets());
+  });
 
-    test('SCENARIO: opening the dashboard greets the member by email', async ({ dashboardPage, member }): Promise<void> => {
-      await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+  test('GIVEN a signed-in member, opening the dashboard greets them by email', async ({ dashboardPage, member }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('THEN the welcome prompt shows the member email', (): Promise<void> => dashboardPage.expectWelcome(member.email));
-    });
+    await test.step('THEN the welcome prompt shows the member email', (): Promise<void> => dashboardPage.expectWelcome(member.email));
   });
 });
 ```
@@ -250,7 +239,7 @@ test.describe('FEATURE: dashboard', () => {
 - `use()` separates setup from teardown; teardown runs even if the test fails
 - Fixtures compose: one can depend on another
 - Fixtures are lazy: created only when requested
-- Wrap page objects in fixtures for lifecycle management; a fixture that logs in returns the page object of the landing page, never a raw `Page`
+- Wrap page objects in fixtures for lifecycle management; a fixture that signs in hands over a page object, never a raw `Page`
 - Re-export `expect` so specs have one import source
 
 ## Util Functions
@@ -286,7 +275,7 @@ An assertion util that takes `page` is a page-object concern in disguise. A noti
 ```ts
 // e2e/booking/helpers/notification.helper.ts
 import type { Locator } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class NotificationHelper {
   public readonly root: Locator;
@@ -298,10 +287,8 @@ export class NotificationHelper {
   public async expectMessage(message: string): Promise<void> {
     const notification = this.root.filter({ hasText: message });
 
-    await test.step(`THEN notification reads "${message}" and dismisses`, async (): Promise<void> => {
-      await expect(notification).toBeVisible();
-      await expect(notification).toBeHidden({ timeout: 10_000 });
-    }, { box: true });
+    await expect(notification).toBeVisible();
+    await expect(notification).toBeHidden({ timeout: 10_000 });
   }
 }
 ```
@@ -314,20 +301,16 @@ import { test } from './booking.fixture';
 import { generateEmail } from './test/utils/member-builder.spec.util';
 
 test.describe('FEATURE: account settings', () => {
-  test.describe('GIVEN the account page is open', () => {
-    test.beforeEach(async ({ accountPage }): Promise<void> => {
-      await test.step('GIVEN the account page is open', (): Promise<void> => accountPage.goto());
-    });
+  test('GIVEN a new email, updating saves the new address', async ({ accountPage }): Promise<void> => {
+    const newEmail = generateEmail('updated');
 
-    test('SCENARIO: updating the email saves the new address', async ({ accountPage }): Promise<void> => {
-      const newEmail = generateEmail('updated');
+    await test.step('WHEN the account page is opened', (): Promise<void> => accountPage.goto());
 
-      await test.step('WHEN the new email is saved', (): Promise<void> => accountPage.updateEmail(newEmail));
+    await test.step('AND the new email is saved', (): Promise<void> => accountPage.updateEmail(newEmail));
 
-      await test.step('THEN the notification confirms the update', (): Promise<void> => accountPage.notification.expectMessage('Account updated'));
+    await test.step('THEN the notification confirms the update', (): Promise<void> => accountPage.notification.expectMessage('Account updated'));
 
-      await test.step('AND the email field holds the new email', (): Promise<void> => accountPage.expectEmail(newEmail));
-    });
+    await test.step('AND the email field holds the new email', (): Promise<void> => accountPage.expectEmail(newEmail));
   });
 });
 ```
@@ -374,7 +357,7 @@ e2e/
 |---|---|---|
 | **Spec file** | `test()` with `test.step` | Describes behavior, orchestrates layers |
 | **Fixtures** | `test.extend()` | Resource lifecycle: setup, provide, teardown |
-| **Page objects** | Classes in `pages/`, `helpers/` | UI interaction: navigation, actions, locators, boxed assertions |
+| **Page objects** | Classes in `pages/`, `helpers/` | UI interaction: navigation, actions, locators, `expect*` assertions (no steps) |
 | **Utils** | Functions in `test/utils/`, `utils/` | Utilities: data generation, formatting |
 
 ## Anti-Patterns
@@ -424,7 +407,7 @@ test.extend({
 });
 ```
 
-Prefer: small, composable fixtures (`member`, `loggedInPage`, `bookingPage`). Each fixture does one thing and depends on the others by name.
+Prefer: small, composable fixtures (`member`, `dashboardPage`, `bookingPage`). Each fixture does one thing and depends on the others by name.
 
 ### Utils with side effects
 

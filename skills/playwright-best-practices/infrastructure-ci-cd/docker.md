@@ -241,7 +241,7 @@ const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 
 const use = { baseURL: BASE_URL } as const;
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ```yaml

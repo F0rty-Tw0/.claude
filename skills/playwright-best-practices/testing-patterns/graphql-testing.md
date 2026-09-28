@@ -9,7 +9,7 @@
 > **When to use**: Testing GraphQL APIs — queries, mutations, variables, and error handling.
 > **See also**: [api-testing.md](api-testing.md) for the API-object shape this file builds on.
 
-A GraphQL API object is the page object of a schema: it owns the `APIRequestContext`, the endpoint, and the operation documents, and every method posts one operation and returns the `APIResponse`. Specs read the body through `readGraphql` ([GraphQL Util Function](#graphql-util-function)), which returns `data` and `errors` together because a GraphQL server answers 200 even when the operation failed.
+A GraphQL API object is the page object of a schema: it owns the `APIRequestContext`, the endpoint, and the operation documents, and every method posts one operation and returns the `APIResponse`. A GraphQL server answers 200 even when the operation failed, so a spec checks the status first, then `errors` and `data` through the `expect*` utils in [GraphQL Util Functions](#graphql-util-functions), which read the body inside the check. A fixture that needs a value, such as a login token, reads the envelope through `readGraphql`.
 
 ## Patterns
 
@@ -42,7 +42,7 @@ export type GraphqlResult<T> = {
 };
 ```
 
-The feature names the `data` shape of each operation it reads.
+The feature names the `data` shape of each operation it sends, so the contract lives in one file: the fixture reads `LoginData`, and the specs match partial shapes of the others.
 
 ```ts
 // e2e/catalog/common/catalog.type.ts
@@ -142,48 +142,44 @@ export class GraphqlApi {
 }
 ```
 
-The spec posts the query as the `WHEN` step of every test and asserts one outcome per test. `errors` is checked in its own test because a GraphQL error leaves `data` null and every later assertion would fail with a less useful message.
+The spec posts the query as the `WHEN` step of every test, checks the status, then one outcome per test. `errors` is checked in its own test because a GraphQL error leaves `data` null and every later assertion would fail with a less useful message. Item 101 comes from the database seed.
 
 ```ts
 // e2e/catalog/item-query.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import type { GraphqlResult } from '../common/graphql.type';
-import { readGraphql } from '../utils/read-graphql.util';
+import { expectGraphqlData, expectNoGraphqlErrors } from '../utils/expect-graphql.util';
 import { expect, test } from './catalog.fixture';
-import type { FetchItemData } from './common/catalog.type';
 
 const ITEM_SHAPE = { id: '101', price: expect.any(Number), title: expect.any(String) };
-
+const ITEM_DATA = { item: ITEM_SHAPE };
 const REVIEW_SHAPE = expect.objectContaining({ id: expect.any(String), rating: expect.any(Number) });
+const REVIEWED_ITEM = { reviews: expect.arrayContaining([REVIEW_SHAPE]) };
+const REVIEWED_ITEM_DATA = { item: REVIEWED_ITEM };
 
 test.describe('FEATURE: item query', () => {
-  test.describe('GIVEN item 101 exists', () => {
-    test('SCENARIO: fetching by id reports no errors', async ({ graphqlApi }): Promise<void> => {
-      const response = await test.step('WHEN the FetchItem query is posted', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
+  test('GIVEN seeded item 101, fetching it reports no errors', async ({ graphqlApi }): Promise<void> => {
+    const response = await test.step('WHEN the FetchItem query is posted', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
 
-      const result = await test.step('AND the body is read', (): Promise<GraphqlResult<FetchItemData>> => readGraphql<FetchItemData>(response));
+    await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());
 
-      await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());
+    await test.step('AND errors is undefined', (): Promise<void> => expectNoGraphqlErrors(response));
+  });
 
-      await test.step('AND errors is undefined', (): void => expect(result.errors).toBeUndefined());
-    });
+  test('GIVEN seeded item 101, fetching it returns its id, title and price', async ({ graphqlApi }): Promise<void> => {
+    const response = await test.step('WHEN the FetchItem query is posted', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
 
-    test('SCENARIO: fetching by id returns the item with id, title and price', async ({ graphqlApi }): Promise<void> => {
-      const response = await test.step('WHEN the FetchItem query is posted', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
+    await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());
 
-      const result = await test.step('AND the body is read', (): Promise<GraphqlResult<FetchItemData>> => readGraphql<FetchItemData>(response));
+    await test.step('AND the item matches the shape', (): Promise<void> => expectGraphqlData(response, ITEM_DATA));
+  });
 
-      await test.step('THEN the item matches the shape', (): void => expect(result.data?.item).toMatchObject(ITEM_SHAPE));
-    });
+  test('GIVEN seeded item 101, fetching it returns reviews with an id and a rating', async ({ graphqlApi }): Promise<void> => {
+    const response = await test.step('WHEN the FetchItem query is posted', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
 
-    test('SCENARIO: fetching by id returns reviews with an id and a rating', async ({ graphqlApi }): Promise<void> => {
-      const response = await test.step('WHEN the FetchItem query is posted', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
+    await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());
 
-      const result = await test.step('AND the body is read', (): Promise<GraphqlResult<FetchItemData>> => readGraphql<FetchItemData>(response));
-
-      await test.step('THEN the reviews contain shaped entries', (): void => expect(result.data?.item.reviews).toEqual(expect.arrayContaining([REVIEW_SHAPE])));
-    });
+    await test.step('AND the reviews contain shaped entries', (): Promise<void> => expectGraphqlData(response, REVIEWED_ITEM_DATA));
   });
 });
 ```
@@ -207,23 +203,22 @@ export const ITEM_INPUT_STUB: ItemInput = {
 // e2e/catalog/add-item.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import type { GraphqlResult } from '../common/graphql.type';
-import { readGraphql } from '../utils/read-graphql.util';
+import { expectGraphqlData, expectNoGraphqlErrors } from '../utils/expect-graphql.util';
 import { expect, test } from './catalog.fixture';
-import type { AddItemData } from './common/catalog.type';
 import { ITEM_INPUT_STUB } from './test/stubs/catalog.stub';
 
 const ADDED_SHAPE = { id: expect.any(String), status: 'DRAFT', title: 'New Widget' };
+const ADDED_DATA = { addItem: ADDED_SHAPE };
 
 test.describe('FEATURE: add item mutation', () => {
-  test('SCENARIO: adding a draft item returns it with an id', async ({ graphqlApi }): Promise<void> => {
+  test('GIVEN a draft item, adding it returns it with an id', async ({ graphqlApi }): Promise<void> => {
     const response = await test.step('WHEN the AddItem mutation is posted', (): Promise<APIResponse> => graphqlApi.addItem(ITEM_INPUT_STUB));
 
-    const result = await test.step('AND the body is read', (): Promise<GraphqlResult<AddItemData>> => readGraphql<AddItemData>(response));
+    await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());
 
-    await test.step('THEN no errors are reported', (): void => expect(result.errors).toBeUndefined());
+    await test.step('AND no errors are reported', (): Promise<void> => expectNoGraphqlErrors(response));
 
-    await test.step('AND the added item echoes the input with an id', (): void => expect(result.data?.addItem).toMatchObject(ADDED_SHAPE));
+    await test.step('AND the added item echoes the input with an id', (): Promise<void> => expectGraphqlData(response, ADDED_DATA));
   });
 });
 ```
@@ -236,27 +231,26 @@ Validation failures arrive as `errors` entries with `extensions.code` set to `BA
 // e2e/catalog/add-item-validation.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import type { GraphqlResult } from '../common/graphql.type';
-import { readGraphql } from '../utils/read-graphql.util';
+import { expectFirstGraphqlError } from '../utils/expect-graphql.util';
 import { expect, test } from './catalog.fixture';
-import type { AddItemData, ItemInput } from './common/catalog.type';
+import type { ItemInput } from './common/catalog.type';
 import { ITEM_INPUT_STUB } from './test/stubs/catalog.stub';
 
+const TITLE_MESSAGE = { message: expect.stringContaining('title') };
+const BAD_USER_INPUT_CODE = { code: 'BAD_USER_INPUT' };
+const BAD_USER_INPUT = { extensions: BAD_USER_INPUT_CODE };
+
 test.describe('FEATURE: add item validation', () => {
-  test.describe('GIVEN an item input with an empty title', () => {
+  test('GIVEN an empty title, adding the item returns a BAD_USER_INPUT error naming the title', async ({ graphqlApi }): Promise<void> => {
     const input: ItemInput = { ...ITEM_INPUT_STUB, title: '' };
 
-    test('SCENARIO: posting the mutation returns a BAD_USER_INPUT error naming the title', async ({ graphqlApi }): Promise<void> => {
-      const response = await test.step('WHEN the AddItem mutation is posted', (): Promise<APIResponse> => graphqlApi.addItem(input));
+    const response = await test.step('WHEN the AddItem mutation is posted', (): Promise<APIResponse> => graphqlApi.addItem(input));
 
-      const result = await test.step('AND the body is read', (): Promise<GraphqlResult<AddItemData>> => readGraphql<AddItemData>(response));
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
 
-      await test.step('THEN at least one error is reported', (): void => expect(result.errors?.length).toBeGreaterThan(0));
+    await test.step('AND the first error message names the title', (): Promise<void> => expectFirstGraphqlError(response, TITLE_MESSAGE));
 
-      await test.step('AND the first error message names the title', (): void => expect(result.errors?.[0]?.message).toContain('title'));
-
-      await test.step('AND the first error code is BAD_USER_INPUT', (): void => expect(result.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT'));
-    });
+    await test.step('AND the first error code is BAD_USER_INPUT', (): Promise<void> => expectFirstGraphqlError(response, BAD_USER_INPUT));
   });
 });
 ```
@@ -269,22 +263,22 @@ An unauthenticated client is the built-in `request` fixture wrapped in the same 
 // e2e/catalog/admin-dashboard.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import type { GraphqlResult } from '../common/graphql.type';
-import { readGraphql } from '../utils/read-graphql.util';
+import { expectFirstGraphqlError, expectGraphqlData } from '../utils/expect-graphql.util';
 import { expect, test } from './catalog.fixture';
-import type { AdminDashboardData } from './common/catalog.type';
+
+const UNAUTHORIZED_CODE = { code: 'UNAUTHORIZED' };
+const UNAUTHORIZED = { extensions: UNAUTHORIZED_CODE };
+const NO_METRICS = { adminMetrics: null };
 
 test.describe('FEATURE: admin dashboard query', () => {
-  test.describe('GIVEN a client with no token', () => {
-    test('SCENARIO: posting the AdminDashboard query returns an UNAUTHORIZED error', async ({ guestGraphqlApi }): Promise<void> => {
-      const response = await test.step('WHEN the AdminDashboard query is posted', (): Promise<APIResponse> => guestGraphqlApi.adminDashboard());
+  test('GIVEN a client with no token, the AdminDashboard query returns an UNAUTHORIZED error', async ({ guestGraphqlApi }): Promise<void> => {
+    const response = await test.step('WHEN the AdminDashboard query is posted', (): Promise<APIResponse> => guestGraphqlApi.adminDashboard());
 
-      const result = await test.step('AND the body is read', (): Promise<GraphqlResult<AdminDashboardData>> => readGraphql<AdminDashboardData>(response));
+    await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());
 
-      await test.step('THEN the first error code is UNAUTHORIZED', (): void => expect(result.errors?.[0]?.extensions?.code).toBe('UNAUTHORIZED'));
+    await test.step('AND the first error code is UNAUTHORIZED', (): Promise<void> => expectFirstGraphqlError(response, UNAUTHORIZED));
 
-      await test.step('AND adminMetrics is null', (): void => expect(result.data?.adminMetrics).toBeNull());
-    });
+    await test.step('AND adminMetrics is null', (): Promise<void> => expectGraphqlData(response, NO_METRICS));
   });
 });
 ```
@@ -347,9 +341,37 @@ export const test = base.extend<CatalogFixtures>({
 export { expect } from '@playwright/test';
 ```
 
-### GraphQL Util Function
+### GraphQL Util Functions
 
-One reader serves queries and mutations alike; a separate `gqlMutation` would only forward to it. `readGraphql` throws with the status and raw body when the transport failed, and otherwise returns the envelope untouched so the spec decides what `errors` means for the case.
+Each check reads the envelope itself, so no step only reads a body. They serve queries and mutations alike; a separate `gqlMutation` would only forward to them. `expectFirstGraphqlError` fails on a missing first error, so it also proves an error was reported.
+
+```ts
+// e2e/utils/expect-graphql.util.ts
+import type { APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import type { GraphqlResult } from '../common/graphql.type';
+
+export const expectFirstGraphqlError = async (response: APIResponse, shape: Record<string, unknown>): Promise<void> => {
+  const result: GraphqlResult<unknown> = await response.json();
+
+  expect(result.errors?.[0]).toMatchObject(shape);
+};
+
+export const expectGraphqlData = async (response: APIResponse, shape: Record<string, unknown>): Promise<void> => {
+  const result: GraphqlResult<unknown> = await response.json();
+
+  expect(result.data).toMatchObject(shape);
+};
+
+export const expectNoGraphqlErrors = async (response: APIResponse): Promise<void> => {
+  const result: GraphqlResult<unknown> = await response.json();
+
+  expect(result.errors).toBeUndefined();
+};
+```
+
+A fixture reads a value through `readGraphql`, which throws with the status and raw body when the transport failed, and otherwise returns the envelope untouched so the caller decides what `errors` means.
 
 ```ts
 // e2e/utils/read-graphql.util.ts
@@ -366,34 +388,35 @@ export const readGraphql = async <T>(response: APIResponse): Promise<GraphqlResu
 };
 ```
 
-A chained flow reads one operation, then posts the next with a value from the first.
+A chained flow is one phase per operation: the fetch is checked before the update runs, so an update against an item that never loaded fails at the fetch.
 
 ```ts
 // e2e/catalog/update-item.api.e2e.ts
 import type { APIResponse } from '@playwright/test';
 
-import type { GraphqlResult } from '../common/graphql.type';
-import { readGraphql } from '../utils/read-graphql.util';
+import { expectGraphqlData, expectNoGraphqlErrors } from '../utils/expect-graphql.util';
 import { expect, test } from './catalog.fixture';
-import type { FetchItemData, UpdateItemData } from './common/catalog.type';
+
+const TITLED = { title: expect.any(String) };
+const TITLED_ITEM_DATA = { item: TITLED };
+const NEW_TITLE = { title: 'Updated Title' };
+const UPDATED_DATA = { updateItem: NEW_TITLE };
 
 test.describe('FEATURE: update item mutation', () => {
-  test.describe('GIVEN item 101 exists', () => {
-    test('SCENARIO: updating the title echoes the new title', async ({ graphqlApi }): Promise<void> => {
-      const fetchResponse = await test.step('GIVEN item 101 is fetched', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
+  test('GIVEN seeded item 101, updating its title echoes the new title', async ({ graphqlApi }): Promise<void> => {
+    const fetchResponse = await test.step('WHEN the item is fetched', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
 
-      const fetched = await test.step('AND the fetched item is read', (): Promise<GraphqlResult<FetchItemData>> => readGraphql<FetchItemData>(fetchResponse));
+    await test.step('THEN the fetch status is ok', (): void => expect(fetchResponse.ok()).toBeTruthy());
 
-      await test.step('AND the fetched item has a title', (): void => expect(fetched.data?.item.title).toBeDefined());
+    await test.step('AND the fetched item has a title', (): Promise<void> => expectGraphqlData(fetchResponse, TITLED_ITEM_DATA));
 
-      const updateResponse = await test.step('WHEN the title is updated', (): Promise<APIResponse> => graphqlApi.updateItem('101', 'Updated Title'));
+    const updateResponse = await test.step('WHEN the title is updated', (): Promise<APIResponse> => graphqlApi.updateItem('101', 'Updated Title'));
 
-      const updated = await test.step('AND the updated item is read', (): Promise<GraphqlResult<UpdateItemData>> => readGraphql<UpdateItemData>(updateResponse));
+    await test.step('THEN the update status is ok', (): void => expect(updateResponse.ok()).toBeTruthy());
 
-      await test.step('THEN no errors are reported', (): void => expect(updated.errors).toBeUndefined());
+    await test.step('AND no errors are reported', (): Promise<void> => expectNoGraphqlErrors(updateResponse));
 
-      await test.step('AND the title is updated', (): void => expect(updated.data?.updateItem.title).toBe('Updated Title'));
-    });
+    await test.step('AND the title is the new title', (): Promise<void> => expectGraphqlData(updateResponse, UPDATED_DATA));
   });
 });
 ```
@@ -402,8 +425,8 @@ test.describe('FEATURE: update item mutation', () => {
 
 | Don't Do This | Problem | Do This Instead |
 | --- | --- | --- |
-| Check only `response.ok()` | GraphQL returns 200 even on errors — `errors` array is the real signal | Read the envelope with `readGraphql` and assert both `data` and `errors` |
-| Ignore `errors` array | Validation and auth errors appear in `errors`, not HTTP status | One step: `expect(result.errors).toBeUndefined()` |
+| Check only `response.ok()` | GraphQL returns 200 even on errors — `errors` array is the real signal | After the status, check `errors` and `data` with the `expect*` utils, which read the envelope |
+| Ignore `errors` array | Validation and auth errors appear in `errors`, not HTTP status | One step: `expectNoGraphqlErrors(response)` |
 | Hardcode query strings inline everywhere | Duplicated queries are hard to maintain | Documents are constants in the API object; specs call a named method |
 | Skip variable validation | Invalid variables cause cryptic server errors | Type the input (`ItemInput`) so the compiler validates the shape |
 
@@ -413,7 +436,7 @@ test.describe('FEATURE: update item mutation', () => {
 
 **Cause**: GraphQL servers return HTTP 200 even when the query has errors. The actual error is in the `errors` array.
 
-**Fix**: Assert `errors` in its own step before any step reads `data`. The failing step then prints the full `errors` array, which is the diagnostic upstream code logged with `console.error`. The spec in [Basic Query with Variables](#basic-query-with-variables) shows the order.
+**Fix**: Assert `errors` in its own step before any step checks `data`. The failing step then prints the full `errors` array, which is the diagnostic upstream code logged with `console.error`. The spec in [Basic Query with Variables](#basic-query-with-variables) shows the order.
 
 ### "Cannot query field X on type Y"
 

@@ -43,6 +43,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   fullyParallel: true,
+  testMatch: '**/*.@(e2e|test).ts',
   workers: process.env.CI ? '50%' : undefined
 });
 ```
@@ -62,28 +63,26 @@ export default defineConfig({
 | `fullyParallel: false` (default) | Yes            | No (serial)            |
 | `fullyParallel: true`            | Yes            | Yes                    |
 
-**Serial execution for specific files:** `test.describe.configure({ mode: 'serial' })` at the top of a spec runs its tests in order on one worker, and skips the rest after the first failure.
+**Serial execution for specific files:** `test.describe.configure({ mode: 'serial' })` at the top of a spec runs its tests in order on one worker, and skips the rest after the first failure. Use it only for tests that cannot run in parallel because they share one external resource (a single sandbox account, a rate-limited third-party API), in their own spec with that reason stated next to it. It never chains tests: serial mode carries no page and no state from one test to the next, so a test that needs an earlier state gets it from a fixture. Below, the payment test starts from a `filledCheckoutPage` fixture that adds `ITEM_STUB` to the cart through `request` and opens checkout, so neither test needs the other and the file stays parallel.
 
 ```ts
 // e2e/checkout/checkout.e2e.ts
 import { expect, test } from './checkout.fixture';
 import { CARD_STUB, ITEM_STUB } from './test/stubs/checkout.stub';
 
-test.describe.configure({ mode: 'serial' });
-
 test.describe('FEATURE: checkout', () => {
-  test.describe('GIVEN an empty cart', () => {
-    test('SCENARIO: adding an item shows one item on the cart badge', async ({ cartPage }): Promise<void> => {
-      await test.step('WHEN the item is added to the cart', (): Promise<void> => cartPage.addItem(ITEM_STUB));
+  test('GIVEN an empty cart, adding an item shows one item on the badge', async ({ cartPage }): Promise<void> => {
+    await test.step('WHEN the cart page is opened', (): Promise<void> => cartPage.goto());
 
-      await test.step('THEN the cart badge shows one item', (): Promise<void> => cartPage.expectBadgeCount(1));
-    });
+    await test.step('AND the item is added to the cart', (): Promise<void> => cartPage.addItem(ITEM_STUB));
 
-    test('SCENARIO: completing payment opens the confirmation page', async ({ checkoutPage, page }): Promise<void> => {
-      await test.step('WHEN the card payment is completed', (): Promise<void> => checkoutPage.pay(CARD_STUB));
+    await test.step('THEN the cart badge shows one item', (): Promise<void> => cartPage.expectBadgeCount(1));
+  });
 
-      await test.step('THEN the confirmation url is shown', (): Promise<void> => expect(page).toHaveURL('/confirmation'));
-    });
+  test('GIVEN a filled cart, completing payment opens the confirmation page', async ({ filledCheckoutPage, page }): Promise<void> => {
+    await test.step('WHEN the card payment is completed', (): Promise<void> => filledCheckoutPage.payWith(CARD_STUB));
+
+    await test.step('THEN the confirmation url is shown', (): Promise<void> => expect(page).toHaveURL('/confirmation'));
   });
 });
 ```
@@ -111,6 +110,7 @@ const reporter = process.env.CI ? ciReporter : localReporter;
 export default defineConfig({
   fullyParallel: true,
   reporter,
+  testMatch: '**/*.@(e2e|test).ts',
   workers: process.env.CI ? '50%' : undefined
 });
 ```
@@ -280,16 +280,12 @@ export { expect } from '@playwright/test';
 import { test } from './profile.fixture';
 
 test.describe('FEATURE: profile settings', () => {
-  test.describe('GIVEN a freshly seeded user', () => {
-    test.beforeEach(async ({ settingsPage, user }): Promise<void> => {
-      await test.step('GIVEN the settings page is open', (): Promise<void> => settingsPage.goto(user.id));
-    });
+  test('GIVEN a seeded user, saving a new email keeps it in the field', async ({ settingsPage, user }): Promise<void> => {
+    await test.step('WHEN the settings page is opened', (): Promise<void> => settingsPage.goto(user.id));
 
-    test('SCENARIO: changing the email keeps the new value in the field', async ({ settingsPage }): Promise<void> => {
-      await test.step('WHEN a new email is saved', (): Promise<void> => settingsPage.saveEmail('updated@example.com'));
+    await test.step('AND a new email is saved', (): Promise<void> => settingsPage.saveEmail('updated@example.com'));
 
-      await test.step('THEN the email field shows the new value', (): Promise<void> => settingsPage.expectEmail('updated@example.com'));
-    });
+    await test.step('THEN the email field shows the new value', (): Promise<void> => settingsPage.expectEmail('updated@example.com'));
   });
 });
 ```
@@ -309,14 +305,12 @@ import { test } from './orders.fixture';
 import { uniqueOrderRef } from './test/utils/order-builder.spec.util';
 
 test.describe('FEATURE: orders', () => {
-  test.describe('GIVEN a signed-in buyer', () => {
-    test('SCENARIO: opening a new order shows its reference', async ({ orderPage }, testInfo): Promise<void> => {
-      const orderRef = uniqueOrderRef(testInfo.workerIndex);
+  test('GIVEN a worker-unique order reference, a new order shows it', async ({ orderPage }, testInfo): Promise<void> => {
+    const orderRef = uniqueOrderRef(testInfo.workerIndex);
 
-      await test.step('WHEN a new order is opened', (): Promise<void> => orderPage.gotoNew(orderRef));
+    await test.step('WHEN a new order is opened', (): Promise<void> => orderPage.gotoNew(orderRef));
 
-      await test.step('THEN the order reference is shown', (): Promise<void> => orderPage.expectReference(orderRef));
-    });
+    await test.step('THEN the order reference is shown', (): Promise<void> => orderPage.expectReference(orderRef));
   });
 });
 ```
@@ -398,7 +392,7 @@ jobs:
 | Hardcoded shared user account           | Race conditions in parallel runs         | Each test creates unique data                        |
 | Sharding without blob reporter          | Each shard produces separate HTML report | Configure `reporter: [['blob']]` for CI              |
 | Sharding with 3 tests                   | Setup overhead exceeds time saved        | Only shard when suite > 5 minutes                    |
-| `test.describe.serial()` everywhere     | Kills parallelism, creates dependencies  | Use only when tests genuinely need prior state       |
+| `test.describe.serial()` everywhere     | Kills parallelism, creates dependencies  | Seed prior state with a fixture; serial only for a shared external resource |
 | Workers > CPU cores                     | Context switching overhead               | Use `'50%'` or auto-detect                           |
 | Missing `fail-fast: false` in CI matrix | One shard failure cancels others         | Always set `fail-fast: false` for sharded strategies |
 
@@ -446,6 +440,7 @@ jobs:
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
+  testMatch: '**/*.@(e2e|test).ts',
   workers: process.env.CI ? 2 : undefined
 });
 ```

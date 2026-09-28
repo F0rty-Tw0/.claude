@@ -7,9 +7,9 @@ description: Use when writing, refactoring, or reviewing Playwright end-to-end, 
 
 ## Overview
 
-Reference set for Playwright test development, rewritten to house style: `FEATURE` / `GIVEN` describes, `SCENARIO:` tests, `GIVEN` / `WHEN` / `THEN` / `AND` steps with one call each, page objects that own every locator, fixtures that own every page object, and one responsibility per file.
+Reference set for Playwright test development, rewritten to house style: one flat `FEATURE` describe per spec, `GIVEN <state>, <outcome>` test titles, `WHEN` / `THEN` / `AND` steps with one call each (only the spec opens steps; the title is the one `GIVEN`), page objects that own every locator, fixtures that own every page object, and one responsibility per file.
 
-**REQUIRED BACKGROUND:** skill:artification. Its `typescript-style.md` and `spec-style.md` apply to every Playwright file unchanged.
+**REQUIRED BACKGROUND:** skill:artification. Its `typescript-style.md` applies to every Playwright file unchanged. Its `spec-style.md` covers `describe` / `it` specs; Playwright specs follow `core/house-style.md`, which its Scope section points to.
 
 ## Read Order
 
@@ -22,6 +22,7 @@ Reference set for Playwright test development, rewritten to house style: `FEATUR
 | Situation | Read |
 |---|---|
 | New spec, any kind | `core/test-suite-structure.md`, `core/locators.md`, `core/assertions-waiting.md` |
+| Refactoring an existing suite to house style | `core/refactoring.md`, then `scripts/lint-samples.sh e2e/<feature>` on the real files |
 | Page object, helper object | `core/page-object-model.md`, `architecture/pom-vs-fixtures.md` |
 | Fixture, hook, `test.extend`, `mergeTests` | `core/fixtures-hooks.md` |
 | Stubs, builders, seeding, cleanup | `core/test-data.md` |
@@ -69,18 +70,20 @@ Reference set for Playwright test development, rewritten to house style: `FEATUR
 1. `npx playwright test --reporter=list` on the touched specs.
 2. Red: open the trace (`npx playwright show-trace`), fix the locator, wait, or step, re-run.
 3. Green: `npx playwright test --repeat-each=3` on the same specs. Still green means done.
-4. Skill authors: `scripts/lint-samples.sh` must print `clean` after editing any reference file.
+4. Refactoring a real suite: `scripts/lint-samples.sh e2e/<feature>` must print `clean`, and the test and `expect` counts must not drop; see `core/refactoring.md`.
+5. Skill authors: `scripts/lint-samples.sh` must print `clean` after editing any reference file.
 
 ## Common Mistakes
 
 | Mistake | Fix |
 |---|---|
 | Reading a topic file without `house-style.md` | Read `house-style.md` first; topic files assume it. |
-| Copying a Playwright docs sample verbatim | Reshape it: `SCENARIO:` title, Gherkin steps, page object, fixture, return types. |
+| Copying a Playwright docs sample verbatim | Reshape it: `GIVEN <state>, <outcome>` title, Gherkin steps, page object, fixture, return types. |
 | Fixing a flake by retrying | skill:deflaky audit, then the matching category in `debugging/flaky-tests.md`. |
 | `login.spec.ts` for a Playwright file | `login.test.ts` when your own API is routed (directly or via fixture, page object, mock); `login.e2e.ts` otherwise, third-party stubs included. `.spec.ts` is artification's unit-test suffix. |
 | `test.describe('Login')` | `test.describe('FEATURE: login')`. |
-| `test('WHEN … THEN …')` or `test('<bare title>')` | Title is `SCENARIO: <flow>`; `WHEN` / `THEN` are `test.step` names. |
+| `test.describe('GIVEN …')` grouping tests | Flat: one `FEATURE` describe (plus `JOURNEY` for a user path). The title starts `GIVEN <state>,`, and the opening `WHEN` call or a fixture sets that state up. |
+| `test('WHEN … THEN …')`, `test('SCENARIO: …')`, or `test('<bare title>')` | Title is `GIVEN <state>, <outcome>`; `WHEN` / `THEN` are `test.step` names. |
 | A `page.getByRole` in a spec | Move it to the page object; call the method from a step. |
 | `route.fulfill({ json: { … } })` with a literal | Typed `<TYPE>_STUB` in `test/stubs/`, passed through the mock's stub-defaulted parameter. |
 | A `const <X>_BODY` inside a `.mock.ts` | Data belongs in `test/stubs/`; a mock owns interception only. |

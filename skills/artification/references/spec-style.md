@@ -20,11 +20,11 @@ Order of work: the `test-driven-development` skill decides when a case is writte
 
 A spec reads as a Gherkin tree: `FEATURE` → `GIVEN` → `WHEN` → `THEN`. Every branch in the subject has a case that walks it. Wallaby shows no yellow line.
 
-Every `describe`, `it`, and `test` title starts with one of the five keywords: `FEATURE:`, `SCENARIO:`, `GIVEN`, `WHEN`, `THEN`. A title without a keyword has no place in the tree and is not house style.
+Every `describe` and `it` title starts with one of the four keywords: `FEATURE:`, `GIVEN`, `WHEN`, `THEN`. A title without a keyword has no place in the tree and is not house style. Playwright `test` titles follow Scope below.
 
 ## Scope
 
-This file is the unit and component spec contract (`describe` / `it`). Playwright specs follow `skill:playwright-best-practices` → `core/house-style.md`, which keeps this tree with one override: Playwright has `test.step`, so `WHEN` / `THEN` live in steps, every `test` title is `SCENARIO: <flow>`, and there is no `WHEN` describe. Reviewing a Playwright spec against the `it('THEN …')` row below is a mistake; check the step names instead.
+This file is the unit and component spec contract (`describe` / `it`). Playwright specs follow `skill:playwright-best-practices` → `core/house-style.md` instead: one `FEATURE` describe, an optional `JOURNEY` describe, and `test('GIVEN <state>, <outcome>')` titles with `WHEN` / `THEN` / `AND` as `test.step` names. There is no `SCENARIO`, `GIVEN`, or `WHEN` describe in a Playwright spec. Reviewing a Playwright spec against the `it('THEN …')` row below is a mistake; check the step names instead.
 
 ## Quick Reference
 
@@ -35,10 +35,10 @@ This file is the unit and component spec contract (`describe` / `it`). Playwrigh
 | Action | `describe('WHEN <action>')` inside a `GIVEN`. |
 | Outcome | `it('THEN <outcome>')` inside a `WHEN`. Body is Arrange → Act → Assert, in that order, one assertion group. |
 | Collapse | A `WHEN` that would hold exactly one `it` collapses into `it('WHEN <action> THEN <outcome>')` under its `GIVEN`. Never collapse a `GIVEN`. |
-| Scenario | `describe('SCENARIO: <flow>')` between `FEATURE` and `GIVEN` when the feature has two or more independent flows that each need their own `GIVEN` set. A single-flow spec may name its flow with one `SCENARIO:` too; it is never wrong to add. |
+| Flows | No `SCENARIO` level. Two independent flows in one feature are two `GIVEN` sets side by side, each naming where its flow starts: `GIVEN a guest cart` / `GIVEN a member cart`. |
 | Branch coverage | Every `if`, `else`, early `return`, ternary arm, `switch` case, `??` / `||` / `?.` fallback, and `catch` gets its own case. Missing arm = Wallaby yellow = not done. |
 | TestBed | Each `TestBed.overrideProvider(...)` on its own statement. Never chained, never inside `configureTestingModule` `providers` when overriding. |
-| Naming | Keywords upper-case, exactly `FEATURE:`, `SCENARIO:`, `GIVEN`, `WHEN`, `THEN`. Text after the keyword is plain prose, present tense, no "should". |
+| Naming | Keywords upper-case, exactly `FEATURE:`, `GIVEN`, `WHEN`, `THEN`. Text after the keyword is plain prose, present tense, no "should". |
 | Gate | Spec tree reads top-down as sentences. Wallaby coverage for the module shows only green. |
 
 ## Gherkin Structure
@@ -80,7 +80,7 @@ describe('FEATURE: order pricing', () => {
 | Assert | `expect` lines only. Nothing computed here. |
 | One `it`, one outcome | Two outcomes of the same `WHEN` are two `it` blocks, so the failing one names itself. |
 | Shared arrange | Repeated across every `it` in a `GIVEN` → `beforeEach` at that `GIVEN`. Repeated across two `GIVEN`s → the input differs, keep it inline. |
-| `SCENARIO` | Groups `GIVEN`s that share a flow, not a state: `SCENARIO: guest checkout` / `SCENARIO: member checkout`. |
+| Two flows | Two `GIVEN` sets named by where each flow starts: `GIVEN a guest cart` / `GIVEN a member cart`. No `SCENARIO` level between `FEATURE` and `GIVEN`. |
 
 ## Branch Coverage
 
@@ -140,7 +140,7 @@ describe('FEATURE: LoginComponent', () => {
 | "The else branch is trivial." | Trivial branches ship bugs. Wallaby is yellow; add the case. |
 | "Chain the overrides, it is one statement." | One override per row scans; a chain has to be read. |
 | "`WHEN` with one `it` is still a describe." | Collapse it. An empty wrapper adds a nesting level for nothing. |
-| "`SCENARIO` is only for multi-flow specs, drop it here." | `SCENARIO` is a keyword like the other four. Naming one flow is allowed; a title with no keyword at all is the defect. |
+| "A `SCENARIO` level groups the flows." | The `GIVEN` already names where each flow starts. An extra level adds nesting and no information. |
 | "Test the private method to hit the branch." | Reach the branch through the public boundary. Unreachable branch = dead code, delete it. |
 
 ## Red Flags
@@ -148,9 +148,10 @@ describe('FEATURE: LoginComponent', () => {
 Stop and re-check this reference when reasoning includes:
 
 - "`it('works')`" or any `it` without `THEN`.
+- A `describe('SCENARIO: …')`; name the flow's start in its `GIVEN` instead.
 - "should" in a test name.
-- A `describe`, `it`, or `test` whose text has no Gherkin keyword.
-- Flagging a Playwright `test('SCENARIO: …')` for missing `THEN`; see Scope.
+- A `describe` or `it` whose text has no Gherkin keyword.
+- Flagging a Playwright `test('GIVEN …, …')` for missing `THEN`; its `THEN` is a step. See Scope.
 - "Coverage is fine, it is only one yellow line."
 - `providers: [{ provide: X, useValue: ... }]` used to override in a component spec.
 - Two `expect` groups separated by a second `act` inside one `it`.

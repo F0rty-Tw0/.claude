@@ -294,16 +294,14 @@ import { test } from './signup.fixture';
 import { buildApplicant } from './test/utils/applicant-builder.spec.util';
 
 test.describe('FEATURE: signup', () => {
-  test.describe('GIVEN a new visitor', () => {
-    test('SCENARIO: submitting the form with generated data opens the welcome page', async ({ fake, signupPage }): Promise<void> => {
-      const applicant = buildApplicant({ name: fake.person.fullName() });
+  test('GIVEN generated applicant data, submitting the form opens the welcome page', async ({ fake, signupPage }): Promise<void> => {
+    const applicant = buildApplicant({ name: fake.person.fullName() });
 
-      await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
+    await test.step('WHEN the signup page is opened', (): Promise<void> => signupPage.goto());
 
-      await test.step('WHEN the form is submitted', (): Promise<void> => signupPage.submit(applicant));
+    await test.step('AND the form is submitted', (): Promise<void> => signupPage.submit(applicant));
 
-      await test.step('THEN the welcome page is shown', (): Promise<void> => signupPage.expectWelcome());
-    });
+    await test.step('THEN the welcome page is shown', (): Promise<void> => signupPage.expectWelcome());
   });
 });
 ```
@@ -331,25 +329,21 @@ import { test } from './login.fixture';
 import { LOGIN_SCENARIOS } from './test/stubs/login-scenario.stub';
 
 test.describe('FEATURE: login', () => {
-  test.describe('GIVEN the login page is open', () => {
-    test.beforeEach(async ({ loginPage }): Promise<void> => {
-      await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
+  for (const scenario of LOGIN_SCENARIOS) {
+    test(`GIVEN ${scenario.email}, signing in shows "${scenario.expected}"`, async ({ loginPage }): Promise<void> => {
+      await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
+
+      await test.step('AND the credentials are submitted', (): Promise<void> => loginPage.submit(scenario));
+
+      await test.step('THEN the expected text is visible', (): Promise<void> => loginPage.expectText(scenario.expected));
     });
-
-    for (const scenario of LOGIN_SCENARIOS) {
-      test(`SCENARIO: ${scenario.email} signing in shows "${scenario.expected}"`, async ({ loginPage }): Promise<void> => {
-        await test.step('WHEN the credentials are submitted', (): Promise<void> => loginPage.submit(scenario));
-
-        await test.step('THEN the expected text is visible', (): Promise<void> => loginPage.expectText(scenario.expected));
-      });
-    }
-  });
+  }
 });
 ```
 
 ### Parameterized Tests
 
-Larger scenario tables keep the same loop; only the stub grows. Give each row a `name` so the generated title reads as a sentence: `` test(`choosing ${scenario.name} shows the cost and ETA`, …) ``.
+Larger scenario tables keep the same loop; only the stub grows. Give each row a `name` so the generated title reads as a sentence: `` test(`GIVEN ${scenario.name}, choosing it shows the cost and ETA`, …) ``.
 
 ```ts
 // e2e/checkout/test/stubs/shipping-scenario.stub.ts
@@ -466,14 +460,12 @@ export { expect } from '@playwright/test';
 import { test } from './catalog.fixture';
 
 test.describe('FEATURE: catalog', () => {
-  test.describe('GIVEN stubbed products and a stubbed user', () => {
-    test('SCENARIO: opening the catalog lists the first product', async ({ catalogPage, testProducts, testUser }): Promise<void> => {
-      await test.step('WHEN the catalog is opened', (): Promise<void> => catalogPage.goto());
+  test('GIVEN a stubbed user and products, opening the catalog greets the user and lists the first product', async ({ catalogPage, testProducts, testUser }): Promise<void> => {
+    await test.step('WHEN the catalog is opened', (): Promise<void> => catalogPage.goto());
 
-      await test.step('THEN the greeting names the user', (): Promise<void> => catalogPage.expectGreeting(testUser.name));
+    await test.step('THEN the greeting names the user', (): Promise<void> => catalogPage.expectGreeting(testUser.name));
 
-      await test.step('AND the first product is listed', (): Promise<void> => catalogPage.expectProductListed(testProducts[0].name));
-    });
+    await test.step('AND the first product is listed', (): Promise<void> => catalogPage.expectProductListed(testProducts[0].name));
   });
 });
 ```
@@ -482,51 +474,31 @@ test.describe('FEATURE: catalog', () => {
 
 ### API-Based Seeding
 
-`seedUser` posts a built user to a test-only endpoint and records the id. The `createdUserIds` fixture deletes every recorded id after the test, so cleanup runs even when the test fails.
+`seededUser` posts a built user to a test-only endpoint, hands the created user to the test, and deletes it after `use`, so cleanup runs even when the test fails. The spec never seeds in a step: the title names the seeded state, and the fixture builds it before the first `WHEN`. A test that needs other field values gets its own fixture built the same way.
 
 ```ts
 // e2e/users/users.fixture.ts
-import type { APIRequestContext } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
 import type { User } from './common/users.type';
 import { ProfilePage } from './pages/profile.page';
 import { buildUser } from './test/utils/user-builder.spec.util';
 
-type SeedUser = (overrides?: Partial<User>) => Promise<User>;
-
 type UsersFixtures = {
-  readonly createdUserIds: string[];
   readonly profilePage: ProfilePage;
-  readonly seedUser: SeedUser;
-};
-
-const seedUserWith = (request: APIRequestContext, createdUserIds: string[]): SeedUser => {
-  return async (overrides: Partial<User> = {}): Promise<User> => {
-    const response = await request.post('/api/test/users', { data: buildUser(overrides) });
-    const user: User = await response.json();
-
-    createdUserIds.push(user.id);
-
-    return user;
-  };
+  readonly seededUser: User;
 };
 
 export const test = base.extend<UsersFixtures>({
-  createdUserIds: async ({ request }, use): Promise<void> => {
-    const ids: string[] = [];
-
-    await use(ids);
-
-    for (const id of ids) {
-      await request.delete(`/api/test/users/${id}`);
-    }
-  },
   profilePage: async ({ page }, use): Promise<void> => {
     await use(new ProfilePage(page));
   },
-  seedUser: async ({ createdUserIds, request }, use): Promise<void> => {
-    await use(seedUserWith(request, createdUserIds));
+  seededUser: async ({ request }, use): Promise<void> => {
+    const response = await request.post('/api/test/users', { data: buildUser({ name: 'John Doe' }) });
+    const user: User = await response.json();
+
+    await use(user);
+    await request.delete(`/api/test/users/${user.id}`);
   }
 });
 
@@ -535,18 +507,13 @@ export { expect } from '@playwright/test';
 
 ```ts
 // e2e/users/users.e2e.ts
-import type { User } from './common/users.type';
 import { test } from './users.fixture';
 
 test.describe('FEATURE: user profile', () => {
-  test.describe('GIVEN a seeded user', () => {
-    test('SCENARIO: opening the profile shows the name', async ({ profilePage, seedUser }): Promise<void> => {
-      const user = await test.step('GIVEN a user is seeded', (): Promise<User> => seedUser({ name: 'John Doe' }));
+  test('GIVEN a seeded user, opening the profile shows the name', async ({ profilePage, seededUser }): Promise<void> => {
+    await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto(seededUser.id));
 
-      await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto(user.id));
-
-      await test.step('THEN the profile names the user', (): Promise<void> => profilePage.expectName(user.name));
-    });
+    await test.step('THEN the profile names the user', (): Promise<void> => profilePage.expectName(seededUser.name));
   });
 });
 ```

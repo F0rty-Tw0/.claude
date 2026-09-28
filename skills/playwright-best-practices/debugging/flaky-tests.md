@@ -47,7 +47,7 @@ Test fails intermittently
 
 ```bash
 # Run test multiple times to confirm instability
-npx playwright test e2e/checkout/checkout.e2e.ts --repeat-each=20
+npx playwright test e2e/checkout/checkout.test.ts --repeat-each=20
 
 # Run with single worker to isolate parallelism issues
 npx playwright test --workers=1
@@ -68,6 +68,7 @@ const use = { screenshot: 'only-on-failure', trace: 'on-first-retry', video: 're
 
 export default defineConfig({
   retries: process.env.CI ? 2 : 0,
+  testMatch: '**/*.@(e2e|test).ts',
   use
 });
 ```
@@ -88,20 +89,18 @@ export const reportPassOnRetry = (testInfo: TestInfo): void => {
 ```
 
 ```ts
-// e2e/checkout/checkout.e2e.ts
+// e2e/checkout/checkout.test.ts
 import { test } from './checkout.fixture';
 import { reportPassOnRetry } from './test/utils/flaky-report.spec.util';
 
-test.afterEach(async (): Promise<void> => {
-  await test.step('GIVEN a pass on retry is reported', (): void => reportPassOnRetry(test.info()));
-});
+test.afterEach((): void => reportPassOnRetry(test.info()));
 ```
 
 ## Root Cause Analysis
 
 ### Event Logging for Race Conditions
 
-Log console output, page errors, and failed requests to expose timing issues. Call it from a `beforeEach` step: `await test.step('GIVEN page events are logged', (): void => logPageEvents(page));`.
+Log console output, page errors, and failed requests to expose timing issues. Register it in a fixture above `use`, so it runs before the test's `WHEN` opens the page: `logPageEvents(page);`. No hook step wraps it.
 
 ```ts
 // e2e/checkout/test/utils/page-events.spec.util.ts
@@ -152,7 +151,7 @@ export const collectSlowRequests = (page: Page): string[] => {
 npx playwright show-trace path/to/trace.zip
 
 # Generate trace for specific test
-npx playwright test e2e/checkout/checkout.e2e.ts --trace on
+npx playwright test e2e/checkout/checkout.test.ts --trace on
 ```
 
 ## Fixing Strategies by Type
@@ -172,7 +171,7 @@ Prefer semantic locators on a page object. Locator actions auto-wait for actiona
 ```ts
 // e2e/checkout/pages/checkout.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class CheckoutPage {
   public readonly continueButton: Locator;
@@ -199,7 +198,7 @@ export class CheckoutPage {
   }
 
   public async expectDashboard(): Promise<void> {
-    await test.step('THEN dashboard heading is visible', (): Promise<void> => expect(this.dashboardHeading).toBeVisible(), { box: true });
+    await expect(this.dashboardHeading).toBeVisible();
   }
 }
 ```
@@ -224,7 +223,7 @@ Prefer waiting for the response the action triggers, then asserting. `waitForRes
 ```ts
 // e2e/dashboard/pages/dashboard.page.ts
 import type { Locator, Page, Response } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const isDataResponse = (response: Response): boolean => {
   const isDataUrl = response.url().includes('/api/data');
@@ -254,7 +253,7 @@ export class DashboardPage {
   }
 
   public async expectRows(count: number): Promise<void> {
-    await test.step(`THEN ${count} data rows are shown`, (): Promise<void> => expect(this.dataRows).toHaveCount(count), { box: true });
+    await expect(this.dataRows).toHaveCount(count);
   }
 }
 ```
@@ -263,12 +262,14 @@ export class DashboardPage {
 // e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 
-test('SCENARIO: loaded data shows ten rows', async ({ dashboardPage }): Promise<void> => {
-  await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+test.describe('FEATURE: dashboard data', () => {
+  test('GIVEN ten stored rows, loading the data shows all ten in the table', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-  await test.step('WHEN the data is loaded', (): Promise<void> => dashboardPage.loadData());
+    await test.step('AND the data is loaded', (): Promise<void> => dashboardPage.loadData());
 
-  await test.step('THEN ten rows are shown', (): Promise<void> => dashboardPage.expectRows(10));
+    await test.step('THEN ten rows are shown', (): Promise<void> => dashboardPage.expectRows(10));
+  });
 });
 ```
 
@@ -388,29 +389,27 @@ test.beforeAll(async ({ browser }) => {
 });
 ```
 
-Prefer Playwright's default isolation. Each test receives a fresh context and page; shared arrange lives in a `beforeEach` step.
+Prefer Playwright's default isolation. Each test receives a fresh context and page and opens it in its own `WHEN` step; no hook carries shared arrange.
 
 ```ts
 // e2e/profile/profile.e2e.ts
 import { test } from './profile.fixture';
 
 test.describe('FEATURE: profile', () => {
-  test.describe('GIVEN a signed-in user', () => {
-    test.beforeEach(async ({ profilePage }): Promise<void> => {
-      await test.step('GIVEN the profile page is open', (): Promise<void> => profilePage.goto());
-    });
+  test('GIVEN a saved profile, renaming it shows the new name in the header', async ({ profilePage }): Promise<void> => {
+    await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto());
 
-    test('SCENARIO: updated name shows in the header', async ({ profilePage }): Promise<void> => {
-      await test.step('WHEN the name is updated', (): Promise<void> => profilePage.updateName('Ada'));
+    await test.step('AND the name is updated', (): Promise<void> => profilePage.updateName('Ada'));
 
-      await test.step('THEN header shows the new name', (): Promise<void> => profilePage.expectHeaderName('Ada'));
-    });
+    await test.step('THEN header shows the new name', (): Promise<void> => profilePage.expectHeaderName('Ada'));
+  });
 
-    test('SCENARIO: updated email shows in the account', async ({ profilePage }): Promise<void> => {
-      await test.step('WHEN the email is updated', (): Promise<void> => profilePage.updateEmail('ada@example.com'));
+  test('GIVEN a saved profile, changing the email shows it on the account', async ({ profilePage }): Promise<void> => {
+    await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto());
 
-      await test.step('THEN account shows the new email', (): Promise<void> => profilePage.expectEmail('ada@example.com'));
-    });
+    await test.step('AND the email is updated', (): Promise<void> => profilePage.updateEmail('ada@example.com'));
+
+    await test.step('THEN account shows the new email', (): Promise<void> => profilePage.expectEmail('ada@example.com'));
   });
 });
 ```
@@ -483,7 +482,7 @@ const viewport = { height: 720, width: 1280 };
 
 const use = { deviceScaleFactor: 1, viewport };
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ### Network Stubbing for External APIs
@@ -510,29 +509,19 @@ export const paymentMock = (result: PaymentResult = PAYMENT_RESULT_STUB): RouteH
 };
 ```
 
+Every test in the feature needs the same two stubs, so the `checkoutPage` fixture routes `**/api.analytics.com/**` to `analyticsMock()` and `**/api/payment` to `paymentMock()` before `use`. No hook and no step installs them. `**/api/payment` is your own origin, so every checkout spec that uses this fixture is a `.test.ts`, the quarantined one included.
+
 ```ts
 // e2e/checkout/checkout.test.ts
 import { test } from './checkout.fixture';
-import { analyticsMock } from './test/mocks/analytics.mock';
-import { paymentMock } from './test/mocks/payment.mock';
 
 test.describe('FEATURE: checkout', () => {
-  test.describe('GIVEN third-party apis are stubbed', () => {
-    test.beforeEach(async ({ page }): Promise<void> => {
-      await test.step('GIVEN analytics is stubbed', async (): Promise<void> => {
-        await page.route('**/api.analytics.com/**', analyticsMock());
-      });
+  test('GIVEN stubbed payment and analytics apis, paying opens the confirmation', async ({ checkoutPage }): Promise<void> => {
+    await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto());
 
-      await test.step('AND the payment provider is stubbed', async (): Promise<void> => {
-        await page.route('**/api/payment', paymentMock());
-      });
-    });
+    await test.step('AND the order is paid', (): Promise<void> => checkoutPage.pay());
 
-    test('SCENARIO: paid order opens the confirmation', async ({ checkoutPage }): Promise<void> => {
-      await test.step('WHEN the order is paid', (): Promise<void> => checkoutPage.pay());
-
-      await test.step('THEN confirmation page is shown', (): Promise<void> => checkoutPage.expectConfirmation());
-    });
+    await test.step('THEN confirmation page is shown', (): Promise<void> => checkoutPage.expectConfirmation());
   });
 });
 ```
@@ -547,20 +536,20 @@ test.describe('FEATURE: checkout', () => {
 
 ### Quarantine Pattern
 
-Move known-flaky specs to a `*.flaky.e2e.ts` name and run them in their own project with more retries. The stable project ignores them so one flake never blocks the pipeline.
+Move known-flaky specs to a `*.flaky.e2e.ts` or `*.flaky.test.ts` name and run them in their own project with more retries. The stable project ignores them so one flake never blocks the pipeline.
 
 ```ts
 // e2e/playwright.config.ts
 import { defineConfig } from '@playwright/test';
 
-const FLAKY_SPECS = ['**/*.flaky.e2e.ts'];
+const FLAKY_SPECS = ['**/*.flaky.@(e2e|test).ts'];
 
 const projects = [
   { name: 'stable', testIgnore: FLAKY_SPECS },
   { name: 'quarantine', retries: 3, testMatch: FLAKY_SPECS }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Annotation-Based Quarantine
@@ -568,25 +557,29 @@ export default defineConfig({ projects });
 An annotation records why a test is under investigation and appears in the report. `test.skip(condition, reason)` skips only where the flake reproduces. `IS_CI` is a plain value exported from `common/playwright.const.ts`; specs never read `process.env`. At runtime `test.info().annotations.push(...)` adds the same annotation.
 
 ```ts
-// e2e/checkout/checkout.flaky.e2e.ts
+// e2e/checkout/checkout.flaky.test.ts
 import { IS_CI } from '../common/playwright.const';
 import { test } from './checkout.fixture';
 
 const FLAKY_ANNOTATION = { description: 'Investigating payment API timing - JIRA-1234', type: 'flaky' };
 
 test.describe('FEATURE: checkout', () => {
-  test('SCENARIO: paid order opens the confirmation', { annotation: FLAKY_ANNOTATION }, async ({ checkoutPage }): Promise<void> => {
-    await test.step('WHEN the order is paid', (): Promise<void> => checkoutPage.pay());
+  test('GIVEN stubbed payment and analytics apis, paying opens the confirmation', { annotation: FLAKY_ANNOTATION }, async ({ checkoutPage }): Promise<void> => {
+    await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto());
+
+    await test.step('AND the order is paid', (): Promise<void> => checkoutPage.pay());
 
     await test.step('THEN confirmation page is shown', (): Promise<void> => checkoutPage.expectConfirmation());
   });
 
-  test('SCENARIO: applied coupon drops the total', async ({ checkoutPage }): Promise<void> => {
+  test('GIVEN a cart totalling 100, the TEN coupon drops the total to 90', async ({ checkoutPage }): Promise<void> => {
     test.skip(IS_CI, 'Flaky in CI - investigating JIRA-5678');
 
-    await test.step('WHEN the coupon is applied', (): Promise<void> => checkoutPage.applyCoupon('TEN'));
+    await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto());
 
-    await test.step('THEN total drops', (): Promise<void> => checkoutPage.expectTotal(90));
+    await test.step('AND the TEN coupon is applied', (): Promise<void> => checkoutPage.applyCoupon('TEN'));
+
+    await test.step('THEN the total drops to 90', (): Promise<void> => checkoutPage.expectTotal(90));
   });
 });
 ```
@@ -611,7 +604,7 @@ The profile spec under [State Leaks](#test-suite-driven-flakiness-state-leaks) p
 | --- | --- |
 | Own data | Each test receives `testUser` from a worker fixture; no test reads another test's rows. |
 | Own page | The `page` fixture is fresh per test; no `beforeAll` page. |
-| No order dependency | Each test opens its page in `beforeEach`; running one test alone passes. |
+| No order dependency | Each test opens its page in its own `WHEN` step; running one test alone passes. |
 | Cleanup by fixture | Teardown after `use`, never at the end of the test body. |
 
 ### Defensive Assertions
@@ -622,12 +615,12 @@ Avoid one assertion on the final state. When it fails, the report says only that
 await expect(page.locator('.items')).toHaveCount(5);
 ```
 
-Prefer a boxed page-object method that asserts the container rendered, loading finished, then the count. The first failing line names the stage that broke.
+Prefer a page-object `expect*` method that asserts the container rendered, loading finished, then the count. The first failing line names the stage that broke.
 
 ```ts
 // e2e/catalog/pages/catalog.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class CatalogPage {
   public readonly items: Locator;
@@ -648,11 +641,9 @@ export class CatalogPage {
   }
 
   public async expectItems(count: number): Promise<void> {
-    await test.step(`THEN ${count} items are listed`, async (): Promise<void> => {
-      await expect(this.itemsContainer).toBeVisible();
-      await expect(this.loading).toBeHidden();
-      await expect(this.items).toHaveCount(count);
-    }, { box: true });
+    await expect(this.itemsContainer).toBeVisible();
+    await expect(this.loading).toBeHidden();
+    await expect(this.items).toHaveCount(count);
   }
 }
 ```
@@ -670,6 +661,7 @@ const expectOptions = { timeout: 10000 };
 export default defineConfig({
   expect: expectOptions,
   retries: process.env.CI ? 2 : 0,
+  testMatch: '**/*.@(e2e|test).ts',
   timeout: 60000
 });
 ```

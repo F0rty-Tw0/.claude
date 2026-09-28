@@ -178,7 +178,7 @@ export const canvasOrigin = async (canvas: Locator): Promise<Point> => {
 
 ### Reading Canvas Pixels
 
-A freshly mounted canvas is blank. `readHasContent` reports whether any colour channel differs from the `blank` value: `hasCanvasContent` passes `0` for a transparent canvas, `hasInk` passes `255` for a white one. `expect.poll` on either replaces `waitForFunction`. `canvasDataUrl` returns `toDataURL('image/png')`; `pixelAt` returns the RGBA of one pixel. `chart.e2e.ts` under [Visual Comparison](#visual-comparison) uses both.
+A freshly mounted canvas is blank. `readHasContent` reports whether any colour channel differs from the `blank` value: `hasCanvasContent` passes `0` for a transparent canvas, `hasInk` passes `255` for a white one. `expect.poll` on either replaces `waitForFunction`. `canvasDataUrl` returns `toDataURL('image/png')`; `pixelAt` returns the RGBA of one pixel, and `redAt` its red channel, a number `expect.poll` can compare. `chart.e2e.ts` under [Visual Comparison](#visual-comparison) polls `canvasDataUrl` and `redAt` inside its checks, so no step only reads the canvas and the checks wait for the chart to draw.
 
 ```ts
 // e2e/canvas/test/utils/canvas-pixels.spec.util.ts
@@ -218,6 +218,12 @@ export const hasCanvasContent = (canvas: Locator): Promise<boolean> => canvas.ev
 export const hasInk = (canvas: Locator): Promise<boolean> => canvas.evaluate(readHasContent, 255);
 
 export const pixelAt = (canvas: Locator, point: Point): Promise<Rgba> => canvas.evaluate(readPixel, point);
+
+export const redAt = async (canvas: Locator, point: Point): Promise<number> => {
+  const pixel = await pixelAt(canvas, point);
+
+  return pixel.r;
+};
 ```
 
 ## Visual Comparison
@@ -269,44 +275,41 @@ export const waitForAnimationComplete = (page: Page): Promise<void> => page.eval
 
 ```ts
 // e2e/canvas/chart.e2e.ts
-import type { Point, Rgba } from './common/canvas.type';
+import type { Point } from './common/canvas.type';
 import { expect, test } from './canvas.fixture';
 import { freezeAnimation } from './test/utils/chart-globals.spec.util';
-import { canvasDataUrl, hasCanvasContent, pixelAt } from './test/utils/canvas-pixels.spec.util';
+import { canvasDataUrl, hasCanvasContent, redAt } from './test/utils/canvas-pixels.spec.util';
 
 const SAMPLE_POINT: Point = { x: 100, y: 100 };
+const PNG_DATA_URL = /^data:image\/png;base64,.+/;
 const PAGE_TOLERANCE = { maxDiffPixels: 100 } as const;
 const CANVAS_TOLERANCE = { maxDiffPixelRatio: 0.01 } as const;
 
 test.describe('FEATURE: chart canvas', () => {
-  test.describe('GIVEN the chart page', () => {
-    test.beforeEach(async ({ chartPage }): Promise<void> => {
-      await test.step('GIVEN the chart page is open', (): Promise<void> => chartPage.goto());
-    });
+  test('GIVEN the sales dataset, the chart canvas exports a png with a red pixel at 100,100', async ({ chartPage }): Promise<void> => {
+    await test.step('WHEN the chart page is opened', (): Promise<void> => chartPage.goto());
 
-    test('SCENARIO: the canvas holds a red pixel at 100,100', async ({ chartPage }): Promise<void> => {
-      const dataUrl = await test.step('WHEN the canvas is read as a data url', (): Promise<string> => canvasDataUrl(chartPage.canvas));
+    await test.step('THEN the canvas exports a png data url', (): Promise<void> => expect.poll((): Promise<string> => canvasDataUrl(chartPage.canvas)).toMatch(PNG_DATA_URL));
 
-      await test.step('THEN data url is a png', (): void => expect(dataUrl).toMatch(/^data:image\/png;base64,.+/));
+    await test.step('AND the pixel at 100,100 is red', (): Promise<void> => expect.poll((): Promise<number> => redAt(chartPage.canvas, SAMPLE_POINT)).toBeGreaterThan(200));
+  });
 
-      const pixel = await test.step('AND the pixel at 100,100 is read', (): Promise<Rgba> => pixelAt(chartPage.canvas, SAMPLE_POINT));
+  test('GIVEN the sales dataset, the page and the chart canvas match their baselines', async ({ chartPage, page }): Promise<void> => {
+    await test.step('WHEN the chart page is opened', (): Promise<void> => chartPage.goto());
 
-      await test.step('THEN pixel is red', (): void => expect(pixel.r).toBeGreaterThan(200));
-    });
+    await test.step('THEN canvas has content', (): Promise<void> => expect.poll((): Promise<boolean> => hasCanvasContent(chartPage.canvas)).toBe(true));
 
-    test('SCENARIO: the drawn chart matches the page and canvas baselines', async ({ chartPage, page }): Promise<void> => {
-      await test.step('THEN canvas has content', (): Promise<void> => expect.poll((): Promise<boolean> => hasCanvasContent(chartPage.canvas)).toBe(true));
+    await test.step('AND page matches dashboard.png', (): Promise<void> => expect(page).toHaveScreenshot('dashboard.png', PAGE_TOLERANCE));
 
-      await test.step('AND page matches dashboard.png', (): Promise<void> => expect(page).toHaveScreenshot('dashboard.png', PAGE_TOLERANCE));
+    await test.step('AND canvas matches sales-chart.png', (): Promise<void> => expect(chartPage.canvas).toHaveScreenshot('sales-chart.png', CANVAS_TOLERANCE));
+  });
 
-      await test.step('AND canvas matches sales-chart.png', (): Promise<void> => expect(chartPage.canvas).toHaveScreenshot('sales-chart.png', CANVAS_TOLERANCE));
-    });
+  test('GIVEN the sales dataset, freezing the chart animation makes the canvas match its baseline', async ({ chartPage, page }): Promise<void> => {
+    await test.step('WHEN the chart page is opened', (): Promise<void> => chartPage.goto());
 
-    test('SCENARIO: a frozen animation matches the canvas baseline', async ({ chartPage, page }): Promise<void> => {
-      await test.step('WHEN the chart animation is frozen', (): Promise<void> => freezeAnimation(page));
+    await test.step('AND the chart animation is frozen', (): Promise<void> => freezeAnimation(page));
 
-      await test.step('THEN canvas matches frozen-chart.png', (): Promise<void> => expect(chartPage.canvas).toHaveScreenshot('frozen-chart.png'));
-    });
+    await test.step('THEN canvas matches frozen-chart.png', (): Promise<void> => expect(chartPage.canvas).toHaveScreenshot('frozen-chart.png'));
   });
 });
 ```
@@ -411,41 +414,35 @@ const LINE_START: Point = { x: 50, y: 50 };
 const LINE_END: Point = { x: 200, y: 200 };
 
 test.describe('FEATURE: canvas interaction', () => {
-  test.describe('GIVEN the map page', () => {
-    test.beforeEach(async ({ mapPage }): Promise<void> => {
-      await test.step('GIVEN the map page is open', (): Promise<void> => mapPage.goto());
-    });
+  test('GIVEN the map at zoom level 1, clicking Paris names it in the info panel', async ({ mapPage }): Promise<void> => {
+    await test.step('WHEN the map page is opened', (): Promise<void> => mapPage.goto());
 
-    test('SCENARIO: clicking Paris names it in the info panel', async ({ mapPage }): Promise<void> => {
-      await test.step('WHEN the Paris marker is clicked', (): Promise<void> => mapPage.clickAt(PARIS));
+    await test.step('AND the Paris marker is clicked', (): Promise<void> => mapPage.clickAt(PARIS));
 
-      await test.step('THEN info panel names Paris', (): Promise<void> => expect(mapPage.infoPanel).toContainText('Location: Paris'));
-    });
-
-    test('SCENARIO: pinching out raises the zoom level above 1', async ({ mapPage }): Promise<void> => {
-      await test.step('WHEN the map is pinched out by 100 pixels', (): Promise<void> => mapPage.pinchOut(100));
-
-      await test.step('THEN zoom level is above 1', (): Promise<void> => expect.poll((): Promise<number> => mapPage.zoomLevel()).toBeGreaterThan(1));
-    });
+    await test.step('THEN info panel names Paris', (): Promise<void> => expect(mapPage.infoPanel).toContainText('Location: Paris'));
   });
 
-  test.describe('GIVEN the whiteboard page', () => {
-    test.beforeEach(async ({ whiteboardPage }): Promise<void> => {
-      await test.step('GIVEN the whiteboard page is open', (): Promise<void> => whiteboardPage.goto());
-    });
+  test('GIVEN the map at zoom level 1, pinching out raises the zoom level above 1', async ({ mapPage }): Promise<void> => {
+    await test.step('WHEN the map page is opened', (): Promise<void> => mapPage.goto());
 
-    test('SCENARIO: drawing a line puts ink on the canvas', async ({ whiteboardPage }): Promise<void> => {
-      await test.step('WHEN a diagonal line is drawn', (): Promise<void> => whiteboardPage.drawLine(LINE_START, LINE_END));
+    await test.step('AND the map is pinched out by 100 pixels', (): Promise<void> => mapPage.pinchOut(100));
 
-      await test.step('THEN canvas has ink', (): Promise<void> => expect.poll((): Promise<boolean> => hasInk(whiteboardPage.canvas)).toBe(true));
-    });
+    await test.step('THEN zoom level is above 1', (): Promise<void> => expect.poll((): Promise<number> => mapPage.zoomLevel()).toBeGreaterThan(1));
+  });
+
+  test('GIVEN an empty whiteboard, drawing a line puts ink on the canvas', async ({ whiteboardPage }): Promise<void> => {
+    await test.step('WHEN the whiteboard page is opened', (): Promise<void> => whiteboardPage.goto());
+
+    await test.step('AND a diagonal line is drawn', (): Promise<void> => whiteboardPage.drawLine(LINE_START, LINE_END));
+
+    await test.step('THEN canvas has ink', (): Promise<void> => expect.poll((): Promise<boolean> => hasInk(whiteboardPage.canvas)).toBe(true));
   });
 });
 ```
 
 ## WebGL Testing
 
-`isWebglSupported` creates a detached canvas and asks for a `webgl` context, falling back to `experimental-webgl`. `hasWebglContent` reads the center pixel with `gl.readPixels` and reports whether anything was drawn. `isSceneReady` and `cameraRotationY` read the Three.js `scene` and `camera` globals.
+`isWebglSupported` creates a detached canvas and asks for a `webgl` context, falling back to `experimental-webgl`. `hasWebglContent` reads the center pixel with `gl.readPixels` and reports whether anything was drawn. `isSceneReady` and `cameraRotationY` read the Three.js `scene` and `camera` globals; a missing camera reads as rotation 0, so a rotation check cannot pass without one.
 
 ```ts
 // e2e/canvas/test/utils/webgl.spec.util.ts
@@ -478,13 +475,13 @@ const readSceneReady = (): boolean => {
   return (scope.scene?.children.length ?? 0) > 0;
 };
 
-const readCameraRotationY = (): number | undefined => {
+const readCameraRotationY = (): number => {
   const scope: CanvasGlobals = window;
 
-  return scope.camera?.rotation.y;
+  return scope.camera?.rotation.y ?? 0;
 };
 
-export const cameraRotationY = (page: Page): Promise<number | undefined> => page.evaluate(readCameraRotationY);
+export const cameraRotationY = (page: Page): Promise<number> => page.evaluate(readCameraRotationY);
 
 export const hasWebglContent = (canvas: Locator): Promise<boolean> => canvas.evaluate(readHasContent);
 
@@ -503,39 +500,35 @@ import { cameraRotationY, hasWebglContent, isSceneReady, isWebglSupported } from
 const WEBGL_TOLERANCE = { maxDiffPixelRatio: 0.05 } as const;
 
 test.describe('FEATURE: webgl viewer', () => {
-  test.describe('GIVEN the 3D viewer page', () => {
-    test.beforeEach(async ({ viewerPage }): Promise<void> => {
-      await test.step('GIVEN the viewer page is open', (): Promise<void> => viewerPage.goto());
-    });
+  test('GIVEN the project browser, the viewer page can create a webgl context', async ({ page, viewerPage }): Promise<void> => {
+    await test.step('WHEN the viewer page is opened', (): Promise<void> => viewerPage.goto());
 
-    test('SCENARIO: the loaded page supports WebGL', async ({ page }): Promise<void> => {
-      const supported = await test.step('WHEN a webgl context is probed', (): Promise<boolean> => isWebglSupported(page));
+    await test.step('THEN a webgl context can be created', (): Promise<void> => expect.poll((): Promise<boolean> => isWebglSupported(page)).toBe(true));
+  });
 
-      await test.step('THEN webgl is available', (): void => expect(supported).toBe(true));
-    });
+  test('GIVEN the default 3d model, the viewer draws it and matches 3d-scene.png', async ({ viewerPage }): Promise<void> => {
+    await test.step('WHEN the viewer page is opened', (): Promise<void> => viewerPage.goto());
 
-    test('SCENARIO: the rendered scene matches 3d-scene.png', async ({ viewerPage }): Promise<void> => {
-      await test.step('THEN center pixel is drawn', (): Promise<void> => expect.poll((): Promise<boolean> => hasWebglContent(viewerPage.canvas)).toBe(true));
+    await test.step('THEN center pixel is drawn', (): Promise<void> => expect.poll((): Promise<boolean> => hasWebglContent(viewerPage.canvas)).toBe(true));
 
-      await test.step('AND canvas matches 3d-scene.png', (): Promise<void> => expect(viewerPage.canvas).toHaveScreenshot('3d-scene.png', WEBGL_TOLERANCE));
-    });
+    await test.step('AND canvas matches 3d-scene.png', (): Promise<void> => expect(viewerPage.canvas).toHaveScreenshot('3d-scene.png', WEBGL_TOLERANCE));
+  });
 
-    test('SCENARIO: orbiting the camera changes its rotation', async ({ page, viewerPage }): Promise<void> => {
-      await test.step('THEN scene has children', (): Promise<void> => expect.poll((): Promise<boolean> => isSceneReady(page)).toBe(true));
+  test('GIVEN the default 3d model, orbiting the camera changes its rotation', async ({ page, viewerPage }): Promise<void> => {
+    await test.step('WHEN the viewer page is opened', (): Promise<void> => viewerPage.goto());
 
-      await test.step('WHEN the camera is dragged 100 pixels to the right', (): Promise<void> => viewerPage.orbit(100));
+    await test.step('THEN scene has children', (): Promise<void> => expect.poll((): Promise<boolean> => isSceneReady(page)).toBe(true));
 
-      const rotation = await test.step('AND the camera rotation is read', (): Promise<number | undefined> => cameraRotationY(page));
+    await test.step('WHEN the camera is dragged 100 pixels to the right', (): Promise<void> => viewerPage.orbit(100));
 
-      await test.step('THEN rotation is not zero', (): void => expect(rotation).not.toBe(0));
-    });
+    await test.step('THEN rotation is not zero', (): Promise<void> => expect.poll((): Promise<number> => cameraRotationY(page)).not.toBe(0));
   });
 });
 ```
 
 ## Chart Libraries
 
-Chart.js registers each instance on its canvas; `Chart.getChart(canvas)` returns it and `chartData` reads the first dataset. `expect.poll` until the data arrives replaces waiting for `window.Chart` by hand. SVG charts (D3) expose real elements: hover a bar and assert the tooltip. Canvas charts (ECharts, Chart.js) take `chartPage.clickAt(BAR_POSITION)` in the `WHEN` step instead of `hoverFirstBar()`, with the same tooltip assertion. One test per renderer replaces a branch on `bars.count()`.
+Chart.js registers each instance on its canvas; `Chart.getChart(canvas)` returns it and `chartData` reads the first dataset. `expect.poll` until the data arrives replaces waiting for `window.Chart` by hand. SVG charts (D3) expose real elements: hover a bar and assert the tooltip. Canvas charts (ECharts, Chart.js) take `chartPage.clickAt(BAR_POSITION)` in the `AND` step after the page opens instead of `hoverFirstBar()`, with the same tooltip assertion. One test per renderer replaces a branch on `bars.count()`.
 
 ```ts
 // e2e/canvas/chart-libraries.e2e.ts
@@ -545,22 +538,20 @@ import { chartData } from './test/utils/chart-globals.spec.util';
 const EXPECTED_DATA = [12, 19, 3, 5, 2, 3];
 
 test.describe('FEATURE: chart libraries', () => {
-  test.describe('GIVEN the chart page', () => {
-    test.beforeEach(async ({ chartPage }): Promise<void> => {
-      await test.step('GIVEN the chart page is open', (): Promise<void> => chartPage.goto());
-    });
+  test('GIVEN a Chart.js chart, its first dataset and canvas match the expected values', async ({ chartPage, page }): Promise<void> => {
+    await test.step('WHEN the chart page is opened', (): Promise<void> => chartPage.goto());
 
-    test('SCENARIO: an initialised Chart.js matches its dataset and canvas', async ({ chartPage, page }): Promise<void> => {
-      await test.step('THEN first dataset holds the expected values', (): Promise<void> => expect.poll((): Promise<number[] | undefined> => chartData(page)).toEqual(EXPECTED_DATA));
+    await test.step('THEN first dataset holds the expected values', (): Promise<void> => expect.poll((): Promise<number[] | undefined> => chartData(page)).toEqual(EXPECTED_DATA));
 
-      await test.step('AND canvas matches chartjs.png', (): Promise<void> => expect(chartPage.canvas).toHaveScreenshot('chartjs.png'));
-    });
+    await test.step('AND canvas matches chartjs.png', (): Promise<void> => expect(chartPage.canvas).toHaveScreenshot('chartjs.png'));
+  });
 
-    test('SCENARIO: hovering the first D3 bar shows the tooltip', async ({ chartPage }): Promise<void> => {
-      await test.step('WHEN the first bar is hovered', (): Promise<void> => chartPage.hoverFirstBar());
+  test('GIVEN a D3 bar chart, hovering the first bar shows the tooltip', async ({ chartPage }): Promise<void> => {
+    await test.step('WHEN the chart page is opened', (): Promise<void> => chartPage.goto());
 
-      await test.step('THEN tooltip is visible', (): Promise<void> => expect(chartPage.tooltip).toBeVisible());
-    });
+    await test.step('AND the first bar is hovered', (): Promise<void> => chartPage.hoverFirstBar());
+
+    await test.step('THEN tooltip is visible', (): Promise<void> => expect(chartPage.tooltip).toBeVisible());
   });
 });
 ```
@@ -607,24 +598,22 @@ export const tickGame = (page: Page, count: number): Promise<void> => page.evalu
 import { expect, test } from './canvas.fixture';
 
 test.describe('FEATURE: canvas game', () => {
-  test.describe('GIVEN the game page', () => {
-    test.beforeEach(async ({ gamePage }): Promise<void> => {
-      await test.step('GIVEN the game page is open', (): Promise<void> => gamePage.goto());
-    });
+  test('GIVEN a new game, pausing and advancing one frame matches the frame-1 baseline', async ({ gamePage }): Promise<void> => {
+    await test.step('WHEN the game page is opened', (): Promise<void> => gamePage.goto());
 
-    test('SCENARIO: stepping the loop matches the frame baseline', async ({ gamePage }): Promise<void> => {
-      await test.step('WHEN the game loop is paused', (): Promise<void> => gamePage.pause());
+    await test.step('AND the game loop is paused', (): Promise<void> => gamePage.pause());
 
-      await test.step('AND one frame is advanced', (): Promise<void> => gamePage.tick(1));
+    await test.step('AND one frame is advanced', (): Promise<void> => gamePage.tick(1));
 
-      await test.step('THEN canvas matches frame-1.png', (): Promise<void> => expect(gamePage.canvas).toHaveScreenshot('frame-1.png'));
-    });
+    await test.step('THEN canvas matches frame-1.png', (): Promise<void> => expect(gamePage.canvas).toHaveScreenshot('frame-1.png'));
+  });
 
-    test('SCENARIO: pressing the action key raises the score', async ({ gamePage }): Promise<void> => {
-      await test.step('WHEN Space is pressed', (): Promise<void> => gamePage.pressAction());
+  test('GIVEN a new game at score zero, pressing the action key raises the score', async ({ gamePage }): Promise<void> => {
+    await test.step('WHEN the game page is opened', (): Promise<void> => gamePage.goto());
 
-      await test.step('THEN score is above zero', (): Promise<void> => expect.poll((): Promise<number | undefined> => gamePage.score()).toBeGreaterThan(0));
-    });
+    await test.step('AND Space is pressed', (): Promise<void> => gamePage.pressAction());
+
+    await test.step('THEN score is above zero', (): Promise<void> => expect.poll((): Promise<number | undefined> => gamePage.score()).toBeGreaterThan(0));
   });
 });
 ```

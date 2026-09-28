@@ -25,36 +25,38 @@ Each test gets fresh instances. Destructure only what the test uses, alphabetica
 
 ### Request Fixture
 
-The call and its response check live in a util; the spec keeps one call per step and lets a step return the typed value.
+The request is a util the `WHEN` step calls, and the step returns the `APIResponse`. The status check comes first; the body check is an `expect*` util that reads the body it asserts, so no step only reads a value. The run's global seed ([global-setup.md](global-setup.md#database-migration-in-setup)) stores the three users the title names.
 
 ```ts
 // e2e/users/test/utils/users-api.spec.util.ts
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, APIResponse } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import type { User } from '../../common/users.type';
 
-export const fetchUsers = async (request: APIRequestContext): Promise<User[]> => {
-  const response = await request.get('/api/users');
+export const fetchUsers = (request: APIRequestContext): Promise<APIResponse> => request.get('/api/users');
 
-  await expect(response).toBeOK();
+export const expectUserCount = async (response: APIResponse, count: number): Promise<void> => {
+  const users: User[] = await response.json();
 
-  return response.json();
+  expect(users).toHaveLength(count);
 };
 ```
 
 ```ts
 // e2e/users/users-api.e2e.ts
+import type { APIResponse } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-import type { User } from './common/users.type';
-import { fetchUsers } from './test/utils/users-api.spec.util';
+import { expectUserCount, fetchUsers } from './test/utils/users-api.spec.util';
 
 test.describe('FEATURE: users api', () => {
-  test('SCENARIO: requesting users returns five users', async ({ request }): Promise<void> => {
-    const users = await test.step('WHEN the users are requested', (): Promise<User[]> => fetchUsers(request));
+  test('GIVEN three seeded users, requesting users returns all three', async ({ request }): Promise<void> => {
+    const response = await test.step('WHEN the users are requested', (): Promise<APIResponse> => fetchUsers(request));
 
-    await test.step('THEN five users are returned', (): void => expect(users).toHaveLength(5));
+    await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
+
+    await test.step('AND the body lists three users', (): Promise<void> => expectUserCount(response, 3));
   });
 });
 ```
@@ -95,13 +97,13 @@ export { expect } from '@playwright/test';
 
 ### Fixture with Options
 
-An option is a fixture declared as `[default, { option: true }]`. Its type lives in `common/<feature>.type.ts` because the config imports it too. The fixture body drives the UI through a page object, never through `page.getBy*`, and hands the spec a signed-in page object.
+An option is a fixture declared as `[default, { option: true }]`. Its type, `TodoFixtureOptions`, lives in `common/<feature>.type.ts` because the config imports it too; `TodoOptions` is left for the `TodoPage` opening options. The fixture body drives the UI through a page object, never through `page.getBy*`, and hands the spec a signed-in page object.
 
 ```ts
 // e2e/todo/todo.fixture.ts
 import { test as base } from '@playwright/test';
 
-import type { TodoOptions } from './common/todo.type';
+import type { TodoFixtureOptions } from './common/todo.type';
 import { LoginPage } from './pages/login.page';
 import { TodoPage } from './pages/todo.page';
 import { USER_STUB } from './test/stubs/todo.stub';
@@ -110,7 +112,7 @@ type TodoFixtures = {
   readonly todoPage: TodoPage;
 };
 
-export const test = base.extend<TodoOptions & TodoFixtures>({
+export const test = base.extend<TodoFixtureOptions & TodoFixtures>({
   defaultUser: [USER_STUB, { option: true }],
   todoPage: async ({ defaultUser, page }, use): Promise<void> => {
     const loginPage = new LoginPage(page);
@@ -130,12 +132,12 @@ The config overrides the option in `use`:
 // e2e/playwright.config.ts
 import { defineConfig } from '@playwright/test';
 
-import type { TodoOptions } from './todo/common/todo.type';
+import type { TodoFixtureOptions } from './todo/common/todo.type';
 import { ADMIN_STUB } from './todo/test/stubs/todo.stub';
 
-const use: TodoOptions = { defaultUser: ADMIN_STUB };
+const use: TodoFixtureOptions = { defaultUser: ADMIN_STUB };
 
-export default defineConfig<TodoOptions>({ use });
+export default defineConfig<TodoFixtureOptions>({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ### Automatic Fixtures
@@ -232,9 +234,9 @@ When tests in different workers touch the same backend or DB (same user, same te
 
 ## Hooks
 
-Hook bodies follow the spec rule: every statement is a step, and a step is one call. Conditional logic (screenshot only on failure) goes into a util.
+Hooks never open a step: a hook calls its util directly, so the trace holds only the spec's own `WHEN` / `THEN` steps. A hook never opens the page either; each test opens it in its own `WHEN` step, or a fixture hands it over ready. Conditional logic (screenshot only on failure) goes into a util.
 
-### beforeEach / afterEach
+### afterEach
 
 ```ts
 // e2e/users/test/utils/failure-screenshot.spec.util.ts
@@ -254,18 +256,14 @@ export const captureOnFailure = async (page: Page, testInfo: TestInfo): Promise<
 import { test } from './users.fixture';
 import { captureOnFailure } from './test/utils/failure-screenshot.spec.util';
 
-test.beforeEach(async ({ usersPage }): Promise<void> => {
-  await test.step('GIVEN the users page is open', (): Promise<void> => usersPage.goto());
-});
-
 test.afterEach(async ({ page }, testInfo): Promise<void> => {
-  await test.step('THEN a screenshot is captured when the test failed', (): Promise<void> => captureOnFailure(page, testInfo));
+  await captureOnFailure(page, testInfo);
 });
 ```
 
 ### beforeAll / afterAll
 
-`beforeAll` and `afterAll` run once per worker per file. Only worker-scoped fixtures (`browser`, `browserName`) are available; `page` is not.
+`beforeAll` and `afterAll` run once per worker per file. Only worker-scoped fixtures (`browser`, `browserName`) are available; `page` is not. The body calls the util directly. When a test reads the seeded data back, a worker-scoped fixture (see [Worker Scope](#worker-scope)) is the better home: it seeds, hands over the value, and resets after `use`.
 
 ```ts
 // e2e/catalog/catalog.e2e.ts
@@ -273,17 +271,17 @@ import { test } from './catalog.fixture';
 import { resetCatalog, seedCatalog } from './test/utils/catalog.spec.util';
 
 test.beforeAll(async (): Promise<void> => {
-  await test.step('GIVEN the catalog is seeded', (): Promise<void> => seedCatalog());
+  await seedCatalog();
 });
 
 test.afterAll(async (): Promise<void> => {
-  await test.step('THEN the catalog is reset', (): Promise<void> => resetCatalog());
+  await resetCatalog();
 });
 ```
 
-### Describe-Level Hooks
+### Replacing a Page-Opening beforeEach
 
-A `beforeEach` inside a `GIVEN` describe is the shared arrange for every test in that state.
+A `beforeEach` inside the `FEATURE` describe that only opens the page is deleted. Each test opens the page in its own `WHEN` step, so its step list reads complete on its own. A `beforeEach` that seeds moves into a fixture that seeds and hands over the ready page object, or into an option on the opening call. A hook that stays (cleanup) calls its util directly, with no step.
 
 ```ts
 // e2e/users/users.e2e.ts
@@ -291,22 +289,20 @@ import { test } from './users.fixture';
 import { USER_STUB } from './test/stubs/users.stub';
 
 test.describe('FEATURE: user management', () => {
-  test.describe('GIVEN the users page is open', () => {
-    test.beforeEach(async ({ usersPage }): Promise<void> => {
-      await test.step('GIVEN the users page is open', (): Promise<void> => usersPage.goto());
-    });
+  test('GIVEN existing users, reloading the page still shows the user list', async ({ usersPage }): Promise<void> => {
+    await test.step('WHEN the users page is opened', (): Promise<void> => usersPage.goto());
 
-    test('SCENARIO: reloading the page shows the user list', async ({ usersPage }): Promise<void> => {
-      await test.step('WHEN the page is reloaded', (): Promise<void> => usersPage.reload());
+    await test.step('AND the page is reloaded', (): Promise<void> => usersPage.reload());
 
-      await test.step('THEN the user list is shown', (): Promise<void> => usersPage.expectList());
-    });
+    await test.step('THEN the user list is shown', (): Promise<void> => usersPage.expectList());
+  });
 
-    test('SCENARIO: adding a user names the user in the list', async ({ usersPage }): Promise<void> => {
-      await test.step('WHEN a user is added', (): Promise<void> => usersPage.addUser(USER_STUB));
+  test('GIVEN a new user, adding it names the user in the list', async ({ usersPage }): Promise<void> => {
+    await test.step('WHEN the users page is opened', (): Promise<void> => usersPage.goto());
 
-      await test.step('THEN the list names the new user', (): Promise<void> => usersPage.expectUser(USER_STUB.name));
-    });
+    await test.step('AND a user is added', (): Promise<void> => usersPage.addUser(USER_STUB));
+
+    await test.step('THEN the list names the new user', (): Promise<void> => usersPage.expectUser(USER_STUB.name));
   });
 });
 ```
@@ -315,7 +311,7 @@ test.describe('FEATURE: user management', () => {
 
 ### Global Setup with Storage State
 
-A `setup` project signs in once through the page objects of `login.fixture.ts` and saves the storage state. Credentials come from a stub or a fixture option set in the config `use` block, never from `process.env` in the setup file.
+A `setup` project signs in once through the page objects of `login.fixture.ts` and saves the storage state. Credentials come from a stub or a fixture option set in the config `use` block, never from `process.env` in the setup file. A setup file is not a behaviour spec: its body calls the page objects directly, with no steps, and its title names what it produces.
 
 ```ts
 // e2e/auth/test/utils/storage-state.spec.util.ts
@@ -334,14 +330,11 @@ import { saveStorageState } from './test/utils/storage-state.spec.util';
 
 const USER_AUTH_FILE = 'e2e/.auth/user.json';
 
-setup('authenticate as the default user', async ({ dashboardPage, loginPage, page }): Promise<void> => {
-  await setup.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
-
-  await setup.step('WHEN credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
-
-  await setup.step('THEN the dashboard heading is shown', (): Promise<void> => dashboardPage.expectHeading());
-
-  await setup.step('AND the storage state is saved', (): Promise<void> => saveStorageState(page, USER_AUTH_FILE));
+setup('saves the default user session', async ({ dashboardPage, loginPage, page }): Promise<void> => {
+  await loginPage.goto();
+  await loginPage.submit(USER_STUB);
+  await dashboardPage.expectHeading();
+  await saveStorageState(page, USER_AUTH_FILE);
 });
 ```
 
@@ -356,12 +349,12 @@ const projects = [
   { dependencies: ['setup'], name: 'chromium', use: chromium }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Multiple Auth States
 
-A second `setup(...)` call in the same file signs in as the admin with `ADMIN_STUB` and saves to `e2e/.auth/admin.json`. Each role becomes a project with its own `storageState` and `testMatch`.
+A second `setup('saves the admin session', …)` in the same file signs in as the admin with `ADMIN_STUB` and saves to `e2e/.auth/admin.json`. Each role becomes a project with its own `storageState` and `testMatch`.
 
 ```ts
 // e2e/playwright.config.ts
@@ -373,8 +366,8 @@ const userUse = { storageState: 'e2e/.auth/user.json' };
 
 const projects = [
   { name: 'setup', testMatch: /.*\.setup\.ts/ },
-  { dependencies: ['setup'], name: 'admin tests', testMatch: /.*admin.*\.spec\.ts/, use: adminUse },
-  { dependencies: ['setup'], name: 'user tests', testMatch: /.*user.*\.spec\.ts/, use: userUse }
+  { dependencies: ['setup'], name: 'admin tests', testMatch: '**/*admin*.@(e2e|test).ts', use: adminUse },
+  { dependencies: ['setup'], name: 'user tests', testMatch: '**/*user*.@(e2e|test).ts', use: userUse }
 ];
 
 export default defineConfig({ projects });
@@ -514,9 +507,9 @@ export { expect } from '@playwright/test';
 | Anti-Pattern                              | Problem                                                    | Solution                                                                                                                                                                              |
 | ----------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Shared mutable state between tests        | Race conditions, order dependencies                        | Use fixtures for isolation                                                                                                                                                            |
-| Global variables in tests                 | Tests depend on execution order                            | Use fixtures or beforeEach for setup                                                                                                                                                  |
+| Global variables in tests                 | Tests depend on execution order                            | Use fixtures for setup                                                                                                                                                                |
 | Not cleaning up test data                 | Tests interfere with each other                            | Use fixtures with teardown or database transactions                                                                                                                                   |
-| Shared `page` or `context` in `beforeAll` | State leak between tests; flaky when tests run in parallel | Use default one-context-per-test, or `beforeEach` + fresh page; if serial is required, prefer `test.describe.configure({ mode: 'serial' })` and document that isolation is sacrificed |
+| Shared `page` or `context` in `beforeAll` | State leak between tests; flaky when tests run in parallel | Keep the default one context per test; a fixture seeds the state and hands over the ready page object                                                                              |
 | Backend/DB state shared across workers    | Tests in different workers collide on same data            | Use worker-scoped fixture with `workerInfo.workerIndex` to create unique data per worker                                                                                              |
 
 ## Related References

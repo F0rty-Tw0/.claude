@@ -21,12 +21,12 @@ Page Object Model encapsulates page structure and interactions, providing:
 
 ### Page Class
 
-Locators are `public readonly` fields, alphabetical, assigned in the constructor. `page` is `private readonly` and declared after them. Action methods never assert; assertions live in `expect*` methods wrapped in a boxed step so a failure points at the spec line.
+Locators are `public readonly` fields, alphabetical, assigned in the constructor. `page` is `private readonly` and declared after them. Action methods never assert; assertions live in `expect*` methods as plain `await expect(…)` lines. A page object never opens a step; the spec's `THEN` step wraps the call. The only method that may branch is the opening call: `goto(options)` takes the page's one `<Page>Options` type and applies each option (a route, a viewport, a clock) before it navigates; see [house-style.md](house-style.md#page-objects).
 
 ```ts
 // e2e/login/pages/login.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { Credentials } from '../common/login.type';
 
@@ -57,7 +57,7 @@ export class LoginPage {
   }
 
   public async expectError(message: string): Promise<void> {
-    await test.step(`THEN error message contains "${message}"`, (): Promise<void> => expect(this.errorMessage).toContainText(message), { box: true });
+    await expect(this.errorMessage).toContainText(message);
   }
 }
 ```
@@ -73,36 +73,34 @@ import { expect, test } from './login.fixture';
 import { USER_STUB } from './test/stubs/login.stub';
 
 test.describe('FEATURE: login', () => {
-  test.describe('GIVEN the login page is open', () => {
-    test.beforeEach(async ({ loginPage }): Promise<void> => {
-      await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
-    });
+  test('GIVEN valid credentials, submitting opens the dashboard', async ({ loginPage, page }): Promise<void> => {
+    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-    test('SCENARIO: valid credentials open the dashboard', async ({ loginPage, page }): Promise<void> => {
-      await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.login(USER_STUB));
+    await test.step('AND valid credentials are submitted', (): Promise<void> => loginPage.login(USER_STUB));
 
-      await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
-    });
+    await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+  });
 
-    test('SCENARIO: wrong password shows the error banner', async ({ loginPage }): Promise<void> => {
-      const user: Credentials = { ...USER_STUB, password: 'wrong' };
+  test('GIVEN a wrong password, submitting shows the error banner', async ({ loginPage }): Promise<void> => {
+    const user: Credentials = { ...USER_STUB, password: 'wrong' };
 
-      await test.step('WHEN the wrong password is submitted', (): Promise<void> => loginPage.login(user));
+    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-      await test.step('THEN the error reports invalid credentials', (): Promise<void> => loginPage.expectError('Invalid credentials'));
-    });
+    await test.step('AND the wrong password is submitted', (): Promise<void> => loginPage.login(user));
+
+    await test.step('THEN the error reports invalid credentials', (): Promise<void> => loginPage.expectError('Invalid credentials'));
   });
 });
 ```
 
 ## Helper Objects
 
-A widget that appears on several pages is a helper object. It takes a `Locator` root, never `page`, so the same class serves any container. Members follow the page-object rules: locators first, root last, assertions boxed.
+A widget that appears on several pages is a helper object. It takes a `Locator` root, never `page`, so the same class serves any container. Members follow the page-object rules: locators first, root last, assertions as plain `expect` lines with no step.
 
 ```ts
 // e2e/dashboard/helpers/modal.helper.ts
 import type { Locator } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class ModalHelper {
   public readonly closeButton: Locator;
@@ -127,11 +125,11 @@ export class ModalHelper {
   }
 
   public async expectTitle(title: string): Promise<void> {
-    await test.step(`THEN modal title reads "${title}"`, (): Promise<void> => expect(this.title).toHaveText(title), { box: true });
+    await expect(this.title).toHaveText(title);
   }
 
   public async expectOpen(): Promise<void> {
-    await test.step('THEN modal is open', (): Promise<void> => expect(this.root).toBeVisible(), { box: true });
+    await expect(this.root).toBeVisible();
   }
 }
 ```
@@ -198,11 +196,11 @@ Not used. A factory returning an object literal of closures cannot follow the me
 - **Inject page objects through fixtures** - The spec never calls `new`
 - **Expose locators as `public readonly`** - The spec can pass them to `expect(page).toHaveScreenshot` or a mask
 - **Use descriptive method names** - `submitOrder()` not `clickButton()`
-- **Keep methods focused** - One action per method; a method with an `if` is two methods
+- **Keep methods focused** - One action per method; a method with an `if` is two methods, except `goto(options)` applying its options
 
 ### Don't
 
-- **Don't assert in action methods** - Assertions only in `expect*` methods, each a boxed step
+- **Don't assert in action methods** - Assertions only in `expect*` methods, as plain `expect` lines with no step
 - **Don't expose implementation details** - Hide complex interactions
 - **Don't make page objects too large** - Over 150 lines, split into a page plus helpers
 - **Don't share state** between page object instances

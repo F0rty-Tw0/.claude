@@ -12,7 +12,7 @@
 8. [Common Issues](#common-issues)
 9. [Logging](#logging)
 
-Debug probes are throwaway code, but they still follow the house shape: a probe is a function in `e2e/<feature>/test/utils/<name>.spec.util.ts`, and the spec calls it from a step. Samples below use the `dashboard` feature; `dashboardPage` is the page object from [console-errors.md](console-errors.md).
+Debug probes are throwaway code, but they still follow the house shape: a probe is a function in `e2e/<feature>/test/utils/<name>.spec.util.ts`, and the spec calls it from a step. A probe goes into a real test as extra `WHEN` / `AND` steps; the test keeps its `THEN`, so it still proves something while the probe pauses, prints, or attaches. Samples below use the `dashboard` feature: `dashboardPage` has `goto()`, `loadData()`, `openMenu()`, and the checks `expectDataLoaded()` and `expectMenuOpen()`, and later sections show the members they add.
 
 ## Debug Tools
 
@@ -52,7 +52,7 @@ const launchOptions = { slowMo: 500 };
 
 const use = { launchOptions };
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ### UI Mode
@@ -72,21 +72,21 @@ Features:
 
 ### Debug in Code
 
-`page.pause()` stops the test and opens the Inspector at that point. It is a step like any other, so it is easy to find and delete.
+`page.pause()` stops the test and opens the Inspector at that point. It is a step like any other, placed right before the step to inspect, so it is easy to find and delete.
 
 ```ts
 // e2e/dashboard/dashboard.e2e.ts
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: inspector opens before the load click', async ({ dashboardPage, page }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  test('GIVEN a live data api, loading data shows it on the dashboard', async ({ dashboardPage, page }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('WHEN the run pauses for the inspector', (): Promise<void> => page.pause());
+    await test.step('AND the run pauses for the inspector', (): Promise<void> => page.pause());
 
-      await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
-    });
+    await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
+
+    await test.step('THEN the data is shown', (): Promise<void> => dashboardPage.expectDataLoaded());
   });
 });
 ```
@@ -101,7 +101,7 @@ import { defineConfig } from '@playwright/test';
 
 const use = { trace: 'on-first-retry' } as const;
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 | `trace` value | Behavior |
@@ -132,7 +132,7 @@ npx playwright show-trace test-results/test-name/trace.zip
 
 ### Programmatic Traces
 
-`context.tracing` records a trace for part of a test. The util owns the options; the spec brackets the actions with two steps.
+`context.tracing` records a trace for part of a test. The util owns the options; the spec brackets the actions with two steps and keeps its `THEN` after them.
 
 ```ts
 // e2e/dashboard/test/utils/tracing.spec.util.ts
@@ -151,16 +151,16 @@ import { test } from './dashboard.fixture';
 import { startTrace, stopTrace } from './test/utils/tracing.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: data load flow is saved as a trace', async ({ context, dashboardPage }): Promise<void> => {
-      await test.step('GIVEN tracing is started', (): Promise<void> => startTrace(context));
+  test('GIVEN a live data api, a traced data load shows the data', async ({ context, dashboardPage }): Promise<void> => {
+    await test.step('WHEN tracing is started', (): Promise<void> => startTrace(context));
 
-      await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('AND the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
+    await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
 
-      await test.step('WHEN tracing is stopped', (): Promise<void> => stopTrace(context, 'trace.zip'));
-    });
+    await test.step('AND tracing is stopped', (): Promise<void> => stopTrace(context, 'trace.zip'));
+
+    await test.step('THEN the data is shown', (): Promise<void> => dashboardPage.expectDataLoaded());
   });
 });
 ```
@@ -216,21 +216,20 @@ export const logNetworkSummary = (log: NetworkLog): void => {
 };
 ```
 
+The `networkLog` fixture member calls `recordNetwork(page)` and passes the log to `use`, so the listeners exist before the test's `WHEN` opens the page. The summary prints in an `AND` step, and the `THEN` reads the same log to prove no request failed.
+
 ```ts
 // e2e/dashboard/dashboard.e2e.ts
-import type { NetworkLog } from './common/dashboard.type';
-import { test } from './dashboard.fixture';
-import { logNetworkSummary, recordNetwork } from './test/utils/network-log.spec.util';
+import { expect, test } from './dashboard.fixture';
+import { logNetworkSummary } from './test/utils/network-log.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: page load prints the network log', async ({ dashboardPage, page }): Promise<void> => {
-      const network = await test.step('GIVEN network traffic is recorded', (): NetworkLog => recordNetwork(page));
+  test('GIVEN a recorded network log, opening the dashboard fails no request', async ({ dashboardPage, networkLog }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('AND the network summary is printed', (): void => logNetworkSummary(networkLog));
 
-      await test.step('WHEN the network summary is printed', (): void => logNetworkSummary(network));
-    });
+    await test.step('THEN no request failed', (): void => expect(networkLog.failures).toEqual([]));
   });
 });
 ```
@@ -265,7 +264,7 @@ export class DashboardPage {
 }
 ```
 
-The spec reads it as `const response = await test.step('WHEN data is loaded', (): Promise<Response> => dashboardPage.loadData());` and logs `response.status()` in the next step.
+The spec reads it as `const response = await test.step('AND data is loaded', (): Promise<Response> => dashboardPage.loadData());` and logs `response.status()` in the next step.
 
 > **For comprehensive waiting patterns** (navigation, element state, network, polling), see [assertions-waiting.md](../core/assertions-waiting.md#waiting-strategies).
 
@@ -289,7 +288,7 @@ export const logSlowRequests = (page: Page, thresholdMs: number): void => {
 };
 ```
 
-Call it before navigation: `await test.step('GIVEN requests over 1s are logged', (): void => logSlowRequests(page, 1_000));`.
+Register it before navigation in a fixture, above `use`: `logSlowRequests(page, 1_000);`. No step wraps it.
 
 ## Debugging in CI
 
@@ -326,6 +325,7 @@ const use = {
 
 export default defineConfig({
   retries: IS_CI ? 2 : 0,
+  testMatch: '**/*.@(e2e|test).ts',
   use
 });
 ```
@@ -350,11 +350,11 @@ export const logEnvironment = (page: Page, testInfo: TestInfo): void => {
 };
 ```
 
-Call it as `await test.step('GIVEN the environment is printed', (): void => logEnvironment(page, test.info()));`.
+Call it after the opening step as `await test.step('AND the environment is printed', (): void => logEnvironment(page, test.info()));`.
 
 ## Debugging Authentication
 
-Two probes: one prints the cookies before navigation, the other saves the storage state to disk when the protected page redirected to login.
+Two probes: one prints the cookies before navigation, the other saves the storage state to disk when the protected page redirected to login. The test's `THEN` checks that the protected page stayed open, so a redirect still fails the test, after the state is saved.
 
 ```ts
 // e2e/dashboard/test/utils/auth-debug.spec.util.ts
@@ -384,20 +384,20 @@ export const saveStateWhenRedirected = async (page: Page, context: BrowserContex
 
 ```ts
 // e2e/dashboard/dashboard.e2e.ts
-import { test } from './dashboard.fixture';
+import { expect, test } from './dashboard.fixture';
 import { logAuthState, saveStateWhenRedirected } from './test/utils/auth-debug.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN a stored session', () => {
-    test('SCENARIO: protected page open inspects the auth state', async ({ context, page }): Promise<void> => {
-      await test.step('WHEN the cookies are printed', (): Promise<void> => logAuthState(context));
+  test('GIVEN a signed-in session, the protected page opens without a login redirect', async ({ context, page }): Promise<void> => {
+    await test.step('WHEN the auth cookies are printed', (): Promise<void> => logAuthState(context));
 
-      await test.step('AND the protected page is opened', async (): Promise<void> => {
-        await page.goto('/protected');
-      });
-
-      await test.step('AND the state is saved when redirected to login', (): Promise<void> => saveStateWhenRedirected(page, context));
+    await test.step('AND the protected page is opened', async (): Promise<void> => {
+      await page.goto('/protected');
     });
+
+    await test.step('AND the state is saved when redirected to login', (): Promise<void> => saveStateWhenRedirected(page, context));
+
+    await test.step('THEN the protected page stays open', (): Promise<void> => expect(page).toHaveURL(/\/protected/));
   });
 });
 ```
@@ -426,16 +426,16 @@ import { test } from './dashboard.fixture';
 import { attachFullPage } from './test/utils/screenshot.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
-  test.describe('GIVEN the dashboard', () => {
-    test('SCENARIO: menu open attaches before and after screenshots', async ({ dashboardPage, page }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  test('GIVEN a closed menu, opening it shows the menu', async ({ dashboardPage, page }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-      await test.step('AND the before screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'before'));
+    await test.step('AND the before screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'before'));
 
-      await test.step('AND the menu is opened', (): Promise<void> => dashboardPage.openMenu());
+    await test.step('AND the menu is opened', (): Promise<void> => dashboardPage.openMenu());
 
-      await test.step('WHEN the after screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'after'));
-    });
+    await test.step('AND the after screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'after'));
+
+    await test.step('THEN the menu is open', (): Promise<void> => dashboardPage.expectMenuOpen());
   });
 });
 ```
@@ -502,9 +502,9 @@ Call it on the page-object locator: `await test.step('AND the button state is pr
 
 | Scope | Call | Where |
 |---|---|---|
-| One assertion | `expect(this.loaded).toBeVisible({ timeout: 30_000 })` | Inside a boxed `expect*` page-object method |
-| Every test in a group | `test.setTimeout(60_000)` | First line of the `test.describe` callback |
-| One test | `test.slow('reason')` or `test('SCENARIO: <flow>', { timeout: 60_000 }, …)` | Spec |
+| One assertion | `expect(this.loaded).toBeVisible({ timeout: 30_000 })` | Inside an `expect*` page-object method, as a plain `await expect(…)` |
+| Every test in a spec | `test.setTimeout(60_000)` | First line of the `FEATURE` `test.describe` callback |
+| One test | `test.slow('reason')` or `test('GIVEN <state>, <outcome>', { timeout: 60_000 }, …)` | Spec |
 
 To see what is blocking, record network traffic with `recordNetwork(page)` from [Monitor All Requests](#monitor-all-requests) before opening the slow page.
 
@@ -537,7 +537,7 @@ export const logFrames = async (page: Page): Promise<void> => {
 
 ### Capture Browser Console
 
-The util forwards browser console lines and page errors to the runner output. Register it in a `beforeEach` step.
+The util forwards browser console lines and page errors to the runner output. Register it in an `auto` fixture above `use`, never in a hook step.
 
 ```ts
 // e2e/dashboard/test/utils/browser-log.spec.util.ts
@@ -620,7 +620,7 @@ Call it as `await test.step('AND debug artifacts are attached', (): Promise<void
 
    ```ts
    // e2e/dashboard/dashboard.e2e.ts
-   await test.step('GIVEN the inspector is paused', (): Promise<void> => page.pause());
+   await test.step('AND the inspector is paused', (): Promise<void> => page.pause());
 
    await test.step('AND the button state is printed', (): Promise<void> => logLocatorState(dashboardPage.loadButton));
 

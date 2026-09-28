@@ -188,7 +188,8 @@ const CI_REPORTER: ReporterDescription[] = [['blob'], ['github']];
 const LOCAL_REPORTER: ReporterDescription[] = [['html', { open: 'on-failure' }]];
 
 export default defineConfig({
-  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER
+  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER,
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -488,6 +489,7 @@ const use = {
 } as const;
 
 export default defineConfig({
+  testMatch: '**/*.@(e2e|test).ts',
   use,
   workers: IS_CI ? '50%' : undefined
 });
@@ -540,7 +542,8 @@ const CI_REPORTER: ReporterDescription[] = [['html', { open: 'never' }], ['githu
 const LOCAL_REPORTER: ReporterDescription[] = [['html', { open: 'on-failure' }]];
 
 export default defineConfig({
-  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER
+  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER,
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 

@@ -9,7 +9,7 @@
 5. [Performance Fixtures](#performance-fixtures)
 6. [CI Performance Monitoring](#ci-performance-monitoring)
 
-Every metric is read by a browser-side function in `test/utils/` and returned through `page.evaluate`. The function must be self-contained: Playwright serialises it, so it cannot reference anything outside its own body. The page object owns the `evaluate` call; the spec reads the typed result in one step and asserts it in the next.
+Every metric is read by a browser-side function in `test/utils/` and returned through `page.evaluate`. The function must be self-contained: Playwright serialises it, so it cannot reference anything outside its own body. The page object owns the `evaluate` call and the `expect*` methods that read a metric and assert it, so no spec step only reads a value.
 
 The types every sample below shares:
 
@@ -92,15 +92,17 @@ export const readWebVitals = (): Promise<WebVitals> => {
 };
 ```
 
-The page object hands each reader (the others are under [Performance Metrics](#performance-metrics)) to `page.evaluate` and waits for `networkidle` after navigation so the metrics are settled:
+The page object hands each reader (the others are under [Performance Metrics](#performance-metrics)) to `page.evaluate` and waits for `networkidle` after navigation so the metrics are settled. `expectVital` and `expectTiming` read the metric they assert and take its name, so one method serves every field; `recordLoadTime` reads the load time for the [CI reporter](#ci-performance-monitoring). `BudgetPage` composes the plain readers.
 
 ```ts
 // e2e/performance/pages/performance.page.ts
 import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
-import type { HeapUsage, NavigationTiming, ResourceEntry, WebVitals } from '../common/performance.type';
+import type { NavigationTiming, ResourceEntry, WebVitals } from '../common/performance.type';
 import { readHeapUsage } from '../test/utils/heap-usage.spec.util';
 import { readNavigationTiming } from '../test/utils/navigation-timing.spec.util';
+import { annotateLoadTime } from '../test/utils/performance-annotation.spec.util';
 import { readResourceEntries } from '../test/utils/resource-timing.spec.util';
 import { readWebVitals } from '../test/utils/web-vitals.spec.util';
 
@@ -116,10 +118,6 @@ export class PerformancePage {
     await this.page.waitForLoadState('networkidle');
   }
 
-  public async heapUsage(): Promise<HeapUsage> {
-    return this.page.evaluate(readHeapUsage);
-  }
-
   public async navigationTiming(): Promise<NavigationTiming> {
     return this.page.evaluate(readNavigationTiming);
   }
@@ -131,53 +129,63 @@ export class PerformancePage {
   public async webVitals(): Promise<WebVitals> {
     return this.page.evaluate(readWebVitals);
   }
+
+  public async recordLoadTime(): Promise<void> {
+    const timing = await this.navigationTiming();
+
+    annotateLoadTime(timing.loadComplete);
+  }
+
+  public async expectHeapUnder(bytes: number): Promise<void> {
+    const usage = await this.page.evaluate(readHeapUsage);
+
+    expect(usage.usedJSHeapSize).toBeLessThan(bytes);
+  }
+
+  public async expectTiming(name: keyof NavigationTiming, ceiling: number): Promise<void> {
+    const timing = await this.navigationTiming();
+
+    expect(timing[name], name).toBeLessThan(ceiling);
+  }
+
+  public async expectVital(name: keyof WebVitals, ceiling: number): Promise<void> {
+    const vitals = await this.webVitals();
+
+    expect(vitals[name], name).toBeLessThan(ceiling);
+  }
 }
 ```
 
-The spec asserts Google's "good" thresholds one step each. The second test feeds the [CI reporter](#ci-performance-monitoring); the Chromium-only `GIVEN` skips other browsers with a reason because `performance.memory` does not exist there.
+The spec asserts Google's "good" thresholds one step each. Every test starts from a fresh context, so its `GIVEN` is a cold cache. The second test feeds the [CI reporter](#ci-performance-monitoring); the Chromium-only heap test opens with `test.skip(browserName !== 'chromium', reason)` because `performance.memory` does not exist in other browsers.
 
 ```ts
 // e2e/performance/performance.e2e.ts
 import { HEAP_CEILING_BYTES, LOAD_TIME_BASELINE_MS, REGRESSION_TOLERANCE } from './common/performance.const';
-import type { HeapUsage, NavigationTiming, WebVitals } from './common/performance.type';
-import { expect, test } from './performance.fixture';
-import { annotateLoadTime } from './test/utils/performance-annotation.spec.util';
+import { test } from './performance.fixture';
 
 test.describe('FEATURE: performance', () => {
-  test.describe('GIVEN the home page has loaded', () => {
-    test.beforeEach(async ({ performancePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => performancePage.goto('/'));
-    });
+  test('GIVEN a cold cache, the home page keeps core web vitals inside the good thresholds', async ({ performancePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => performancePage.goto('/'));
 
-    test('SCENARIO: core web vitals stay inside the good thresholds', async ({ performancePage }): Promise<void> => {
-      const vitals = await test.step('WHEN core web vitals are read', (): Promise<WebVitals> => performancePage.webVitals());
+    await test.step('THEN LCP is under 2.5 seconds', (): Promise<void> => performancePage.expectVital('lcp', 2500));
 
-      await test.step('THEN LCP is under 2.5 seconds', (): void => expect(vitals.lcp).toBeLessThan(2500));
-
-      await test.step('AND CLS is under 0.1', (): void => expect(vitals.cls).toBeLessThan(0.1));
-    });
-
-    test('SCENARIO: load time stays within 10% of the baseline', async ({ performancePage }): Promise<void> => {
-      const timing = await test.step('WHEN navigation timing is read', (): Promise<NavigationTiming> => performancePage.navigationTiming());
-
-      await test.step('AND the load time is recorded for the reporter', (): void => annotateLoadTime(timing.loadComplete));
-
-      await test.step('THEN the load time is under the regression ceiling', (): void => expect(timing.loadComplete).toBeLessThan(LOAD_TIME_BASELINE_MS * REGRESSION_TOLERANCE));
-    });
+    await test.step('AND CLS is under 0.1', (): Promise<void> => performancePage.expectVital('cls', 0.1));
   });
 
-  test.describe('GIVEN the dashboard has loaded in Chromium', () => {
-    test.skip(({ browserName }) => browserName !== 'chromium', 'performance.memory is Chromium-only');
+  test('GIVEN a cold cache, the home page loads within 10% of the baseline', async ({ performancePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => performancePage.goto('/'));
 
-    test.beforeEach(async ({ performancePage }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => performancePage.goto('/dashboard'));
-    });
+    await test.step('AND the load time is recorded for the reporter', (): Promise<void> => performancePage.recordLoadTime());
 
-    test('SCENARIO: heap usage stays under 100 MB', async ({ performancePage }): Promise<void> => {
-      const usage = await test.step('WHEN heap usage is read', (): Promise<HeapUsage> => performancePage.heapUsage());
+    await test.step('THEN the load time is under the regression ceiling', (): Promise<void> => performancePage.expectTiming('loadComplete', LOAD_TIME_BASELINE_MS * REGRESSION_TOLERANCE));
+  });
 
-      await test.step('THEN the used heap is under 100 MB', (): void => expect(usage.usedJSHeapSize).toBeLessThan(HEAP_CEILING_BYTES));
-    });
+  test('GIVEN a Chromium browser, the dashboard heap stays under 100 MB', async ({ browserName, performancePage }): Promise<void> => {
+    test.skip(browserName !== 'chromium', 'performance.memory is Chromium-only');
+
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => performancePage.goto('/dashboard'));
+
+    await test.step('THEN the used heap is under 100 MB', (): Promise<void> => performancePage.expectHeapUnder(HEAP_CEILING_BYTES));
   });
 });
 ```
@@ -227,7 +235,7 @@ The page object collects reports into a map and asserts with `expect.poll`, whic
 ```ts
 // e2e/performance/pages/web-vitals.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import { WEB_VITALS_URL } from '../common/performance.const';
 import type { MetricReport } from '../common/performance.type';
@@ -262,7 +270,7 @@ export class WebVitalsPage {
   public async expectVital(name: string, ceiling: number): Promise<void> {
     const read = (): number | undefined => this.reports.get(name);
 
-    await test.step(`THEN ${name} is under ${ceiling}`, (): Promise<void> => expect.poll(read).toBeLessThan(ceiling), { box: true });
+    await expect.poll(read).toBeLessThan(ceiling);
   }
 }
 ```
@@ -272,18 +280,14 @@ export class WebVitalsPage {
 import { test } from './performance.fixture';
 
 test.describe('FEATURE: web vitals library', () => {
-  test.describe('GIVEN the home page has loaded with web-vitals injected', () => {
-    test.beforeEach(async ({ webVitalsPage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => webVitalsPage.goto('/'));
-    });
+  test('GIVEN a cold cache, clicking the first button keeps LCP and INP inside the good thresholds', async ({ webVitalsPage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => webVitalsPage.goto('/'));
 
-    test('SCENARIO: clicking the first button keeps LCP and INP inside the good thresholds', async ({ webVitalsPage }): Promise<void> => {
-      await test.step('WHEN the first button is clicked', (): Promise<void> => webVitalsPage.clickFirstButton());
+    await test.step('AND the first button is clicked', (): Promise<void> => webVitalsPage.clickFirstButton());
 
-      await test.step('THEN LCP is under 2.5 seconds', (): Promise<void> => webVitalsPage.expectVital('LCP', 2500));
+    await test.step('THEN LCP is under 2.5 seconds', (): Promise<void> => webVitalsPage.expectVital('LCP', 2500));
 
-      await test.step('AND INP is under 200 milliseconds', (): Promise<void> => webVitalsPage.expectVital('INP', 200));
-    });
+    await test.step('AND INP is under 200 milliseconds', (): Promise<void> => webVitalsPage.expectVital('INP', 200));
   });
 });
 ```
@@ -317,11 +321,11 @@ export const readNavigationTiming = (): NavigationTiming => {
 };
 ```
 
-A timing test has the shape of the `load time` test above: one `WHEN` step returning `NavigationTiming`, then one `THEN` / `AND` step per limit, the good limits being `ttfb < 600`, `domContentLoaded < 2000`, and `loadComplete < 4000`.
+A timing test has the shape of the `load time` test above: a `WHEN` step opening the page, then one `THEN` / `AND` step per limit through `performancePage.expectTiming(name, ceiling)`, the good limits being `ttfb < 600`, `domContentLoaded < 2000`, and `loadComplete < 4000`.
 
 ### Resource Timing
 
-Resource entries carry `initiatorType` (`script`, `img`, `css`, `fetch`), `duration`, and `transferSize`. The reader maps them to a plain `ResourceEntry[]`; the budget page under [Performance Budgets](#performance-budgets) sums them, and a spec may filter for whatever else it cares about, such as `duration > 1000` for slow resources or `size > 500000` for large ones. Slow resources are better attached to the report with `test.info().attach` than logged to the console.
+Resource entries carry `initiatorType` (`script`, `img`, `css`, `fetch`), `duration`, and `transferSize`. The reader maps them to a plain `ResourceEntry[]`; the budget page under [Performance Budgets](#performance-budgets) sums them, and an `expect*` method may filter for whatever else a spec cares about, such as `duration > 1000` for slow resources or `size > 500000` for large ones. Slow resources are better attached to the report with `test.info().attach` than logged to the console.
 
 ```ts
 // e2e/performance/test/utils/resource-timing.spec.util.ts
@@ -406,12 +410,12 @@ export const summarizeResources = (resources: ResourceEntry[]): ResourceSummary 
 };
 ```
 
-Upstream shape is an `assertBudget` function fixture. The house shape is a page object the fixture injects: it composes `PerformancePage`, reads every metric once, and asserts each budget line in its own boxed step so a failure points at the spec line. The spec is then one `GIVEN` step and one `THEN` step.
+Upstream shape is an `assertBudget` function fixture. The house shape is a page object the fixture injects: it composes `PerformancePage`, reads every metric once, and asserts each budget line as a plain `expect.soft` with no step. The message argument names the metric, so a failure reads `LCP` rather than a bare number, and the soft assertion lets one run report every line over budget. The stack names the spec line. The spec is then one `WHEN` step and one `THEN` step.
 
 ```ts
 // e2e/performance/pages/budget.page.ts
 import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { PerformanceBudget } from '../common/performance.type';
 import { summarizeResources } from '../test/utils/resource-summary.spec.util';
@@ -433,19 +437,13 @@ export class BudgetPage {
     const timing = await this.performancePage.navigationTiming();
     const summary = summarizeResources(await this.performancePage.resourceEntries());
 
-    await test.step('THEN LCP is inside the budget', (): void => expect(vitals.lcp).toBeLessThan(budget.lcp), { box: true });
-
-    await test.step('AND CLS is inside the budget', (): void => expect(vitals.cls).toBeLessThan(budget.cls), { box: true });
-
-    await test.step('AND FCP is inside the budget', (): void => expect(vitals.fcp).toBeLessThan(budget.fcp), { box: true });
-
-    await test.step('AND TTFB is inside the budget', (): void => expect(timing.ttfb).toBeLessThan(budget.ttfb), { box: true });
-
-    await test.step('AND total transfer size is inside the budget', (): void => expect(summary.totalSize).toBeLessThan(budget.totalSize), { box: true });
-
-    await test.step('AND script transfer size is inside the budget', (): void => expect(summary.jsSize).toBeLessThan(budget.jsSize), { box: true });
-
-    await test.step('AND image count is inside the budget', (): void => expect(summary.imageCount).toBeLessThanOrEqual(budget.imageCount), { box: true });
+    expect.soft(vitals.lcp, 'LCP').toBeLessThan(budget.lcp);
+    expect.soft(vitals.cls, 'CLS').toBeLessThan(budget.cls);
+    expect.soft(vitals.fcp, 'FCP').toBeLessThan(budget.fcp);
+    expect.soft(timing.ttfb, 'TTFB').toBeLessThan(budget.ttfb);
+    expect.soft(summary.totalSize, 'total size').toBeLessThan(budget.totalSize);
+    expect.soft(summary.jsSize, 'JS size').toBeLessThan(budget.jsSize);
+    expect.soft(summary.imageCount, 'image count').toBeLessThanOrEqual(budget.imageCount);
   }
 }
 ```
@@ -456,14 +454,10 @@ import { HOMEPAGE_BUDGET } from './common/performance.const';
 import { test } from './performance.fixture';
 
 test.describe('FEATURE: performance budget', () => {
-  test.describe('GIVEN the home page has loaded', () => {
-    test.beforeEach(async ({ budgetPage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => budgetPage.goto('/'));
-    });
+  test('GIVEN a cold cache, the home page stays inside its budget', async ({ budgetPage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => budgetPage.goto('/'));
 
-    test('SCENARIO: the home page stays inside its budget', async ({ budgetPage }): Promise<void> => {
-      await test.step('THEN the metrics stay inside the home page budget', (): Promise<void> => budgetPage.expectWithinBudget(HOMEPAGE_BUDGET));
-    });
+    await test.step('THEN the metrics stay inside the home page budget', (): Promise<void> => budgetPage.expectWithinBudget(HOMEPAGE_BUDGET));
   });
 });
 ```
@@ -544,16 +538,12 @@ import type { LighthouseSummary } from './common/lighthouse.type';
 import { expect, test } from './lighthouse.fixture';
 
 test.describe('FEATURE: lighthouse audit', () => {
-  test.describe('GIVEN the home page has loaded', () => {
-    test.beforeEach(async ({ lighthousePage }): Promise<void> => {
-      await test.step('GIVEN the home page is open', (): Promise<void> => lighthousePage.goto('/'));
-    });
+  test('GIVEN a throttled performance-only audit config, the home page scores at least 70', async ({ lighthousePage }): Promise<void> => {
+    await test.step('WHEN the home page is opened', (): Promise<void> => lighthousePage.goto('/'));
 
-    test('SCENARIO: the performance-only audit clears 70', async ({ lighthousePage }): Promise<void> => {
-      const summary = await test.step('WHEN the throttled performance audit runs', (): Promise<LighthouseSummary> => lighthousePage.audit(PERFORMANCE_ONLY_THRESHOLDS, PERFORMANCE_ONLY_CONFIG));
+    const summary = await test.step('AND the throttled performance audit runs', (): Promise<LighthouseSummary> => lighthousePage.audit(PERFORMANCE_ONLY_THRESHOLDS, PERFORMANCE_ONLY_CONFIG));
 
-      await test.step('THEN performance scores at least 70', (): void => expect(summary.performance).toBeGreaterThanOrEqual(70));
-    });
+    await test.step('THEN performance scores at least 70', (): void => expect(summary.performance).toBeGreaterThanOrEqual(70));
   });
 });
 ```
@@ -597,7 +587,7 @@ export { expect } from '@playwright/test';
 
 A custom reporter collects a `performance` annotation from each test in `onTestEnd` and posts the batch to a metrics service in `onEnd`. Its options type, constructor, and non-blocking `onEnd` are `NotificationReporter` in [reporting.md](../infrastructure-ci-cd/reporting.md); the perf variant reads `test.annotations.find((annotation) => annotation.type === 'performance')`, pushes `{ loadTime: Number(annotation.description), test: test.title, timestamp }`, and posts `{ branch, commit, metrics }`. Environment reads happen once, in the config, and reach the reporter as plain options: `reporter: [['list'], ['./reporters/perf.reporter.ts', { branch: process.env.GITHUB_REF, commit: process.env.GITHUB_SHA, endpoint: process.env.METRICS_ENDPOINT }]]`.
 
-The spec records the annotation through a util so the reporter has something to collect:
+`PerformancePage.recordLoadTime` records the annotation through a util so the reporter has something to collect:
 
 ```ts
 // e2e/performance/test/utils/performance-annotation.spec.util.ts

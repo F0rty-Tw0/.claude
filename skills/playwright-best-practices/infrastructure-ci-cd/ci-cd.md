@@ -234,7 +234,7 @@ const reporter: ReporterDescription[] = [
   ['blob', { outputDir: 'blob-report' }]
 ];
 
-export default defineConfig({ reporter });
+export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### CI-Specific Reporter
@@ -248,7 +248,8 @@ const CI_REPORTER: ReporterDescription[] = [['github'], ['blob'], ['html']];
 const LOCAL_REPORTER: ReporterDescription[] = [['list'], ['html']];
 
 export default defineConfig({
-  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER
+  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER,
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -278,7 +279,8 @@ const LOCAL_REPORTER: ReporterDescription[] = [['html']];
 
 export default defineConfig({
   fullyParallel: true,
-  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER
+  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER,
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -308,7 +310,7 @@ const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 
 const use = { baseURL: BASE_URL } as const;
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ### Multiple Environments
@@ -356,12 +358,14 @@ export const CI_USER: Credentials = {
 import { CI_USER } from './common/login.const';
 import { expect, test } from './login.fixture';
 
-test('SCENARIO: CI credentials open the dashboard', async ({ loginPage, page }): Promise<void> => {
-  await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
+test.describe('FEATURE: login', () => {
+  test('GIVEN CI credentials, signing in opens the dashboard', async ({ loginPage, page }): Promise<void> => {
+    await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-  await test.step('WHEN the CI credentials are submitted', (): Promise<void> => loginPage.submit(CI_USER));
+    await test.step('AND the CI credentials are submitted', (): Promise<void> => loginPage.submit(CI_USER));
 
-  await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+    await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+  });
 });
 ```
 
@@ -438,7 +442,8 @@ const IS_CI = Boolean(process.env.CI);
 
 export default defineConfig({
   grep: IS_CI ? /@smoke|@critical/ : undefined,
-  grepInvert: IS_CI ? /@flaky/ : undefined
+  grepInvert: IS_CI ? /@flaky/ : undefined,
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -453,7 +458,7 @@ const projects = [
   { grepInvert: /@smoke/, name: 'regression' }
 ];
 
-export default defineConfig({ projects });
+export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Best Practices
@@ -497,7 +502,7 @@ export default defineConfig({
   fullyParallel: true,
   reporter: IS_CI ? CI_REPORTER : LOCAL_REPORTER,
   retries: IS_CI ? 2 : 0,
-  testDir: './e2e',
+  testMatch: '**/*.@(e2e|test).ts',
   use,
   workers: IS_CI ? 1 : undefined
 });

@@ -56,7 +56,8 @@ const CI_REPORTER: ReporterDescription[] = [
 const LOCAL_REPORTER: ReporterDescription[] = [['list'], ['html', { open: 'on-failure' }]];
 
 export default defineConfig({
-  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER
+  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER,
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
@@ -99,7 +100,7 @@ const junitOptions = {
 
 const reporter: ReporterDescription[] = [['junit', junitOptions]];
 
-export default defineConfig({ reporter });
+export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Custom Reporter
@@ -180,7 +181,7 @@ const reporter: ReporterDescription[] = [
   ['./reporters/notification.reporter.ts', notificationOptions]
 ];
 
-export default defineConfig({ reporter });
+export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ## Trace Configuration
@@ -195,6 +196,7 @@ const use = { trace: 'on-first-retry' } as const;
 
 export default defineConfig({
   retries: process.env.CI ? 2 : 0,
+  testMatch: '**/*.@(e2e|test).ts',
   use
 });
 ```
@@ -235,7 +237,7 @@ const video = { mode: 'retain-on-failure', size: videoSize } as const;
 
 const use = { screenshot: 'only-on-failure', video } as const;
 
-export default defineConfig({ use });
+export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 ```
 
 ### Screenshot Options
@@ -346,7 +348,7 @@ import { defineConfig } from '@playwright/test';
 
 const reporter: ReporterDescription[] = [['html', { open: 'never', outputFolder: 'playwright-report' }]];
 
-export default defineConfig({ reporter });
+export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ### Traces Too Large
@@ -364,7 +366,7 @@ import { defineConfig } from '@playwright/test';
 
 const reporter: ReporterDescription[] = [['junit', { outputFile: 'results/junit.xml' }]];
 
-export default defineConfig({ reporter });
+export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
 ```
 
 ```yaml
@@ -396,7 +398,8 @@ const CI_REPORTER: ReporterDescription[] = [['blob'], ['dot']];
 const LOCAL_REPORTER: ReporterDescription[] = [['html', { open: 'on-failure' }]];
 
 export default defineConfig({
-  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER
+  reporter: process.env.CI ? CI_REPORTER : LOCAL_REPORTER,
+  testMatch: '**/*.@(e2e|test).ts'
 });
 ```
 
