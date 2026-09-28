@@ -74,6 +74,15 @@
             "command": "node $HOME/.claude/hooks/commit-guard.js"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/pr-proof-guard.js"
+          }
+        ]
       }
     ]
   },
