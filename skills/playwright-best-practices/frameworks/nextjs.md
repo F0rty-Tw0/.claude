@@ -82,7 +82,7 @@ A server component is plain HTML by the time Playwright sees it. Assert on roles
 import { test } from './home.fixture';
 
 test.describe('FEATURE: server components', () => {
-  test('SCENARIO: page load shows the server-rendered heading and navigation', async ({ homePage }): Promise<void> => {
+  test('GIVEN the server-rendered home page, loading it shows the heading and navigation', async ({ homePage }): Promise<void> => {
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
     await test.step('THEN welcome heading is shown', (): Promise<void> => homePage.expectHeading('Welcome'));
@@ -122,7 +122,7 @@ import { test } from './dashboard.fixture';
 import { slowStatsMock } from './test/mocks/stats.mock';
 
 test.describe('FEATURE: streaming dashboard', () => {
-  test('SCENARIO: a slow stats response shows the loading boundary until it resolves', async ({ dashboardPage }): Promise<void> => {
+  test('GIVEN a slow stats response, the loading boundary shows until it resolves', async ({ dashboardPage }): Promise<void> => {
     await test.step('GIVEN the stats response is held for 2s', (): Promise<void> => dashboardPage.routeStats(slowStatsMock(2_000)));
 
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
@@ -197,13 +197,13 @@ import type { Response } from '@playwright/test';
 import { expect, test } from './blog.fixture';
 
 test.describe('FEATURE: blog post routes', () => {
-  test('SCENARIO: published slug renders the post', async ({ postPage }): Promise<void> => {
+  test('GIVEN a published slug, opening it renders the post', async ({ postPage }): Promise<void> => {
     await test.step('WHEN the testing guide is opened', (): Promise<Response | null> => postPage.goto('testing-guide'));
 
     await test.step('THEN post is shown', (): Promise<void> => postPage.expectPost('Testing Guide'));
   });
 
-  test('SCENARIO: unknown slug responds 404', async ({ postPage }): Promise<void> => {
+  test('GIVEN an unknown slug, opening it responds 404', async ({ postPage }): Promise<void> => {
     const response = await test.step('WHEN a missing post is opened', (): Promise<Response | null> => postPage.goto('nonexistent-post'));
 
     await test.step('THEN status is 404', (): void => expect(response?.status()).toBe(404));
@@ -238,7 +238,7 @@ import { expect, test } from './products.fixture';
 import { sortedAscending } from './test/utils/prices.spec.util';
 
 test.describe('FEATURE: product filters', () => {
-  test('SCENARIO: page load lists prices ascending', async ({ productsPage }): Promise<void> => {
+  test('GIVEN a price-ascending sort, loading the page lists prices ascending', async ({ productsPage }): Promise<void> => {
     await test.step('WHEN electronics sorted by price is opened', (): Promise<void> => productsPage.goto('category=electronics&sort=price-asc'));
 
     await test.step('THEN electronics heading is shown', (): Promise<void> => productsPage.expectHeading('Electronics'));
@@ -284,7 +284,7 @@ import { expect, test } from './products.fixture';
 import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
 
 test.describe('FEATURE: products api', () => {
-  test('SCENARIO: GET returns a product list', async ({ request }): Promise<void> => {
+  test('GIVEN the products route, a GET returns a product list', async ({ request }): Promise<void> => {
     const response = await test.step('WHEN products are fetched', (): Promise<APIResponse> => request.get('/api/products'));
 
     await test.step('THEN response is ok', (): void => expect(response.ok()).toBeTruthy());
@@ -315,7 +315,7 @@ import { test } from './products.fixture';
 import { NEW_PRODUCT_STUB } from './test/stubs/products.stub';
 
 test.describe('FEATURE: product form', () => {
-  test('SCENARIO: submitted product is created by the api and confirmed on the page', async ({ newProductPage }): Promise<void> => {
+  test('GIVEN a new product, submitting creates it in the api and confirms it on the page', async ({ newProductPage }): Promise<void> => {
     await test.step('GIVEN the new product page is open', (): Promise<void> => newProductPage.goto());
 
     await test.step('WHEN a widget is created', (): Promise<void> => newProductPage.create({ ...NEW_PRODUCT_STUB, name: 'Widget', price: 19.99 }));
@@ -350,7 +350,7 @@ import { expect, test } from './auth.fixture';
 import { returnUrl } from './test/utils/return-url.spec.util';
 
 test.describe('FEATURE: auth middleware', () => {
-  test('SCENARIO: a signed-out visit to a nested page redirects to login and keeps the return url', async ({ loginPage, page }): Promise<void> => {
+  test('GIVEN no session, visiting a nested page redirects to login and keeps the return url', async ({ loginPage, page }): Promise<void> => {
     await test.step('WHEN dashboard settings is opened', async (): Promise<void> => {
       await page.goto('/dashboard/settings');
     });
@@ -404,7 +404,7 @@ import { test } from './home.fixture';
 import { FRENCH_HEADERS_STUB } from './test/stubs/locale.stub';
 
 test.describe('FEATURE: locale middleware', () => {
-  test('SCENARIO: a French accept-language header serves the French copy', async ({ context, homePage }): Promise<void> => {
+  test('GIVEN a French accept-language header, the home page serves the French copy', async ({ context, homePage }): Promise<void> => {
     await test.step('GIVEN French accept-language is sent', (): Promise<void> => context.setExtraHTTPHeaders(FRENCH_HEADERS_STUB));
 
     await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
@@ -433,7 +433,7 @@ import { expect, test } from './home.fixture';
 import { hydrationErrors } from './test/utils/hydration.spec.util';
 
 test.describe('FEATURE: hydration', () => {
-  test('SCENARIO: hydrated page click logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
+  test('GIVEN the hydrated home page, clicking it logs no hydration error', async ({ consoleErrors, homePage }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     await test.step('WHEN get started is clicked', (): Promise<void> => homePage.getStarted());
@@ -505,11 +505,11 @@ test.describe('FEATURE: next/image', () => {
     await test.step('GIVEN the gallery is open', (): Promise<void> => galleryPage.goto());
   });
 
-  test('SCENARIO: page load renders the hero image eager with a srcset', async ({ galleryPage }): Promise<void> => {
+  test('GIVEN the hero image, loading the page renders it eager with a srcset', async ({ galleryPage }): Promise<void> => {
     await test.step('THEN hero image is eager', (): Promise<void> => galleryPage.expectHeroEager());
   });
 
-  test('SCENARIO: offscreen image loads when scrolled into view', async ({ galleryPage }): Promise<void> => {
+  test('GIVEN an offscreen image, scrolling it into view loads it', async ({ galleryPage }): Promise<void> => {
     await test.step('WHEN item 20 is scrolled to', (): Promise<void> => galleryPage.scrollToItem(20));
 
     const width = await test.step('AND the natural width is read', (): Promise<number> => galleryPage.itemNaturalWidth(20));

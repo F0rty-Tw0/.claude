@@ -75,7 +75,7 @@ import { SupportChatPage } from './pages/support-chat.page';
 import { test } from './support.fixture';
 
 test.describe('FEATURE: support chat popup', () => {
-  test('SCENARIO: sending a message in the chat popup shows the confirmation', async ({ homePage }): Promise<void> => {
+  test('GIVEN the chat popup, sending a message shows the confirmation', async ({ homePage }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     const popup = await test.step('WHEN the support chat popup is opened', (): Promise<Page> => homePage.openSupportChat());
@@ -103,7 +103,7 @@ import { test } from './integrations.fixture';
 import { ProviderLoginPage } from './pages/provider-login.page';
 
 test.describe('FEATURE: connect account', () => {
-  test('SCENARIO: completing the provider login in the popup connects the account', async ({ dashboardPage }): Promise<void> => {
+  test('GIVEN the provider login popup, completing it connects the account', async ({ dashboardPage }): Promise<void> => {
     await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
     const popup = await test.step('WHEN the connect account popup is opened', (): Promise<Page> => dashboardPage.openConnectAccount());
@@ -141,7 +141,7 @@ import { test } from './share.fixture';
 import { blockPopups } from './test/utils/popup-blocker.spec.util';
 
 test.describe('FEATURE: share to twitter', () => {
-  test('SCENARIO: a blocked popup falls back to the copy link', async ({ page, sharePage }): Promise<void> => {
+  test('GIVEN a blocked popup, sharing falls back to the copy link', async ({ page, sharePage }): Promise<void> => {
     await test.step('GIVEN window.open is stubbed to return null', (): Promise<void> => blockPopups(page));
 
     await test.step('AND the share page is open', (): Promise<void> => sharePage.goto());
@@ -153,7 +153,7 @@ test.describe('FEATURE: share to twitter', () => {
 });
 ```
 
-`SharePage` has two methods on the same button: `openTwitterShare()` waits for the popup and returns it; `shareToTwitter()` only clicks. The allowed-popup scenario, `'SCENARIO: an allowed popup opens the twitter share'`, is the Basic Popup shape in the same `FEATURE`: `openTwitterShare()`, `expect(popup).toHaveURL(/twitter\.com/)`, `popup.close()`.
+`SharePage` has two methods on the same button: `openTwitterShare()` waits for the popup and returns it; `shareToTwitter()` only clicks. The allowed-popup scenario, `'GIVEN an allowed popup, sharing opens the twitter share'`, is the Basic Popup shape in the same `FEATURE`: `openTwitterShare()`, `expect(popup).toHaveURL(/twitter\.com/)`, `popup.close()`.
 
 ## New Tab Navigation
 
@@ -169,7 +169,7 @@ import { DocsPage } from './pages/docs.page';
 import { expect, test } from './resources.fixture';
 
 test.describe('FEATURE: documentation link', () => {
-  test('SCENARIO: clicking the documentation link opens the docs in a new tab', async ({ page, resourcesPage }): Promise<void> => {
+  test('GIVEN the resources page, clicking the documentation link opens the docs in a new tab', async ({ page, resourcesPage }): Promise<void> => {
     await test.step('GIVEN the resources page is open', (): Promise<void> => resourcesPage.goto());
 
     const docsTab = await test.step('WHEN the documentation link is clicked', (): Promise<Page> => resourcesPage.openDocumentation());
@@ -253,7 +253,7 @@ import { tokenMock } from './test/mocks/token.mock';
 test.use({ storageState: EMPTY_STORAGE_STATE });
 
 test.describe('FEATURE: google sign in', () => {
-  test('SCENARIO: a mocked callback and token exchange sign in with google without the provider', async ({ homePage, loginPage, page }): Promise<void> => {
+  test('GIVEN a mocked callback and token exchange, google sign-in works without the provider', async ({ homePage, loginPage, page }): Promise<void> => {
     await test.step('GIVEN the oauth callback redirects to the dashboard', async (): Promise<void> => {
       await page.route('**/auth/callback**', callbackRedirectMock());
     });
@@ -291,7 +291,7 @@ import { test } from './dashboard.fixture';
 import { SyncDashboardPage } from './pages/dashboard.page';
 
 test.describe('FEATURE: dashboard window sync', () => {
-  test('SCENARIO: adding an item in one window shows it in the other', async ({ context }): Promise<void> => {
+  test('GIVEN two windows, adding an item in one shows it in the other', async ({ context }): Promise<void> => {
     const firstTab = await test.step('GIVEN a first window is open', (): Promise<Page> => context.newPage());
     const secondTab = await test.step('AND a second window is open', (): Promise<Page> => context.newPage());
     const firstDashboard = new SyncDashboardPage(firstTab);

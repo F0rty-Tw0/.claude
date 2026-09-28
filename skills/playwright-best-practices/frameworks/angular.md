@@ -223,25 +223,25 @@ test.describe('FEATURE: signup form validation', () => {
     await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
   });
 
-  test('SCENARIO: an empty email losing focus shows the required error', async ({ signupPage }): Promise<void> => {
+  test('GIVEN an empty email, losing focus shows the required error', async ({ signupPage }): Promise<void> => {
     await test.step('WHEN the empty email field loses focus', (): Promise<void> => signupPage.blurEmailWith(''));
 
     await test.step('THEN the required error is shown', (): Promise<void> => signupPage.expectError('Email is required'));
   });
 
-  test('SCENARIO: an invalid email losing focus shows the format error', async ({ signupPage }): Promise<void> => {
+  test('GIVEN an invalid email, losing focus shows the format error', async ({ signupPage }): Promise<void> => {
     await test.step('WHEN the email field loses focus with an invalid value', (): Promise<void> => signupPage.blurEmailWith('invalid'));
 
     await test.step('THEN the format error is shown', (): Promise<void> => signupPage.expectError('Invalid email format'));
   });
 
-  test('SCENARIO: mismatched passwords show the mismatch error', async ({ signupPage }): Promise<void> => {
+  test('GIVEN mismatched passwords, filling them shows the mismatch error', async ({ signupPage }): Promise<void> => {
     await test.step('WHEN mismatched passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Mismatch'));
 
     await test.step('THEN the mismatch error is shown', (): Promise<void> => signupPage.expectError('Passwords must match'));
   });
 
-  test('SCENARIO: matching passwords clear the mismatch error', async ({ signupPage }): Promise<void> => {
+  test('GIVEN a mismatch error, filling matching passwords clears it', async ({ signupPage }): Promise<void> => {
     await test.step('AND mismatched passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Mismatch'));
 
     await test.step('WHEN matching passwords are filled', (): Promise<void> => signupPage.fillPasswords('Secret123!', 'Secret123!'));
@@ -249,7 +249,7 @@ test.describe('FEATURE: signup form validation', () => {
     await test.step('THEN the mismatch error is gone', (): Promise<void> => signupPage.expectNoError('Passwords must match'));
   });
 
-  test('SCENARIO: a valid form enables register', async ({ signupPage }): Promise<void> => {
+  test('GIVEN a valid user, filling the form enables register', async ({ signupPage }): Promise<void> => {
     await test.step('AND register is disabled', (): Promise<void> => signupPage.expectRegisterEnabled(false));
 
     await test.step('WHEN a valid user is filled', (): Promise<void> => signupPage.fill(SIGNUP_USER_STUB));
@@ -290,7 +290,7 @@ import { test } from './signup.fixture';
 import { slowUsernameCheckMock } from './test/mocks/username-check.mock';
 
 test.describe('FEATURE: async username validator', () => {
-  test('SCENARIO: a slow username check shows the loading state until it resolves', async ({ signupPage }): Promise<void> => {
+  test('GIVEN a slow username check, the loading state shows until it resolves', async ({ signupPage }): Promise<void> => {
     await test.step('GIVEN the username check is held for 800ms', (): Promise<void> => signupPage.routeUsernameCheck(slowUsernameCheckMock(800)));
 
     await test.step('AND the signup page is open', (): Promise<void> => signupPage.goto());
@@ -345,7 +345,7 @@ export class PreferencesPage {
 import { test } from './preferences.fixture';
 
 test.describe('FEATURE: material select', () => {
-  test('SCENARIO: choosing a language shows it in the select', async ({ preferencesPage }): Promise<void> => {
+  test('GIVEN the preferences page, choosing a language shows it in the select', async ({ preferencesPage }): Promise<void> => {
     await test.step('GIVEN the preferences page is open', (): Promise<void> => preferencesPage.goto());
 
     await test.step('WHEN Spanish is chosen', (): Promise<void> => preferencesPage.chooseLanguage('Spanish'));
@@ -401,7 +401,7 @@ export class ItemPage {
 import { expect, test } from './navigation.fixture';
 
 test.describe('FEATURE: angular router', () => {
-  test('SCENARIO: following the reports link renders the lazy module', async ({ homePage, reportsPage }): Promise<void> => {
+  test('GIVEN the lazy reports route, following its link renders the module', async ({ homePage, reportsPage }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     await test.step('WHEN the reports link is followed', (): Promise<void> => homePage.openReports());
@@ -409,7 +409,7 @@ test.describe('FEATURE: angular router', () => {
     await test.step('THEN the reports dashboard heading is shown', (): Promise<void> => reportsPage.expectHeading());
   });
 
-  test('SCENARIO: opening a guarded route while signed out redirects to login', async ({ loginPage, page }): Promise<void> => {
+  test('GIVEN no session, opening a guarded route redirects to login', async ({ loginPage, page }): Promise<void> => {
     await test.step('WHEN admin settings are opened', async (): Promise<void> => {
       await page.goto('/admin/settings');
     });
@@ -419,7 +419,7 @@ test.describe('FEATURE: angular router', () => {
     await test.step('AND the sign in heading is shown', (): Promise<void> => loginPage.expectHeading());
   });
 
-  test('SCENARIO: opening an item with a resolver renders the resolved data', async ({ itemPage }): Promise<void> => {
+  test('GIVEN an item resolver, opening an item renders the resolved data', async ({ itemPage }): Promise<void> => {
     await test.step('WHEN item 42 is opened', (): Promise<void> => itemPage.goto(42));
 
     await test.step('THEN the heading names the item', (): Promise<void> => itemPage.expectHeading('Item'));
@@ -482,7 +482,7 @@ import { expect, test } from './analytics.fixture';
 import { chunkErrors } from './test/utils/chunk-errors.spec.util';
 
 test.describe('FEATURE: lazy analytics module', () => {
-  test('SCENARIO: following the analytics link loads the chunk without errors', async ({ analyticsPage, consoleErrors, homePage }): Promise<void> => {
+  test('GIVEN the lazy analytics chunk, following its link loads it without errors', async ({ analyticsPage, consoleErrors, homePage }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     await test.step('WHEN the analytics link is followed', (): Promise<void> => homePage.openAnalytics());
@@ -548,13 +548,13 @@ test.describe('FEATURE: signal counter', () => {
     await test.step('AND the value reads 0', (): Promise<void> => counterPage.expectValue(0));
   });
 
-  test('SCENARIO: clicking increment raises the value to 1', async ({ counterPage }): Promise<void> => {
+  test('GIVEN a value of 0, clicking increment raises it to 1', async ({ counterPage }): Promise<void> => {
     await test.step('WHEN increment is clicked', (): Promise<void> => counterPage.increment());
 
     await test.step('THEN the value reads 1', (): Promise<void> => counterPage.expectValue(1));
   });
 
-  test('SCENARIO: clicking reset returns the value to 0', async ({ counterPage }): Promise<void> => {
+  test('GIVEN an incremented value, clicking reset returns it to 0', async ({ counterPage }): Promise<void> => {
     await test.step('AND increment was clicked', (): Promise<void> => counterPage.increment());
 
     await test.step('WHEN reset is clicked', (): Promise<void> => counterPage.reset());
@@ -619,7 +619,7 @@ export const collectHydrationError = (errors: string[], message: ConsoleMessage)
 import { expect, test } from './home.fixture';
 
 test.describe('FEATURE: server-side rendering', () => {
-  test('SCENARIO: clicking the hydrated page logs no hydration error', async ({ homePage, hydrationErrors }): Promise<void> => {
+  test('GIVEN the hydrated home page, clicking it logs no hydration error', async ({ homePage, hydrationErrors }): Promise<void> => {
     await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
 
     await test.step('WHEN get started is clicked', (): Promise<void> => homePage.getStarted());

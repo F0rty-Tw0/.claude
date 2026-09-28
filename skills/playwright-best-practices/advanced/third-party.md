@@ -142,7 +142,7 @@ import { test } from './login.fixture';
 import { OAUTH_USER_STUB } from './test/stubs/oauth.stub';
 
 test.describe('FEATURE: login', () => {
-  test('SCENARIO: signing in with a mocked GitHub provider names the user in the welcome banner', async ({ loginPage, mockOAuth }): Promise<void> => {
+  test('GIVEN a mocked GitHub provider, signing in names the user in the welcome banner', async ({ loginPage, mockOAuth }): Promise<void> => {
     await test.step('GIVEN the GitHub OAuth endpoints are mocked', (): Promise<void> => mockOAuth('github', OAUTH_USER_STUB));
 
     await test.step('AND the login page is open', (): Promise<void> => loginPage.goto());
@@ -375,7 +375,7 @@ export { expect } from '@playwright/test';
 import { test } from './checkout.fixture';
 
 test.describe('FEATURE: checkout', () => {
-  test('SCENARIO: paying with a declined card shows the declined message', async ({ checkoutPage, mockStripe }): Promise<void> => {
+  test('GIVEN a declined card, paying shows the declined message', async ({ checkoutPage, mockStripe }): Promise<void> => {
     await test.step('GIVEN Stripe is mocked with a declined card', (): Promise<void> => mockStripe(true));
 
     await test.step('AND the checkout is open', (): Promise<void> => checkoutPage.goto());
@@ -385,7 +385,7 @@ test.describe('FEATURE: checkout', () => {
     await test.step('THEN the status reads card declined', (): Promise<void> => checkoutPage.expectStatus('Card declined'));
   });
 
-  test('SCENARIO: paying with an accepted card shows the success message', async ({ checkoutPage, mockStripe }): Promise<void> => {
+  test('GIVEN an accepted card, paying shows the success message', async ({ checkoutPage, mockStripe }): Promise<void> => {
     await test.step('GIVEN Stripe is mocked with a succeeding card', (): Promise<void> => mockStripe(false));
 
     await test.step('AND the checkout is open', (): Promise<void> => checkoutPage.goto());
@@ -453,7 +453,7 @@ import { test } from './signup.fixture';
 import { SIGNUP_STUB } from './test/stubs/signup.stub';
 
 test.describe('FEATURE: signup', () => {
-  test('SCENARIO: opening the emailed link verifies the address', async ({ signupPage, verification, verifyPage }): Promise<void> => {
+  test('GIVEN an emailed verification link, opening it verifies the address', async ({ signupPage, verification, verifyPage }): Promise<void> => {
     await test.step('GIVEN the signup page is open', (): Promise<void> => signupPage.goto());
 
     await test.step('AND the email address is submitted', (): Promise<void> => signupPage.submitEmail(SIGNUP_STUB.email));
@@ -547,7 +547,7 @@ import { test } from './verify-phone.fixture';
 import { PHONE_STUB } from './test/stubs/phone.stub';
 
 test.describe('FEATURE: phone verification', () => {
-  test('SCENARIO: entering the received code verifies the phone', async ({ sms, verifyPhonePage }): Promise<void> => {
+  test('GIVEN a received SMS code, entering it verifies the phone', async ({ sms, verifyPhonePage }): Promise<void> => {
     await test.step('GIVEN the verify-phone page is open', (): Promise<void> => verifyPhonePage.goto());
 
     await test.step('AND a code is requested', (): Promise<void> => verifyPhonePage.requestCode(PHONE_STUB.number));
@@ -648,7 +648,7 @@ export const analyticsCaptureMock = (): AnalyticsCapture => {
 import { expect, test } from './checkout.fixture';
 
 test.describe('FEATURE: checkout analytics', () => {
-  test('SCENARIO: completing the purchase tracks the purchase event', async ({ analytics, checkoutPage }): Promise<void> => {
+  test('GIVEN a checkout, completing the purchase tracks the purchase event', async ({ analytics, checkoutPage }): Promise<void> => {
     const props = expect.objectContaining({ amount: expect.any(Number) });
     const purchase = expect.objectContaining({ event: 'Purchase Completed', props });
 

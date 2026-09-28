@@ -33,7 +33,7 @@ Every spec below imports `test` from its own feature fixture. Each feature fixtu
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard date', () => {
-  test('SCENARIO: installing the clock before navigation shows the installed date', async ({ dashboardPage, page }): Promise<void> => {
+  test('GIVEN the clock installed before navigation, the page shows the installed date', async ({ dashboardPage, page }): Promise<void> => {
     await test.step('GIVEN the clock is installed on 15 January 2025', (): Promise<void> => page.clock.install({ time: '2025-01-15T09:00:00Z' }));
 
     await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
@@ -103,7 +103,7 @@ import { test } from './billing.fixture';
 test.use({ frozenTime: '2025-01-31T10:00:00Z' });
 
 test.describe('FEATURE: billing on the last day of the month', () => {
-  test('SCENARIO: opening the billing page reads payment due today', async ({ billingPage }): Promise<void> => {
+  test('GIVEN the last day of the month, opening the billing page reads payment due today', async ({ billingPage }): Promise<void> => {
     await test.step('WHEN the billing page opens', (): Promise<void> => billingPage.goto());
 
     await test.step('THEN the due text reads payment due today', (): Promise<void> => billingPage.expectDue('Payment due today'));
@@ -147,7 +147,7 @@ import { POST_STUB } from './test/stubs/post.stub';
 test.use({ frozenTime: '2025-06-15T14:00:00Z' });
 
 test.describe('FEATURE: relative post time', () => {
-  test('SCENARIO: a post created at 12:00 reads 2 hours ago at 14:00', async ({ page, postPage }): Promise<void> => {
+  test('GIVEN a post created at 12:00, at 14:00 it reads 2 hours ago', async ({ page, postPage }): Promise<void> => {
     const post: Post = { ...POST_STUB, createdAt: '2025-06-15T12:00:00Z' };
 
     await test.step('GIVEN the post is served', async (): Promise<void> => {
@@ -172,7 +172,7 @@ test.describe('FEATURE: relative post time', () => {
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: session timeout notice', () => {
-  test('SCENARIO: a 30 minute session warns after 25 minutes and expires after 30', async ({ dashboardPage, page }): Promise<void> => {
+  test('GIVEN a 30 minute session, it warns after 25 minutes and expires after 30', async ({ dashboardPage, page }): Promise<void> => {
     await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
 
     await test.step('WHEN 25 minutes pass', (): Promise<void> => page.clock.fastForward('25:00'));
@@ -240,7 +240,7 @@ export class SearchPage {
 import { test } from './search.fixture';
 
 test.describe('FEATURE: debounced search', () => {
-  test('SCENARIO: results appear only after the 300 ms debounce', async ({ page, searchPage }): Promise<void> => {
+  test('GIVEN a 300 ms debounce, results appear only after it elapses', async ({ page, searchPage }): Promise<void> => {
     await test.step('GIVEN the search page is open', (): Promise<void> => searchPage.goto());
 
     await test.step('WHEN a term is typed', (): Promise<void> => searchPage.search('playwright'));
@@ -267,7 +267,7 @@ import { test } from './schedule.fixture';
 test.use({ frozenTime: '2025-01-15T17:00:00Z', timezoneId: 'America/Los_Angeles' });
 
 test.describe('FEATURE: schedule time display in los angeles', () => {
-  test('SCENARIO: 17:00 UTC reads 9:00 AM', async ({ schedulePage }): Promise<void> => {
+  test('GIVEN 17:00 UTC, the schedule reads 9:00 AM', async ({ schedulePage }): Promise<void> => {
     await test.step('WHEN the schedule opens', (): Promise<void> => schedulePage.goto());
 
     await test.step('THEN the time reads 9:00 AM', (): Promise<void> => schedulePage.expectTime('9:00 AM'));
@@ -355,7 +355,7 @@ import { expect, test } from './live-data.fixture';
 import { dataMock } from './test/mocks/data.mock';
 
 test.describe('FEATURE: live data auto refresh', () => {
-  test('SCENARIO: two 30 second refresh intervals call the data endpoint three times', async ({ liveDataPage, page }): Promise<void> => {
+  test('GIVEN two 30 second refresh intervals, the data endpoint is called three times', async ({ liveDataPage, page }): Promise<void> => {
     const data = dataMock();
 
     await test.step('GIVEN the data endpoint is served and recorded', async (): Promise<void> => {

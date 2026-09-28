@@ -217,7 +217,7 @@ import { test } from './dashboard.fixture';
 import { STATS_MOCK_STUB, USER_MOCK_STUB } from './test/stubs/graphql.stub';
 
 test.describe('FEATURE: dashboard', () => {
-  test('SCENARIO: mocked stats and user queries show the user count', async ({ dashboardPage, mockGraphQL }): Promise<void> => {
+  test('GIVEN mocked stats and user queries, the dashboard shows the user count', async ({ dashboardPage, mockGraphQL }): Promise<void> => {
     await test.step('GIVEN the dashboard queries are mocked', (): Promise<void> => mockGraphQL([STATS_MOCK_STUB, USER_MOCK_STUB]));
 
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
@@ -375,7 +375,7 @@ test.describe('FEATURE: search', () => {
     await test.step('GIVEN the search endpoint is mocked by query', (): Promise<void> => mockSearch());
   });
 
-  test('SCENARIO: error query shows the failure message', async ({ searchPage }): Promise<void> => {
+  test('GIVEN the error query, searching shows the failure message', async ({ searchPage }): Promise<void> => {
     await test.step('AND the search page is open', (): Promise<void> => searchPage.goto());
 
     await test.step('WHEN the error query is searched', (): Promise<void> => searchPage.search('error'));
@@ -450,7 +450,7 @@ export const slowDataMock = (delayMs: number, data: DashboardData = DASHBOARD_DA
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard loading state', () => {
-  test('SCENARIO: a two second data response shows the loader before the data', async ({ dashboardPage, mockSlowData }): Promise<void> => {
+  test('GIVEN a two second data response, the loader shows before the data', async ({ dashboardPage, mockSlowData }): Promise<void> => {
     await test.step('GIVEN the data endpoint answers after two seconds', (): Promise<void> => mockSlowData(2000));
 
     await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
