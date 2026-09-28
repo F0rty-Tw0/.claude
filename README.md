@@ -542,6 +542,7 @@ Custom agent triggered after major project steps are completed. Reviews implemen
 - Code quality (error handling, type safety, naming)
 - Architecture (SOLID, separation of concerns)
 - Issue categorization: Critical / Important / Suggestion
+- When dispatched by the `code-review` skill: blast-radius classification, proof audit, and that skill's output format and verdicts
 
 ---
 

@@ -23,7 +23,7 @@ Find these with grep/reads, not by file name alone:
 - Un-awaited promises, fire-and-forget calls, new background jobs, queue producers/consumers, retries.
 - Schema or migration files; changes to serialized formats, event payloads, API request/response shapes.
 - Auth, session, permission, token, secret, crypto, payment, pricing, balance, or quota logic.
-- Imported by many modules — check fan-in: `grep -rn "from './path'" src | wc -l`.
+- Imported by many modules — check fan-in by basename, any relative depth or alias, from the repo root: `grep -rlE "(from|require\().*['\"][^'\"]*<basename>(\.m?[jt]sx?)?['\"]" . --exclude-dir=node_modules | wc -l`.
 - Runs on every request / every checkout / every login (hot path).
 - Removes or changes an existing branch in a `switch`/router/handler registry.
 - Changes to build, CI, deploy, infra-as-code, env/config defaults, feature-flag defaults.
@@ -39,6 +39,8 @@ Find these with grep/reads, not by file name alone:
 | 9–10 | Money, auth, migrations, global state, irreversible data | Balance math, permission check, `NOT NULL` column add |
 
 Add +1 if the change is **ungated** on a trunk path. Add +1 if rollback is **not** a flag flip (migration, data rewrite, external side effect like email/charge). Cap at 10.
+
+Any trunk signal floors the score at **7** — the class decides review depth; the score only ranks within it.
 
 ## Failure-mode assessment (write it out)
 

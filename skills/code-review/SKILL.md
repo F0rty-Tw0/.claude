@@ -1,7 +1,7 @@
 ---
 name: code-review
 description: Use when the user asks to review code, a diff, a branch, or a pull request — especially AI-generated or agent-authored changes — before merging, when a PR claims "fixed", "verified", or "all tests pass" without evidence, when tests look suspiciously green, when asked to babysit a PR's CI, or when planning a feature-gated launch, canary rollout, or pre-launch attack on staging.
-argument-hint: "[review|proof|babysit|attack|launch] [PR# | base..head | path]"
+argument-hint: "[review|proof|babysit|attack|launch] [PR#... | base..head | path]"
 ---
 
 # Code Review — Risk-Gradient, Proof-Based, Adversarial
@@ -101,7 +101,7 @@ AI tools write more code than a human can read line by line. So review effort fo
 - **Human must deep-read:** <file:line ranges> | none (Leaf)
 
 ## 7. Verdict
-APPROVE — LOW RISK LEAF | APPROVE — TRUNK, HUMAN SIGN-OFF REQUIRED | BLOCK — REQUIRES PROOF | BLOCK — HIGH BLAST RADIUS DEFECT
+APPROVE — LOW RISK LEAF | APPROVE — BRANCH, PROOF MET | APPROVE — TRUNK, HUMAN SIGN-OFF REQUIRED | BLOCK — REQUIRES PROOF | BLOCK — HIGH BLAST RADIUS DEFECT
 **State:** merge-ready (dark) | not merge-ready · launch-ready: no — see `launch` mode
 
 Discarded findings: <finding — reason> | none
@@ -110,8 +110,10 @@ Discarded findings: <finding — reason> | none
 Verdict rules:
 - Any blocker defect → **BLOCK — HIGH BLAST RADIUS DEFECT**.
 - No defects but proof gaps → **BLOCK — REQUIRES PROOF**.
+- Branch that is clean and meets the Branch proof bar → **APPROVE — BRANCH, PROOF MET**.
 - Trunk that is clean and proven → **APPROVE — TRUNK, HUMAN SIGN-OFF REQUIRED**.
 - **APPROVE — LOW RISK LEAF** only for Leaf that is gated or isolated, with proof.
+- Every class × outcome maps to exactly one verdict: defect → BLOCK DEFECT; proof gap → BLOCK PROOF; clean + proven → the APPROVE for that class.
 
 ## Common mistakes
 

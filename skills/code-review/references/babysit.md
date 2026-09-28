@@ -23,18 +23,18 @@ Use a fixed 1h interval, or omit the interval to self-pace (CI usually needs 5�
    git status --porcelain            # are my previous fixes still uncommitted?
    ```
 2. **Pending local fixes not yet pushed?** → do not stack more. Report "N fixes waiting in working tree since <time>" and end the tick.
-3. **New commits since last tick?** → run a **delta review** (SKILL.md review mode, scoped to `git diff <last-reviewed-sha>..HEAD`). Record the new reviewed SHA in the tick summary.
+3. **New commits since last tick?** → `git fetch origin` first, then run a **delta review** (SKILL.md review mode, scoped to `git diff <last-reviewed-sha>..<headRefOid>` — the remote head, not the local checkout, which may be stale). Record the new reviewed SHA in the tick summary.
 4. **Failing checks** → for each: `gh run view <run-id> --log-failed | tail -100`. Classify:
 
 | Class | Examples | Action |
 |---|---|---|
 | **Mechanical, high-confidence** | lint/format errors, import order, obvious type error with one fix, snapshot needing update **only** where the diff intended the UI change | Fix locally, run the same check locally, leave uncommitted |
-| **Infra flake** | runner timeout, network fetch failure, known flaky test passing on retry history | `gh run rerun <run-id> --failed` — **once** per run; say so in the summary (🟡) |
+| **Infra flake** | runner timeout, network fetch failure, known flaky test passing on retry history Do NOT rerun (it is a remote action on shared CI). Put the exact `gh run rerun <run-id> --failed` command in the tick summary for the human |
 | **Real failure** | assertion failure in a test related to the diff, build break with several possible fixes | Do NOT fix. Diagnose root cause, write it up, ping the human |
 | **Ambiguous / judgment** | reviewer asked for a design change, conflicting requirements, security finding | Ping the human with 2–3 options + recommendation |
 
 5. **New human review comments** → summarize each with a proposed response or fix. Do not post anything.
-6. **Tick summary** (one block, scannable): reviewed SHA, checks (pass/fail/pending counts), fixes applied locally (files), reruns triggered, decisions needed.
+6. **Tick summary** (one block, scannable): reviewed SHA, checks (pass/fail/pending counts), fixes applied locally (files), reruns suggested, decisions needed.
 
 ## Pinging
 

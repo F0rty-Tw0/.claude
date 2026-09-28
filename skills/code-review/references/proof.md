@@ -27,7 +27,7 @@ Proof = an artifact a reviewer can inspect or re-run. No artifact → no proof.
 2. For each claim, find the artifact. Missing → proof gap.
 3. **Re-run** the claimed commands yourself. Paste exit code and pass/fail counts. A claim that does not reproduce is a blocker, not a nit.
 4. **Base-failure check** (bug fixes): run the new test against the base tree. If it passes on base, it does not prove the fix.
-   - Isolated copy: `git worktree add /tmp/review-base <base-sha>` then copy the test in and run it. Never modify the user's working tree.
+   - Isolated copy: `WT=$(mktemp -d <scratch-dir>/review-base.XXXX) && git worktree add --detach "$WT" <base-sha>`, copy the test in, run it, then `git worktree remove --force "$WT"`. Never modify the user's working tree.
 5. **Mutation probe** (any change with tests): in a scratch copy, break one line of the code under test (flip a condition, drop an `await`, return early). Re-run tests. Still green → the tests are vanity (see `vanity-tests.md`).
 6. Visible change with no screenshot → take one yourself if a browser tool is available (Playwright MCP `browser_take_screenshot`), else list it as a proof gap.
 
