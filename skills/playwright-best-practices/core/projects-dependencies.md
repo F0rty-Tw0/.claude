@@ -320,16 +320,14 @@ import type { ProjectMetadata } from '../common/playwright.type';
 import { test } from './gallery.fixture';
 
 test.describe('FEATURE: gallery', () => {
-  test.describe('GIVEN a desktop project', () => {
-    test('SCENARIO: hovered image shows the caption', async ({ galleryPage }, testInfo): Promise<void> => {
-      const metadata: ProjectMetadata = testInfo.project.metadata;
+  test('SCENARIO: hovering an image on desktop shows the caption', async ({ galleryPage }, testInfo): Promise<void> => {
+    const metadata: ProjectMetadata = testInfo.project.metadata;
 
-      test.skip(metadata.platform !== 'desktop', 'Hover needs a pointer');
+    test.skip(metadata.platform !== 'desktop', 'Hover needs a pointer');
 
-      await test.step('WHEN the first image is hovered', (): Promise<void> => galleryPage.hoverImage());
+    await test.step('WHEN the first image is hovered', (): Promise<void> => galleryPage.hoverImage());
 
-      await test.step('THEN caption is visible', (): Promise<void> => galleryPage.expectCaptionVisible());
-    });
+    await test.step('THEN caption is visible', (): Promise<void> => galleryPage.expectCaptionVisible());
   });
 });
 ```

@@ -67,7 +67,7 @@ Full user journey tests through the browser.
 
 ### Structure
 
-The spec is a Gherkin tree of steps. Shared arrange for the `GIVEN` lives in its `beforeEach`. Every locator and multi-action flow lives in a page object (`ProductsPage`, `CartPage`, `CheckoutPage`) injected by `checkout.fixture.ts`; see [page-object-model.md](page-object-model.md) and [fixtures-hooks.md](fixtures-hooks.md).
+The spec is flat: one `FEATURE`, then `SCENARIO` tests made of steps. Arrange shared by every scenario lives in a `FEATURE`-level `beforeEach` as a `GIVEN` step. Every locator and multi-action flow lives in a page object (`ProductsPage`, `CartPage`, `CheckoutPage`) injected by `checkout.fixture.ts`; see [page-object-model.md](page-object-model.md) and [fixtures-hooks.md](fixtures-hooks.md).
 
 ```ts
 // e2e/checkout/checkout.e2e.ts
@@ -75,32 +75,30 @@ import { test } from './checkout.fixture';
 import { GUEST_STUB } from './test/stubs/checkout.stub';
 
 test.describe('FEATURE: checkout', () => {
-  test.describe('GIVEN one product is in the cart', () => {
-    test.beforeEach(async ({ cartPage, productsPage }): Promise<void> => {
-      await test.step('GIVEN the products page is open', (): Promise<void> => productsPage.goto());
+  test.beforeEach(async ({ cartPage, productsPage }): Promise<void> => {
+    await test.step('GIVEN the products page is open', (): Promise<void> => productsPage.goto());
 
-      await test.step('AND the first product is added to the cart', (): Promise<void> => productsPage.addFirstToCart());
+    await test.step('AND the first product is added to the cart', (): Promise<void> => productsPage.addFirstToCart());
 
-      await test.step('AND the cart badge shows one item', (): Promise<void> => productsPage.expectCartCount(1));
+    await test.step('AND the cart badge shows one item', (): Promise<void> => productsPage.expectCartCount(1));
 
-      await test.step('AND the cart is open', (): Promise<void> => cartPage.goto());
-    });
+    await test.step('AND the cart is open', (): Promise<void> => cartPage.goto());
+  });
 
-    test('SCENARIO: a guest paying confirms the order', async ({ cartPage, checkoutPage }): Promise<void> => {
-      await test.step('WHEN checkout starts', (): Promise<void> => cartPage.startCheckout());
+  test('SCENARIO: a guest paying confirms the order', async ({ cartPage, checkoutPage }): Promise<void> => {
+    await test.step('WHEN checkout starts', (): Promise<void> => cartPage.startCheckout());
 
-      await test.step('AND the shipping details are filled', (): Promise<void> => checkoutPage.fillShipping(GUEST_STUB));
+    await test.step('AND the shipping details are filled', (): Promise<void> => checkoutPage.fillShipping(GUEST_STUB));
 
-      await test.step('AND the test card pays', (): Promise<void> => checkoutPage.pay(GUEST_STUB.cardNumber));
+    await test.step('AND the test card pays', (): Promise<void> => checkoutPage.pay(GUEST_STUB.cardNumber));
 
-      await test.step('THEN the confirmation heading is shown', (): Promise<void> => checkoutPage.expectConfirmed());
-    });
+    await test.step('THEN the confirmation heading is shown', (): Promise<void> => checkoutPage.expectConfirmed());
+  });
 
-    test('SCENARIO: applying a discount code shows the discount banner', async ({ cartPage }): Promise<void> => {
-      await test.step('WHEN the discount code is applied', (): Promise<void> => cartPage.applyDiscount('SAVE10'));
+  test('SCENARIO: applying a discount code shows the discount banner', async ({ cartPage }): Promise<void> => {
+    await test.step('WHEN the discount code is applied', (): Promise<void> => cartPage.applyDiscount('SAVE10'));
 
-      await test.step('THEN the banner reports the ten percent discount', (): Promise<void> => cartPage.expectDiscount('10% discount applied'));
-    });
+    await test.step('THEN the banner reports the ten percent discount', (): Promise<void> => cartPage.expectDiscount('10% discount applied'));
   });
 });
 ```
@@ -176,27 +174,27 @@ import { usersMock } from './test/mocks/users.mock';
 import { USER_STUB } from './test/stubs/users.stub';
 
 test.describe('FEATURE: users list', () => {
-  test.describe('GIVEN the users api returns one user', () => {
-    test.beforeEach(async ({ page }): Promise<void> => {
-      await test.step('GIVEN the users api is stubbed', async (): Promise<void> => {
-        await page.route('**/api/users', usersMock());
-      });
+  test.beforeEach(async ({ page }): Promise<void> => {
+    await test.step('GIVEN the users api is stubbed', async (): Promise<void> => {
+      await page.route('**/api/users', usersMock());
     });
+  });
 
-    test('SCENARIO: opening the users page lists the stubbed user', async ({ usersPage }): Promise<void> => {
-      await test.step('WHEN the users page opens', (): Promise<void> => usersPage.goto());
+  test('SCENARIO: opening the users page lists the stubbed user', async ({ usersPage }): Promise<void> => {
+    await test.step('WHEN the users page opens', (): Promise<void> => usersPage.goto());
 
-      await test.step('THEN the stubbed user is listed', (): Promise<void> => usersPage.expectUser(USER_STUB.name));
-    });
+    await test.step('THEN the stubbed user is listed', (): Promise<void> => usersPage.expectUser(USER_STUB.name));
   });
 });
 ```
 
-| Scenario | Handler | `GIVEN` text | Assertion step |
+| Scenario | Handler | `GIVEN` step | Assertion step |
 |---|---|---|---|
 | Error response | `usersErrorMock()` | `the users api fails` | `usersPage.expectError('Server error')` |
 | Conditional by method | `usersGetOnlyMock()` | `only reads are stubbed` | `usersPage.expectUser(...)` after a `POST` passed through |
 | Slow network | `usersMock({ delay: 2000 })` | `the users api is slow` | `usersPage.expectLoading()` then `usersPage.expectUser(...)` |
+
+Once a spec holds more than one of these, the `GIVEN` step moves out of the `beforeEach` into each test, and each title names its condition: `'SCENARIO: a failing users api shows the server error'`.
 
 For advanced patterns (GraphQL mocking, HAR recording, request modification, network throttling), see **[network-advanced.md](../advanced/network-advanced.md)**.
 
@@ -213,28 +211,26 @@ Compare screenshots to detect visual changes.
 import { expect, test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard visuals', () => {
-  test.describe('GIVEN the dashboard is open', () => {
-    test.beforeEach(async ({ dashboardPage }): Promise<void> => {
-      await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
-    });
+  test.beforeEach(async ({ dashboardPage }): Promise<void> => {
+    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  });
 
-    test('SCENARIO: the rendered page matches the stored screenshot', async ({ page }): Promise<void> => {
-      await test.step('WHEN the page has rendered', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+  test('SCENARIO: the rendered page matches the stored screenshot', async ({ page }): Promise<void> => {
+    await test.step('WHEN the page has rendered', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
 
-      await test.step('THEN the page matches dashboard.png', (): Promise<void> => expect(page).toHaveScreenshot('dashboard.png'));
-    });
+    await test.step('THEN the page matches dashboard.png', (): Promise<void> => expect(page).toHaveScreenshot('dashboard.png'));
+  });
 
-    test('SCENARIO: the rendered primary button matches the stored screenshot', async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN the primary button has rendered', (): Promise<void> => expect(dashboardPage.primaryButton).toBeVisible());
+  test('SCENARIO: the rendered primary button matches the stored screenshot', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the primary button has rendered', (): Promise<void> => expect(dashboardPage.primaryButton).toBeVisible());
 
-      await test.step('THEN the button matches primary-button.png', (): Promise<void> => expect(dashboardPage.primaryButton).toHaveScreenshot('primary-button.png'));
-    });
+    await test.step('THEN the button matches primary-button.png', (): Promise<void> => expect(dashboardPage.primaryButton).toHaveScreenshot('primary-button.png'));
+  });
 
-    test('SCENARIO: hiding dynamic content matches the masked page', async ({ dashboardPage }): Promise<void> => {
-      await test.step('WHEN dynamic content is hidden', (): Promise<void> => dashboardPage.hideDynamicContent());
+  test('SCENARIO: hiding dynamic content matches the masked page', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN dynamic content is hidden', (): Promise<void> => dashboardPage.hideDynamicContent());
 
-      await test.step('THEN the masked page matches dashboard-stable.png', (): Promise<void> => dashboardPage.expectScreenshot('dashboard-stable.png'));
-    });
+    await test.step('THEN the masked page matches dashboard-stable.png', (): Promise<void> => dashboardPage.expectScreenshot('dashboard-stable.png'));
   });
 });
 ```
@@ -391,12 +387,10 @@ import { test } from './login.fixture';
 import { USER_STUB } from './test/stubs/login.stub';
 
 test.describe('FEATURE: login', { tag: '@auth' }, () => {
-  test.describe('GIVEN a registered user', () => {
-    test('SCENARIO: valid credentials open the dashboard', { tag: ['@critical', '@smoke'] }, async ({ dashboardPage, loginPage }): Promise<void> => {
-      await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
+  test('SCENARIO: valid credentials open the dashboard', { tag: ['@critical', '@smoke'] }, async ({ dashboardPage, loginPage }): Promise<void> => {
+    await test.step('WHEN valid credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
 
-      await test.step('THEN the dashboard heading is shown', (): Promise<void> => dashboardPage.expectHeading());
-    });
+    await test.step('THEN the dashboard heading is shown', (): Promise<void> => dashboardPage.expectHeading());
   });
 });
 ```

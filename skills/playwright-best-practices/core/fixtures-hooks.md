@@ -281,9 +281,9 @@ test.afterAll(async (): Promise<void> => {
 });
 ```
 
-### Describe-Level Hooks
+### Feature-Level Hooks
 
-A `beforeEach` inside a `GIVEN` describe is the shared arrange for every test in that state.
+A `beforeEach` inside the `FEATURE` describe, opened as a `GIVEN` step, is the arrange shared by every test in the spec. Arrange that differs per test is that test's own `GIVEN` step instead; there is no nested describe to scope a hook.
 
 ```ts
 // e2e/users/users.e2e.ts
@@ -291,22 +291,20 @@ import { test } from './users.fixture';
 import { USER_STUB } from './test/stubs/users.stub';
 
 test.describe('FEATURE: user management', () => {
-  test.describe('GIVEN the users page is open', () => {
-    test.beforeEach(async ({ usersPage }): Promise<void> => {
-      await test.step('GIVEN the users page is open', (): Promise<void> => usersPage.goto());
-    });
+  test.beforeEach(async ({ usersPage }): Promise<void> => {
+    await test.step('GIVEN the users page is open', (): Promise<void> => usersPage.goto());
+  });
 
-    test('SCENARIO: reloading the page shows the user list', async ({ usersPage }): Promise<void> => {
-      await test.step('WHEN the page is reloaded', (): Promise<void> => usersPage.reload());
+  test('SCENARIO: reloading the page shows the user list', async ({ usersPage }): Promise<void> => {
+    await test.step('WHEN the page is reloaded', (): Promise<void> => usersPage.reload());
 
-      await test.step('THEN the user list is shown', (): Promise<void> => usersPage.expectList());
-    });
+    await test.step('THEN the user list is shown', (): Promise<void> => usersPage.expectList());
+  });
 
-    test('SCENARIO: adding a user names the user in the list', async ({ usersPage }): Promise<void> => {
-      await test.step('WHEN a user is added', (): Promise<void> => usersPage.addUser(USER_STUB));
+  test('SCENARIO: adding a user names the user in the list', async ({ usersPage }): Promise<void> => {
+    await test.step('WHEN a user is added', (): Promise<void> => usersPage.addUser(USER_STUB));
 
-      await test.step('THEN the list names the new user', (): Promise<void> => usersPage.expectUser(USER_STUB.name));
-    });
+    await test.step('THEN the list names the new user', (): Promise<void> => usersPage.expectUser(USER_STUB.name));
   });
 });
 ```
