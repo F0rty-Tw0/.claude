@@ -408,7 +408,7 @@ Session-only login: a second test in the same spec, `'SCENARIO: a login without 
 `sessionCookies` from the session-timeout util returns every cookie whose name contains `session` or `token`; after logout the list must be empty and a second visit to home must bounce to login.
 
 ```ts
-// e2e/auth/logout.e2e.ts
+// e2e/auth/logout.test.ts
 import type { Cookie } from '@playwright/test';
 
 import { expect, test } from './auth.fixture';
@@ -438,7 +438,7 @@ test.describe('FEATURE: logout', () => {
 
 ### Logout from All Devices
 
-A second test in the same spec, `'SCENARIO: sign out everywhere calls logout-all and opens login'`, follows `session-extension.test.ts`: `const logoutAll = logoutAllMock()`, `GIVEN page.route('**/api/auth/logout-all', logoutAll.handler)`, `AND securitySettingsPage.goto()`, `WHEN securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
+A second test in the same spec, which is why the file is `logout.test.ts` (it routes the app's own `**/api/**`), `'SCENARIO: sign out everywhere calls logout-all and opens login'`, follows `session-extension.test.ts`: `const logoutAll = logoutAllMock()`, `GIVEN page.route('**/api/auth/logout-all', logoutAll.handler)`, `AND securitySettingsPage.goto()`, `WHEN securitySettingsPage.signOutEverywhere()`, `THEN expect.poll((): number => logoutAll.calls.length).toBe(1)`, `AND expect(page).toHaveURL(/\/login/)`. The dialog confirm lives inside `signOutEverywhere()` so the spec does not know the dialog exists; `securitySettingsPage` is registered in `AuthFixtures` like the others.
 
 ## Tips
 

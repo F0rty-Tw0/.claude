@@ -188,7 +188,7 @@ test.describe('FEATURE: session timeout notice', () => {
 
 ### Pause and Resume Time
 
-The installed clock is paused; each `fastForward` is an explicit jump, so a countdown, a `setTimeout` chain, or a CSS animation can be checked at exact instants. These specs follow the session-timeout shape above: `GIVEN` open, `WHEN` act, `THEN` assert, then `WHEN` jump and `THEN` assert per row.
+The installed clock is paused; each `fastForward` is an explicit jump, so a countdown, a `setTimeout` chain, or a CSS animation can be checked at exact instants. These specs follow the session-timeout shape above: `GIVEN` open, `WHEN` act, `THEN` assert, then `AND` jump and `THEN` assert per row.
 
 | Spec | Act | Jump | Assertions before and after the jump |
 |---|---|---|---|
