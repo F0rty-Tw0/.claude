@@ -1,6 +1,6 @@
 ---
 name: artification
-description: Use when writing, refactoring, reviewing, or testing TypeScript (including Angular specs and `TestBed` setup) — covers type and object-shape organization, function-body shape (returns, guards, conditions, ternaries, chains, callbacks, casts, comments), imports, naming and class members, utility placement and purity, module size, and spec structure (`describe` / `it`, Gherkin, branch coverage, stubs, mocks, fixtures, `test/` folders).
+description: Use when writing, refactoring, reviewing, or testing TypeScript (including Angular specs and `TestBed` setup) — covers type and object-shape organization, function-body shape (returns, guards, conditions, ternaries, chains, callbacks, casts, comments), imports, naming and class members, utility placement and purity, module size, feature-module layers (`feature` smart components and handlers, `ui` presentational components, `domain-logic` services and state facades, `data-access` API clients, DB queries and NGXS state, import direction, the root barrel, Angular `@Service` / `input()` decorators), and spec structure (`describe` / `it`, Gherkin, branch coverage, stubs, mocks, fixtures, `test/` folders).
 ---
 
 # Artification
@@ -27,6 +27,7 @@ Engineer has dyslexia and ADHD and reads code by scanning its shape, not word by
 - A returned object gets a name, so the function's output is one word, not a literal.
 - Every test-only file sits under the owning feature's `test/` folder, so `common/` and `utils/` hold only what ships.
 - `common/` and `.const.ts` hold constants and types only; every function, even a one-line predicate, lives in `utils/`, so the path alone says whether a symbol is data or behavior.
+- Every feature module has the same layer folders and imports flow one way (`feature → domain-logic → data-access → utils → common`), so a file's path says what it may touch.
 - One shape per file kind, so no file has to be re-learned.
 
 Consistency beats local convention. A rule applied only sometimes is worse than no rule.
@@ -43,6 +44,7 @@ Read every reference matching the work:
 | Function bodies: returns, guard clauses, condition size, calls or groups in conditions, spreads, ternaries, chains, callbacks, arrow bodies, nested object values, casts, comments, returned objects | `references/typescript-style.md` |
 | Imports, return types, derived types, class members, naming, blank lines, dead conditions, switches, erasable syntax | `references/typescript-style.md` |
 | Functions, helper extraction, utility placement, or purity | `references/utility-style.md` |
+| New module or feature; writing or placing a smart or presentational component, guard, service, state facade, NGXS state, API client, DB query, handler, provider, or token; Angular decorators (`@Service`, `@Injectable`, `input()`); any import between layers; any `index.ts` | `references/feature-modules.md` |
 | Any source `.ts` file over 150 lines (spec over 300), or splitting a module | `references/module-size.md` |
 | Specs, stubs, mocks, fixtures, spec utils, `test/` folders, or any test-only file | `references/unit-testing.md` |
 | Spec contents: `describe` / `it` tree, case naming, branch coverage, Angular `TestBed` setup | `references/spec-style.md` |
@@ -57,6 +59,8 @@ Apply every relevant rule unless the user explicitly overrides it in the current
 - Adding or moving exported or cross-file types
 - Changing object, nested configuration, or array contracts
 - Writing any function body with a `return`, an `if` condition, or a returned object literal
+- Creating a feature module or deciding which layer a file belongs to
+- Adding an API client, DB query, store, state, service, handler, or component
 - Extracting pure, deterministic, or independently testable functions
 - Creating or reorganizing `utils/` folders and `.util.ts` files
 - Finishing any change that leaves a source `.ts` file over 150 lines, or a spec over 300
