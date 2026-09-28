@@ -1,5 +1,6 @@
+import { fileURLToPath } from 'node:url';
 process.env.AUDIT_LOG = '/nonexistent-dir/audit.log';
-const H = new URL('../../head/src/', import.meta.url).pathname;
+const H = fileURLToPath(new URL('../../head/src/', import.meta.url));
 const { handle } = await import(H + 'app.js');
 const { createSession } = await import(H + 'auth.js');
 const a = createSession({ userId: 'alice', tenantId: 'acme' });
