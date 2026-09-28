@@ -81,6 +81,8 @@ e2e/
         <name>.mock.ts                  page.route handler factories
       stubs/
         <feature>.stub.ts               typed base values
+      stories/
+        <name>.story.tsx                component wrapper for props a CT spec cannot pass (functions, refs)
       utils/
         <behavior>.spec.util.ts         test-only builders and utils
     utils/

@@ -22,13 +22,15 @@ npm init playwright@latest -- --ct
 
 ### Configuration
 
-Every nested object is a named const. `ctViteConfig` carries the `@` alias so component imports match the app. Specs end in `.ct.ts` so they never run under the E2E config. The config sits in `e2e/`, so it sets no `testDir` and `snapshotDir` is relative to that folder.
+Every nested object is a named const. `ctViteConfig` carries the `@` alias, resolved from the config's folder (a bare `'/src'` means the filesystem root to Vite), so component imports match the app. Specs end in `.test.tsx`; the E2E config collects `**/*.@(e2e|test).ts`, so it never runs them. The config sits in `e2e/`, so it sets no `testDir` and `snapshotDir` is relative to that folder.
 
 ```ts
 // e2e/playwright-ct.config.ts
+import { resolve as resolvePath } from 'node:path';
+
 import { defineConfig, devices } from '@playwright/experimental-ct-react';
 
-const alias = { '@': '/src' };
+const alias = { '@': resolvePath(__dirname, '../src') };
 
 const resolve = { alias };
 
@@ -45,14 +47,14 @@ const projects = [
 export default defineConfig({
   projects,
   snapshotDir: './__snapshots__',
-  testMatch: '**/*.ct.ts',
+  testMatch: '**/*.test.tsx',
   use
 });
 ```
 
 ### Project Structure
 
-`playwright/index.html` and `playwright/index.ts` are the CT entry point and setup (providers, styles, hooks). Each component gets a feature folder: the spec, a helper object in `helpers/`, and a mount util in `test/utils/`.
+`e2e/playwright/index.html` and `e2e/playwright/index.tsx` are the CT entry point and setup (providers, styles, hooks); CT looks for the `playwright/` folder next to its config. The setup file nests providers in JSX, so it is `.tsx` and `index.html` loads `./index.tsx`. Each component gets a feature folder: the spec, a helper object in `helpers/`, and a `.tsx` mount util in `test/utils/`.
 
 ```text
 src/
@@ -62,22 +64,22 @@ src/
 e2e/
   playwright-ct.config.ts
   button/
-    button.ct.ts
+    button.test.tsx
     helpers/
       button.helper.ts
     test/
       utils/
-        button-mount.spec.util.ts
-playwright/
-  index.html
-  index.ts
+        button-mount.spec.util.tsx
+  playwright/
+    index.html
+    index.tsx
 ```
 
 ## Mounting Components
 
 ### Basic Mount
 
-`mount` returns a `MountResult`: a `Locator` with `update` and `unmount`. A helper object in `helpers/` takes that root, owns every child locator, and holds each assertion in an `expect*` method as a plain `await expect(…)` line; only the spec opens steps. A mount util in `test/utils/` builds the element with `createElement`, so the file stays `.ts` and the mount step is one call. `ButtonProps` is the component's exported props type.
+`mount` returns a `MountResult`: a `Locator` with `update` and `unmount`. A helper object in `helpers/` takes that root, owns every child locator, and holds each assertion in an `expect*` method as a plain `await expect(…)` line; only the spec opens steps. A mount util in `test/utils/` renders the component as JSX, so the mount step is one call. React CT mounts JSX only: the CT transform rewrites JSX in the spec and in every `.tsx` file it imports, so the util is a `.tsx` file. `ButtonProps` is the component's exported props type; the label is its `children`.
 
 ```ts
 // e2e/button/helpers/button.helper.ts
@@ -112,10 +114,9 @@ export class ButtonHelper {
 }
 ```
 
-```ts
-// e2e/button/test/utils/button-mount.spec.util.ts
+```tsx
+// e2e/button/test/utils/button-mount.spec.util.tsx
 import type { ComponentFixtures } from '@playwright/experimental-ct-react';
-import { createElement } from 'react';
 
 import type { ButtonProps } from '@/components/Button';
 import { Button } from '@/components/Button';
@@ -125,7 +126,7 @@ import { ButtonHelper } from '../../helpers/button.helper';
 type Mount = ComponentFixtures['mount'];
 
 export const mountButton = async (mount: Mount, props: ButtonProps, label: string): Promise<ButtonHelper> => {
-  const root = await mount(createElement(Button, props, label));
+  const root = await mount(<Button {...props}>{label}</Button>);
 
   return new ButtonHelper(root);
 };
@@ -135,8 +136,8 @@ export const mountButton = async (mount: Mount, props: ButtonProps, label: strin
 
 No fixture file exists for CT, so the spec imports `test` from the CT package. Props are a typed const above the first step.
 
-```ts
-// e2e/button/button.ct.ts
+```tsx
+// e2e/button/button.test.tsx
 import { test } from '@playwright/experimental-ct-react';
 
 import type { ButtonProps } from '@/components/Button';
@@ -167,7 +168,7 @@ test.describe('FEATURE: button', () => {
 
 ### Mount with Wrapper/Provider
 
-Global providers live in the CT setup file. `beforeMount` receives the component as `App` and returns the wrapped element; `hooksConfig` is the per-test object a spec passes to `mount`, typed once in `e2e/common/hooks-config.type.ts`. The same hook installs browser globals a component reads (`analyticsMock()` in `e2e/test/mocks/analytics.mock.ts` returns no-op `track` and `identify`).
+Global providers live in the CT setup file, `e2e/playwright/index.tsx`. `beforeMount` receives the component as `App` and returns it nested in the providers as JSX; `hooksConfig` is the per-test object a spec passes to `mount`, typed once in `e2e/common/hooks-config.type.ts`. The same hook installs browser globals a component reads (`analyticsMock()` in `e2e/test/mocks/analytics.mock.ts` returns no-op `track` and `identify`).
 
 ```ts
 // e2e/common/hooks-config.type.ts
@@ -180,12 +181,11 @@ export type HooksConfig = {
 };
 ```
 
-```ts
-// playwright/index.ts
+```tsx
+// e2e/playwright/index.tsx
 import { beforeMount } from '@playwright/experimental-ct-react/hooks';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
-import { createElement } from 'react';
 
 import { ThemeProvider } from '@/providers/theme';
 import '@/styles/globals.css';
@@ -198,17 +198,20 @@ const queryClient = new QueryClient();
 beforeMount<HooksConfig>(async ({ App, hooksConfig }): Promise<ReactElement> => {
   Object.assign(window, { analytics: analyticsMock(), featureFlags: hooksConfig?.featureFlags });
 
-  const app = createElement(App);
-  const themed = createElement(ThemeProvider, null, app);
-
-  return createElement(QueryClientProvider, { client: queryClient }, themed);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
 });
 ```
 
 | Variant | Where |
 |---|---|
-| Per-test provider (`AuthProvider` around `UserProfile`) | The mount util nests `createElement(AuthProvider, { initialUser }, createElement(UserProfile))`; the spec passes the user. |
-| Global styles | `import '@/styles/globals.css'` in `playwright/index.ts`, as above. |
+| Per-test provider (`AuthProvider` around `UserProfile`) | The `.tsx` mount util nests `<AuthProvider initialUser={initialUser}><UserProfile /></AuthProvider>`; the spec passes the user. |
+| Global styles | `import '@/styles/globals.css'` in `e2e/playwright/index.tsx`, as above. |
 
 ## Props & State Testing
 
@@ -216,8 +219,8 @@ beforeMount<HooksConfig>(async ({ App, hooksConfig }): Promise<ReactElement> => 
 
 A `for` loop over an `as const` tuple generates one `test` per variant. The title interpolates the variant so each case names itself.
 
-```ts
-// e2e/button/button-variants.ct.ts
+```tsx
+// e2e/button/button-variants.test.tsx
 import { test } from '@playwright/experimental-ct-react';
 
 import type { ButtonHelper } from './helpers/button.helper';
@@ -238,14 +241,13 @@ test.describe('FEATURE: button variants', () => {
 
 ### Updating Props and Internal State
 
-`MountResult.update` re-renders with new props. The helper object keeps the root as `MountResult` and owns `update`, so the spec step stays one call. Internal state is asserted through the DOM (`aria-checked`, text), never through the instance. `mountCounter(mount, props)` in `test/utils/counter-mount.spec.util.ts` has the `mountButton` shape and returns a `CounterHelper`.
+`MountResult.update` re-renders with a new JSX element. It ignores anything else: a non-JSX argument re-renders the original element and drops the new props without an error. The helper object keeps the root as `MountResult` and owns `update`, so it is a `.helper.tsx` file and the spec step stays one call. Internal state is asserted through the DOM (`aria-checked`, text), never through the instance. `mountCounter(mount, props)` in `test/utils/counter-mount.spec.util.tsx` has the `mountButton` shape and returns a `CounterHelper`.
 
-```ts
-// e2e/counter/helpers/counter.helper.ts
+```tsx
+// e2e/counter/helpers/counter.helper.tsx
 import type { MountResult } from '@playwright/experimental-ct-react';
 import { expect } from '@playwright/experimental-ct-react';
 import type { Locator } from '@playwright/test';
-import { createElement } from 'react';
 
 import type { CounterProps } from '@/components/Counter';
 import { Counter } from '@/components/Counter';
@@ -267,7 +269,7 @@ export class CounterHelper {
   }
 
   public async update(props: CounterProps): Promise<void> {
-    await this.root.update(createElement(Counter, props));
+    await this.root.update(<Counter {...props} />);
   }
 
   public async expectCount(count: number): Promise<void> {
@@ -276,8 +278,8 @@ export class CounterHelper {
 }
 ```
 
-```ts
-// e2e/counter/counter.ct.ts
+```tsx
+// e2e/counter/counter.test.tsx
 import { test } from '@playwright/experimental-ct-react';
 
 import type { CounterHelper } from './helpers/counter.helper';
@@ -343,10 +345,9 @@ export class LoginFormHelper {
 }
 ```
 
-```ts
-// e2e/login-form/test/utils/login-form-mount.spec.util.ts
+```tsx
+// e2e/login-form/test/utils/login-form-mount.spec.util.tsx
 import type { ComponentFixtures } from '@playwright/experimental-ct-react';
-import { createElement } from 'react';
 
 import { LoginForm } from '@/components/LoginForm';
 
@@ -362,14 +363,14 @@ export const recordInto = (submissions: Credentials[]): SubmitHandler => {
 };
 
 export const mountLoginForm = async (mount: Mount, onSubmit: SubmitHandler): Promise<LoginFormHelper> => {
-  const root = await mount(createElement(LoginForm, { onSubmit }));
+  const root = await mount(<LoginForm onSubmit={onSubmit} />);
 
   return new LoginFormHelper(root);
 };
 ```
 
-```ts
-// e2e/login-form/login-form.ct.ts
+```tsx
+// e2e/login-form/login-form.test.tsx
 import { expect, test } from '@playwright/experimental-ct-react';
 
 import type { Credentials } from './common/login-form.type';
@@ -430,8 +431,8 @@ export const mountModal = async (mount: Mount, slots: ModalSlots): Promise<Modal
 };
 ```
 
-```ts
-// e2e/modal/modal.ct.ts
+```tsx
+// e2e/modal/modal.test.tsx
 import { test } from '@playwright/experimental-ct-vue';
 
 import type { ModalHelper } from './helpers/modal.helper';
@@ -453,19 +454,18 @@ test.describe('FEATURE: modal slots', () => {
 
 | Variant | Mount util body |
 |---|---|
-| React children | `createElement(Card, null, createElement('h2', null, 'Title'), createElement('p', null, 'Description'))`; the helper object asserts `getByRole('heading')` and `getByText('Description')`. |
-| Render prop | Pass a function child: `createElement(DataFetcher, { url }, renderUser)` where `renderUser` returns a `Loading...` span while `loading` and the name span after; assert `Loading...` visible, then the name visible. |
+| React children | `<Card><h2>Title</h2><p>Description</p></Card>`; the helper object asserts `getByRole('heading')` and `getByText('Description')`. |
+| Render prop | A function child runs in the test process, so the browser gets a promise back and React renders nothing. A story component in `test/stories/data-fetcher.story.tsx` renders `<DataFetcher url={url}>{renderUser}</DataFetcher>` in the browser, where `renderUser` returns a `Loading...` span while `loading` and the name span after; the util mounts `<DataFetcherStory url={url} />`. Assert `Loading...` visible, then the name visible. |
 
 ## Mocking Dependencies
 
 ### Mocking Imports
 
-`playwright/index.ts` above installs globals and reads `hooksConfig` in `beforeMount`. A spec passes `hooksConfig` through the mount util; the generic on `mount` types it.
+`e2e/playwright/index.tsx` above installs globals and reads `hooksConfig` in `beforeMount`. A spec passes `hooksConfig` through the mount util; the generic on `mount` types it.
 
-```ts
-// e2e/feature-banner/test/utils/feature-banner-mount.spec.util.ts
+```tsx
+// e2e/feature-banner/test/utils/feature-banner-mount.spec.util.tsx
 import type { ComponentFixtures } from '@playwright/experimental-ct-react';
-import { createElement } from 'react';
 
 import { FeatureBanner } from '@/components/FeatureBanner';
 
@@ -475,14 +475,14 @@ import { FeatureBannerHelper } from '../../helpers/feature-banner.helper';
 type Mount = ComponentFixtures['mount'];
 
 export const mountFeatureBanner = async (mount: Mount, hooksConfig: HooksConfig): Promise<FeatureBannerHelper> => {
-  const root = await mount<HooksConfig>(createElement(FeatureBanner), { hooksConfig });
+  const root = await mount<HooksConfig>(<FeatureBanner />, { hooksConfig });
 
   return new FeatureBannerHelper(root);
 };
 ```
 
-```ts
-// e2e/feature-banner/feature-banner.ct.ts
+```tsx
+// e2e/feature-banner/feature-banner.test.tsx
 import { test } from '@playwright/experimental-ct-react';
 
 import type { FeatureFlags, HooksConfig } from '../common/hooks-config.type';
@@ -517,8 +517,8 @@ export const userMock = (user: User = USER_STUB): RouteHandler => {
 };
 ```
 
-```ts
-// e2e/user-profile/user-profile.ct.ts
+```tsx
+// e2e/user-profile/user-profile.test.tsx
 import { test } from '@playwright/experimental-ct-react';
 
 import type { UserProfileHelper } from './helpers/user-profile.helper';
@@ -542,10 +542,10 @@ A custom hook that reads a global is mocked the same way as a feature flag: add 
 
 | Framework | Package | Mount signature | Notes |
 |---|---|---|---|
-| React | `@playwright/experimental-ct-react` | `mount(createElement(Comp, props, ...children))` | Refs: pass a callback ref that stores the element in a spec-owned variable. Context: the mount util nests `createElement(UserContext.Provider, { value }, createElement(UserGreeting))`. |
+| React | `@playwright/experimental-ct-react` | `mount(<Comp {...props} />)` in a `.tsx` mount util | Refs: a callback ref runs in the test process and receives the string `ref: <Node>`, not the element; assert what the ref drives (focus, scroll) through the helper object. Context: the mount util nests `<UserContext.Provider value={value}><UserGreeting /></UserContext.Provider>`. |
 | Vue | `@playwright/experimental-ct-vue` | `mount(Comp, { props, slots, on })` | `v-model` binds through `modelValue` plus an `'onUpdate:modelValue'` listener in `props`. |
 | Svelte | `@playwright/experimental-ct-svelte` | `mount(Comp, { props })` | Same helper-object and mount-util shape; `on` carries event listeners. |
-| Solid | `@playwright/experimental-ct-solid` | `mount(createComponent(Comp, props))` | Same shape as React with Solid's `createComponent`. |
+| Solid | `@playwright/experimental-ct-solid` (last published at 1.48.2; no newer release) | `mount(<Comp {...props} />)` in a `.tsx` mount util | Same shape as React: JSX only. |
 
 ### Vue v-model
 
@@ -570,8 +570,8 @@ export const mountTextInput = async (mount: Mount, modelValue: string, onUpdate:
 };
 ```
 
-```ts
-// e2e/text-input/text-input.ct.ts
+```tsx
+// e2e/text-input/text-input.test.tsx
 import { expect, test } from '@playwright/experimental-ct-vue';
 
 import type { TextInputHelper } from './helpers/text-input.helper';
@@ -599,7 +599,7 @@ test.describe('FEATURE: text input v-model', () => {
 | Not isolating components       | Hidden dependencies | Mock all external dependencies    |
 | Testing framework behavior     | Redundant           | Focus on your component logic     |
 | Skipping accessibility         | Misses real issues  | Include a11y checks in CT         |
-| JSX inside a spec              | Spec knows the element tree | Mount util builds it with `createElement`; spec passes props |
+| `createElement` or object notation for React | `mount` throws `Object mount notation is not supported`; `update` keeps the old element | JSX in a `.tsx` mount util; spec passes props |
 
 ## Related References
 

@@ -550,17 +550,16 @@ const projects = [{ name: 'chromium', use: devices['Desktop Chrome'] }];
 
 export default defineConfig({
   projects,
-  testMatch: '**/*.ct.ts',
+  testMatch: '**/*.test.tsx',
   use
 });
 ```
 
-The mount util builds the element with `createElement` so it stays a `.ts` file; a `.tsx` util may use JSX instead. `StepperProps` is the component's exported props type.
+React CT mounts JSX only. The CT transform rewrites JSX in the spec and in every `.tsx` file it imports; `mount(createElement(Stepper, props))` throws `Object mount notation is not supported`. The mount util is therefore a `.tsx` file. `StepperProps` is the component's exported props type.
 
-```ts
-// e2e/stepper/test/utils/stepper-mount.spec.util.ts
+```tsx
+// e2e/stepper/test/utils/stepper-mount.spec.util.tsx
 import type { ComponentFixtures } from '@playwright/experimental-ct-react';
-import { createElement } from 'react';
 
 import type { StepperProps } from '@/components/Stepper';
 import { Stepper } from '@/components/Stepper';
@@ -570,14 +569,14 @@ import { StepperHelper } from '../../helpers/stepper.helper';
 type Mount = ComponentFixtures['mount'];
 
 export const mountStepper = async (mount: Mount, props: StepperProps): Promise<StepperHelper> => {
-  const root = await mount(createElement(Stepper, props));
+  const root = await mount(<Stepper {...props} />);
 
   return new StepperHelper(root);
 };
 ```
 
-```ts
-// e2e/stepper/stepper.ct.ts
+```tsx
+// e2e/stepper/stepper.test.tsx
 import { expect, test } from '@playwright/experimental-ct-react';
 
 import type { StepperHelper } from './helpers/stepper.helper';

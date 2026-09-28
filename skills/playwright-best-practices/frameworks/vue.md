@@ -111,7 +111,7 @@ const projects = [{ name: 'chromium', use: devices['Desktop Chrome'] }];
 
 export default defineConfig({
   projects,
-  testMatch: '**/*.ct.ts',
+  testMatch: '**/*.test.tsx',
   use
 });
 ```
@@ -173,8 +173,8 @@ export const mountStepper = async (mount: Mount, props: StepperProps, on?: Stepp
 };
 ```
 
-```ts
-// e2e/stepper/stepper.ct.ts
+```tsx
+// e2e/stepper/stepper.test.tsx
 import { expect, test } from '@playwright/experimental-ct-vue';
 
 import type { StepperListeners } from './common/stepper.type';
@@ -703,7 +703,7 @@ test.describe('FEATURE: nuxt posts', () => {
 Components depending on Pinia or Vue Router need these provided in the CT bootstrap. `HooksConfig` names the shape a test passes through `hooksConfig`.
 
 ```ts
-// playwright/index.ts
+// e2e/playwright/index.ts
 import { beforeMount } from '@playwright/experimental-ct-vue/hooks';
 import { createPinia } from 'pinia';
 import type { RouteRecordRaw } from 'vue-router';
