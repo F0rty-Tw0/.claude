@@ -76,7 +76,7 @@ export const test = base.extend<PwaFixtures>({
 export { expect } from '@playwright/test';
 ```
 
-`goto(options)` grants notifications before it navigates when `notifications: 'granted'` is set, then opens `path` (default `/pwa-app`); that option check is the page object's only branch. `reloadWithBlockedStylesheet()` routes `**/styles.css` to `abortMock()` and reloads, so the cache-first test has no route step. `expectAppCached()` polls the `app-cache-v1` URLs until the list is not empty. The other `expect*` methods hold one plain assertion each: `expectDashboard()` on the heading, `expectOfflineBadge()` and `expectOnline()` on the badge visible or hidden, and `expectStatus(text)` on the status text.
+`goto(options)` grants notifications before it navigates when `notifications: 'granted'` is set, then opens `path` (default `/pwa-app`); that option check is the page object's only branch. `expectAppCached()` polls the `app-cache-v1` URLs until the list is not empty. The other `expect*` methods hold one plain assertion each: `expectDashboard()` on the heading, `expectOfflineBadge()` and `expectOnline()` on the badge visible or hidden, and `expectStatus(text)` on the status text.
 
 ```ts
 // e2e/pwa/pages/pwa.page.ts
@@ -84,7 +84,6 @@ import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import type { PwaOptions } from '../common/pwa.type';
-import { abortMock } from '../test/mocks/abort.mock';
 import { cachedUrls } from '../test/utils/cache.spec.util';
 
 export class PwaPage {
@@ -115,11 +114,6 @@ export class PwaPage {
   }
 
   public async reload(): Promise<void> {
-    await this.page.reload();
-  }
-
-  public async reloadWithBlockedStylesheet(): Promise<void> {
-    await this.page.route('**/styles.css', abortMock());
     await this.page.reload();
   }
 
@@ -269,42 +263,11 @@ test.describe('FEATURE: pwa service worker', () => {
 
 ### Testing SW Update Flow
 
-Serve a new worker script, call `registration.update()`, wait for a `waiting` worker, post `SKIP_WAITING`, and wait for `controllerchange`. `expect.poll` replaces the `updatefound` listener plus timeout, and the route mock replaces the "if an update exists" branch: the test creates the update it asserts on.
+Register a new worker version, wait for a `waiting` worker, post `SKIP_WAITING`, and wait for `controllerchange`. `expect.poll` replaces the `updatefound` listener plus timeout, and the test creates the update it asserts on.
 
-Worker v2 must be served after v1 has registered, or the first registration is already v2 and the update finds nothing. So publishing v2 is a new `WHEN` after the check that v1 is active, not an option on the opening call. `publishWorker(page, version)` routes `**/sw.js` to the new source and calls `registration.update()` in one call, so no step routes.
+A route cannot serve the new version: neither `page.route` nor `context.route` sees the browser's fetch of a worker script (checked on Chromium 141: zero hits, the worker stayed on v1). The app's worker reads its version from its own script URL instead: `const VERSION = new URL(self.location.href).searchParams.get('version') ?? 'v1';`. It opens `app-cache-<VERSION>` on install, never calls `skipWaiting()` on its own, and calls it only when the page posts `SKIP_WAITING`. So `publishWorker(page, version)` registers `/sw.js?version=<version>` in one call: the new script URL makes the browser install that version as the waiting worker.
 
-The worker script is a parametrised sample, so it is a source builder in `test/utils/`, not a template literal in the mock. The mock keeps only the interception. The source installs without `skipWaiting()`, so v2 waits while v1 controls the page, and it calls `skipWaiting()` only when the page posts `SKIP_WAITING`.
-
-```ts
-// e2e/pwa/test/utils/service-worker-source.spec.util.ts
-export const serviceWorkerSource = (version: string): string => {
-  const source = `
-    const VERSION = '${version}';
-    self.addEventListener('install', (event) => {
-      event.waitUntil(caches.open('app-cache-' + VERSION));
-    });
-    self.addEventListener('message', (event) => {
-      if (event.data.type === 'SKIP_WAITING') self.skipWaiting();
-    });
-  `;
-
-  return source;
-};
-```
-
-```ts
-// e2e/pwa/test/mocks/service-worker.mock.ts
-import type { Route } from '@playwright/test';
-
-import type { RouteHandler } from '../../../common/playwright.type';
-import { serviceWorkerSource } from '../utils/service-worker-source.spec.util';
-
-export const serviceWorkerMock = (version: string): RouteHandler => {
-  const body = serviceWorkerSource(version);
-
-  return (route: Route): Promise<void> => route.fulfill({ body, contentType: 'application/javascript' });
-};
-```
+Worker v2 must be registered after v1 is active, or there is nothing to update. So publishing v2 is a new `WHEN` after the check that v1 is active, not an option on the opening call.
 
 `activateWaitingWorker` adds the `controllerchange` listener before it posts `SKIP_WAITING`, inside one browser call, so the change cannot fire before anything listens. The listener writes a flag to `document.documentElement.dataset`, and the `THEN` polls it.
 
@@ -312,12 +275,8 @@ export const serviceWorkerMock = (version: string): RouteHandler => {
 // e2e/pwa/test/utils/service-worker-update.spec.util.ts
 import type { Page } from '@playwright/test';
 
-import { serviceWorkerMock } from '../mocks/service-worker.mock';
-
-const readUpdate = async (): Promise<void> => {
-  const registration = await navigator.serviceWorker.ready;
-
-  await registration.update();
+const registerVersion = async (version: string): Promise<void> => {
+  await navigator.serviceWorker.register(`/sw.js?version=${version}`);
 };
 
 const readHasWaiting = async (): Promise<boolean> => {
@@ -338,10 +297,7 @@ const postSkipWaiting = async (): Promise<void> => {
 
 const readControllerChanged = (): boolean => document.documentElement.dataset.controllerChanged === 'true';
 
-export const publishWorker = async (page: Page, version: string): Promise<void> => {
-  await page.route('**/sw.js', serviceWorkerMock(version));
-  await page.evaluate(readUpdate);
-};
+export const publishWorker = (page: Page, version: string): Promise<void> => page.evaluate(registerVersion, version);
 
 export const hasWaitingWorker = (page: Page): Promise<boolean> => page.evaluate(readHasWaiting);
 
@@ -351,7 +307,7 @@ export const hasControllerChanged = (page: Page): Promise<boolean> => page.evalu
 ```
 
 ```ts
-// e2e/pwa/pwa.test.ts
+// e2e/pwa/pwa.e2e.ts
 import { expect, test } from './pwa.fixture';
 import { activateWaitingWorker, hasControllerChanged, hasWaitingWorker, publishWorker } from './test/utils/service-worker-update.spec.util';
 import { isServiceWorkerActive } from './test/utils/service-worker.spec.util';
@@ -462,18 +418,20 @@ test.describe('FEATURE: pwa service worker', () => {
 
 ### Testing Cache Strategies
 
-To prove a cache-first strategy, abort the network request for a cached asset, reload, and assert the asset still applied. The abort must land after the worker has cached the stylesheet, so the test starts from `cachedPwaPage`, and `reloadWithBlockedStylesheet()` routes the stylesheet and reloads in one call. `abortMock` is a one-line route factory in `test/mocks/abort.mock.ts` returning `(route: Route): Promise<void> => route.abort()`.
+To prove a cache-first strategy, go offline and reload: the stylesheet can then only come from the worker's cache. A route cannot stand in for offline here, because Playwright routes never see a request the worker answers. `styles.css` sets `body { font-family: 'App Sans', sans-serif; }`, so without the cached stylesheet the default font shows and the check fails. The test starts from `cachedPwaPage`, which waits until the worker has cached the stylesheet.
 
 ```ts
-// e2e/pwa/pwa.test.ts
+// e2e/pwa/pwa.e2e.ts
 import { expect, test } from './pwa.fixture';
 import { bodyFontFamily } from './test/utils/cache.spec.util';
 
 test.describe('FEATURE: pwa service worker', () => {
-  test('GIVEN a cached app, a reload with the stylesheet blocked keeps the cached styles', async ({ cachedPwaPage, page }): Promise<void> => {
-    await test.step('WHEN the app is reloaded with the stylesheet blocked', (): Promise<void> => cachedPwaPage.reloadWithBlockedStylesheet());
+  test('GIVEN a cached app, an offline reload keeps the cached styles', async ({ cachedPwaPage, context, page }): Promise<void> => {
+    await test.step('WHEN the network goes offline', (): Promise<void> => context.setOffline(true));
 
-    await test.step('THEN the body keeps its font family', (): Promise<void> => expect.poll((): Promise<string> => bodyFontFamily(page)).not.toBe(''));
+    await test.step('AND the app is reloaded', (): Promise<void> => cachedPwaPage.reload());
+
+    await test.step('THEN the body uses the app font', (): Promise<void> => expect.poll((): Promise<string> => bodyFontFamily(page)).toContain('App Sans'));
   });
 });
 ```
@@ -483,7 +441,7 @@ test.describe('FEATURE: pwa service worker', () => {
 Publishing worker v2 with `publishWorker` (above) creates `app-cache-v2` when v2 installs. `expect.poll` on `hasCache` replaces `waitForFunction`.
 
 ```ts
-// e2e/pwa/pwa.test.ts
+// e2e/pwa/pwa.e2e.ts
 import { expect, test } from './pwa.fixture';
 import { hasCache } from './test/utils/cache.spec.util';
 import { publishWorker } from './test/utils/service-worker-update.spec.util';
