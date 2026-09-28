@@ -47,6 +47,16 @@ const cases = [
   ['stdin body from preceding heredoc', "cat <<'EOF' | gh pr create --title x -F -\nsummary\n## Proof\nok\nEOF", ALLOW],
   ['stdin body from attached heredoc', "gh pr create --body-file - <<'EOF'\nsummary\n## Proof\nok\nEOF", ALLOW],
   ['stdin body from pipe', "printf '## Proof\\nok' | gh pr create -F -", ALLOW],
+  ['stdin body from printf with \\n before the heading', "printf 'summary\\n\\n## Proof\\nok\\n' | gh pr create -F -", ALLOW],
+  ['stdin body from echo pipe', "echo '## Proof' | gh pr create -F -", ALLOW],
+  ['stdin body from cat file pipe', 'cat ok.md | gh pr create -F -', ALLOW],
+  ['stdin body from < redirect', 'gh pr create -F - < ok.md', ALLOW],
+  ['stdin body from here-string', "gh pr create -F - <<< '## Proof'", ALLOW],
+  ['relative body file after leading cd ;', 'cd sub; gh pr create --body-file only-in-sub.md', ALLOW],
+  ['last body flag wins (proof last)', 'gh pr create --body nope --body "## Proof\nok"', ALLOW],
+  ['heredoc closed as EOF) on one line, judged by its text', "gh pr create --body \"$(cat <<'EOF'\nsum\n## Proof\nok\nEOF)\"", ALLOW],
+  ['escaped quote inside double quotes', 'echo "a \\" ; gh pr create --fill"', ALLOW],
+  ['writing a different file before reading the body file', 'echo x > other.md && gh pr create -F ok.md 2>/dev/null', ALLOW],
   // not a PR body at all
   ['edit that does not touch the body', 'gh pr edit 5 --add-label bug', ALLOW],
   ['edit label ending in -b', 'gh pr edit 5 --remove-label wip-b x', ALLOW],
@@ -82,6 +92,22 @@ const cases = [
   ['proof in the title, no body', "gh pr create --title '## Proof'", BLOCK],
   ['proof in an earlier command', "echo '## Proof' && gh pr create --body nope", BLOCK],
   ['proof in a trailing comment', "gh pr create --body 'nope' # '## Proof'", BLOCK],
+  ['last body flag wins (proof first)', 'gh pr create --body "## Proof\nok" --body nope', BLOCK],
+  ['proof in an unrelated heredoc', "cat > x <<'A'\n## Proof\nA\ngh pr create --body \"$(cat <<'B'\nno\nB\n)\"", BLOCK],
+  // stdin: only this invocation's own stdin source counts
+  ['stdin proof in an earlier command', "echo '## Proof' >/dev/null; echo nope | gh pr create -F -", BLOCK],
+  ['stdin proof in a later command', "echo nope | gh pr create -F - ; echo '## Proof'", BLOCK],
+  ['stdin proof mid-line after the invocation', 'echo nope | gh pr create -F - && echo x## Proof', BLOCK],
+  ['stdin proof mid-line in the pipe source', "echo 'x## Proof' | gh pr create -F -", BLOCK],
+  ['stdin with no source', 'gh pr create -F -', BLOCK],
+  ['stdin proof in the previous command, no pipe', "echo '## Proof'; gh pr create -F -", BLOCK],
+  ['stdin proof before ||, not a pipe', "echo '## Proof' || gh pr create -F -", BLOCK],
+  ['stdin from cat file pipe without proof', 'cat bad.md | gh pr create -F -', BLOCK],
+  ['stdin from < redirect without proof', 'gh pr create --body-file - < bad.md', BLOCK],
+  ['stdin from here-string without proof', 'gh pr create -F - <<< nope', BLOCK],
+  // an unterminated `<<word` masks nothing
+  ['misread << in quoted python', 'python3 -c "print(1<<y)\nprint(2)" && gh pr create --fill', BLOCK],
+  ['unterminated heredoc', 'cat <<EOF\nx\ngh pr create --fill', BLOCK],
   // invocation shapes
   ['rtk-rewritten command', 'rtk gh pr create -b "x"', BLOCK],
   ['rtk proxy', 'rtk proxy gh pr create -b "x"', BLOCK],
@@ -93,6 +119,19 @@ const cases = [
   ['command substitution', 'url=$(gh pr create --body nope)', BLOCK],
   ['subshell', '(gh pr create --body nope)', BLOCK],
   ['new alias', 'gh pr new --body nope', BLOCK],
+  ['if/then', 'if true; then gh pr create --fill; fi', BLOCK],
+  ['loop do', 'for i in 1; do gh pr create --fill; done', BLOCK],
+  ['else', 'if false; then :; else gh pr create --fill; fi', BLOCK],
+  ['negation', '! gh pr create --fill', BLOCK],
+  ['brace group', '{ gh pr create --fill; }', BLOCK],
+  ['time', 'time gh pr create --fill', BLOCK],
+  ['command builtin', 'command gh pr create --fill', BLOCK],
+  ['nohup', 'nohup gh pr create --fill', BLOCK],
+  ['env with assignments', 'env GH_PAGER=cat A=1 gh pr create --fill', BLOCK],
+  ['timeout', 'timeout 60 gh pr create --fill', BLOCK],
+  ['sudo', 'sudo gh pr create --fill', BLOCK],
+  ['stacked wrappers', 'sudo env A=1 nohup timeout 5s gh pr create --fill', BLOCK],
+  ['--repo between pr and verb', 'gh pr --repo o/r create --fill', BLOCK],
 ];
 
 for (const [name, command, expected, opts] of cases) {
@@ -101,6 +140,36 @@ for (const [name, command, expected, opts] of cases) {
     assert.strictEqual(status, expected, stderr);
   });
 }
+
+// The hook runs before the command, so a body file written by the same command is read stale or missing.
+const sameCallWrites = [
+  ['new file', "cat > new.md <<'EOF'\n# t\n## Proof\nok\nEOF\ngh pr create --body-file new.md"],
+  ['older file without proof', "cat > bad.md <<'EOF'\n# t\n## Proof\nok\nEOF\ngh pr create -F bad.md"],
+  ['older file with proof, new heredoc without', "cat > ok.md <<'EOF'\n# t\nno proof now\nEOF\ngh pr create --body-file ok.md"],
+  ['append redirect', 'echo x >> ok.md; gh pr create -F ok.md'],
+  ['tee -a', `echo x | tee -a ${okBody} && gh pr create -F ok.md`],
+  ['$(cat file) body', 'echo x > ok.md && gh pr create --body "$(cat ok.md)"'],
+  ['stdin from cat pipe', 'echo x > ok.md; cat ok.md | gh pr create -F -'],
+];
+for (const [name, command] of sameCallWrites) {
+  test(`blocks a body file written in the same call: ${name}`, () => {
+    const { status, stderr } = run(command);
+    assert.strictEqual(status, BLOCK);
+    assert.match(stderr, /write the body file in a separate Bash call — the hook reads it before your command runs/i);
+  });
+}
+
+test('block message shows the heredoc delimiter alone on its line', () => {
+  const { stderr } = run('gh pr create --fill');
+  assert.match(stderr, /\nEOF\n\)"/);
+  assert.doesNotMatch(stderr, /EOF\)/);
+  assert.doesNotMatch(stderr, /one-shot flag/);
+});
+
+test('block message after a push warns the commit-guard flag is spent', () => {
+  const { stderr } = run(['git', 'push -u origin x && gh pr create --fill'].join(' '));
+  assert.match(stderr, /commit-guard's one-shot flag was already spent; re-touch it only if the user's request still covers the push/);
+});
 
 test('blocks an unresolvable body file path and asks for a literal one', () => {
   const { status, stderr } = run('gh pr create --body-file "$TMPDIR/b.md"');

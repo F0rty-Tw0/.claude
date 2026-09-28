@@ -21,7 +21,7 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 0. Proof gate        → proof bundle + fresh adversarial review (code-review skill); BLOCK → stop and ask
 1. Gather changes    → git diff, git log against base branch
 2. Scan repo context → understand what areas the changes touch and what depends on them
-3. Size the change   → small / medium / large (determines output format)
+3. Audience + size   → ask: for us or for someone else? then small / medium / large
 4. Write title       → short, specific, lowercase
 5. Write description → proportional to change size
 6. Add ticket link   → extract ticket number from branch name, append "Closes #<number>"
@@ -79,7 +79,32 @@ Before writing, understand the blast radius:
 
 Mention impact only when it's real and non-obvious. Don't manufacture significance.
 
-### Step 3: Size the Change
+### Step 3: Audience, then Size
+
+**Ask first** with AskUserQuestion: *Who is this PR for?* Ask once per PR, or once for a whole `meaningful-prs` stack.
+
+- **For us (Recommended in own repos)** — our repo or team. Use the size-based format below with the full blast-radius `## Proof` from Step 0. Some extra context is fine.
+- **For someone else** — upstream, OSS, another team, a reviewer without our context. **Very short, nothing else:**
+
+```
+<title>
+
+<1–3 sentences: what changed, and why if not obvious>
+
+## Stack            ← only if stacked, 1–3 lines
+## Proof
+- Blast radius: <Leaf|Branch|Trunk> <n>/10 — rollback: <flag off | revert | …>
+- Tests: `<cmd>` → <pass/fail counts>
+- Verified: <one line>
+- Not verified: <one line>
+<screenshot link, UI changes only>
+
+Closes #<n>         ← only if the branch has a ticket
+```
+
+  No `What changed` / `Impact` / `Test plan` sections, no review history, no deep-read list. For the external format, the size table below does not apply.
+
+### Size (for-us format)
 
 | Size   | Criteria                             | Output length         |
 | ------ | ------------------------------------ | --------------------- |

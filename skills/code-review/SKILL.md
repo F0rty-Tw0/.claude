@@ -36,7 +36,7 @@ AI tools write more code than a human can read line by line. So review effort fo
 
    Pass only artifacts: diff, PR text, plan. Never pass your session's rationale, opinions, or a hint list.
 
-3. **Trunk escalation.** Run `git diff --stat` and check file paths. If any trunk signal shows (`references/blast-radius.md`), dispatch the `security-reviewer` and/or `performance-reviewer` in the **same message**, ≤3 agents total.
+3. **Trunk escalation.** Check the trunk signals from `references/blast-radius.md` (greps and fan-in, not file names alone). If any shows (`references/blast-radius.md`), dispatch the `security-reviewer` and/or `performance-reviewer` in the **same message**, ≤3 agents total.
 
    If the reviewer later classifies the change as trunk and no specialist was sent, send one then.
 
@@ -68,7 +68,7 @@ AI tools write more code than a human can read line by line. So review effort fo
   - the rollback path (flag flip / revert / data repair)
   - the telemetry metric that would spike in a canary
   - the exact lines a human must deep-read — the agent cannot sign off on trunk alone
-- **Proof is re-run, not read.** A claim with no artifact is a proof gap. A claim that fails to reproduce is a blocker.
+- **Proof is re-run, not read.** A claim with no artifact, or one that fails to reproduce, is a proof gap (verdict row 2).
 
 ## Output format
 
@@ -109,13 +109,17 @@ APPROVE — LOW RISK LEAF | APPROVE — BRANCH, PROOF MET | APPROVE — TRUNK, H
 Discarded findings: <finding — reason> | none
 ```
 
-Verdict rules:
-- Any blocker defect → **BLOCK — HIGH BLAST RADIUS DEFECT**.
-- No defects but proof gaps → **BLOCK — REQUIRES PROOF**.
-- Branch that is clean and meets the Branch proof bar → **APPROVE — BRANCH, PROOF MET**.
-- Trunk that is clean and proven → **APPROVE — TRUNK, HUMAN SIGN-OFF REQUIRED**.
-- **APPROVE — LOW RISK LEAF** only for Leaf that is gated or isolated, with proof.
-- Every class × outcome maps to exactly one verdict: defect → BLOCK DEFECT; proof gap → BLOCK PROOF; clean + proven → the APPROVE for that class.
+Verdict rules. Take the first one that applies; tiers come from `references/adversarial-inspection.md` "Severity":
+
+| # | Condition | Verdict |
+|---|---|---|
+| 1 | Any **Blocker**-tier defect | BLOCK — HIGH BLAST RADIUS DEFECT |
+| 2 | Any **Proof gap** (class proof bar unmet) | BLOCK — REQUIRES PROOF |
+| 3 | Trunk, no blocker or proof gap | APPROVE — TRUNK, HUMAN SIGN-OFF REQUIRED |
+| 4 | Branch, no blocker or proof gap | APPROVE — BRANCH, PROOF MET |
+| 5 | Leaf (gated or isolated), no blocker or proof gap | APPROVE — LOW RISK LEAF |
+
+Should-fix and Note findings never change the verdict; they go in section 3.
 
 ## Common mistakes
 
