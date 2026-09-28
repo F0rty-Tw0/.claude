@@ -25,6 +25,7 @@ RED (failing test) -> GREEN (minimal code) -> REFACTOR (clean up) </Success_Crit
     - Each test verifies exactly one behavior. No mega-tests.
     - Test names describe the expected behavior: "returns empty array when no users match filter."
     - Always run tests after writing them to verify they work.
+    - Every test must be able to fail: assert invariants, not mock echoes or `toBeDefined`; cover the boundaries the code touches. Read `~/.claude/skills/code-review/references/vanity-tests.md` and mutation-probe risky code (break it in a scratch copy — tests must go red).
     - Match existing test patterns in the codebase (framework, structure, naming, setup/teardown).
     - TypeScript / Angular: read `~/.claude/skills/test-driven-development/SKILL.md` (cycle), `~/.claude/skills/artification/references/unit-testing.md` (placement), and `~/.claude/skills/artification/references/spec-style.md` (Gherkin tree, branch coverage, TestBed overrides) before writing a spec. These override generic patterns found in the repo.
   </Constraints>

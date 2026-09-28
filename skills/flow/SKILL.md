@@ -32,7 +32,7 @@ flow --plan-only "<idea>"      # stop after a plan is produced
 3. **EXECUTE** — Branch on mode (see Mode Selection):
    - **Autonomous** -> `Skill("ralph")` with the plan path (ralph drives `ultrawork` parallel agents). For native multi-agent use `team`; for conflict-free parallel file ownership use `ultrapilot`.
    - **Supervised** -> `Skill("subagent-driven-development")` with the plan (fresh subagent + review gate per task). For batched checkpoints in a separate session use `plans-executing`.
-4. **REVIEW** — `Skill("code-review")` (delegates to the `code-reviewer` agent) after execution. Use `code-review-receiving` discipline to triage feedback — verify before implementing, push back when the reviewer is wrong.
+4. **REVIEW** — first build the proof bundle (`code-review` `proof` mode) and pass it as the PR text; then `Skill("code-review")` (delegates to the `code-reviewer` agent). Use `code-review-receiving` discipline to triage feedback — verify before implementing, push back when the reviewer is wrong.
 5. **VERIFY** — `Skill("verification-before-completion")` to gather evidence before claiming done.
 6. **FINISH** — `Skill("finishing-a-development-branch")` to integrate, merge, and clean up the branch/worktree.
 
@@ -55,7 +55,7 @@ Do not advance a stage until its gate holds; if a gate can't be met, stop and re
 | IDEATE   | A written spec/approach exists (or task was already concrete -> skip)      |
 | PLAN     | Plan file under `.claude/local/plans/` with testable acceptance criteria   |
 | EXECUTE  | All plan tasks done; `build` exit 0 and affected tests pass (real output)  |
-| REVIEW   | `code-review` findings triaged -- each fixed or explicitly dismissed       |
+| REVIEW   | `code-review` verdict is not BLOCK; findings fixed or dismissed; a TRUNK verdict stops for human sign-off, even in `--auto` |
 | VERIFY   | Every acceptance criterion mapped to fresh passing evidence                |
 | FINISH   | Branch merged/PR opened and workspace/worktree cleaned up                  |
 

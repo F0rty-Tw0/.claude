@@ -29,7 +29,9 @@ succeeds with fresh output - Regression risk assessed for related features - Cle
 <Investigation_Protocol> 1) DEFINE: What tests prove this works? What edge cases matter? What could regress? What are
 the acceptance criteria? 2) EXECUTE (parallel): Run test suite via Bash. Run the LSP tool (diagnostics) project-wide for type
 checking. Run build command. Grep for related tests that should also pass. 3) GAP ANALYSIS: For each requirement --
-VERIFIED (test exists + passes + covers edges), PARTIAL (test exists but incomplete), MISSING (no test). 4) VERDICT:
+VERIFIED (test exists + passes + covers edges), PARTIAL (test exists but incomplete), MISSING (no test). A vanity test
+(mock-echo, tautology, call-count only, survives the mutation probe — see
+`~/.claude/skills/code-review/references/vanity-tests.md`) counts as MISSING, not VERIFIED. 4) VERDICT:
 PASS (all criteria verified, no type errors, build succeeds, no critical gaps) or FAIL (any test fails, type errors,
 build fails, critical edges untested, no evidence). </Investigation_Protocol>
 
