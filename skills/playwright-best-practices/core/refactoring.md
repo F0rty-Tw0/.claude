@@ -12,13 +12,13 @@ A suite written before this house style usually has nested `describe` groups, `s
 
 ## Order of Work
 
-1. **Baseline.** Run the folder: `npx playwright test e2e/<feature> --reporter=list`. Write down the pass count, the number of tests, and the number of `expect` calls (`grep -c "expect(" -r e2e/<feature>`). These numbers must not drop.
+1. **Baseline.** Run the folder: `npx playwright test e2e/<feature> --reporter=list`. Write down the pass count, the number of tests, and, per test, the checks it runs, including the ones inside page-object methods it calls. These must not drop.
 2. **Inventory.** `bash <skill>/scripts/lint-samples.sh e2e/<feature>` lists every rule the folder breaks, by file and line. The lint reads real `.ts` files as well as the samples in this skill.
 3. **Page objects and helpers.** Remove every `test.step` and `{ box: true }`; each `expect*` method becomes plain `await expect(…)` lines. For each route a spec registers before opening the page, give `goto` an option (`goto({ failOn: 'delete' })`) typed by one `<Page>Options`.
 4. **Fixtures.** Move API seeding into fixtures; a fixture may hand over the page already seeded and open. Delete steps from hooks; a hook that only opened the page goes away, and each test opens it in its `WHEN`.
 5. **Specs.** One `FEATURE` per spec, with a `JOURNEY` only for tests that follow one user path. Titles become `GIVEN <start state>, <outcome>`. Steps become `WHEN` → `AND` → `THEN` → `AND`, with a new `WHEN` for each action after a check. A `test.use` group with a context-fixed option moves to its own spec.
 6. **Names.** A `.spec.ts` file becomes `.test.ts` when a test run routes your own origin (its own route, a routing fixture, or a routing option it passes), and `.e2e.ts` otherwise. The config's `testMatch` is `'**/*.@(e2e|test).ts'`.
-7. **Verify.** Lint clean, `npx tsc --noEmit` clean, the same pass count, `--repeat-each=3` green, and the test and `expect` counts from step 1 not lower. Open one trace (`npx playwright show-trace`) and check that no step sits inside another.
+7. **Verify.** Lint clean, `npx tsc --noEmit` clean, the same pass count, `--repeat-each=3` green, and every test still runs the checks listed in step 1. Open one trace (`npx playwright show-trace`) and check that no step sits inside another.
 
 ## Old Shape to New Shape
 
@@ -122,7 +122,7 @@ A refactor that deletes checks to fit the new step order has lowered the bar. Be
 | Check | How |
 |---|---|
 | No test lost | The number of `test(` calls per file is not lower than the baseline, unless two tests merged and the merged test keeps both checks. |
-| No check lost | The number of `expect` calls is not lower. A guard check before an action stays, as its own phase: `'THEN the alert is listed'`, then `'WHEN it is deleted'`. |
+| No check lost | Each check from the baseline list still runs in the same test. A grep count of `expect(` can fall when inline checks move into a shared `expect*` method, so compare per test, not by total. A guard check before an action stays, as its own phase: `'THEN the alert is listed'`, then `'WHEN it is deleted'`. |
 | Same behaviour | Each old title's outcome still has a `THEN` that asserts it. |
 | Stable | `npx playwright test e2e/<feature> --repeat-each=3` is green. |
 
