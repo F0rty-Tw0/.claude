@@ -40,7 +40,9 @@ out="$(for f in "${files[@]}"; do
       if (line ~ /test\.step\(['\''`]/ && line !~ /test\.step\(['\''`](WHEN|THEN|AND) /) print file ":" NR ": step must start with WHEN / THEN / AND (GIVEN is the test title)"
       if (!spec && line ~ /test\.step\(/) print file ":" NR ": test.step outside a spec (page objects, helpers, fixtures, utils never open steps)"
       if (line ~ /box: true/) print file ":" NR ": boxed step (steps live only in the spec, unboxed)"
-      if (line ~ /^[[:space:]]*test(\.skip|\.fixme|\.describe|\.beforeEach|\.afterEach|\.beforeAll|\.afterAll)?\(/) { givens = 0; whens = 0 }
+      if (line ~ /^[[:space:]]*test(\.skip|\.fixme|\.describe|\.beforeEach|\.afterEach|\.beforeAll|\.afterAll)?\(/) { whens = 0; firststep = 1; inhook = (line ~ /test\.(before|after)(Each|All)\(/) }
+      if (spec && inhook && line ~ /test\.step\(/) print file ":" NR ": step inside a hook (each test opens its own page in its WHEN)"
+      if (spec && !inhook && firststep && line ~ /test\.step\(['\''`]/) { firststep = 0; if (line !~ /test\.step\(['\''`]WHEN /) print file ":" NR ": first step must be WHEN (the title is the GIVEN)" }
       if (spec && line ~ /test\.step\(['\''`]WHEN /) { whens++; if (whens > 1) print file ":" NR ": second WHEN step in one test (use AND, or split the test)" }
       if (line ~ /async \([^)]*\) =>/) print file ":" NR ": async arrow without return type"
       if (line ~ /constructor\((private|public|protected|readonly) /) print file ":" NR ": parameter property"
