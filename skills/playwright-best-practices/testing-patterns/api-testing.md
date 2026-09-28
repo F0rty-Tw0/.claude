@@ -107,7 +107,7 @@ import { expect, test } from './admin.fixture';
 import type { AccountList } from './common/admin.type';
 
 test.describe('FEATURE: admin accounts api', () => {
-  test('SCENARIO: listing accounts as admin returns at least one account', async ({ adminApi }): Promise<void> => {
+  test('GIVEN an admin client, listing accounts returns at least one account', async ({ adminApi }): Promise<void> => {
     const response = await test.step('WHEN accounts are listed as admin', (): Promise<APIResponse> => adminApi.get('/admin/accounts'));
 
     await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
@@ -231,7 +231,7 @@ test.describe('FEATURE: items api', () => {
     await test.step('AND the item is deleted', (): Promise<APIResponse> => itemsApi.remove(item.id));
   });
 
-  test('SCENARIO: patching the price returns the new price', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a created item, patching the price returns the new price', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN the price is patched', (): Promise<APIResponse> => itemsApi.update(item.id, { price: 22.5 }));
 
     const patched = await test.step('AND the patched item is read', (): Promise<Item> => readJson<Item>(response));
@@ -239,7 +239,7 @@ test.describe('FEATURE: items api', () => {
     await test.step('THEN the price is updated', (): void => expect(patched.price).toBe(22.5));
   });
 
-  test('SCENARIO: replacing the item succeeds', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a created item, replacing it succeeds', async ({ itemsApi }): Promise<void> => {
     const replacement: NewItem = { ...ITEM_STUB, price: 24.99, title: 'Claw Hammer' };
 
     const response = await test.step('WHEN the item is replaced', (): Promise<APIResponse> => itemsApi.replace(item.id, replacement));
@@ -247,7 +247,7 @@ test.describe('FEATURE: items api', () => {
     await test.step('THEN the response is ok', (): void => expect(response.ok()).toBeTruthy());
   });
 
-  test('SCENARIO: deleting the item makes a later read return 404', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a created item, deleting it makes a later read return 404', async ({ itemsApi }): Promise<void> => {
     const deleted = await test.step('WHEN the item is deleted', (): Promise<APIResponse> => itemsApi.remove(item.id));
 
     await test.step('THEN the delete returns 204', (): void => expect(deleted.status()).toBe(204));
@@ -305,13 +305,13 @@ const FIELD_TYPES = { createdAt: expect.any(String), id: expect.any(Number), tag
 const METADATA_SHAPE = { rating: expect.any(Number), views: expect.any(Number) };
 
 test.describe('FEATURE: item response shape', () => {
-  test('SCENARIO: fetching the item returns 200', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a stored item, fetching it returns 200', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
     await test.step('THEN the status is 200', (): void => expect(response.status()).toBe(200));
   });
 
-  test('SCENARIO: fetching the item names json and a cache policy in the headers', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a stored item, fetching it names json and a cache policy in the headers', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
     await test.step('THEN the content type is json', (): void => expect(response.headers()['content-type']).toContain('application/json'));
@@ -319,7 +319,7 @@ test.describe('FEATURE: item response shape', () => {
     await test.step('AND cache control sets a max age', (): void => expect(response.headers()['cache-control']).toMatch(/max-age=\d+/));
   });
 
-  test('SCENARIO: fetching the item matches known fields and every field type', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a stored item, fetching it matches known fields and every field type', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
     const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
@@ -331,7 +331,7 @@ test.describe('FEATURE: item response shape', () => {
     await test.step('AND the metadata has views and rating', (): void => expect(item.metadata).toMatchObject(METADATA_SHAPE));
   });
 
-  test('SCENARIO: fetching the item tags it featured and not deprecated', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a stored item, fetching it tags it featured and not deprecated', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
     const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
@@ -341,7 +341,7 @@ test.describe('FEATURE: item response shape', () => {
     await test.step('AND the deprecated tag is absent', (): void => expect(item.tags).not.toContain('deprecated'));
   });
 
-  test('SCENARIO: fetching the item returns an ISO createdAt', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a stored item, fetching it returns an ISO createdAt', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN item 101 is fetched', (): Promise<APIResponse> => itemsApi.get(101));
 
     const item = await test.step('AND the body is read', (): Promise<Item> => readJson<Item>(response));
@@ -433,7 +433,7 @@ export { expect } from '@playwright/test';
 import { expect, test } from './workspace.fixture';
 
 test.describe('FEATURE: workspace dashboard', () => {
-  test('SCENARIO: signing in as the seeded account lists the seeded workspace', async ({ dashboardPage, loginPage, page, seedAccount, seedWorkspace }): Promise<void> => {
+  test('GIVEN a seeded account and workspace, signing in lists the seeded workspace', async ({ dashboardPage, loginPage, page, seedAccount, seedWorkspace }): Promise<void> => {
     await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
 
     await test.step('WHEN the seeded account signs in', (): Promise<void> => loginPage.submit(seedAccount));
@@ -488,7 +488,7 @@ const TITLE_ISSUE = expect.objectContaining({ field: 'title', message: expect.an
 const PRICE_ISSUE = expect.objectContaining({ field: 'price', message: expect.any(String) });
 
 test.describe('FEATURE: items api error responses', () => {
-  test('SCENARIO: posting an invalid item returns 400 with one issue per field', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN an invalid item, posting it returns 400 with one issue per field', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN an invalid item is posted', (): Promise<APIResponse> => itemsApi.create(INVALID_ITEM));
 
     await test.step('THEN the status is 400', (): void => expect(response.status()).toBe(400));
@@ -500,7 +500,7 @@ test.describe('FEATURE: items api error responses', () => {
     await test.step('AND the details cover title and price', (): void => expect(body.details).toEqual(expect.arrayContaining([TITLE_ISSUE, PRICE_ISSUE])));
   });
 
-  test('SCENARIO: fifty searches at once get rate limited with retry-after', async ({ searchApi }): Promise<void> => {
+  test('GIVEN fifty searches at once, the api rate limits them with retry-after', async ({ searchApi }): Promise<void> => {
     const responses = await test.step('WHEN fifty searches are sent', (): Promise<APIResponse[]> => searchApi.burst(50));
 
     const rateLimited = await test.step('AND the 429 responses are collected', (): APIResponse[] => responses.filter((response: APIResponse): boolean => response.status() === 429));
@@ -578,7 +578,7 @@ const ELEVEN_MB = 11 * 1024 * 1024;
 const OVERSIZED: UploadFile = { buffer: Buffer.alloc(ELEVEN_MB), mimeType: 'application/octet-stream', name: 'large-file.bin' };
 
 test.describe('FEATURE: document upload api', () => {
-  test('SCENARIO: uploading a pdf as multipart returns 201 describing the stored file', async ({ documentsApi }): Promise<void> => {
+  test('GIVEN a pdf, uploading it as multipart returns 201 describing the stored file', async ({ documentsApi }): Promise<void> => {
     const response = await test.step('WHEN the report is uploaded', (): Promise<APIResponse> => documentsApi.uploadFile(REPORT_PATH, 'application/pdf', REPORT_META));
 
     await test.step('THEN the status is 201', (): void => expect(response.status()).toBe(201));
@@ -588,7 +588,7 @@ test.describe('FEATURE: document upload api', () => {
     await test.step('AND the body describes the stored file', (): void => expect(body).toMatchObject(UPLOADED_SHAPE));
   });
 
-  test('SCENARIO: uploading an eleven megabyte file returns 413', async ({ documentsApi }): Promise<void> => {
+  test('GIVEN an eleven megabyte file, uploading it returns 413', async ({ documentsApi }): Promise<void> => {
     const response = await test.step('WHEN an oversized file is uploaded', (): Promise<APIResponse> => documentsApi.uploadBuffer(OVERSIZED, REPORT_META));
 
     await test.step('THEN the status is 413', (): void => expect(response.status()).toBe(413));
@@ -677,7 +677,7 @@ test.describe('FEATURE: checkout api', () => {
     await test.step('AND the product is deleted', (): Promise<APIResponse> => shopApi.deleteProduct(product.id));
   });
 
-  test('SCENARIO: checking out the cart totals three times the price', async ({ shopApi }): Promise<void> => {
+  test('GIVEN a filled cart, checking out totals three times the price', async ({ shopApi }): Promise<void> => {
     const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
 
     const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
@@ -689,7 +689,7 @@ test.describe('FEATURE: checkout api', () => {
     await test.step('THEN the cart total is 149.97', (): void => expect(cart.total).toBe(149.97));
   });
 
-  test('SCENARIO: checking out the cart creates a pending order with one line', async ({ shopApi }): Promise<void> => {
+  test('GIVEN a filled cart, checking out creates a pending order with one line', async ({ shopApi }): Promise<void> => {
     const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
 
     const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
@@ -707,12 +707,12 @@ test.describe('FEATURE: checkout api', () => {
 
 Two more outcomes of the same chain are one scenario each: the four checkout steps, then one extra read.
 
-| SCENARIO | Extra `AND` steps | THEN |
+| Title | Extra `AND` steps | THEN |
 |---|---|---|
-| checking out the cart lists the order | `shopApi.listOrders()`, read as `OrderList` | the listed ids contain `order.id` |
-| checking out the cart drops the product stock to 47 | `shopApi.product(product.id)`, read as `Product` | `stock` is 47 |
+| GIVEN a filled cart, checking out lists the order | `shopApi.listOrders()`, read as `OrderList` | the listed ids contain `order.id` |
+| GIVEN a filled cart, checking out drops the product stock to 47 | `shopApi.product(product.id)`, read as `Product` | `stock` is 47 |
 
-A state machine is the same flat spec with one test per starting state: its `GIVEN` step sets the state, one `WHEN` step runs the transition, and the title names both (`'SCENARIO: publishing an article in review succeeds'`). For an article publish workflow through `patch('/api/articles/:id/status', { data: { status } })`:
+A state machine is the same flat spec with one test per starting state: its `GIVEN` step sets the state, one `WHEN` step runs the transition, and the title names both (`'GIVEN an article in review, publishing it succeeds'`). For an article publish workflow through `patch('/api/articles/:id/status', { data: { status } })`:
 
 | GIVEN | WHEN status is set to | THEN |
 |---|---|---|
@@ -770,7 +770,7 @@ import { expect, test } from './items.fixture';
 const LIST_QUERY: ItemQuery = { category: 'tools', limit: 10, page: 1 };
 
 test.describe('FEATURE: items api contract', () => {
-  test('SCENARIO: fetching the item list matches the paginated items schema', async ({ itemsApi }): Promise<void> => {
+  test('GIVEN a tools query, fetching the item list matches the paginated items schema', async ({ itemsApi }): Promise<void> => {
     const response = await test.step('WHEN the item list is fetched', (): Promise<APIResponse> => itemsApi.list(LIST_QUERY));
 
     await test.step('THEN the status is ok', (): void => expect(response.ok()).toBeTruthy());

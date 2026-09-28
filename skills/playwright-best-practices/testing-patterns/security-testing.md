@@ -226,7 +226,7 @@ import { expect, test } from './security.fixture';
 
 test.describe('FEATURE: reflected XSS', () => {
   for (const payload of XSS_PAYLOADS) {
-    test(`SCENARIO: the query ${payload} is escaped and does not run`, async ({ dialogs, searchPage }): Promise<void> => {
+    test(`GIVEN the query ${payload}, the search page escapes it and does not run it`, async ({ dialogs, searchPage }): Promise<void> => {
       await test.step('WHEN the search page is opened with the payload', (): Promise<void> => searchPage.gotoQuery(payload));
 
       await test.step('THEN no dialog opened', (): void => expect(dialogs).toEqual([]));
@@ -248,7 +248,7 @@ import { test } from './security.fixture';
 const STORED_PAYLOAD = '<script>alert("xss")</script>Hello';
 
 test.describe('FEATURE: stored XSS', () => {
-  test('SCENARIO: creating a post with a script tag renders it sanitized', async ({ postEditorPage, postPage }): Promise<void> => {
+  test('GIVEN a post with a script tag, creating it renders it sanitized', async ({ postEditorPage, postPage }): Promise<void> => {
     await test.step('GIVEN the post editor is open', (): Promise<void> => postEditorPage.goto());
 
     await test.step('WHEN a post containing a script tag is submitted', (): Promise<void> => postEditorPage.submit(STORED_PAYLOAD));
@@ -271,13 +271,13 @@ The token is a hidden input named `_csrf` or `csrf_token`. `SettingsPage.csrfInp
 import { test } from './security.fixture';
 
 test.describe('FEATURE: CSRF token', () => {
-  test('SCENARIO: opening the settings page renders a form with a csrf token', async ({ settingsPage }): Promise<void> => {
+  test('GIVEN the settings page, opening it renders a form with a csrf token', async ({ settingsPage }): Promise<void> => {
     await test.step('WHEN the settings page is opened', (): Promise<void> => settingsPage.goto());
 
     await test.step('THEN the form carries a csrf token', (): Promise<void> => settingsPage.expectCsrfToken());
   });
 
-  test('SCENARIO: saving the theme through the form saves the settings', async ({ settingsPage }): Promise<void> => {
+  test('GIVEN a theme choice, saving it through the form saves the settings', async ({ settingsPage }): Promise<void> => {
     await test.step('GIVEN the settings page is open', (): Promise<void> => settingsPage.goto());
 
     await test.step('WHEN the dark theme is saved', (): Promise<void> => settingsPage.saveTheme('dark'));
@@ -333,7 +333,7 @@ import { expect, test } from './security.fixture';
 const DARK_THEME: SettingsPatch = { theme: 'dark' };
 
 test.describe('FEATURE: CSRF validation', () => {
-  test('SCENARIO: posting settings without a token answers 403', async ({ settingsApi }): Promise<void> => {
+  test('GIVEN no csrf token, posting settings answers 403', async ({ settingsApi }): Promise<void> => {
     const response = await test.step('WHEN settings are posted without a token', (): Promise<APIResponse> => settingsApi.updateWithoutToken(DARK_THEME));
 
     await test.step('THEN the status is 403', (): void => expect(response.status()).toBe(403));
@@ -361,7 +361,7 @@ test.describe('FEATURE: session expiry', () => {
     await test.step('AND the dashboard is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
   });
 
-  test('SCENARIO: two hours passing sends the next navigation to the login page', async ({ loginPage, page, profilePage }): Promise<void> => {
+  test('GIVEN a session idle for two hours, the next navigation goes to the login page', async ({ loginPage, page, profilePage }): Promise<void> => {
     await test.step('WHEN the clock advances two hours', (): Promise<void> => page.clock.fastForward('02:00:00'));
 
     await test.step('AND the profile page is opened', (): Promise<void> => profilePage.goto());
@@ -383,7 +383,7 @@ import { test } from './security.fixture';
 import { USER_STUB } from './test/stubs/security.stub';
 
 test.describe('FEATURE: concurrent session limit', () => {
-  test('SCENARIO: signing in from a second browser ends the first session', async ({ dashboardPage, loginPage, secondLoginPage }): Promise<void> => {
+  test('GIVEN a session in one browser, signing in from a second ends the first', async ({ dashboardPage, loginPage, secondLoginPage }): Promise<void> => {
     await test.step('GIVEN the user is signed in from the first browser', (): Promise<void> => loginPage.login(USER_STUB));
 
     await test.step('WHEN the same user signs in from a second browser', (): Promise<void> => secondLoginPage.login(USER_STUB));
@@ -417,7 +417,7 @@ test.describe('FEATURE: password reset token', () => {
     await test.step('AND the password updated notice is shown', (): Promise<void> => resetPasswordPage.expectUpdated());
   });
 
-  test('SCENARIO: reusing the token rejects it as invalid or expired', async ({ resetPasswordPage }): Promise<void> => {
+  test('GIVEN a used reset token, reusing it rejects it as invalid or expired', async ({ resetPasswordPage }): Promise<void> => {
     await test.step('WHEN the reset page is opened with the used token', (): Promise<void> => resetPasswordPage.goto(RESET_TOKEN));
 
     await test.step('THEN the invalid or expired token notice is shown', (): Promise<void> => resetPasswordPage.expectInvalidToken());
@@ -444,7 +444,7 @@ import { expect, test } from './security.fixture';
 test.use({ storageState: '.auth/user.json' });
 
 test.describe('FEATURE: admin route authorization', () => {
-  test('SCENARIO: a regular user requesting the admin users page is denied access', async ({ adminUsersPage, page }): Promise<void> => {
+  test('GIVEN a regular user, requesting the admin users page is denied access', async ({ adminUsersPage, page }): Promise<void> => {
     await test.step('WHEN the admin users page is requested', (): Promise<void> => adminUsersPage.goto());
 
     await test.step('THEN the admin url is not reached', (): Promise<void> => expect(page).not.toHaveURL('/admin/users'));
@@ -528,7 +528,7 @@ test.describe('FEATURE: security headers', () => {
     response = await test.step('GIVEN the home page is open', (): Promise<Response> => homePage.open());
   });
 
-  test('SCENARIO: reading the headers finds the policy headers set', async (): Promise<void> => {
+  test('GIVEN the home page response, reading the headers finds the policy headers set', async (): Promise<void> => {
     const headers = await test.step('WHEN the response headers are read', (): HeaderMap => response.headers());
 
     await test.step('THEN the content security policy is set', (): void => expect(headers['content-security-policy']).toBeTruthy());
@@ -540,7 +540,7 @@ test.describe('FEATURE: security headers', () => {
     await test.step('AND x-xss-protection is set', (): void => expect(headers['x-xss-protection']).toBeTruthy());
   });
 
-  test('SCENARIO: injecting an inline script makes the policy report a violation', async ({ cspViolations, homePage }): Promise<void> => {
+  test('GIVEN an injected inline script, the policy reports a violation', async ({ cspViolations, homePage }): Promise<void> => {
     await test.step('WHEN an inline script is injected', (): Promise<void> => homePage.injectInlineScript());
 
     await test.step('THEN at least one violation was reported', (): void => expect(cspViolations.length).toBeGreaterThan(0));

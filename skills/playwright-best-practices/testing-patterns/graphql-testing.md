@@ -158,7 +158,7 @@ const ITEM_SHAPE = { id: '101', price: expect.any(Number), title: expect.any(Str
 const REVIEW_SHAPE = expect.objectContaining({ id: expect.any(String), rating: expect.any(Number) });
 
 test.describe('FEATURE: item query', () => {
-  test('SCENARIO: fetching by id reports no errors', async ({ graphqlApi }): Promise<void> => {
+  test('GIVEN an item id, fetching the item reports no errors', async ({ graphqlApi }): Promise<void> => {
     const response = await test.step('WHEN the FetchItem query is posted', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
 
     const result = await test.step('AND the body is read', (): Promise<GraphqlResult<FetchItemData>> => readGraphql<FetchItemData>(response));
@@ -168,7 +168,7 @@ test.describe('FEATURE: item query', () => {
     await test.step('AND errors is undefined', (): void => expect(result.errors).toBeUndefined());
   });
 
-  test('SCENARIO: fetching by id returns the item with id, title and price', async ({ graphqlApi }): Promise<void> => {
+  test('GIVEN an item id, fetching the item returns the item with id, title and price', async ({ graphqlApi }): Promise<void> => {
     const response = await test.step('WHEN the FetchItem query is posted', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
 
     const result = await test.step('AND the body is read', (): Promise<GraphqlResult<FetchItemData>> => readGraphql<FetchItemData>(response));
@@ -176,7 +176,7 @@ test.describe('FEATURE: item query', () => {
     await test.step('THEN the item matches the shape', (): void => expect(result.data?.item).toMatchObject(ITEM_SHAPE));
   });
 
-  test('SCENARIO: fetching by id returns reviews with an id and a rating', async ({ graphqlApi }): Promise<void> => {
+  test('GIVEN an item id, fetching the item returns reviews with an id and a rating', async ({ graphqlApi }): Promise<void> => {
     const response = await test.step('WHEN the FetchItem query is posted', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
 
     const result = await test.step('AND the body is read', (): Promise<GraphqlResult<FetchItemData>> => readGraphql<FetchItemData>(response));
@@ -214,7 +214,7 @@ import { ITEM_INPUT_STUB } from './test/stubs/catalog.stub';
 const ADDED_SHAPE = { id: expect.any(String), status: 'DRAFT', title: 'New Widget' };
 
 test.describe('FEATURE: add item mutation', () => {
-  test('SCENARIO: adding a draft item returns it with an id', async ({ graphqlApi }): Promise<void> => {
+  test('GIVEN a draft item, adding it returns it with an id', async ({ graphqlApi }): Promise<void> => {
     const response = await test.step('WHEN the AddItem mutation is posted', (): Promise<APIResponse> => graphqlApi.addItem(ITEM_INPUT_STUB));
 
     const result = await test.step('AND the body is read', (): Promise<GraphqlResult<AddItemData>> => readGraphql<AddItemData>(response));
@@ -241,7 +241,7 @@ import type { AddItemData, ItemInput } from './common/catalog.type';
 import { ITEM_INPUT_STUB } from './test/stubs/catalog.stub';
 
 test.describe('FEATURE: add item validation', () => {
-  test('SCENARIO: an empty title returns a BAD_USER_INPUT error naming the title', async ({ graphqlApi }): Promise<void> => {
+  test('GIVEN an empty title, adding the item returns a BAD_USER_INPUT error naming the title', async ({ graphqlApi }): Promise<void> => {
     const input: ItemInput = { ...ITEM_INPUT_STUB, title: '' };
 
     const response = await test.step('WHEN the AddItem mutation is posted', (): Promise<APIResponse> => graphqlApi.addItem(input));
@@ -271,7 +271,7 @@ import { expect, test } from './catalog.fixture';
 import type { AdminDashboardData } from './common/catalog.type';
 
 test.describe('FEATURE: admin dashboard query', () => {
-  test('SCENARIO: a client with no token gets an UNAUTHORIZED error from the AdminDashboard query', async ({ guestGraphqlApi }): Promise<void> => {
+  test('GIVEN a client with no token, the AdminDashboard query returns an UNAUTHORIZED error', async ({ guestGraphqlApi }): Promise<void> => {
     const response = await test.step('WHEN the AdminDashboard query is posted', (): Promise<APIResponse> => guestGraphqlApi.adminDashboard());
 
     const result = await test.step('AND the body is read', (): Promise<GraphqlResult<AdminDashboardData>> => readGraphql<AdminDashboardData>(response));
@@ -372,7 +372,7 @@ import { expect, test } from './catalog.fixture';
 import type { FetchItemData, UpdateItemData } from './common/catalog.type';
 
 test.describe('FEATURE: update item mutation', () => {
-  test('SCENARIO: updating the title echoes the new title', async ({ graphqlApi }): Promise<void> => {
+  test('GIVEN a fetched item, updating the title echoes the new title', async ({ graphqlApi }): Promise<void> => {
     const fetchResponse = await test.step('GIVEN item 101 is fetched', (): Promise<APIResponse> => graphqlApi.fetchItem('101'));
 
     const fetched = await test.step('AND the fetched item is read', (): Promise<GraphqlResult<FetchItemData>> => readGraphql<FetchItemData>(fetchResponse));
