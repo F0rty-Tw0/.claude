@@ -18,15 +18,37 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 ## The Process
 
 ```
+0. Proof gate        → proof bundle + fresh adversarial review (code-review skill); BLOCK → stop and ask
 1. Gather changes    → git diff, git log against base branch
 2. Scan repo context → understand what areas the changes touch and what depends on them
-3. Size the change   → small / medium / large (determines output format)
+3. Audience + size   → ask: for us or for someone else? then small / medium / large
 4. Write title       → short, specific, lowercase
 5. Write description → proportional to change size
 6. Add ticket link   → extract ticket number from branch name, append "Closes #<number>"
 7. Humanize          → run output through humanizer patterns
 8. Present           → show to user, ready for gh pr create
 ```
+
+### Step 0: Proof Gate
+
+**REQUIRED SUB-SKILL:** Use skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it.
+
+1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. UI change → screenshot.
+2. **Fresh review** — `code-review` review mode on `<base>...HEAD`. It dispatches an independent reviewer; do not review your own work in this session.
+3. **Verdict gate:**
+   - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
+   - `APPROVE — …` → continue.
+4. **Scale proof to blast radius** — keep small PRs small. (For-us format. The for-someone-else format in Step 3 always uses its compact Proof instead.)
+
+| Class | `## Proof` contains |
+|---|---|
+| Leaf | Test command + counts, visual/log for visible change, **Not verified** line, review verdict — ~4 lines |
+| Branch | + base-failure check (bug fix), one non-mocked runtime log |
+| Trunk | Full `templates/pr-proof.md`: gate, rollback, invariants, canary metric, human must deep-read list |
+
+Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
+
+Run `git push` and `gh pr create` as **separate** Bash calls. If the hook blocks a chained call, the push never runs, but commit-guard has already used up its one-shot flag.
 
 ### Step 1: Gather Changes
 
@@ -53,7 +75,33 @@ Before writing, understand the blast radius:
 
 Mention impact only when it's real and non-obvious. Don't manufacture significance.
 
-### Step 3: Size the Change
+### Step 3: Audience, then Size
+
+**Ask first** with AskUserQuestion: *Who is this PR for?* Ask once per PR, or once for a whole `meaningful-prs` stack.
+
+- **For us (Recommended in own repos)** — our repo or team. Use the size-based format below with the full blast-radius `## Proof` from Step 0. Some extra context is fine.
+- **For someone else** — upstream, OSS, another team, a reviewer without our context. **Very short, nothing else:**
+
+```
+<title>
+
+<1–3 sentences: what changed, and why if not obvious>
+
+## Stack            ← only if stacked, 1–3 lines
+## Proof
+- Blast radius: <Leaf|Branch|Trunk> <n>/10 — rollback: <flag off | revert | …>
+- Tests: `<cmd>` → <pass/fail counts>
+- Verified: <one line>
+- Not verified: <one line>
+- Blockers: <one line each>   ← only on a draft opened despite BLOCK
+<screenshot link, UI changes only>
+
+Closes #<n>         ← only if the branch has a ticket
+```
+
+  No `What changed` / `Impact` / `Test plan` sections, no review history, no deep-read list. For the external format, the size table below does not apply.
+
+### Size (for-us format)
 
 | Size   | Criteria                             | Output length         |
 | ------ | ------------------------------------ | --------------------- |
@@ -162,7 +210,9 @@ If the branch has no recognizable ticket number, skip this step silently — don
 
 ### Step 7: Humanize
 
-Run the final title and description through `skill:humanizer` to remove AI-sounding language before presenting.
+Run the final title and description through `skill:humanizer` to remove AI-sounding language before presenting. Humanize prose only — leave the `## Proof` section's commands, output, and verdict verbatim.
+
+Append the `## Proof` section at the end of the body, before `Closes #…`: the class-scaled one from Step 0 for us, or the compact one from Step 3 for someone else. It does not count toward the size-based section limits.
 
 ### Step 8: Present
 
@@ -207,7 +257,8 @@ Using "enhances", "fosters", "ensures", "leveraging". Write like a person.
 
 If your PR description has any of these, rewrite it:
 
-- More than 2 sections for a change under 5 files
+- More than 2 sections for a change under 5 files (`## Proof` excluded)
+- No `## Proof` section, or proof claims ("tests pass", "verified") with no pasted output
 - Any bullet starting with a bold header followed by a colon
 - The word "comprehensive", "robust", "seamless", or "leverage"
 - A test plan padded with obvious steps
