@@ -130,7 +130,7 @@ The fixture above is development mode: `electron.launch({ args: ['.'] })` runs t
 ```ts
 // e2e/desktop/pages/main-window.page.ts
 import type { ElectronApplication, Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import { SettingsWindowPage } from './settings-window.page';
 
@@ -165,7 +165,7 @@ export class MainWindowPage {
   }
 
   public async expectText(text: string): Promise<void> {
-    await test.step(`THEN window shows "${text}"`, (): Promise<void> => expect(this.page.getByText(text)).toBeVisible(), { box: true });
+    await expect(this.page.getByText(text)).toBeVisible();
   }
 }
 ```
@@ -182,10 +182,6 @@ import type { SettingsWindowPage } from './pages/settings-window.page';
 import { expect, test } from './desktop.fixture';
 
 test.describe('FEATURE: desktop windows', () => {
-  test('GIVEN app start, the main window names the app', async ({ mainWindow }): Promise<void> => {
-    await test.step('THEN window shows My App', (): Promise<void> => mainWindow.expectText('My App'));
-  });
-
   test('GIVEN the main window, clicking Open Settings opens a second window', async ({ electronApp, mainWindow }): Promise<void> => {
     const settingsWindow = await test.step('WHEN the settings window is opened', (): Promise<SettingsWindowPage> => mainWindow.openSettings());
 
@@ -224,7 +220,7 @@ export const appVersion = (electronApp: ElectronApplication): Promise<string> =>
 export const windowBounds = (electronApp: ElectronApplication): Promise<Rectangle> => electronApp.evaluate(readWindowBounds);
 ```
 
-Other reads follow the same two shapes:
+Other reads follow the same two shapes. A test with no user action still opens with a `WHEN` step: the read is the `WHEN`, the assertion on its result is the `THEN`.
 
 | Read | Callback body | Returns |
 |---|---|---|
@@ -350,7 +346,7 @@ test.describe('FEATURE: desktop renderer', () => {
 
 ## IPC Communication
 
-`electronAPI.getData('user-settings')` is a preload wrapper around `ipcRenderer.invoke`; `userSettings()` returns the typed result. `roundTripFromMain` registers the renderer listener first, then sends through `webContents.send` from the main process, and returns what the renderer received; registering before sending is what makes the round trip deterministic. `installIpcMock` removes the existing `ipcMain` handler for a channel and installs one that answers with the given response. The response travels as the `evaluate` argument because the callback body is serialised and cannot close over Node-side values. The channel-and-response pair it takes is data, so it is `FETCH_DATA_STUB: IpcMock` in `test/stubs/ipc.stub.ts` holding `{ channel: 'fetch-data', response: { data: 'test-data', mocked: true } }`; a value named `*_MOCK` that never intercepts anything is a stub wearing the wrong name.
+`electronAPI.getData('user-settings')` is a preload wrapper around `ipcRenderer.invoke`; `userSettings()` returns the typed result. `roundTripFromMain` registers the renderer listener first, then sends through `webContents.send` from the main process, and returns what the renderer received; registering before sending is what makes the round trip deterministic. `installIpcMock` removes the existing `ipcMain` handler for a channel and installs one that answers with the given response; `fetchDataWithMock` installs it and then calls `renderer.fetchData()`, so the mock is applied inside the test's one `WHEN` call instead of an arrange step. The response travels as the `evaluate` argument because the callback body is serialised and cannot close over Node-side values. The channel-and-response pair it takes is data, so it is `FETCH_DATA_STUB: IpcMock` in `test/stubs/ipc.stub.ts` holding `{ channel: 'fetch-data', response: { data: 'test-data', mocked: true } }`; a value named `*_MOCK` that never intercepts anything is a stub wearing the wrong name.
 
 ```ts
 // e2e/desktop/test/utils/ipc.spec.util.ts
@@ -372,6 +368,12 @@ const installMock = ({ ipcMain }: ElectronModule, mock: IpcMock): void => {
 
 export const installIpcMock = (electronApp: ElectronApplication, mock: IpcMock): Promise<void> => electronApp.evaluate(installMock, mock);
 
+export const fetchDataWithMock = async (electronApp: ElectronApplication, renderer: RendererPage, mock: IpcMock): Promise<FetchData | undefined> => {
+  await installIpcMock(electronApp, mock);
+
+  return renderer.fetchData();
+};
+
 export const sendToRenderer = (electronApp: ElectronApplication, text: string): Promise<void> => electronApp.evaluate(sendMessage, text);
 
 export const roundTripFromMain = async (electronApp: ElectronApplication, renderer: RendererPage, text: string): Promise<string> => {
@@ -387,7 +389,7 @@ export const roundTripFromMain = async (electronApp: ElectronApplication, render
 // e2e/desktop/ipc.e2e.ts
 import type { FetchData, UserSettings } from './common/desktop.type';
 import { expect, test } from './desktop.fixture';
-import { installIpcMock, roundTripFromMain } from './test/utils/ipc.spec.util';
+import { fetchDataWithMock, roundTripFromMain } from './test/utils/ipc.spec.util';
 import { FETCH_DATA_STUB } from './test/stubs/ipc.stub';
 
 test.describe('FEATURE: desktop ipc', () => {
@@ -404,9 +406,7 @@ test.describe('FEATURE: desktop ipc', () => {
   });
 
   test('GIVEN a mocked fetch-data handler, its response reaches the renderer', async ({ electronApp, renderer }): Promise<void> => {
-    await test.step('GIVEN the fetch-data mock is installed', (): Promise<void> => installIpcMock(electronApp, FETCH_DATA_STUB));
-
-    const result = await test.step('WHEN fetchData is invoked', (): Promise<FetchData | undefined> => renderer.fetchData());
+    const result = await test.step('WHEN fetchData is invoked', (): Promise<FetchData | undefined> => fetchDataWithMock(electronApp, renderer, FETCH_DATA_STUB));
 
     await test.step('THEN response is the mock', (): void => expect(result?.mocked).toBe(true));
   });
@@ -417,7 +417,7 @@ test.describe('FEATURE: desktop ipc', () => {
 
 ### File System Dialogs
 
-Native dialogs block the test, so the main-process `dialog` methods are replaced with functions that resolve at once. The chosen paths travel as the `evaluate` argument.
+Native dialogs block the test, so the main-process `dialog` methods are replaced with functions that resolve at once. The chosen paths travel as the `evaluate` argument. `openFileWithDialog` installs the replacement and then clicks Open File, so the mock is part of the test's one `WHEN` call.
 
 ```ts
 // e2e/desktop/test/utils/dialog.spec.util.ts
@@ -425,6 +425,7 @@ import type { ElectronApplication } from '@playwright/test';
 import type { OpenDialogReturnValue } from 'electron';
 
 import type { ElectronModule } from '../../common/desktop.type';
+import type { MainWindowPage } from '../../pages/main-window.page';
 
 const mockOpenDialog = ({ dialog }: ElectronModule, filePaths: string[]): void => {
   const result: OpenDialogReturnValue = { canceled: false, filePaths };
@@ -433,6 +434,11 @@ const mockOpenDialog = ({ dialog }: ElectronModule, filePaths: string[]): void =
 };
 
 export const installOpenDialogMock = (electronApp: ElectronApplication, filePaths: string[]): Promise<void> => electronApp.evaluate(mockOpenDialog, filePaths);
+
+export const openFileWithDialog = async (electronApp: ElectronApplication, mainWindow: MainWindowPage, filePaths: string[]): Promise<void> => {
+  await installOpenDialogMock(electronApp, filePaths);
+  await mainWindow.openFileButton.click();
+};
 ```
 
 | Dialog | Replaced method | Result type | Result value |
@@ -443,13 +449,11 @@ export const installOpenDialogMock = (electronApp: ElectronApplication, filePath
 ```ts
 // e2e/desktop/dialogs.e2e.ts
 import { test } from './desktop.fixture';
-import { installOpenDialogMock } from './test/utils/dialog.spec.util';
+import { openFileWithDialog } from './test/utils/dialog.spec.util';
 
 test.describe('FEATURE: desktop dialogs', () => {
   test('GIVEN a mocked open dialog, clicking Open File opens the mocked file', async ({ electronApp, mainWindow }): Promise<void> => {
-    await test.step('GIVEN the open dialog resolves with file.txt', (): Promise<void> => installOpenDialogMock(electronApp, ['/mock/path/file.txt']));
-
-    await test.step('WHEN Open File is clicked', (): Promise<void> => mainWindow.openFileButton.click());
+    await test.step('WHEN Open File is clicked', (): Promise<void> => openFileWithDialog(electronApp, mainWindow, ['/mock/path/file.txt']));
 
     await test.step('THEN file.txt is shown', (): Promise<void> => mainWindow.expectText('file.txt'));
   });
@@ -458,7 +462,7 @@ test.describe('FEATURE: desktop dialogs', () => {
 
 ### Menu Testing
 
-`Menu.getApplicationMenu()` returns the menu tree. `menuLabels` maps the top-level items; `clickMenuItem` finds a submenu item by label and calls its `click()`. A spec reads `menuLabels(electronApp)` in a `WHEN` step typed `Promise<string[]>`, asserts `expect(labels).toContain('File')` in `THEN`, then clicks `clickMenuItem(electronApp, { item: 'New', menu: 'File' })`.
+`Menu.getApplicationMenu()` returns the menu tree. `menuLabels` maps the top-level items; `clickMenuItem` finds a submenu item by label and calls its `click()`. A spec reads `menuLabels(electronApp)` in a `WHEN` step typed `Promise<string[]>` and asserts `expect(labels).toContain('File')` in `THEN`. Clicking `clickMenuItem(electronApp, { item: 'New', menu: 'File' })` is the `WHEN` of a separate test that asserts what File > New opens.
 
 ```ts
 // e2e/desktop/test/utils/menu.spec.util.ts
@@ -489,7 +493,7 @@ export const menuLabels = (electronApp: ElectronApplication): Promise<string[]> 
 
 ### Native Notifications
 
-`installNotificationSpy` replaces the global `Notification` with a subclass that records the last constructor options on `globalThis` through `Reflect.set`; `lastNotification` reads it back through a type predicate, so no cast is needed.
+`installNotificationSpy` replaces the global `Notification` with a subclass that records the last constructor options on `globalThis` through `Reflect.set`; `lastNotification` reads it back through a type predicate, so no cast is needed. `notifyWithSpy` installs the spy and then clicks Notify, so the spy is part of the test's one `WHEN` call.
 
 ```ts
 // e2e/desktop/test/utils/notification.spec.util.ts
@@ -497,6 +501,7 @@ import type { ElectronApplication } from '@playwright/test';
 import type { NotificationConstructorOptions } from 'electron';
 
 import type { ElectronModule } from '../../common/desktop.type';
+import type { MainWindowPage } from '../../pages/main-window.page';
 
 const installSpy = ({ Notification }: ElectronModule): void => {
   class SpyNotification extends Notification {
@@ -524,6 +529,11 @@ const readLast = (): NotificationConstructorOptions | undefined => {
 };
 
 export const installNotificationSpy = (electronApp: ElectronApplication): Promise<void> => electronApp.evaluate(installSpy);
+
+export const notifyWithSpy = async (electronApp: ElectronApplication, mainWindow: MainWindowPage): Promise<void> => {
+  await installNotificationSpy(electronApp);
+  await mainWindow.notifyButton.click();
+};
 
 export const lastNotification = (electronApp: ElectronApplication): Promise<NotificationConstructorOptions | undefined> => electronApp.evaluate(readLast);
 ```
@@ -555,13 +565,11 @@ import type { NotificationConstructorOptions } from 'electron';
 
 import { expect, test } from './desktop.fixture';
 import { readClipboard, writeClipboard } from './test/utils/clipboard.spec.util';
-import { installNotificationSpy, lastNotification } from './test/utils/notification.spec.util';
+import { lastNotification, notifyWithSpy } from './test/utils/notification.spec.util';
 
 test.describe('FEATURE: desktop native features', () => {
   test('GIVEN the main window, clicking Notify creates a notification titled New Message', async ({ electronApp, mainWindow }): Promise<void> => {
-    await test.step('WHEN Notification is spied on', (): Promise<void> => installNotificationSpy(electronApp));
-
-    await test.step('AND Notify is clicked', (): Promise<void> => mainWindow.notifyButton.click());
+    await test.step('WHEN Notify is clicked', (): Promise<void> => notifyWithSpy(electronApp, mainWindow));
 
     const notification = await test.step('AND the last notification is read', (): Promise<NotificationConstructorOptions | undefined> => lastNotification(electronApp));
 

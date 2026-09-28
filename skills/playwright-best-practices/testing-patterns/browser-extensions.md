@@ -284,19 +284,19 @@ import { expect, test } from './extension.fixture';
 
 test.describe('FEATURE: extension popup', () => {
   test('GIVEN the popup, clicking Enable reports Enabled', async ({ openPopup }): Promise<void> => {
-    const popup = await test.step('GIVEN the popup is open', (): Promise<PopupPage> => openPopup());
+    const popup = await test.step('WHEN the popup is opened', (): Promise<PopupPage> => openPopup());
 
-    await test.step('AND the heading names the extension', (): Promise<void> => expect(popup.heading).toHaveText('My Extension'));
+    await test.step('AND Enable is clicked', (): Promise<void> => popup.enable());
 
-    await test.step('WHEN Enable is clicked', (): Promise<void> => popup.enable());
+    await test.step('THEN the heading names the extension', (): Promise<void> => expect(popup.heading).toHaveText('My Extension'));
 
-    await test.step('THEN the Enabled label is shown', (): Promise<void> => expect(popup.enabledLabel).toBeVisible());
+    await test.step('AND the Enabled label is shown', (): Promise<void> => expect(popup.enabledLabel).toBeVisible());
   });
 
   test('GIVEN the popup, clicking Fetch Data gets an answer from the background', async ({ openPopup }): Promise<void> => {
-    const popup = await test.step('GIVEN the popup is open', (): Promise<PopupPage> => openPopup());
+    const popup = await test.step('WHEN the popup is opened', (): Promise<PopupPage> => openPopup());
 
-    const response = await test.step('WHEN Fetch Data is clicked', (): Promise<unknown> => popup.fetchData());
+    const response = await test.step('AND Fetch Data is clicked', (): Promise<unknown> => popup.fetchData());
 
     await test.step('THEN the RESPONSE carries data', (): void => expect(response).toBeDefined());
   });
@@ -316,14 +316,12 @@ import { expect, test } from './extension.fixture';
 import { sendRuntimeMessage } from './test/utils/runtime-message.spec.util';
 
 test.describe('FEATURE: extension background messages', () => {
-  test.beforeEach(async ({ contentPage }): Promise<void> => {
-    await test.step('GIVEN example.com is open', (): Promise<void> => contentPage.goto());
-  });
-
-  test('GIVEN a GET_STATUS message, the worker reports itself active', async ({ extensionId, page }): Promise<void> => {
+  test('GIVEN a GET_STATUS message, the worker reports itself active', async ({ contentPage, extensionId, page }): Promise<void> => {
     const request: RuntimeRequest = { extensionId, type: 'GET_STATUS' };
 
-    const response = await test.step('WHEN GET_STATUS is sent to the extension', (): Promise<unknown> => sendRuntimeMessage(page, request));
+    await test.step('WHEN example.com is opened', (): Promise<void> => contentPage.goto());
+
+    const response = await test.step('AND GET_STATUS is sent to the extension', (): Promise<unknown> => sendRuntimeMessage(page, request));
 
     await test.step('THEN the status is active', (): void => expect(response).toEqual({ status: 'active' }));
   });
@@ -383,7 +381,7 @@ test.describe('FEATURE: extension alarms', () => {
 ```ts
 // e2e/extension/pages/content.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class ContentPage {
   public readonly modifiedElements: Locator;
@@ -410,7 +408,7 @@ export class ContentPage {
   }
 
   public async expectWidgetResult(text: string): Promise<void> {
-    await test.step(`THEN widget result reads "${text}"`, (): Promise<void> => expect(this.widgetResult).toHaveText(text), { box: true });
+    await expect(this.widgetResult).toHaveText(text);
   }
 }
 ```
@@ -431,7 +429,7 @@ The content script relays a click to the background and reflects the answer in a
 | Test | Locators | Action | Assertion |
 |---|---|---|---|
 | Widget button | `widget`, `widgetButton`, `widgetResult` | `clickWidgetButton()` | `expectWidgetResult('Success')` |
-| Background round trip | `page.locator('#my-extension-button')`, `page.locator('#my-extension-status')` | `clickExtensionButton()` | boxed `expectStatus('Connected')` |
+| Background round trip | `page.locator('#my-extension-button')`, `page.locator('#my-extension-status')` | `clickExtensionButton()` | `expectStatus('Connected')` |
 
 ### Page Modification Testing
 
@@ -443,20 +441,18 @@ import { expect, test } from './extension.fixture';
 import { injectedStyleCount } from './test/utils/injected-styles.spec.util';
 
 test.describe('FEATURE: extension content script', () => {
-  test.beforeEach(async ({ contentPage }): Promise<void> => {
-    await test.step('GIVEN example.com is open', (): Promise<void> => contentPage.goto());
-  });
-
   test('GIVEN the widget button, clicking it reports Success', async ({ contentPage }): Promise<void> => {
-    await test.step('AND the widget is injected', (): Promise<void> => expect(contentPage.widget).toBeVisible());
+    await test.step('WHEN example.com is opened', (): Promise<void> => contentPage.goto());
 
-    await test.step('WHEN the widget button is clicked', (): Promise<void> => contentPage.clickWidgetButton());
+    await test.step('AND the widget button is clicked', (): Promise<void> => contentPage.clickWidgetButton());
 
     await test.step('THEN the widget result reads Success', (): Promise<void> => contentPage.expectWidgetResult('Success'));
   });
 
   test('GIVEN a page load, the content script injects extension styles and marks elements', async ({ contentPage, page }): Promise<void> => {
-    const styleCount = await test.step('WHEN the injected style tags are counted', (): Promise<number> => injectedStyleCount(page, 'my-ext'));
+    await test.step('WHEN example.com is opened', (): Promise<void> => contentPage.goto());
+
+    const styleCount = await test.step('AND the injected style tags are counted', (): Promise<number> => injectedStyleCount(page, 'my-ext'));
 
     await test.step('THEN at least one style tag is injected', (): void => expect(styleCount).toBeGreaterThan(0));
 
@@ -541,12 +537,10 @@ import { expect, test } from './extension.fixture';
 import { queryTabs, sendTabMessage } from './test/utils/tabs.spec.util';
 
 test.describe('FEATURE: extension tabs api', () => {
-  test.beforeEach(async ({ contentPage }): Promise<void> => {
-    await test.step('GIVEN example.com is open', (): Promise<void> => contentPage.goto());
-  });
+  test('GIVEN a page url, querying tabs finds the page and messages it', async ({ contentPage, serviceWorker }): Promise<void> => {
+    await test.step('WHEN example.com is opened', (): Promise<void> => contentPage.goto());
 
-  test('GIVEN a page url, querying tabs finds the page and messages it', async ({ serviceWorker }): Promise<void> => {
-    const tabs = await test.step('WHEN tabs on example.com are queried', (): Promise<chrome.tabs.Tab[]> => queryTabs(serviceWorker, '*://example.com/*'));
+    const tabs = await test.step('AND tabs on example.com are queried', (): Promise<chrome.tabs.Tab[]> => queryTabs(serviceWorker, '*://example.com/*'));
 
     await test.step('THEN one tab matches', (): void => expect(tabs.length).toBeGreaterThan(0));
 
@@ -583,7 +577,7 @@ export const createContextMenu = (worker: Worker, item: chrome.contextMenus.Crea
 export const selectBodyText = (page: Page): Promise<void> => page.evaluate(selectFirstNode);
 ```
 
-The spec opens `contentPage`, creates `{ contexts: ['selection'], id: 'test-menu', title: 'Test Action' }` (typed `chrome.contextMenus.CreateProperties`) through `createContextMenu(serviceWorker, …)` in a `GIVEN` step, selects text with `selectBodyText(page)` in the `WHEN`, and asserts in the `THEN` on the side effect the test-build dispatch helper triggers.
+Registering the item is not something the user does, so a `contextMenu` fixture calls `createContextMenu(serviceWorker, …)` with `{ contexts: ['selection'], id: 'test-menu', title: 'Test Action' }` (typed `chrome.contextMenus.CreateProperties`) before `use`. The spec's `WHEN` opens `contentPage`, an `AND` step selects text with `selectBodyText(page)`, and the `THEN` asserts on the side effect the test-build dispatch helper triggers.
 
 ### Permissions API
 

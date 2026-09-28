@@ -22,18 +22,16 @@ import type { Download } from '@playwright/test';
 import { expect, test } from './exports.fixture';
 
 test.describe('FEATURE: exports basic download', () => {
-  test.beforeEach(async ({ exportsPage }): Promise<void> => {
-    await test.step('GIVEN the exports page is open', (): Promise<void> => exportsPage.goto());
-  });
-
   test('GIVEN the PDF report, downloading it offers report.pdf', async ({ exportsPage }, testInfo): Promise<void> => {
     const savePath = testInfo.outputPath('report.pdf');
 
-    const download = await test.step('WHEN the PDF report is downloaded', (): Promise<Download> => exportsPage.download('Download PDF'));
+    await test.step('WHEN the exports page is opened', (): Promise<void> => exportsPage.goto());
 
-    await test.step('THEN the filename is report.pdf', (): void => expect(download.suggestedFilename()).toBe('report.pdf'));
+    const download = await test.step('AND the PDF report is downloaded', (): Promise<Download> => exportsPage.download('Download PDF'));
 
     await test.step('AND it is saved into the test output directory', (): Promise<void> => download.saveAs(savePath));
+
+    await test.step('THEN the filename is report.pdf', (): void => expect(download.suggestedFilename()).toBe('report.pdf'));
   });
 });
 ```
@@ -67,7 +65,7 @@ A spec calls `saveDownload(download, testInfo)` in an `AND` step typed `(): Prom
 
 ### Multiple Downloads
 
-`collectDownloads()` subscribes to `page.on('download')` and returns the array it fills. The spec calls it before the click and polls the array length with `expect.poll`, then counts PDFs through a util.
+`downloadSelected()` subscribes to `page.on('download')` before the click and returns the array it fills. The spec polls the array length with `expect.poll`, then counts PDFs through a util.
 
 ```ts
 // e2e/exports/pages/batch-export.page.ts
@@ -89,20 +87,17 @@ export class BatchExportPage {
     await this.page.goto('/batch-export');
   }
 
-  public collectDownloads(): Download[] {
-    const downloads: Download[] = [];
-
-    this.page.on('download', (download: Download): number => downloads.push(download));
-
-    return downloads;
-  }
-
   public async selectAll(): Promise<void> {
     await this.selectAllCheckbox.check();
   }
 
-  public async downloadSelected(): Promise<void> {
+  public async downloadSelected(): Promise<Download[]> {
+    const downloads: Download[] = [];
+
+    this.page.on('download', (download: Download): number => downloads.push(download));
     await this.downloadSelectedButton.click();
+
+    return downloads;
   }
 }
 ```
@@ -126,16 +121,12 @@ import { pdfCount } from './test/utils/download-count.spec.util';
 const BATCH_TIMEOUT = 30_000;
 
 test.describe('FEATURE: batch export', () => {
-  test.beforeEach(async ({ batchExportPage }): Promise<void> => {
-    await test.step('GIVEN the batch export page is open', (): Promise<void> => batchExportPage.goto());
-  });
-
   test('GIVEN five items, downloading all yields five PDFs', async ({ batchExportPage }): Promise<void> => {
-    const downloads = await test.step('AND downloads are collected', (): Download[] => batchExportPage.collectDownloads());
+    await test.step('WHEN the batch export page is opened', (): Promise<void> => batchExportPage.goto());
 
-    await test.step('WHEN all items are selected', (): Promise<void> => batchExportPage.selectAll());
+    await test.step('AND all items are selected', (): Promise<void> => batchExportPage.selectAll());
 
-    await test.step('AND the selection is downloaded', (): Promise<void> => batchExportPage.downloadSelected());
+    const downloads = await test.step('AND the selection is downloaded', (): Promise<Download[]> => batchExportPage.downloadSelected());
 
     await test.step('THEN five downloads arrive', (): Promise<void> => expect.poll((): number => downloads.length, { timeout: BATCH_TIMEOUT }).toBe(5));
 
@@ -194,7 +185,7 @@ A spec destructures `downloadDir`, computes `path.join(downloadDir, download.sug
 
 The spec hands `selectPicture()` a path under `test/fixtures/`.
 
-`ProfilePage` owns `alert` (`getByRole('alert')`), `pictureInput` (`getByLabel('Profile Picture')`), `preview` (`getByAltText('Profile preview')`) and `saveButton`. Methods: `goto()`, `selectPicture(filePath)` calling `pictureInput.setInputFiles(filePath)`, `save()`, and boxed `expectPreview()` asserting `toBeVisible()` on the preview.
+`ProfilePage` owns `alert` (`getByRole('alert')`), `pictureInput` (`getByLabel('Profile Picture')`), `preview` (`getByAltText('Profile preview')`) and `saveButton`. Methods: `goto()`, `selectPicture(filePath)` calling `pictureInput.setInputFiles(filePath)`, `save()`, and `expectPreview()` asserting `toBeVisible()` on the preview.
 
 ```ts
 // e2e/profile/profile.e2e.ts
@@ -203,20 +194,18 @@ import path from 'node:path';
 import { expect, test } from './profile.fixture';
 
 test.describe('FEATURE: profile picture upload', () => {
-  test.beforeEach(async ({ profilePage }): Promise<void> => {
-    await test.step('GIVEN the profile page is open', (): Promise<void> => profilePage.goto());
-  });
-
   test('GIVEN avatar.png, saving the profile updates it', async ({ profilePage }): Promise<void> => {
     const avatarPath = path.join(__dirname, 'test/fixtures/avatar.png');
 
+    await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto());
+
     await test.step('AND avatar.png is selected', (): Promise<void> => profilePage.selectPicture(avatarPath));
 
-    await test.step('AND the preview is shown', (): Promise<void> => profilePage.expectPreview());
-
-    await test.step('WHEN the profile is saved', (): Promise<void> => profilePage.save());
+    await test.step('AND the profile is saved', (): Promise<void> => profilePage.save());
 
     await test.step('THEN the alert confirms the update', (): Promise<void> => expect(profilePage.alert).toContainText('Profile updated'));
+
+    await test.step('AND the preview is shown', (): Promise<void> => profilePage.expectPreview());
   });
 });
 ```
@@ -232,7 +221,7 @@ test.describe('FEATURE: profile picture upload', () => {
 | One path | `attachmentsPage.select(path.join(__dirname, 'test/fixtures/document.pdf'))` | `file-upload-download.md` "From Fixture File or In-Memory Buffer" |
 | Several paths | `attachmentsPage.select(DOC_PATHS)` with `const DOC_PATHS: string[] = ['doc1.pdf', 'doc2.pdf'].map(…)` | `file-upload-download.md` "Multiple File Upload" |
 | In-memory buffer | `attachmentsPage.select({ ...CSV_FILE_STUB, buffer: Buffer.from('Name,Email\nJohn,john@example.com'), name: 'users.csv' })` | `file-upload-download.md` "From Fixture File or In-Memory Buffer" |
-| Native chooser | `const chooser = await test.step('WHEN the native chooser is opened', (): Promise<FileChooser> => avatarPage.openFileChooser());` then `chooser.setFiles(documentPath)`, same arguments as `setInputFiles` | `file-upload-download.md` "File Chooser Dialog" |
+| Native chooser | `const chooser = await test.step('AND the native chooser is opened', (): Promise<FileChooser> => avatarPage.openFileChooser());` then `chooser.setFiles(documentPath)`, same arguments as `setInputFiles` | `file-upload-download.md` "File Chooser Dialog" |
 | Clear and replace | `attachmentsPage.clearSelection()` then `attachmentsPage.select(NEW_PDF)` | below |
 
 ```ts
@@ -244,16 +233,12 @@ const OLD_PDF = { ...PDF_FILE_STUB, name: 'old.pdf' };
 const NEW_PDF = { ...PDF_FILE_STUB, name: 'new.pdf' };
 
 test.describe('FEATURE: attachments replace', () => {
-  test.beforeEach(async ({ attachmentsPage }): Promise<void> => {
-    await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
-  });
-
   test('GIVEN a selected file, clearing and refilling lists only the new file', async ({ attachmentsPage }): Promise<void> => {
+    await test.step('WHEN the attachments page is opened', (): Promise<void> => attachmentsPage.goto());
+
     await test.step('AND old.pdf is selected', (): Promise<void> => attachmentsPage.select(OLD_PDF));
 
-    await test.step('AND old.pdf is listed', (): Promise<void> => attachmentsPage.expectListed('old.pdf'));
-
-    await test.step('WHEN the selection is cleared', (): Promise<void> => attachmentsPage.clearSelection());
+    await test.step('AND the selection is cleared', (): Promise<void> => attachmentsPage.clearSelection());
 
     await test.step('AND new.pdf is selected', (): Promise<void> => attachmentsPage.select(NEW_PDF));
 
@@ -306,12 +291,10 @@ import { PDF_FILE_STUB } from './test/stubs/attachments.stub';
 import { dropFile } from './test/utils/drop-file.spec.util';
 
 test.describe('FEATURE: attachments drop event', () => {
-  test.beforeEach(async ({ attachmentsPage }): Promise<void> => {
-    await test.step('GIVEN the attachments page is open', (): Promise<void> => attachmentsPage.goto());
-  });
-
   test('GIVEN report.pdf, dropping it on the zone reports the upload', async ({ attachmentsPage, page }): Promise<void> => {
-    await test.step('WHEN report.pdf is dropped on the zone', (): Promise<void> => dropFile(page, attachmentsPage.dropZone.root, PDF_FILE_STUB));
+    await test.step('WHEN the attachments page is opened', (): Promise<void> => attachmentsPage.goto());
+
+    await test.step('AND report.pdf is dropped on the zone', (): Promise<void> => dropFile(page, attachmentsPage.dropZone.root, PDF_FILE_STUB));
 
     await test.step('THEN the alert reports the upload', (): Promise<void> => expect(attachmentsPage.alert).toContainText('report.pdf uploaded'));
   });
@@ -421,12 +404,10 @@ import { expect, test } from './exports.fixture';
 import { readPdfText } from './test/utils/pdf-text.spec.util';
 
 test.describe('FEATURE: exports formats', () => {
-  test.beforeEach(async ({ exportsPage }): Promise<void> => {
-    await test.step('GIVEN the exports page is open', (): Promise<void> => exportsPage.goto());
-  });
-
   test('GIVEN the invoice, downloading it yields a PDF whose text names it', async ({ exportsPage }): Promise<void> => {
-    const download = await test.step('WHEN the invoice is downloaded', (): Promise<Download> => exportsPage.download('Download Invoice'));
+    await test.step('WHEN the exports page is opened', (): Promise<void> => exportsPage.goto());
+
+    const download = await test.step('AND the invoice is downloaded', (): Promise<Download> => exportsPage.download('Download Invoice'));
 
     const text = await test.step('AND the PDF text is parsed', (): Promise<string> => readPdfText(download));
 
