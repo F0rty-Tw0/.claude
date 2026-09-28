@@ -260,12 +260,14 @@ export const readJsCoverageEntries = async (dir: string): Promise<JsCoverageEntr
 
 ### Per-Test Coverage
 
-A targeted test starts coverage itself, drives the page object, and asserts on one module. `resetOnNavigation: false` keeps entries across `goto`. The `stop` step returns the entries; a sync step derives the percent so the assertion step stays one `expect`. `checkout.fixture.ts` follows the standard fixture shape and exposes `checkoutPage`.
+A targeted test starts coverage through the opening call, drives the page object, and asserts on one module. `checkoutPage.goto({ coverage: 'js' })` starts JS coverage before it navigates, and `{ coverage: 'css' }` starts CSS coverage; `CheckoutOptions` is `type CheckoutOptions = { readonly coverage?: 'css' | 'js' }` in `common/checkout.type.ts`. `resetOnNavigation: false` keeps entries across `goto`. The `stop` step returns the entries; a sync step derives the percent so the assertion step stays one `expect`. `checkout.fixture.ts` follows the standard fixture shape and exposes `checkoutPage`.
 
 ```ts
 // e2e/checkout/pages/checkout.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import type { CheckoutOptions } from '../common/checkout.type';
 
 export class CheckoutPage {
   public readonly helpButton: Locator;
@@ -283,7 +285,9 @@ export class CheckoutPage {
     this.successMessage = page.getByText('Success');
   }
 
-  public async goto(): Promise<void> {
+  public async goto(options: CheckoutOptions = {}): Promise<void> {
+    if (options.coverage === 'js') await this.page.coverage.startJSCoverage({ resetOnNavigation: false });
+    if (options.coverage === 'css') await this.page.coverage.startCSSCoverage();
     await this.page.goto('/checkout');
   }
 
@@ -297,11 +301,11 @@ export class CheckoutPage {
   }
 
   public async expectSuccess(): Promise<void> {
-    await test.step('THEN success message is shown', (): Promise<void> => expect(this.successMessage).toBeVisible(), { box: true });
+    await expect(this.successMessage).toBeVisible();
   }
 
   public async expectHelpOpen(): Promise<void> {
-    await test.step('THEN help dialog is open', (): Promise<void> => expect(this.helpDialog).toBeVisible(), { box: true });
+    await expect(this.helpDialog).toBeVisible();
   }
 }
 ```
@@ -318,40 +322,36 @@ const MAX_UNUSED_CSS_PERCENT = 50;
 
 test.describe('FEATURE: checkout coverage', () => {
   test('GIVEN coverage on, submitting the payment covers the checkout module', async ({ checkoutPage, page }): Promise<void> => {
-    await test.step('GIVEN js coverage is recording', (): Promise<void> => page.coverage.startJSCoverage({ resetOnNavigation: false }));
+    await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto({ coverage: 'js' }));
 
-    await test.step('AND the checkout page is open', (): Promise<void> => checkoutPage.goto());
-
-    await test.step('WHEN the payment is submitted', (): Promise<void> => checkoutPage.pay());
+    await test.step('AND the payment is submitted', (): Promise<void> => checkoutPage.pay());
 
     await test.step('THEN the success message is shown', (): Promise<void> => checkoutPage.expectSuccess());
 
     const entries = await test.step('AND js coverage is collected', (): Promise<JsCoverageEntry[]> => page.coverage.stopJSCoverage());
     const percent = await test.step('AND checkout.js coverage is measured', (): number => moduleCoveragePercent(entries, 'checkout.js'));
 
-    await test.step('AND the checkout module meets the minimum', (): Promise<void> => expect(percent).toBeGreaterThan(MIN_COVERAGE_PERCENT));
+    await test.step('THEN the checkout module meets the minimum', (): Promise<void> => expect(percent).toBeGreaterThan(MIN_COVERAGE_PERCENT));
   });
 
   test('GIVEN CSS coverage on, opening the help dialog uses most of the stylesheet', async ({ checkoutPage, page }): Promise<void> => {
-    await test.step('GIVEN css coverage is recording', (): Promise<void> => page.coverage.startCSSCoverage());
+    await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto({ coverage: 'css' }));
 
-    await test.step('AND the checkout page is open', (): Promise<void> => checkoutPage.goto());
-
-    await test.step('WHEN the help dialog is opened', (): Promise<void> => checkoutPage.openHelp());
+    await test.step('AND the help dialog is opened', (): Promise<void> => checkoutPage.openHelp());
 
     await test.step('THEN the help dialog is open', (): Promise<void> => checkoutPage.expectHelpOpen());
 
     const entries = await test.step('AND css coverage is collected', (): Promise<CssCoverageEntry[]> => page.coverage.stopCSSCoverage());
     const unused = await test.step('AND app.css unused share is measured', (): number => stylesheetUnusedPercent(entries, 'app.css'));
 
-    await test.step('AND under half of the stylesheet is unused', (): Promise<void> => expect(unused).toBeLessThan(MAX_UNUSED_CSS_PERCENT));
+    await test.step('THEN under half of the stylesheet is unused', (): Promise<void> => expect(unused).toBeLessThan(MAX_UNUSED_CSS_PERCENT));
   });
 });
 ```
 
 | Variant | Change |
 |---|---|
-| Coverage for the whole run | Drop the start/stop steps and rely on the `auto` fixture above. |
+| Coverage for the whole run | Drop the `coverage` option and the collect steps, and rely on the `auto` fixture above. |
 | Coverage for one file | `moduleCoveragePercent(entries, 'checkout.js')` picks the first entry whose `url` contains the name. |
 | Unused CSS per stylesheet | Loop `entries` in a util and collect every `cssUnusedPercent` above the ceiling into a `string[]` of violations. |
 

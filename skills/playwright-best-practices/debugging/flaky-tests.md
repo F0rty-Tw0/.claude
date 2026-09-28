@@ -92,16 +92,14 @@ export const reportPassOnRetry = (testInfo: TestInfo): void => {
 import { test } from './checkout.fixture';
 import { reportPassOnRetry } from './test/utils/flaky-report.spec.util';
 
-test.afterEach(async (): Promise<void> => {
-  await test.step('GIVEN a pass on retry is reported', (): void => reportPassOnRetry(test.info()));
-});
+test.afterEach((): void => reportPassOnRetry(test.info()));
 ```
 
 ## Root Cause Analysis
 
 ### Event Logging for Race Conditions
 
-Log console output, page errors, and failed requests to expose timing issues. Call it from a `beforeEach` step: `await test.step('GIVEN page events are logged', (): void => logPageEvents(page));`.
+Log console output, page errors, and failed requests to expose timing issues. Register it in a fixture above `use`, so it runs before the test's `WHEN` opens the page: `logPageEvents(page);`. No hook step wraps it.
 
 ```ts
 // e2e/checkout/test/utils/page-events.spec.util.ts
@@ -172,7 +170,7 @@ Prefer semantic locators on a page object. Locator actions auto-wait for actiona
 ```ts
 // e2e/checkout/pages/checkout.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class CheckoutPage {
   public readonly continueButton: Locator;
@@ -199,7 +197,7 @@ export class CheckoutPage {
   }
 
   public async expectDashboard(): Promise<void> {
-    await test.step('THEN dashboard heading is visible', (): Promise<void> => expect(this.dashboardHeading).toBeVisible(), { box: true });
+    await expect(this.dashboardHeading).toBeVisible();
   }
 }
 ```
@@ -224,7 +222,7 @@ Prefer waiting for the response the action triggers, then asserting. `waitForRes
 ```ts
 // e2e/dashboard/pages/dashboard.page.ts
 import type { Locator, Page, Response } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const isDataResponse = (response: Response): boolean => {
   const isDataUrl = response.url().includes('/api/data');
@@ -254,7 +252,7 @@ export class DashboardPage {
   }
 
   public async expectRows(count: number): Promise<void> {
-    await test.step(`THEN ${count} data rows are shown`, (): Promise<void> => expect(this.dataRows).toHaveCount(count), { box: true });
+    await expect(this.dataRows).toHaveCount(count);
   }
 }
 ```
@@ -264,9 +262,9 @@ export class DashboardPage {
 import { test } from './dashboard.fixture';
 
 test('GIVEN loaded data, the table shows ten rows', async ({ dashboardPage }): Promise<void> => {
-  await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+  await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-  await test.step('WHEN the data is loaded', (): Promise<void> => dashboardPage.loadData());
+  await test.step('AND the data is loaded', (): Promise<void> => dashboardPage.loadData());
 
   await test.step('THEN ten rows are shown', (): Promise<void> => dashboardPage.expectRows(10));
 });
@@ -388,25 +386,25 @@ test.beforeAll(async ({ browser }) => {
 });
 ```
 
-Prefer Playwright's default isolation. Each test receives a fresh context and page; shared arrange lives in a `beforeEach` step.
+Prefer Playwright's default isolation. Each test receives a fresh context and page and opens it in its own `WHEN` step; no hook carries shared arrange.
 
 ```ts
 // e2e/profile/profile.e2e.ts
 import { test } from './profile.fixture';
 
 test.describe('FEATURE: profile', () => {
-  test.beforeEach(async ({ profilePage }): Promise<void> => {
-    await test.step('GIVEN the profile page is open', (): Promise<void> => profilePage.goto());
-  });
-
   test('GIVEN an updated name, the header shows it', async ({ profilePage }): Promise<void> => {
-    await test.step('WHEN the name is updated', (): Promise<void> => profilePage.updateName('Ada'));
+    await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto());
+
+    await test.step('AND the name is updated', (): Promise<void> => profilePage.updateName('Ada'));
 
     await test.step('THEN header shows the new name', (): Promise<void> => profilePage.expectHeaderName('Ada'));
   });
 
   test('GIVEN an updated email, the account shows it', async ({ profilePage }): Promise<void> => {
-    await test.step('WHEN the email is updated', (): Promise<void> => profilePage.updateEmail('ada@example.com'));
+    await test.step('WHEN the profile page is opened', (): Promise<void> => profilePage.goto());
+
+    await test.step('AND the email is updated', (): Promise<void> => profilePage.updateEmail('ada@example.com'));
 
     await test.step('THEN account shows the new email', (): Promise<void> => profilePage.expectEmail('ada@example.com'));
   });
@@ -508,25 +506,17 @@ export const paymentMock = (result: PaymentResult = PAYMENT_RESULT_STUB): RouteH
 };
 ```
 
+Every test in the feature needs the same two stubs, so the `checkoutPage` fixture routes `**/api.analytics.com/**` to `analyticsMock()` and `**/api/payment` to `paymentMock()` before `use`. No hook and no step installs them.
+
 ```ts
 // e2e/checkout/checkout.test.ts
 import { test } from './checkout.fixture';
-import { analyticsMock } from './test/mocks/analytics.mock';
-import { paymentMock } from './test/mocks/payment.mock';
 
 test.describe('FEATURE: checkout', () => {
-  test.beforeEach(async ({ page }): Promise<void> => {
-    await test.step('GIVEN analytics is stubbed', async (): Promise<void> => {
-      await page.route('**/api.analytics.com/**', analyticsMock());
-    });
-
-    await test.step('AND the payment provider is stubbed', async (): Promise<void> => {
-      await page.route('**/api/payment', paymentMock());
-    });
-  });
-
   test('GIVEN a paid order, checkout opens the confirmation', async ({ checkoutPage }): Promise<void> => {
-    await test.step('WHEN the order is paid', (): Promise<void> => checkoutPage.pay());
+    await test.step('WHEN the checkout page is opened', (): Promise<void> => checkoutPage.goto());
+
+    await test.step('AND the order is paid', (): Promise<void> => checkoutPage.pay());
 
     await test.step('THEN confirmation page is shown', (): Promise<void> => checkoutPage.expectConfirmation());
   });
@@ -607,7 +597,7 @@ The profile spec under [State Leaks](#test-suite-driven-flakiness-state-leaks) p
 | --- | --- |
 | Own data | Each test receives `testUser` from a worker fixture; no test reads another test's rows. |
 | Own page | The `page` fixture is fresh per test; no `beforeAll` page. |
-| No order dependency | Each test opens its page in `beforeEach`; running one test alone passes. |
+| No order dependency | Each test opens its page in its own `WHEN` step; running one test alone passes. |
 | Cleanup by fixture | Teardown after `use`, never at the end of the test body. |
 
 ### Defensive Assertions
@@ -618,12 +608,12 @@ Avoid one assertion on the final state. When it fails, the report says only that
 await expect(page.locator('.items')).toHaveCount(5);
 ```
 
-Prefer a boxed page-object method that asserts the container rendered, loading finished, then the count. The first failing line names the stage that broke.
+Prefer a page-object `expect*` method that asserts the container rendered, loading finished, then the count. The first failing line names the stage that broke.
 
 ```ts
 // e2e/catalog/pages/catalog.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class CatalogPage {
   public readonly items: Locator;
@@ -644,11 +634,9 @@ export class CatalogPage {
   }
 
   public async expectItems(count: number): Promise<void> {
-    await test.step(`THEN ${count} items are listed`, async (): Promise<void> => {
-      await expect(this.itemsContainer).toBeVisible();
-      await expect(this.loading).toBeHidden();
-      await expect(this.items).toHaveCount(count);
-    }, { box: true });
+    await expect(this.itemsContainer).toBeVisible();
+    await expect(this.loading).toBeHidden();
+    await expect(this.items).toHaveCount(count);
   }
 }
 ```

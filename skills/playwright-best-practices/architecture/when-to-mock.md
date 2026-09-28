@@ -17,7 +17,7 @@
 
 **Mock at the boundary, test your stack end-to-end.** Mock third-party services you don't own (payment gateways, email providers, OAuth). Never mock your own frontend-to-backend communication. Tests prove YOUR code works, not that third-party APIs are available.
 
-Every route handler is a factory in `test/mocks/<name>.mock.ts`. A spec installs it inside a step: `page.route(pattern, nameMock())`. Response bodies are typed constants, never inline literals. The file suffix follows the same boundary: a spec that routes your own API (directly or through a fixture, page object, or mock it imports) is `<feature>.test.ts`; a spec that hits your real API, even while stubbing a third-party host, is `<feature>.e2e.ts`.
+Every route handler is a factory in `test/mocks/<name>.mock.ts`. A fixture or the spec's opening page-object call installs it before navigating: `page.route(pattern, nameMock())`. No step only routes. Response bodies are typed constants, never inline literals. The file suffix follows the same boundary: a spec that routes your own API (directly or through a fixture, page object, or mock it imports) is `<feature>.test.ts`; a spec that hits your real API, even while stubbing a third-party host, is `<feature>.e2e.ts`.
 
 ## Decision Matrix
 
@@ -79,7 +79,7 @@ export type Inventory = {
 
 ### Blocking Unwanted Requests
 
-Block third-party scripts that slow tests and add no coverage. The mock aborts; a `GIVEN` step in the `FEATURE`-level `beforeEach` installs it.
+Block third-party scripts that slow tests and add no coverage. The mock aborts; the feature fixture routes it before handing over each page object, so every test starts with tracking blocked and no hook or step mentions it.
 
 ```ts
 // e2e/checkout/test/mocks/tracking.mock.ts
@@ -93,17 +93,39 @@ export const trackingBlockMock = (): RouteHandler => {
 ```
 
 ```ts
-// e2e/checkout/dashboard.e2e.ts
-import { test } from './checkout.fixture';
+// e2e/checkout/checkout.fixture.ts
+import { test as base } from '@playwright/test';
+
+import { DashboardPage } from './pages/dashboard.page';
+import { OrderPage } from './pages/order.page';
 import { trackingBlockMock } from './test/mocks/tracking.mock';
 
-test.describe('FEATURE: dashboard', () => {
-  test.beforeEach(async ({ page }): Promise<void> => {
-    await test.step('GIVEN tracking hosts are blocked', async (): Promise<void> => {
-      await page.route('**/{analytics,tracking,segment,hotjar}.{com,io}/**', trackingBlockMock());
-    });
-  });
+type CheckoutFixtures = {
+  readonly dashboardPage: DashboardPage;
+  readonly orderPage: OrderPage;
+};
 
+export const test = base.extend<CheckoutFixtures>({
+  dashboardPage: async ({ page }, use): Promise<void> => {
+    await use(new DashboardPage(page));
+  },
+  orderPage: async ({ page }, use): Promise<void> => {
+    await use(new OrderPage(page));
+  },
+  page: async ({ page }, use): Promise<void> => {
+    await page.route('**/{analytics,tracking,segment,hotjar}.{com,io}/**', trackingBlockMock());
+    await use(page);
+  }
+});
+
+export { expect } from '@playwright/test';
+```
+
+```ts
+// e2e/checkout/dashboard.e2e.ts
+import { test } from './checkout.fixture';
+
+test.describe('FEATURE: dashboard', () => {
   test('GIVEN the dashboard, opening it shows the heading', async ({ dashboardPage }): Promise<void> => {
     await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
 
@@ -144,34 +166,25 @@ export const chargeMock = (charge: Charge = CHARGE_STUB): RouteHandler => {
 };
 ```
 
-The route is installed before the page opens, so the first charge request already hits the mock.
+`OrderPage.goto(options: OrderOptions = {})` takes `type OrderOptions = { readonly charge?: 'completed' | 'declined' }`. It routes `**/api/charge` to `chargeMock()`, or to `chargeDeclinedMock()` for `'declined'`, before it navigates, so the first charge request already hits the mock and the spec never routes.
 
 ```ts
 // e2e/checkout/checkout.test.ts
 import { test } from './checkout.fixture';
-import { chargeDeclinedMock, chargeMock } from './test/mocks/charge.mock';
 
 test.describe('FEATURE: checkout', () => {
-  test('GIVEN a successful charge, paying confirms the order', async ({ orderPage, page }): Promise<void> => {
-    await test.step('GIVEN a successful charge is stubbed', async (): Promise<void> => {
-      await page.route('**/api/charge', chargeMock());
-    });
+  test('GIVEN a successful charge, paying confirms the order', async ({ orderPage }): Promise<void> => {
+    await test.step('WHEN the order page is opened', (): Promise<void> => orderPage.goto());
 
-    await test.step('AND the confirmation page is open', (): Promise<void> => orderPage.goto());
-
-    await test.step('WHEN the purchase is completed', (): Promise<void> => orderPage.completePurchase());
+    await test.step('AND the purchase is completed', (): Promise<void> => orderPage.completePurchase());
 
     await test.step('THEN the confirmation message is shown', (): Promise<void> => orderPage.expectConfirmed());
   });
 
-  test('GIVEN a declined charge, paying names the decline in the alert', async ({ orderPage, page }): Promise<void> => {
-    await test.step('GIVEN a declined charge is stubbed', async (): Promise<void> => {
-      await page.route('**/api/charge', chargeDeclinedMock());
-    });
+  test('GIVEN a declined charge, paying names the decline in the alert', async ({ orderPage }): Promise<void> => {
+    await test.step('WHEN the order page is opened', (): Promise<void> => orderPage.goto({ charge: 'declined' }));
 
-    await test.step('AND the confirmation page is open', (): Promise<void> => orderPage.goto());
-
-    await test.step('WHEN the purchase is completed', (): Promise<void> => orderPage.completePurchase());
+    await test.step('AND the purchase is completed', (): Promise<void> => orderPage.completePurchase());
 
     await test.step('THEN the alert reports the decline', (): Promise<void> => orderPage.expectPaymentError('Card declined'));
   });
@@ -200,7 +213,7 @@ export const lowStockMock = (): RouteHandler => {
 };
 ```
 
-Wire it the same way as a full mock: `page.route('**/api/inventory/*', lowStockMock())` in a step, then `productPage.expectLowStockWarning('Only 1 remaining')`.
+Wire it the same way as a full mock: `productPage.goto({ lowStock: true })` routes `'**/api/inventory/*'` to `lowStockMock()` before it navigates, then `productPage.expectLowStockWarning('Only 1 remaining')`.
 
 | Variant | Change to the factory |
 | --- | --- |
@@ -209,7 +222,7 @@ Wire it the same way as a full mock: `page.route('**/api/inventory/*', lowStockM
 
 ### Record and Replay (HAR Files)
 
-For complex API sequences (OAuth flows, multi-step wizards), record real traffic once and replay it. The `.har` lives in `test/fixtures/`; the options are named consts so the record and replay specs differ by one identifier.
+For complex API sequences (OAuth flows, multi-step wizards), record real traffic once and replay it. The `.har` lives in `test/fixtures/`; the options are named consts so recording and replaying differ by one identifier. The `adminPage` fixture calls `page.routeFromHAR(ADMIN_HAR, HAR_REPLAY)` before `use`, so the spec starts on replayed traffic with no hook.
 
 ```ts
 // e2e/admin/common/admin.const.ts
@@ -228,15 +241,8 @@ export const HAR_REPLAY: HarOptions = { update: false, url: '**/api/**' };
 ```ts
 // e2e/admin/admin.test.ts
 import { test } from './admin.fixture';
-import { ADMIN_HAR, HAR_REPLAY } from './common/admin.const';
 
 test.describe('FEATURE: admin panel', () => {
-  test.beforeEach(async ({ page }): Promise<void> => {
-    await test.step('GIVEN the admin HAR is replayed', async (): Promise<void> => {
-      await page.routeFromHAR(ADMIN_HAR, HAR_REPLAY);
-    });
-  });
-
   test('GIVEN an admin, opening the admin panel shows the reports heading', async ({ adminPage }): Promise<void> => {
     await test.step('WHEN the admin panel opens', (): Promise<void> => adminPage.goto());
 
@@ -245,7 +251,7 @@ test.describe('FEATURE: admin panel', () => {
 });
 ```
 
-Recording is the same spec with `HAR_RECORD` and steps that walk every tab (`adminPage.openReportsTab()`, `adminPage.openSettingsTab()`), run once against staging.
+Recording swaps `HAR_REPLAY` for `HAR_RECORD` in that fixture and runs a spec with steps that walk every tab (`adminPage.openReportsTab()`, `adminPage.openSettingsTab()`), run once against staging.
 
 **HAR maintenance:**
 
@@ -386,16 +392,16 @@ import { test } from './billing.fixture';
 
 test.describe('FEATURE: subscription renewal', () => {
   test('GIVEN an active subscription, renewing shows the renewal message', async ({ billingPage }): Promise<void> => {
-    await test.step('GIVEN the billing page is open', (): Promise<void> => billingPage.goto());
+    await test.step('WHEN the billing page is opened', (): Promise<void> => billingPage.goto());
 
-    await test.step('WHEN the subscription is renewed', (): Promise<void> => billingPage.renew());
+    await test.step('AND the subscription is renewed', (): Promise<void> => billingPage.renew());
 
     await test.step('THEN the renewal message is shown', (): Promise<void> => billingPage.expectRenewed());
   });
 });
 ```
 
-The real test gateway is the same scenario with `mockPayments` off. The option is read when the `page` fixture is built, before any step runs, so it cannot be a `GIVEN` step; it is its own spec with a file-level `test.use`.
+The real test gateway is the same scenario with `mockPayments` off. The option is read when the `page` fixture is built, before any step runs, so it cannot be an option on the opening call; it is its own spec with a file-level `test.use`.
 
 ```ts
 // e2e/billing/billing-real-gateway.test.ts
@@ -405,9 +411,9 @@ test.use({ mockPayments: false });
 
 test.describe('FEATURE: subscription renewal on the real test gateway', () => {
   test('GIVEN an active subscription, renewing shows the renewal message', async ({ billingPage }): Promise<void> => {
-    await test.step('GIVEN the billing page is open', (): Promise<void> => billingPage.goto());
+    await test.step('WHEN the billing page is opened', (): Promise<void> => billingPage.goto());
 
-    await test.step('WHEN the subscription is renewed', (): Promise<void> => billingPage.renew());
+    await test.step('AND the subscription is renewed', (): Promise<void> => billingPage.renew());
 
     await test.step('THEN the renewal message is shown', (): Promise<void> => billingPage.expectRenewed());
   });

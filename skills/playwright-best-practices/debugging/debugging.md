@@ -80,9 +80,9 @@ import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
   test('GIVEN the dashboard, pausing opens the inspector before the load click', async ({ dashboardPage, page }): Promise<void> => {
-    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-    await test.step('WHEN the run pauses for the inspector', (): Promise<void> => page.pause());
+    await test.step('AND the run pauses for the inspector', (): Promise<void> => page.pause());
 
     await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
   });
@@ -150,13 +150,13 @@ import { startTrace, stopTrace } from './test/utils/tracing.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
   test('GIVEN tracing on, the data load flow is saved as a trace', async ({ context, dashboardPage }): Promise<void> => {
-    await test.step('GIVEN tracing is started', (): Promise<void> => startTrace(context));
+    await test.step('WHEN tracing is started', (): Promise<void> => startTrace(context));
 
-    await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('AND the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
     await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
 
-    await test.step('WHEN tracing is stopped', (): Promise<void> => stopTrace(context, 'trace.zip'));
+    await test.step('AND tracing is stopped', (): Promise<void> => stopTrace(context, 'trace.zip'));
   });
 });
 ```
@@ -212,19 +212,18 @@ export const logNetworkSummary = (log: NetworkLog): void => {
 };
 ```
 
+The `networkLog` fixture member calls `recordNetwork(page)` and passes the log to `use`, so the listeners exist before the test's `WHEN` opens the page.
+
 ```ts
 // e2e/dashboard/dashboard.e2e.ts
-import type { NetworkLog } from './common/dashboard.type';
 import { test } from './dashboard.fixture';
-import { logNetworkSummary, recordNetwork } from './test/utils/network-log.spec.util';
+import { logNetworkSummary } from './test/utils/network-log.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
-  test('GIVEN network logging, the page load prints the network log', async ({ dashboardPage, page }): Promise<void> => {
-    const network = await test.step('GIVEN network traffic is recorded', (): NetworkLog => recordNetwork(page));
+  test('GIVEN network logging, the page load prints the network log', async ({ dashboardPage, networkLog }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-    await test.step('AND the dashboard is open', (): Promise<void> => dashboardPage.goto());
-
-    await test.step('WHEN the network summary is printed', (): void => logNetworkSummary(network));
+    await test.step('AND the network summary is printed', (): void => logNetworkSummary(networkLog));
   });
 });
 ```
@@ -259,7 +258,7 @@ export class DashboardPage {
 }
 ```
 
-The spec reads it as `const response = await test.step('WHEN data is loaded', (): Promise<Response> => dashboardPage.loadData());` and logs `response.status()` in the next step.
+The spec reads it as `const response = await test.step('AND data is loaded', (): Promise<Response> => dashboardPage.loadData());` and logs `response.status()` in the next step.
 
 > **For comprehensive waiting patterns** (navigation, element state, network, polling), see [assertions-waiting.md](../core/assertions-waiting.md#waiting-strategies).
 
@@ -283,7 +282,7 @@ export const logSlowRequests = (page: Page, thresholdMs: number): void => {
 };
 ```
 
-Call it before navigation: `await test.step('GIVEN requests over 1s are logged', (): void => logSlowRequests(page, 1_000));`.
+Register it before navigation in a fixture, above `use`: `logSlowRequests(page, 1_000);`. No step wraps it.
 
 ## Debugging in CI
 
@@ -344,7 +343,7 @@ export const logEnvironment = (page: Page, testInfo: TestInfo): void => {
 };
 ```
 
-Call it as `await test.step('GIVEN the environment is printed', (): void => logEnvironment(page, test.info()));`.
+Call it after the opening step as `await test.step('AND the environment is printed', (): void => logEnvironment(page, test.info()));`.
 
 ## Debugging Authentication
 
@@ -419,13 +418,13 @@ import { attachFullPage } from './test/utils/screenshot.spec.util';
 
 test.describe('FEATURE: dashboard', () => {
   test('GIVEN the menu, opening it attaches before and after screenshots', async ({ dashboardPage, page }): Promise<void> => {
-    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
     await test.step('AND the before screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'before'));
 
     await test.step('AND the menu is opened', (): Promise<void> => dashboardPage.openMenu());
 
-    await test.step('WHEN the after screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'after'));
+    await test.step('AND the after screenshot is attached', (): Promise<void> => attachFullPage(page, test.info(), 'after'));
   });
 });
 ```
@@ -492,7 +491,7 @@ Call it on the page-object locator: `await test.step('AND the button state is pr
 
 | Scope | Call | Where |
 |---|---|---|
-| One assertion | `expect(this.loaded).toBeVisible({ timeout: 30_000 })` | Inside a boxed `expect*` page-object method |
+| One assertion | `expect(this.loaded).toBeVisible({ timeout: 30_000 })` | Inside an `expect*` page-object method, as a plain `await expect(…)` |
 | Every test in a spec | `test.setTimeout(60_000)` | First line of the `FEATURE` `test.describe` callback |
 | One test | `test.slow('reason')` or `test('GIVEN <state>, <outcome>', { timeout: 60_000 }, …)` | Spec |
 
@@ -527,7 +526,7 @@ export const logFrames = async (page: Page): Promise<void> => {
 
 ### Capture Browser Console
 
-The util forwards browser console lines and page errors to the runner output. Register it in a `beforeEach` step.
+The util forwards browser console lines and page errors to the runner output. Register it in an `auto` fixture above `use`, never in a hook step.
 
 ```ts
 // e2e/dashboard/test/utils/browser-log.spec.util.ts
@@ -610,7 +609,7 @@ Call it as `await test.step('AND debug artifacts are attached', (): Promise<void
 
    ```ts
    // e2e/dashboard/dashboard.e2e.ts
-   await test.step('GIVEN the inspector is paused', (): Promise<void> => page.pause());
+   await test.step('AND the inspector is paused', (): Promise<void> => page.pause());
 
    await test.step('AND the button state is printed', (): Promise<void> => logLocatorState(dashboardPage.loadButton));
 

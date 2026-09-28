@@ -28,26 +28,28 @@ export default defineConfig({
 
 ### Serial Execution When Needed
 
-`test.describe.configure({ mode: 'serial' })` at the top of a file runs every test in order on one worker and skips the rest after a failure. Specs are flat, so the only block is the `FEATURE` describe: the call inside it, or `test.describe.serial('FEATURE: …', …)`, scopes the mode to the same tests. Scenarios that can run in parallel go in their own spec.
+`test.describe.configure({ mode: 'serial' })` at the top of a file runs every test in order on one worker and skips the rest after a failure. It also chains each test to the one before it, so reach for it only when a leg truly cannot be seeded, such as a real third-party redirect. The only blocks are the `FEATURE` describe and a `JOURNEY` inside it; put the call inside the `JOURNEY` that needs it, with the reason in the prose above. Scenarios that can run in parallel go in their own spec.
+
+Most ordered flows do not need it. Below, the second onboarding test starts from a `planStepPage` fixture that completes the profile through `request` and opens the plan step, so each test runs alone and the spec stays parallel.
 
 ```ts
 // e2e/onboarding/onboarding.e2e.ts
 import { test } from './onboarding.fixture';
 import { PROFILE_STUB } from './test/stubs/onboarding.stub';
 
-test.describe.configure({ mode: 'serial' });
-
 test.describe('FEATURE: onboarding', () => {
   test('GIVEN a completed profile, onboarding opens the plan step', async ({ onboardingPage }): Promise<void> => {
-    await test.step('WHEN the profile is filled in', (): Promise<void> => onboardingPage.completeProfile(PROFILE_STUB));
+    await test.step('WHEN the onboarding is opened', (): Promise<void> => onboardingPage.goto());
+
+    await test.step('AND the profile is filled in', (): Promise<void> => onboardingPage.completeProfile(PROFILE_STUB));
 
     await test.step('THEN plan step is shown', (): Promise<void> => onboardingPage.expectStep('plan'));
   });
 
-  test('GIVEN a picked plan, onboarding opens the summary step', async ({ onboardingPage }): Promise<void> => {
-    await test.step('WHEN the free plan is picked', (): Promise<void> => onboardingPage.pickPlan('free'));
+  test('GIVEN a picked plan, onboarding opens the summary step', async ({ planStepPage }): Promise<void> => {
+    await test.step('WHEN the free plan is picked', (): Promise<void> => planStepPage.pickPlan('free'));
 
-    await test.step('THEN summary step is shown', (): Promise<void> => onboardingPage.expectStep('summary'));
+    await test.step('THEN summary step is shown', (): Promise<void> => planStepPage.expectStep('summary'));
   });
 });
 ```
@@ -55,8 +57,8 @@ test.describe('FEATURE: onboarding', () => {
 | Call | Scope | Effect |
 |---|---|---|
 | `test.describe.configure({ mode: 'serial' })` at file top | Whole file | Ordered, one worker, stop on first failure |
-| `test.describe.configure({ mode: 'serial' })` inside the `FEATURE` describe | The `FEATURE` block | Same as file top for a flat spec |
-| `test.describe.serial('FEATURE: …', () => {})` | The `FEATURE` block | Shorthand for the above |
+| `test.describe.configure({ mode: 'serial' })` inside a `JOURNEY` describe | The `JOURNEY` block | Ordered legs of one user path that cannot be seeded |
+| `test.describe.serial('JOURNEY: …', () => {})` | The `JOURNEY` block | Shorthand for the above |
 | `test.describe.configure({ mode: 'parallel' })` | File or `FEATURE` block | Tests run in parallel even with `fullyParallel: false` |
 
 ### Parallel Projects
@@ -165,22 +167,22 @@ test.describe('Dashboard', () => {
 });
 ```
 
-Prefer storage state from a setup project (see [Reuse Authentication](#reuse-authentication)) and one navigation step, a `GIVEN`, in the `FEATURE`-level `beforeEach`. Each test gets a fresh page; the navigation cost is one `goto`:
+Prefer storage state from a setup project (see [Reuse Authentication](#reuse-authentication)) and one `WHEN` navigation step at the top of each test. Each test gets a fresh page; the navigation cost is one `goto`:
 
 ```ts
 // e2e/dashboard/dashboard.test.ts
 import { test } from './dashboard.fixture';
 
 test.describe('FEATURE: dashboard', () => {
-  test.beforeEach(async ({ dashboardPage }): Promise<void> => {
-    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
-  });
-
   test('GIVEN the dashboard, loading it shows the stats panel', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+
     await test.step('THEN stats panel is visible', (): Promise<void> => dashboardPage.expectStatsVisible());
   });
 
   test('GIVEN the dashboard, loading it shows the chart', async ({ dashboardPage }): Promise<void> => {
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
+
     await test.step('THEN chart is visible', (): Promise<void> => dashboardPage.expectChartVisible());
   });
 });
@@ -188,7 +190,7 @@ test.describe('FEATURE: dashboard', () => {
 
 ### Lazy Navigation
 
-Avoid a `goto` repeated at the top of every test:
+Avoid a raw `page.goto` plus inline locators repeated in every test:
 
 ```ts avoid
 test('check header', async ({ page }) => {
@@ -202,7 +204,7 @@ test('check footer', async ({ page }) => {
 });
 ```
 
-Prefer the shape in [Reuse Page State](#reuse-page-state-serial-only--trade-off-with-isolation): the shared navigation is one `GIVEN` step in the `FEATURE`-level `beforeEach`, and each test holds only its own assertion step.
+Prefer the shape in [Reuse Page State](#reuse-page-state-serial-only--trade-off-with-isolation): each test opens the page through the page object in its one `WHEN` step, then holds its own assertion step. When the opening grows past one call, a fixture that hands over the page already open removes the repeat; a `beforeEach` does not, because it hides the opening from the test's step list.
 
 ### Skip Unnecessary Setup
 
@@ -369,7 +371,7 @@ Playwright gives each test its own browser context (and page). That gives isolat
 ### Avoiding state leak in parallel runs
 
 - **Do not** rely on shared mutable state (e.g. a single `page` or `context` in `beforeAll`) when tests can run in parallel. State from one test can leak into another and cause flaky, order-dependent failures.
-- Use **fixtures** for setup/teardown and **`beforeEach`** for per-test navigation so each test gets a fresh page or a clean slate.
+- Use **fixtures** for setup/teardown and each test's own **`WHEN`** step for navigation, so each test gets a fresh page or a clean slate.
 - For **backend or DB state** shared across tests, isolate per worker so parallel workers don’t collide. Use a worker-scoped fixture and `testInfo.workerIndex` (or `process.env.TEST_WORKER_INDEX`) to create unique data per worker (e.g. unique user or DB prefix). See [fixtures-hooks.md](../core/fixtures-hooks.md) for worker-scoped fixtures and [debugging.md](../debugging/debugging.md) for debugging flaky parallel runs.
 
 ### Debugging flaky parallel runs
@@ -378,7 +380,7 @@ If a test is flaky only with multiple workers:
 
 1. **Reproduce**: Run with default workers and `--repeat-each=10` (or `--repeat-each=100 --max-failures=1`).
 2. **Confirm parallel-specific**: Run with `--workers=1`. If the failure disappears, the cause is likely shared state or non-isolated backend/DB data.
-3. **Fix**: Remove shared page/context; use per-test fixtures and `beforeEach`; isolate test data per worker with `workerIndex` in a worker-scoped fixture.
+3. **Fix**: Remove shared page/context; use per-test fixtures; isolate test data per worker with `workerIndex` in a worker-scoped fixture.
 
 Workers are restarted after a test failure so subsequent tests in that worker get a clean environment; fixing isolation still prevents the initial flakiness.
 
@@ -519,15 +521,15 @@ import { annotateLoadTime } from './test/utils/annotate.spec.util';
 
 test.describe('FEATURE: home page performance', () => {
   test('GIVEN the home page, its load time is recorded on the report', async ({ homePage }, testInfo): Promise<void> => {
-    const loadTime = await test.step('GIVEN the home page is opened and timed', (): Promise<number> => homePage.gotoTimed());
+    const loadTime = await test.step('WHEN the home page is opened and timed', (): Promise<number> => homePage.gotoTimed());
 
-    await test.step('WHEN the load time is recorded on the report', (): void => annotateLoadTime(testInfo, loadTime));
+    await test.step('AND the load time is recorded on the report', (): void => annotateLoadTime(testInfo, loadTime));
   });
 
   test('GIVEN the home page, it loads under three seconds', async ({ homePage }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-    const metrics = await test.step('WHEN navigation timing is read', (): Promise<PageMetrics> => homePage.metrics());
+    const metrics = await test.step('AND navigation timing is read', (): Promise<PageMetrics> => homePage.metrics());
 
     await test.step('THEN load time is under budget', (): void => expect(metrics.loadTime).toBeLessThan(3000));
   });
@@ -575,9 +577,9 @@ import { auditHome } from './test/utils/lighthouse.spec.util';
 
 test.describe('FEATURE: home page lighthouse audit', () => {
   test('GIVEN the home page, its audit scores at least 80', async ({ homePage, page }): Promise<void> => {
-    await test.step('GIVEN the home page is open', (): Promise<void> => homePage.goto());
+    await test.step('WHEN the home page is opened', (): Promise<void> => homePage.goto());
 
-    const score = await test.step('WHEN the lighthouse audit is run', (): Promise<number> => auditHome(page));
+    const score = await test.step('AND the lighthouse audit is run', (): Promise<number> => auditHome(page));
 
     await test.step('THEN performance score meets the budget', (): void => expect(score).toBeGreaterThanOrEqual(80));
   });

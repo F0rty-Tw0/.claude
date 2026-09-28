@@ -37,15 +37,20 @@ export type ConsoleRecord = {
 
 export type ConsoleFilter = () => ConsoleRecord[];
 
+export type DashboardOptions = {
+  readonly data?: 'null';
+};
+
 export type NoErrorsAssertion = (allowed?: RegExp[]) => void;
 ```
 
 ```ts
 // e2e/console/pages/dashboard.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
-import type { RouteHandler } from '../../common/playwright.type';
+import type { DashboardOptions } from '../common/console.type';
+import { brokenDataMock } from '../test/mocks/data.mock';
 
 export class DashboardPage {
   public readonly fallback: Locator;
@@ -59,7 +64,8 @@ export class DashboardPage {
     this.loadButton = page.getByRole('button', { name: 'Load Data' });
   }
 
-  public async goto(): Promise<void> {
+  public async goto(options: DashboardOptions = {}): Promise<void> {
+    if (options.data === 'null') await this.page.route('**/api/data', brokenDataMock());
     await this.page.goto('/dashboard');
   }
 
@@ -67,12 +73,8 @@ export class DashboardPage {
     await this.loadButton.click();
   }
 
-  public async routeData(handler: RouteHandler): Promise<void> {
-    await this.page.route('**/api/data', handler);
-  }
-
   public async expectFallback(): Promise<void> {
-    await test.step('THEN error boundary fallback is shown', (): Promise<void> => expect(this.fallback).toBeVisible(), { box: true });
+    await expect(this.fallback).toBeVisible();
   }
 }
 ```
@@ -218,9 +220,9 @@ import { expectNoConsoleErrors } from './test/utils/console-error.spec.util';
 
 test.describe('FEATURE: console errors', () => {
   test('GIVEN a healthy data load, the console logs no error', async ({ consoleErrors, dashboardPage }): Promise<void> => {
-    await test.step('GIVEN the dashboard is open', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto());
 
-    await test.step('WHEN data is loaded', (): Promise<void> => dashboardPage.loadData());
+    await test.step('AND data is loaded', (): Promise<void> => dashboardPage.loadData());
 
     await test.step('THEN no console error was logged', (): void => expectNoConsoleErrors(consoleErrors));
   });
@@ -333,7 +335,7 @@ Reuse the `pageErrors` fixture and print each entry with `pageErrors.forEach(log
 
 ### Test Error Boundary Triggers
 
-React error boundaries catch render errors before they become `pageerror` events, so the listener only fires for errors the boundary missed. A `null` payload makes the widget crash on render; the boundary shows its fallback and `pageErrors` stays empty. `null` is still a payload: `WIDGET_DATA_NULL_STUB` is typed `WidgetData | null` in `test/stubs/data.stub.ts`.
+React error boundaries catch render errors before they become `pageerror` events, so the listener only fires for errors the boundary missed. A `null` payload makes the widget crash on render; `dashboardPage.goto({ data: 'null' })` routes `brokenDataMock()` before it navigates; the boundary shows its fallback and `pageErrors` stays empty. `null` is still a payload: `WIDGET_DATA_NULL_STUB` is typed `WidgetData | null` in `test/stubs/data.stub.ts`.
 
 ```ts
 // e2e/console/test/mocks/data.mock.ts
@@ -350,13 +352,10 @@ export const brokenDataMock = (): RouteHandler => {
 ```ts
 // e2e/console/error-boundary.test.ts
 import { expect, test } from './console.fixture';
-import { brokenDataMock } from './test/mocks/data.mock';
 
 test.describe('FEATURE: error boundary', () => {
   test('GIVEN a null data payload, the error boundary catches it', async ({ dashboardPage, pageErrors }): Promise<void> => {
-    await test.step('GIVEN data is routed to a null payload', (): Promise<void> => dashboardPage.routeData(brokenDataMock()));
-
-    await test.step('WHEN the dashboard opens', (): Promise<void> => dashboardPage.goto());
+    await test.step('WHEN the dashboard is opened', (): Promise<void> => dashboardPage.goto({ data: 'null' }));
 
     await test.step('THEN the fallback is shown', (): Promise<void> => dashboardPage.expectFallback());
 

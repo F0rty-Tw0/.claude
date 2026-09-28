@@ -52,7 +52,7 @@
 - Flows requiring JavaScript execution or DOM interaction
 - Third-party iframe interactions
 
-HTTP calls live in a `.spec.util.ts` so a step is one call. The `managerToken` fixture posts `MANAGER_STUB` to `/api/auth/token` once per test and reads `accessToken` from the body; `requestToken` is the same call for any credentials.
+HTTP calls live in a `.spec.util.ts` so a step is one call. The `managerToken` fixture posts `MANAGER_STUB` to `/api/auth/token` once per test and reads `accessToken` from the body; `staffToken` does the same with `STAFF_STUB`. `existingProduct` posts `PRODUCT_STUB` with the manager token before `use` and hands over the created `Product`, so the conflict case starts with the sku already taken and no seeding step.
 
 ```ts
 // e2e/products/test/utils/products-api.spec.util.ts
@@ -85,9 +85,7 @@ import type { APIResponse } from '@playwright/test';
 
 import type { ProductPage } from './common/products.type';
 import { expect, test } from './products.fixture';
-import { STAFF_STUB } from './test/stubs/credentials.stub';
 import { PRODUCT_STUB } from './test/stubs/product.stub';
-import { requestToken } from './test/utils/auth.spec.util';
 import { createProduct, deleteProduct, listProducts } from './test/utils/products-api.spec.util';
 
 test.describe('FEATURE: products API', () => {
@@ -97,10 +95,8 @@ test.describe('FEATURE: products API', () => {
     await test.step('THEN the status is 201', (): void => expect(response.status()).toBe(201));
   });
 
-  test('GIVEN an existing sku, posting it again returns 409', async ({ managerToken, request }): Promise<void> => {
-    await test.step('GIVEN the product is posted', (): Promise<APIResponse> => createProduct(request, managerToken, PRODUCT_STUB));
-
-    const response = await test.step('WHEN the same sku is posted again', (): Promise<APIResponse> => createProduct(request, managerToken, PRODUCT_STUB));
+  test('GIVEN an existing sku, posting it again returns 409', async ({ existingProduct, managerToken, request }): Promise<void> => {
+    const response = await test.step('WHEN the same sku is posted again', (): Promise<APIResponse> => createProduct(request, managerToken, existingProduct));
 
     await test.step('THEN the status is 409', (): void => expect(response.status()).toBe(409));
   });
@@ -119,9 +115,7 @@ test.describe('FEATURE: products API', () => {
     await test.step('THEN the items are capped at twenty', (): void => expect(body.items.length).toBeLessThanOrEqual(20));
   });
 
-  test('GIVEN a staff token, deleting a product returns 403', async ({ request }): Promise<void> => {
-    const staffToken = await test.step('GIVEN a staff token is requested', (): Promise<string> => requestToken(request, STAFF_STUB));
-
+  test('GIVEN a staff token, deleting a product returns 403', async ({ request, staffToken }): Promise<void> => {
     const response = await test.step('WHEN a product is deleted', (): Promise<APIResponse> => deleteProduct(request, staffToken, '123'));
 
     await test.step('THEN the status is 403', (): void => expect(response.status()).toBe(403));
@@ -184,33 +178,33 @@ import { mountContactForm, recordInto } from './test/utils/mount.spec.util';
 
 test.describe('FEATURE: contact form', () => {
   test('GIVEN an empty form, submitting shows both required-field errors', async ({ mount }): Promise<void> => {
-    const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount));
+    const form = await test.step('WHEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount));
 
-    await test.step('WHEN the empty form is submitted', (): Promise<void> => form.submit());
+    await test.step('AND the empty form is submitted', (): Promise<void> => form.submit());
 
     await test.step('THEN the name and email errors are shown', (): Promise<void> => form.expectErrors(['Name is required', 'Email is required']));
   });
 
   test('GIVEN a malformed email, submitting shows the email error', async ({ mount }): Promise<void> => {
     const message: ContactMessage = { ...MESSAGE_STUB, email: 'invalid-email' };
-    const form = await test.step('GIVEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount));
+    const form = await test.step('WHEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount));
 
-    await test.step('WHEN the form is filled and submitted', (): Promise<void> => form.send(message));
+    await test.step('AND the form is filled and submitted', (): Promise<void> => form.send(message));
 
     await test.step('THEN the email error is shown', (): Promise<void> => form.expectErrors(['Enter a valid email']));
   });
 
   test('GIVEN valid data, submitting calls onSubmit once', async ({ mount }): Promise<void> => {
     const submissions: ContactMessage[] = [];
-    const form = await test.step('GIVEN the form is mounted with a recording handler', (): Promise<ContactFormHelper> => mountContactForm(mount, recordInto(submissions)));
+    const form = await test.step('WHEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount, recordInto(submissions)));
 
-    await test.step('WHEN the form is filled and submitted', (): Promise<void> => form.send(MESSAGE_STUB));
+    await test.step('AND the form is filled and submitted', (): Promise<void> => form.send(MESSAGE_STUB));
 
     await test.step('THEN the handler received the message', (): void => expect(submissions).toEqual([MESSAGE_STUB]));
   });
 
   test('GIVEN a form mid-submit, the send button is disabled', async ({ mount }): Promise<void> => {
-    const form = await test.step('WHEN the submitting form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount, noop, true));
+    const form = await test.step('WHEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount, noop, true));
 
     await test.step('THEN the send button is disabled', (): Promise<void> => form.expectSubmitting());
   });
@@ -220,7 +214,7 @@ test.describe('FEATURE: contact form', () => {
 | Further case | Helper-object method |
 | --- | --- |
 | Labels are associated with inputs | `expectLabelledInputs()` asserts `getByRole('textbox', { name })` for `Name` and `Email`. |
-| Visual states (hover, focus, disabled) | One `expect*` method per state, one scenario per prop set, its `GIVEN` step mounting those props. |
+| Visual states (hover, focus, disabled) | One `expect*` method per state, one scenario per prop set, its opening `WHEN` step mounting those props. |
 
 ## E2E Tests
 
@@ -242,7 +236,7 @@ test.describe('FEATURE: contact form', () => {
 - Responsive layout at every breakpoint
 - Edge cases that only affect the backend
 
-Seed data through the API in `beforeEach`, never through the UI. The third-party payment iframe is a helper object scoped to a `FrameLocator`; `UpgradePage` exposes it as `paymentFrame`, built from `page.frameLocator('iframe[title="Secure Payment"]')`.
+Seed data through the API in a fixture, never through the UI and never in a step. The `upgradePage` fixture calls `seedAccount(page.request, 'free')` before `use`, so the spec starts on a free account. The third-party payment iframe is a helper object scoped to a `FrameLocator`; `UpgradePage` exposes it as `paymentFrame`, built from `page.frameLocator('iframe[title="Secure Payment"]')`.
 
 ```ts
 // e2e/subscription/helpers/payment-frame.helper.ts
@@ -274,17 +268,12 @@ export class PaymentFrameHelper {
 import { test } from './subscription.fixture';
 import { BILLING_STUB } from './test/stubs/billing.stub';
 import { CARD_STUB } from './test/stubs/card.stub';
-import { seedAccount } from './test/utils/seed.spec.util';
 
 test.describe('FEATURE: subscription upgrade', () => {
-  test.beforeEach(async ({ page, upgradePage }): Promise<void> => {
-    await test.step('GIVEN a free account is seeded', (): Promise<void> => seedAccount(page.request, 'free'));
-
-    await test.step('AND the upgrade page is open', (): Promise<void> => upgradePage.goto());
-  });
-
   test('GIVEN the premium plan, purchasing shows the subscription number on the welcome page', async ({ successPage, upgradePage }): Promise<void> => {
-    await test.step('WHEN the premium plan is selected', (): Promise<void> => upgradePage.selectPlan('Premium'));
+    await test.step('WHEN the upgrade page is opened', (): Promise<void> => upgradePage.goto());
+
+    await test.step('AND the premium plan is selected', (): Promise<void> => upgradePage.selectPlan('Premium'));
 
     await test.step('AND the billing details are entered', (): Promise<void> => upgradePage.fillBilling(BILLING_STUB));
 
@@ -297,7 +286,7 @@ test.describe('FEATURE: subscription upgrade', () => {
 });
 ```
 
-`successPage.expectSubscribed()` is one boxed step holding `toHaveURL(/\/account\/subscription\/success/)`, the `Welcome to Premium` heading, and the `/Subscription #\d+/` text: three assertions on one state.
+`successPage.expectSubscribed()` is one `expect*` method holding, as three plain `await expect(…)` lines, `toHaveURL(/\/account\/subscription\/success/)`, the `Welcome to Premium` heading, and the `/Subscription #\d+/` text: three assertions on one state.
 
 ## Layering Test Types
 
@@ -375,7 +364,7 @@ Total: 24 tests, ~22 seconds. API tests catch most regressions. Component tests 
 | No API tests, all E2E                     | Slow suite, flaky from UI timing, hard to diagnose       | API tests for data/logic, E2E for critical paths only          |
 | Component tests mocking everything        | Tests pass but app broken because mocks drift            | Mock only external boundaries; API tests verify real contracts |
 | Same assertion in API, component, AND E2E | Triple maintenance cost                                  | Each layer tests what it uniquely verifies                     |
-| E2E creating test data via UI             | 2-minute test where 90 seconds is setup                  | Seed via API in `beforeEach`, test actual flow                 |
+| E2E creating test data via UI             | 2-minute test where 90 seconds is setup                  | Seed via API in a fixture, test actual flow                    |
 | Testing third-party behavior              | Testing that Stripe validates cards (Stripe's job)       | Mock Stripe; trust their contract                              |
 | Skipping API layer                        | Can't tell if bug is frontend or backend                 | API tests isolate backend; component tests isolate frontend    |
 | One giant E2E for entire feature          | 5-minute test failing somewhere with no clear cause      | Focused E2E per critical path; one `test.step()` per action    |

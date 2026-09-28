@@ -62,24 +62,24 @@ export default defineConfig({
 | `fullyParallel: false` (default) | Yes            | No (serial)            |
 | `fullyParallel: true`            | Yes            | Yes                    |
 
-**Serial execution for specific files:** `test.describe.configure({ mode: 'serial' })` at the top of a spec runs its tests in order on one worker, and skips the rest after the first failure.
+**Serial execution for specific files:** `test.describe.configure({ mode: 'serial' })` at the top of a spec runs its tests in order on one worker, and skips the rest after the first failure. It also makes each test depend on the one before it, so prefer independent tests. Below, the payment test starts from a `filledCheckoutPage` fixture that adds `ITEM_STUB` to the cart through `request` and opens checkout, so neither test needs the other and the file stays parallel. Keep serial mode for a `JOURNEY` leg that cannot be seeded, such as a real third-party redirect, and state that reason next to it.
 
 ```ts
 // e2e/checkout/checkout.e2e.ts
 import { expect, test } from './checkout.fixture';
 import { CARD_STUB, ITEM_STUB } from './test/stubs/checkout.stub';
 
-test.describe.configure({ mode: 'serial' });
-
 test.describe('FEATURE: checkout', () => {
   test('GIVEN an empty cart, adding an item shows one item on the badge', async ({ cartPage }): Promise<void> => {
-    await test.step('WHEN the item is added to the cart', (): Promise<void> => cartPage.addItem(ITEM_STUB));
+    await test.step('WHEN the cart page is opened', (): Promise<void> => cartPage.goto());
+
+    await test.step('AND the item is added to the cart', (): Promise<void> => cartPage.addItem(ITEM_STUB));
 
     await test.step('THEN the cart badge shows one item', (): Promise<void> => cartPage.expectBadgeCount(1));
   });
 
-  test('GIVEN a filled cart, completing payment opens the confirmation page', async ({ checkoutPage, page }): Promise<void> => {
-    await test.step('WHEN the card payment is completed', (): Promise<void> => checkoutPage.pay(CARD_STUB));
+  test('GIVEN a filled cart, completing payment opens the confirmation page', async ({ filledCheckoutPage, page }): Promise<void> => {
+    await test.step('WHEN the card payment is completed', (): Promise<void> => filledCheckoutPage.pay(CARD_STUB));
 
     await test.step('THEN the confirmation url is shown', (): Promise<void> => expect(page).toHaveURL('/confirmation'));
   });
@@ -278,12 +278,10 @@ export { expect } from '@playwright/test';
 import { test } from './profile.fixture';
 
 test.describe('FEATURE: profile settings', () => {
-  test.beforeEach(async ({ settingsPage, user }): Promise<void> => {
-    await test.step('GIVEN the settings page is open', (): Promise<void> => settingsPage.goto(user.id));
-  });
+  test('GIVEN a new email, changing it keeps the new value in the field', async ({ settingsPage, user }): Promise<void> => {
+    await test.step('WHEN the settings page is opened', (): Promise<void> => settingsPage.goto(user.id));
 
-  test('GIVEN a new email, changing it keeps the new value in the field', async ({ settingsPage }): Promise<void> => {
-    await test.step('WHEN a new email is saved', (): Promise<void> => settingsPage.saveEmail('updated@example.com'));
+    await test.step('AND a new email is saved', (): Promise<void> => settingsPage.saveEmail('updated@example.com'));
 
     await test.step('THEN the email field shows the new value', (): Promise<void> => settingsPage.expectEmail('updated@example.com'));
   });

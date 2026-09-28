@@ -357,9 +357,9 @@ import { CI_USER } from './common/login.const';
 import { expect, test } from './login.fixture';
 
 test('GIVEN CI credentials, signing in opens the dashboard', async ({ loginPage, page }): Promise<void> => {
-  await test.step('GIVEN the login page is open', (): Promise<void> => loginPage.goto());
+  await test.step('WHEN the login page is opened', (): Promise<void> => loginPage.goto());
 
-  await test.step('WHEN the CI credentials are submitted', (): Promise<void> => loginPage.submit(CI_USER));
+  await test.step('AND the CI credentials are submitted', (): Promise<void> => loginPage.submit(CI_USER));
 
   await test.step('THEN the dashboard url is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
 });

@@ -87,7 +87,7 @@ export type Member = MemberDraft & {
 ```ts
 // e2e/booking/pages/booking.page.ts
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { BookingDetails } from '../common/booking.type';
 
@@ -127,11 +127,11 @@ export class BookingPage {
   }
 
   public async expectConfirmed(): Promise<void> {
-    await test.step('THEN confirmation message is shown', (): Promise<void> => expect(this.confirmationText).toBeVisible(), { box: true });
+    await expect(this.confirmationText).toBeVisible();
   }
 
   public async expectPrice(amount: string): Promise<void> {
-    await test.step(`THEN total price reads ${amount}`, (): Promise<void> => expect(this.totalPrice).toHaveText(amount), { box: true });
+    await expect(this.totalPrice).toHaveText(amount);
   }
 }
 ```
@@ -145,14 +145,12 @@ import { test } from './booking.fixture';
 import { BOOKING_DETAILS_STUB } from './test/stubs/booking.stub';
 
 test.describe('FEATURE: booking', () => {
-  test.beforeEach(async ({ bookingPage }): Promise<void> => {
-    await test.step('GIVEN the booking page is open', (): Promise<void> => bookingPage.goto());
-  });
-
   test('GIVEN a standard room, reserving shows the confirmation', async ({ bookingPage }): Promise<void> => {
     const details: BookingDetails = { ...BOOKING_DETAILS_STUB, room: 'standard' };
 
-    await test.step('WHEN the booking details are filled', (): Promise<void> => bookingPage.fillDetails(details));
+    await test.step('WHEN the booking page is opened', (): Promise<void> => bookingPage.goto());
+
+    await test.step('AND the booking details are filled', (): Promise<void> => bookingPage.fillDetails(details));
 
     await test.step('AND the room is reserved', (): Promise<void> => bookingPage.reserve());
 
@@ -167,7 +165,7 @@ test.describe('FEATURE: booking', () => {
 - Locators are `public readonly` fields, alphabetical, assigned in the constructor
 - Methods represent user intent (`reserve`, `fillDetails`), not low-level clicks
 - Navigation methods (`goto`) belong on the page object
-- Assertions live only in `expect*` methods, each a boxed `test.step`
+- Assertions live only in `expect*` methods, as plain `await expect(…)` lines; only the spec opens steps
 
 ## Custom Fixtures
 
@@ -219,7 +217,7 @@ export const test = base.extend<BookingFixtures>({
 export { expect } from '@playwright/test';
 ```
 
-`DashboardPage` and `LoginPage` follow the page-object sample above; `DashboardPage` exposes `goto()` plus `expectWidgets()` and `expectWelcome(email)` as boxed steps.
+`DashboardPage` and `LoginPage` follow the page-object sample above; `DashboardPage` exposes `goto()` plus `expectWidgets()` and `expectWelcome(email)` as plain `expect*` methods.
 
 ```ts
 // e2e/booking/dashboard.e2e.ts
@@ -282,7 +280,7 @@ An assertion util that takes `page` is a page-object concern in disguise. A noti
 ```ts
 // e2e/booking/helpers/notification.helper.ts
 import type { Locator } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class NotificationHelper {
   public readonly root: Locator;
@@ -294,10 +292,8 @@ export class NotificationHelper {
   public async expectMessage(message: string): Promise<void> {
     const notification = this.root.filter({ hasText: message });
 
-    await test.step(`THEN notification reads "${message}" and dismisses`, async (): Promise<void> => {
-      await expect(notification).toBeVisible();
-      await expect(notification).toBeHidden({ timeout: 10_000 });
-    }, { box: true });
+    await expect(notification).toBeVisible();
+    await expect(notification).toBeHidden({ timeout: 10_000 });
   }
 }
 ```
@@ -310,14 +306,12 @@ import { test } from './booking.fixture';
 import { generateEmail } from './test/utils/member-builder.spec.util';
 
 test.describe('FEATURE: account settings', () => {
-  test.beforeEach(async ({ accountPage }): Promise<void> => {
-    await test.step('GIVEN the account page is open', (): Promise<void> => accountPage.goto());
-  });
-
   test('GIVEN a new email, updating saves the new address', async ({ accountPage }): Promise<void> => {
     const newEmail = generateEmail('updated');
 
-    await test.step('WHEN the new email is saved', (): Promise<void> => accountPage.updateEmail(newEmail));
+    await test.step('WHEN the account page is opened', (): Promise<void> => accountPage.goto());
+
+    await test.step('AND the new email is saved', (): Promise<void> => accountPage.updateEmail(newEmail));
 
     await test.step('THEN the notification confirms the update', (): Promise<void> => accountPage.notification.expectMessage('Account updated'));
 
@@ -368,7 +362,7 @@ e2e/
 |---|---|---|
 | **Spec file** | `test()` with `test.step` | Describes behavior, orchestrates layers |
 | **Fixtures** | `test.extend()` | Resource lifecycle: setup, provide, teardown |
-| **Page objects** | Classes in `pages/`, `helpers/` | UI interaction: navigation, actions, locators, boxed assertions |
+| **Page objects** | Classes in `pages/`, `helpers/` | UI interaction: navigation, actions, locators, `expect*` assertions (no steps) |
 | **Utils** | Functions in `test/utils/`, `utils/` | Utilities: data generation, formatting |
 
 ## Anti-Patterns
