@@ -29,48 +29,19 @@ export const SQL_PAYLOADS: string[] = [
 ];
 ```
 
-Two fixtures collect browser events for the whole test: `dialogs` records every `alert`, `confirm`, and `prompt` the page opens, and `cspViolations` records console messages that mention the Content Security Policy. Both are plain arrays the spec asserts on in a step. `secondLoginPage` is a `LoginPage` on a fresh browser context; the API objects wrap `page.request`, which shares the context's cookies.
+Two fixtures collect browser events for the whole test: `dialogs` records every `alert`, `confirm`, and `prompt` the page opens, and `cspViolations` records console messages that mention the Content Security Policy. Both are plain arrays the spec asserts on in a step.
 
 ```ts
-// e2e/security/security.fixture.ts
+// e2e/security/browser-events.fixture.ts
 import type { ConsoleMessage, Dialog } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
-import { SettingsApi } from './api/settings.api';
-import { AdminUsersPage } from './pages/admin-users.page';
-import { DashboardPage } from './pages/dashboard.page';
-import { ForgotPasswordPage } from './pages/forgot-password.page';
-import { HomePage } from './pages/home.page';
-import { LoginPage } from './pages/login.page';
-import { PostEditorPage } from './pages/post-editor.page';
-import { PostPage } from './pages/post.page';
-import { ProfilePage } from './pages/profile.page';
-import { ResetPasswordPage } from './pages/reset-password.page';
-import { SearchPage } from './pages/search.page';
-import { SettingsPage } from './pages/settings.page';
-
-type SecurityFixtures = {
-  readonly adminUsersPage: AdminUsersPage;
+type BrowserEventFixtures = {
   readonly cspViolations: string[];
-  readonly dashboardPage: DashboardPage;
   readonly dialogs: string[];
-  readonly forgotPasswordPage: ForgotPasswordPage;
-  readonly homePage: HomePage;
-  readonly loginPage: LoginPage;
-  readonly postEditorPage: PostEditorPage;
-  readonly postPage: PostPage;
-  readonly profilePage: ProfilePage;
-  readonly resetPasswordPage: ResetPasswordPage;
-  readonly searchPage: SearchPage;
-  readonly secondLoginPage: LoginPage;
-  readonly settingsApi: SettingsApi;
-  readonly settingsPage: SettingsPage;
 };
 
-export const test = base.extend<SecurityFixtures>({
-  adminUsersPage: async ({ page }, use): Promise<void> => {
-    await use(new AdminUsersPage(page));
-  },
+export const test = base.extend<BrowserEventFixtures>({
   cspViolations: async ({ page }, use): Promise<void> => {
     const violations: string[] = [];
     const record = (message: ConsoleMessage): void => {
@@ -83,9 +54,6 @@ export const test = base.extend<SecurityFixtures>({
     page.on('console', record);
     await use(violations);
   },
-  dashboardPage: async ({ page }, use): Promise<void> => {
-    await use(new DashboardPage(page));
-  },
   dialogs: async ({ page }, use): Promise<void> => {
     const messages: string[] = [];
     const record = async (dialog: Dialog): Promise<void> => {
@@ -95,21 +63,40 @@ export const test = base.extend<SecurityFixtures>({
 
     page.on('dialog', record);
     await use(messages);
+  }
+});
+```
+
+The auth page objects live in their own fixture. `secondLoginPage` is a `LoginPage` on a fresh browser context.
+
+```ts
+// e2e/security/auth-pages.fixture.ts
+import { test as base } from '@playwright/test';
+
+import { DashboardPage } from './pages/dashboard.page';
+import { ForgotPasswordPage } from './pages/forgot-password.page';
+import { LoginPage } from './pages/login.page';
+import { ProfilePage } from './pages/profile.page';
+import { ResetPasswordPage } from './pages/reset-password.page';
+
+type AuthPageFixtures = {
+  readonly dashboardPage: DashboardPage;
+  readonly forgotPasswordPage: ForgotPasswordPage;
+  readonly loginPage: LoginPage;
+  readonly profilePage: ProfilePage;
+  readonly resetPasswordPage: ResetPasswordPage;
+  readonly secondLoginPage: LoginPage;
+};
+
+export const test = base.extend<AuthPageFixtures>({
+  dashboardPage: async ({ page }, use): Promise<void> => {
+    await use(new DashboardPage(page));
   },
   forgotPasswordPage: async ({ page }, use): Promise<void> => {
     await use(new ForgotPasswordPage(page));
   },
-  homePage: async ({ page }, use): Promise<void> => {
-    await use(new HomePage(page));
-  },
   loginPage: async ({ page }, use): Promise<void> => {
     await use(new LoginPage(page));
-  },
-  postEditorPage: async ({ page }, use): Promise<void> => {
-    await use(new PostEditorPage(page));
-  },
-  postPage: async ({ page }, use): Promise<void> => {
-    await use(new PostPage(page));
   },
   profilePage: async ({ page }, use): Promise<void> => {
     await use(new ProfilePage(page));
@@ -117,15 +104,57 @@ export const test = base.extend<SecurityFixtures>({
   resetPasswordPage: async ({ page }, use): Promise<void> => {
     await use(new ResetPasswordPage(page));
   },
-  searchPage: async ({ page }, use): Promise<void> => {
-    await use(new SearchPage(page));
-  },
   secondLoginPage: async ({ browser }, use): Promise<void> => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
     await use(new LoginPage(page));
     await context.close();
+  }
+});
+```
+
+`security.fixture.ts` merges both with `mergeTests` and adds the content page objects; the API objects wrap `page.request`, which shares the context's cookies.
+
+```ts
+// e2e/security/security.fixture.ts
+import { mergeTests } from '@playwright/test';
+
+import { SettingsApi } from './api/settings.api';
+import { test as authPagesTest } from './auth-pages.fixture';
+import { test as browserEventsTest } from './browser-events.fixture';
+import { AdminUsersPage } from './pages/admin-users.page';
+import { HomePage } from './pages/home.page';
+import { PostEditorPage } from './pages/post-editor.page';
+import { PostPage } from './pages/post.page';
+import { SearchPage } from './pages/search.page';
+import { SettingsPage } from './pages/settings.page';
+
+type SecurityFixtures = {
+  readonly adminUsersPage: AdminUsersPage;
+  readonly homePage: HomePage;
+  readonly postEditorPage: PostEditorPage;
+  readonly postPage: PostPage;
+  readonly searchPage: SearchPage;
+  readonly settingsApi: SettingsApi;
+  readonly settingsPage: SettingsPage;
+};
+
+export const test = mergeTests(authPagesTest, browserEventsTest).extend<SecurityFixtures>({
+  adminUsersPage: async ({ page }, use): Promise<void> => {
+    await use(new AdminUsersPage(page));
+  },
+  homePage: async ({ page }, use): Promise<void> => {
+    await use(new HomePage(page));
+  },
+  postEditorPage: async ({ page }, use): Promise<void> => {
+    await use(new PostEditorPage(page));
+  },
+  postPage: async ({ page }, use): Promise<void> => {
+    await use(new PostPage(page));
+  },
+  searchPage: async ({ page }, use): Promise<void> => {
+    await use(new SearchPage(page));
   },
   settingsApi: async ({ page }, use): Promise<void> => {
     await use(new SettingsApi(page.request));

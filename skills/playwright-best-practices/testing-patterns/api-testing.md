@@ -655,7 +655,7 @@ export class ShopApi {
 import type { APIResponse } from '@playwright/test';
 
 import { readJson } from '../utils/read-json.util';
-import type { Cart, CartLine, Order, OrderList, Product } from './common/orders.type';
+import type { Cart, CartLine, Order, Product } from './common/orders.type';
 import { expect, test } from './orders.fixture';
 import { ADDRESS_STUB, PRODUCT_STUB } from './test/stubs/orders.stub';
 
@@ -702,40 +702,15 @@ test.describe('FEATURE: checkout api', () => {
 
     await test.step('AND the order has one line', (): void => expect(order.items).toHaveLength(1));
   });
-
-  test('SCENARIO: checking out the cart lists the order', async ({ shopApi }): Promise<void> => {
-    const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
-
-    const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
-
-    const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
-
-    order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
-
-    const response = await test.step('AND the orders are listed', (): Promise<APIResponse> => shopApi.listOrders());
-
-    const list = await test.step('AND the list is read', (): Promise<OrderList> => readJson<OrderList>(response));
-
-    await test.step('THEN the list contains the order', (): void => expect(list.items.map((entry: Order): number => entry.id)).toContain(order.id));
-  });
-
-  test('SCENARIO: checking out the cart drops the product stock to 47', async ({ shopApi }): Promise<void> => {
-    const cartResponse = await test.step('WHEN the cart is created', (): Promise<APIResponse> => shopApi.createCart(lines));
-
-    const cart = await test.step('AND the cart is read', (): Promise<Cart> => readJson<Cart>(cartResponse));
-
-    const orderResponse = await test.step('AND the cart is checked out', (): Promise<APIResponse> => shopApi.checkout(cart.id, ADDRESS_STUB));
-
-    order = await test.step('AND the order is read', (): Promise<Order> => readJson<Order>(orderResponse));
-
-    const response = await test.step('AND the product is fetched', (): Promise<APIResponse> => shopApi.product(product.id));
-
-    const updated = await test.step('AND the product is read', (): Promise<Product> => readJson<Product>(response));
-
-    await test.step('THEN the stock dropped by three', (): void => expect(updated.stock).toBe(47));
-  });
 });
 ```
+
+Two more outcomes of the same chain are one scenario each: the four checkout steps, then one extra read.
+
+| SCENARIO | Extra `AND` steps | THEN |
+|---|---|---|
+| checking out the cart lists the order | `shopApi.listOrders()`, read as `OrderList` | the listed ids contain `order.id` |
+| checking out the cart drops the product stock to 47 | `shopApi.product(product.id)`, read as `Product` | `stock` is 47 |
 
 A state machine is the same flat spec with one test per starting state: its `GIVEN` step sets the state, one `WHEN` step runs the transition, and the title names both (`'SCENARIO: publishing an article in review succeeds'`). For an article publish workflow through `patch('/api/articles/:id/status', { data: { status } })`:
 

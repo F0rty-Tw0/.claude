@@ -81,7 +81,7 @@ export class PwaPage {
   public readonly heading: Locator;
   public readonly messageInput: Locator;
   public readonly offlineBadge: Locator;
-  public readonly retryButton: Locator;
+  public readonly offlineMessage: Locator;
   public readonly sendButton: Locator;
   public readonly statusText: Locator;
 
@@ -92,7 +92,7 @@ export class PwaPage {
     this.heading = page.getByRole('heading', { name: 'Dashboard' });
     this.messageInput = page.getByLabel('Message');
     this.offlineBadge = page.getByTestId('offline-badge');
-    this.retryButton = page.getByRole('button', { name: 'Retry' });
+    this.offlineMessage = page.getByText('You are offline');
     this.sendButton = page.getByRole('button', { name: 'Send' });
     this.statusText = page.getByRole('status');
   }
@@ -123,10 +123,7 @@ export class PwaPage {
   }
 
   public async expectOfflineFallback(): Promise<void> {
-    await test.step('THEN offline fallback page is shown', async (): Promise<void> => {
-      await expect(this.page.getByText('You are offline')).toBeVisible();
-      await expect(this.retryButton).toBeVisible();
-    }, { box: true });
+    await test.step('THEN offline fallback page is shown', (): Promise<void> => expect(this.offlineMessage).toBeVisible(), { box: true });
   }
 
   public async expectStatus(text: string): Promise<void> {

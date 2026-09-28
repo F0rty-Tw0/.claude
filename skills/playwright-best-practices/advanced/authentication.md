@@ -761,7 +761,7 @@ export { expect } from '@playwright/test';
 **Use when**: Multiple test files need to log in and you want consistent, maintainable login logic.
 **Avoid when**: You use `storageState` everywhere and never navigate through the login UI in tests.
 
-Action methods never assert; `goto` no longer checks the button, the spec's first assertion step does. Field errors are checked through `toHaveAccessibleDescription`, which follows `aria-describedby` without a branch.
+The OAuth section's `signInWithProvider()` clicks a `providerButton` field (`getByRole('button', { name: 'Sign in with Provider' })`) declared the same way; it is left out below to keep the sample short. Action methods never assert; `goto` no longer checks the button, the spec's first assertion step does. Field errors are checked through `toHaveAccessibleDescription`, which follows `aria-describedby` without a branch.
 
 ```ts
 // e2e/auth/pages/login.page.ts
@@ -775,7 +775,6 @@ export class LoginPage {
   public readonly forgotPasswordLink: Locator;
   public readonly loginButton: Locator;
   public readonly passwordInput: Locator;
-  public readonly providerButton: Locator;
   public readonly usernameInput: Locator;
 
   private readonly page: Page;
@@ -786,7 +785,6 @@ export class LoginPage {
     this.forgotPasswordLink = page.getByRole('link', { name: 'Forgot password' });
     this.loginButton = page.getByRole('button', { name: 'Log in' });
     this.passwordInput = page.getByLabel('Password');
-    this.providerButton = page.getByRole('button', { name: 'Sign in with Provider' });
     this.usernameInput = page.getByLabel('Username');
   }
 
@@ -811,10 +809,6 @@ export class LoginPage {
 
   public async openForgotPassword(): Promise<void> {
     await this.forgotPasswordLink.click();
-  }
-
-  public async signInWithProvider(): Promise<void> {
-    await this.providerButton.click();
   }
 
   public async expectError(message: string | RegExp): Promise<void> {
