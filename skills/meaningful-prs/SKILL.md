@@ -47,12 +47,12 @@ This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
    - `gh repo view --json defaultBranchRef,squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed,deleteBranchOnMerge` — use `defaultBranchRef` as `<default>` everywhere, never assume `main`
    - `git diff --stat origin/<default>...HEAD`
    - `gh pr list --head <branch>`
-   - migration number collisions on `main`
+   - migration number collisions on `origin/<default>`
    - the real typecheck/test script names
-2. **Split plan** as a table: slice, branch, base, blast class (`code-review` `references/blast-radius.md`), files, ~lines.
-3. **One approval:** ask with AskUserQuestion. The approval covers the listed commits, the first push and the PRs. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
+2. **Split plan** as a table: Slice, Branch, Base, Blast (`code-review` `references/blast-radius.md`), Tasks/Files, ~Lines. If the plan has a **PR Slices** table (`plans-writing`), start from it and fill Files and ~Lines from `git diff --stat`.
+3. **One approval:** ask with AskUserQuestion, together with `pr-description`'s audience question (for us / for someone else) asked **once for the whole stack**. The approval covers the listed commits, the first push and the PRs. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
 4. **Build the slices.** Details and commands: `references/mechanics.md`.
-   - Sync the source branch with `main` first.
+   - Sync the source branch with `origin/<default>` first.
    - Take files **by path** from the source branch (`git restore --source`, which also carries deletions).
    - Partial files (a flag line): Edit, or stage a prepared version into the index.
    - Each slice must pass typecheck and tests before its commits, which follow `meaningful-commits`.

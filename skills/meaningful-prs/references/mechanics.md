@@ -37,8 +37,8 @@ Renames: restore both the old path (records the deletion) and the new path, in t
 ```bash
 git switch --detach <top of the longest chain>           # one ref
 git merge --no-edit <every other chain top / independent slice>
-# expected conflicts (e.g. a shared flag file): resolve BY HAND from the slices' own content.
-# Never copy the file from <stack>/src here; that would hide a bad split.
+# expected conflicts (e.g. a shared flag file): resolve BY HAND from the slices' own content,
+# then `git add <files> && git merge --continue`. Never copy the file from <stack>/src here; that would hide a bad split.
 git diff --stat <stack>/src HEAD                         # MUST be empty
 git switch <stack>/src
 ```
@@ -70,7 +70,11 @@ git push origin <stack>/1-<name> <stack>/2-<name>                      # normal 
 
 If the fix changed an API that upper PRs call, fix those call sites during the restack. Re-run `pr-description` Step 0 so each `## Proof` is fresh.
 
-## Parent squash-merged (new user request needed)
+## Parent merged (new user request needed)
+
+Merge-commit or rebase-merge repos: retarget, then a plain `git merge origin/<default>` into the child is the whole restack. The rest of this section is for **squash** merges.
+
+### Squash
 
 GitHub retargets open child PRs automatically when the merged parent's head branch is deleted. Deleting an **unmerged** base branch closes its PRs instead. Retargeting first is always safe:
 
@@ -78,14 +82,17 @@ GitHub retargets open child PRs automatically when the merged parent's head bran
 gh pr edit <child> --base <default>
 gh pr view <child> --json baseRefName          # confirm
 git fetch origin
-SQUASH=<sha of the squash commit on <default>>
-git merge-base --is-ancestor <parent-final-tip> <stack>/2-<name> || git merge <parent-final-tip>   # child must hold the parent's final state
-git switch <stack>/2-<name>
+SQUASH=$(gh pr view <parent> --json mergeCommit -q .mergeCommit.oid)
+PARENT_TIP=$(gh pr view <parent> --json headRefOid -q .headRefOid)
+git cat-file -e "$PARENT_TIP" 2>/dev/null || git fetch origin "pull/<parent>/head"   # the local parent branch may be stale or deleted
+git switch <stack>/2-<name>                    # FIRST: every merge below must land on the child
+git merge-base --is-ancestor "$PARENT_TIP" HEAD || git merge "$PARENT_TIP"   # child must hold the parent's final state
 git merge "$SQUASH^"                           # 1. <default> as it was just BEFORE the squash: brings unrelated drift
 git merge -s ours "$SQUASH"                    # 2. mark the squash merged; content is already in the child
 git merge origin/<default>                     # 3. anything after the squash
 <test>
 git diff --stat origin/<default>...<stack>/2-<name>   # must show only this slice's files
+git diff "$SQUASH" HEAD -- <parent's files>          # content check: empty, or only this slice's intended edits (--stat can't see a revert inside a shared file)
 git push origin <stack>/2-<name>
 gh pr diff <child> --name-only                  # same check on GitHub
 # pass it up: merge <stack>/2-<name> into its children, test, push
@@ -101,7 +108,8 @@ Remote branch delete, if GitHub didn't auto-delete: `git push origin --delete <s
 
 ```bash
 git rebase --onto origin/<default> <old-parent-tip-sha> <stack>/<TOP-of-chain> --update-refs   # --update-refs moves branches BELOW the rebased one, so rebase the top
-git push --force-with-lease=<stack>/2-<name>:<expected-sha> --force-with-lease=<stack>/3-<name>:<expected-sha> --force-if-includes origin <stack>/2-<name> <stack>/3-<name>
+# <expected-sha> = `git rev-parse origin/<branch>` recorded BEFORE the rebase
+git push --force-with-lease=<stack>/2-<name>:<expected-sha> --force-with-lease=<stack>/3-<name>:<expected-sha> origin <stack>/2-<name> <stack>/3-<name>
 ```
 
 🔴 Ask the user first, every time. The rebase drops earlier restack merge commits and their conflict resolutions, so expect to resolve the same conflicts again. Use the parent's final tip **SHA**, not a local branch that may be stale.

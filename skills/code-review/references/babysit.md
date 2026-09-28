@@ -42,7 +42,7 @@ Babysit the whole stack: `/loop 1h /code-review babysit <n1> <n2> <n3>`. Each ti
 
 - **Parent merged?** (`gh pr view <parent> --json state`) → the child needs retarget + restack. Don't switch branches or push — ping with the exact commands from `meaningful-prs` `references/mechanics.md` ("Parent squash-merged"). Until restacked, the child's diff still shows the parent's content.
 - **Parent got new commits?** → the child is behind its base; list it as "restack needed" in the tick summary.
-- Delta review per PR with `gh pr diff <n>` (each PR's own base), not the local checkout.
+- Delta review per PR: `<last-reviewed-sha>..<headRefOid>` of that PR (after `git fetch`). `gh pr diff <n>` is the full view against that PR's own base.
 - Local fixes go only on the checked-out PR's branch. Other PRs in the stack: report, don't touch.
 
 ## Pinging
