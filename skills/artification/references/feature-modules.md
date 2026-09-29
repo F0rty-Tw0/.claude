@@ -39,7 +39,7 @@ The graph is the `boundaries` config of `lint-suite` (`eslint-plugin-boundaries`
 - `ui` never imports `domain-logic` or `feature`.
 - `domain-logic` never imports `feature`. A service that needs a component (opening a dialog) is a `feature` service.
 - `data-access` never imports `domain-logic`.
-- `config/` is not a `boundaries` element, so lint leaves it unchecked. Treat it like `common/`: it imports only `common/` and is imported by `data-access`, `domain-logic` (environment tokens), and composition roots.
+- `config/` is not a `boundaries` element, so lint leaves it unchecked. Its import direction matches `common/` (it may hold `get<Name>Env()` functions): it imports only `common/` and is imported by `data-access`, `domain-logic` (environment tokens), and composition roots.
 - A `feature` that needs one `data-access` call still goes through a `domain-logic` function, even a one-line forwarder. The forwarder is the only legal road and the seam where the next rule lands.
 
 ## Placement Ladder
@@ -63,7 +63,7 @@ Entry adapters. On the frontend these are smart components; on a server, request
 | Files | `<name>.component.ts` (smart component), `<name>.guard.ts` (functional `CanActivateFn`), `<name>.seo.config.ts` (page metadata), `<name>.handler.ts` (HTTP / MCP / CLI handler), `<verb-noun>.ts` for a server `preHandler` hook (`require-user.ts`), `<name>.plugin.ts` (Fastify `fp(...)` plugin that adds request hooks), `<name>.service.ts` only for a UI-coupled service that opens a `feature` component (dialog). |
 | Injects | `domain-logic` services and state facades, plus Angular framework and router primitives (`Router`, `DestroyRef`, `Injector`, `Title`, `Meta`, `DOCUMENT`), through `inject()` into `private readonly` fields. Nothing from `data-access`. |
 | Reads data | A `Signal` from a state facade (`this.favoritesState.get()`), a `resource()` returned by a service, or `toSignal()` over a service `Observable`. |
-| Triggers work | Calls a service method. Fire-and-forget names the promise, then `void load.catch(ignoreRecordedError)`: the orchestrator already wrote the error to state and rethrew, and the `catch` only stops an unhandled rejection. Only a method that records its error through `fail$` may be fired this way; a bare forwarder's caller handles the error itself. `ignoreRecordedError` is one shared no-op, `export const ignoreRecordedError = (): void => undefined;` in `utils/ignore-recorded-error.util.ts` (an empty `{}` body fails `no-empty-function`). |
+| Triggers work | Calls a service method. Fire-and-forget names the promise, then `void load.catch(ignoreRecordedError)`: the orchestrator already wrote the error to state and rethrew, and the `catch` only stops an unhandled rejection. Only a method that records its error through `fail$` may be fired this way; a bare forwarder's caller handles the error itself. A trigger that can fire again before the last call settles (a per-click delete) needs a guard in the orchestrator (`exhaustMap`, or latest-mutation tracking), or a stale response wins. `ignoreRecordedError` is one shared no-op, `export const ignoreRecordedError = (): void => undefined;` in `utils/ignore-recorded-error.util.ts` (an empty `{}` body fails `no-empty-function`). |
 | Route input | Route params arrive as `input()` through `withComponentInputBinding()`, not by injecting `ActivatedRoute`. |
 | Owns | Page-level concerns: forms (Signal Forms `form()` on Angular 22+), SEO config, translation (`*transloco`, `t('key')`), `@defer` boundaries. |
 | Feeds `ui` | Passes plain values and already-translated strings as inputs; listens to outputs. |
@@ -138,7 +138,7 @@ Decides and orchestrates. The only layer that composes I/O with state.
 | `<name>.provider.ts` | `provideX()` for a service, `APP_INITIALIZER`-style setup. | — | `EnvironmentProviders` |
 | `<name>.interceptor.ts`, `<name>.redirect.ts` | Functional interceptors and route redirects. | services | per Angular signature |
 
-Orchestrator flow, in order: `defer()` so `state.loading(true)` runs only on subscribe → `api.x$()` → `tap` into `state.set(value)` → `catchError` into `this.fail$(error)`, which writes `state.error(message)` and rethrows → `finalize` into `state.loading(false)` → `takeUntil(...)` last (`rxjs/no-unsafe-takeuntil`). `defer` covers an Observable that is never subscribed; `finalize` covers one cancelled by `switchMap`, `takeUntil`, or unsubscribe. Session-scoped requests use `takeUntil(this.sessionState.invalidated$(generation))`. A runtime switch (HTTP vs browser messaging) is a branch here, not in `data-access`. The `Loading` reducer patches only `loading`, never data or `error`: `finalize` runs after `set` / `error`, and a reducer that resets them wipes the result. A boolean `loading` assumes one request in flight per slice; overlapping triggers go through `switchMap` / `exhaustMap` at the trigger or a request-generation guard, or the older response overwrites the newer one.
+Orchestrator flow, in order: `defer()` so `state.loading(true)` runs only on subscribe → `api.x$()` → `tap` into `state.set(value)` → `catchError` into `this.fail$(error)`, which writes `state.error(message)` and rethrows (`HttpErrorResponse` does not extend `Error`, so `fail$` checks it by name) → `finalize` into `state.loading(false)` → `takeUntil(...)` last (`rxjs/no-unsafe-takeuntil`). `defer` covers an Observable that is never subscribed; `finalize` covers one cancelled by `switchMap`, `takeUntil`, or unsubscribe. Session-scoped requests use `takeUntil(this.sessionState.invalidated$(generation))`. A runtime switch (HTTP vs browser messaging) is a branch here, not in `data-access`. The `Loading` reducer patches only `loading`, never data or `error`: `finalize` runs after `set` / `error`, and a reducer that resets them wipes the result. A boolean `loading` assumes one request in flight per slice; overlapping triggers go through `switchMap` / `exhaustMap` at the trigger or a request-generation guard, or the older response overwrites the newer one.
 
 A third-party UI service (`MatSnackBar`, `MatDialog` without a component) is wrapped by an app service here (`NotifyService`), so `feature` injects the wrapper.
 
@@ -187,7 +187,8 @@ export class GeoLocationService {
   }
 
   private fail$(error: unknown): Observable<never> {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const isKnownError = error instanceof HttpErrorResponse || error instanceof Error;
+    const message = isKnownError ? error.message : 'Unknown error';
 
     this.state.error(message);
 
@@ -283,7 +284,7 @@ export const deleteFavoriteById = async (favoriteId: string, userId: string): Pr
 
 | Folder | Holds |
 |---|---|
-| `common/` | `<name>.type.ts`, `<name>.const.ts`, `<name>.schema.ts` (request / response contract: `z.object({...}) satisfies z.ZodType<Payload>`), `<name>.exception.ts` (exception classes with a constructor only). Never functions, never stubs. |
+| `common/` | `<name>.type.ts`, `<name>.const.ts`, `<name>.schema.ts` (request / response contract: `z.object({...}) satisfies z.ZodType<Payload>`), `<name>.exception.ts`, one per exception (exception classes: a constructor plus `public readonly` fields the error handler reads (`statusCode`, `category`), abstract bases allowed; no methods, getters, or mutable state). Never functions, never stubs. |
 | `config/` | Backend: `<name>-env.schema.ts` with a private zod schema, the inferred type, and `get<Name>Env()` that parses `process.env` once at bootstrap and throws with `cause`. `<name>.config.ts` builds a typed config object from it. Frontend: environment `InjectionToken`s. Nothing else reads `process.env`. |
 | Composition roots | `main.ts`, `app.config.ts`, `app.routes.ts`, `ngxs.config.ts`, `shell/`, `routes.ts`, `server.ts`, an extension `background.ts`. They wire providers, register plugins, and map routes to `feature` handlers. No logic, and no `data-access` calls beyond wiring `provideXState()`. |
 
@@ -295,7 +296,7 @@ Server `routes.ts` per slice: `const router = fastify.withTypeProvider<ZodTypePr
 |---|---|
 | 22+ | `@Service()` for every root singleton: `.service.ts`, `.state.service.ts`, `.api.ts`. It implies `providedIn: 'root'` and supports `inject()` only. |
 | 22+ | Non-root scope: `@Service({ autoProvided: false })`, then list it in the route or component `providers`. Custom creation: `@Service({ factory: () => ... })`. |
-| 22+ | `@Injectable({ providedIn: ... })` only where `@Service` cannot go: NGXS `@State` classes and provider keys on the decorator itself (`@Injectable({ providedIn: 'root', useClass: ... })`). angular-eslint `prefer-service-decorator` enforces `@Service`; turn it off for `+state/*.state.ts`. Never a bare `@Injectable()`: lint-suite `use-injectable-provided-in` rejects it. |
+| 22+ | `@Injectable({ providedIn: ... })` only where `@Service` cannot go: NGXS `@State` classes and provider keys on the decorator itself (`@Injectable({ providedIn: 'root', useClass: ... })`). If the repo enables angular-eslint `prefer-service-decorator` (lint-suite does not), turn it off for `+state/*.state.ts`; its autofix rewrites the NGXS state decorator. Never a bare `@Injectable()`: lint-suite `use-injectable-provided-in` rejects it. |
 | 21 and below | `@Injectable({ providedIn: 'root' })` for the same roots. |
 | 22+ | Omit `changeDetection: OnPush` (default). Below 22, set it on every component. |
 | 19+ | Omit `standalone: true` (default). Never `CommonModule`; import the directives the template uses. |
@@ -391,7 +392,7 @@ Each row was found in a real module.
 | `process.env` parsed inside each request | Parse once in `config/` at bootstrap. |
 | `Loading` reducer resets data or `error` | Patch `loading` only; `finalize` would wipe the result. |
 | Actions grouped in `export namespace XActions` | Flat `XSet` / `XLoading` / `XError` classes. |
-| Exception class with fields, getters, or a `.class.ts` name | Constructor-only `common/<name>.exception.ts`. |
+| Exception class with methods, getters, or a `.class.ts` name | `common/<name>.exception.ts` with a constructor and `public readonly` fields only. Keep `statusCode`: Fastify's default error handler reads it, and dropping it turns a 403 into a 500. |
 | Stub in `common/`, `+state/`, or a production barrel | `test/stubs/` per `unit-testing.md`. |
 | Global `window` / `document` / `navigator` in a service | Inject `DOCUMENT` or a platform token. |
 | Repo spreads `base`, `typescript`, … but not `boundaries` | Add `...boundaries` to the ESLint config. |

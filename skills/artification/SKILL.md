@@ -26,7 +26,7 @@ Engineer has dyslexia and ADHD and reads code by scanning its shape, not word by
 - Only erasable TypeScript syntax, so the source runs under Node without a build.
 - A returned object gets a name, so the function's output is one word, not a literal.
 - Every test-only file sits under the owning feature's `test/` folder, so `common/` and `utils/` hold only what ships.
-- `common/` and `.const.ts` hold constants and types only (plus constructor-only exception classes in `common/`); every function, even a one-line predicate, lives in `utils/`, so the path alone says whether a symbol is data or behavior.
+- `common/` and `.const.ts` hold constants and types only (plus method-free exception classes in `common/`); every function, even a one-line predicate, lives in `utils/`, so the path alone says whether a symbol is data or behavior.
 - Every feature module uses the same layer names and imports flow one way (`feature → ui / domain-logic`, `domain-logic → data-access → utils → common`), so a file's path says what it may touch.
 - One shape per file kind, so no file has to be re-learned.
 
