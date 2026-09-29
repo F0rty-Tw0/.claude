@@ -49,7 +49,7 @@ First matching rung wins.
 1. Type, constant, contract schema, exception class → `common/`.
 2. Pure function → `utils/`.
 3. Touches the outside (network, DB, SDK, file system, browser messaging, storage) or holds store or persisted state → `data-access/`. View-only state shared across components (`signal()` with no persistence) is `domain-logic`.
-4. Decides, sequences calls, maps errors to state, or wraps a store → `domain-logic/`.
+4. Decides, sequences calls, maps errors to state, or wraps a store (also HTTP interceptors and route redirects) → `domain-logic/`. Route guards skip this rung: they are `feature/`.
 5. Receives a route, request, guard check, or tool call, or renders with injected app services → `feature/`.
 6. Renders only from inputs → `ui/`.
 7. Wires providers, plugins, or routes and holds no logic → composition root (outside the layers).
@@ -63,7 +63,7 @@ Entry adapters. On the frontend these are smart components; on a server, request
 | Files | `<name>.component.ts` (smart component), `<name>.guard.ts` (functional `CanActivateFn`), `<name>.seo.config.ts` (page metadata), `<name>.handler.ts` (HTTP / MCP / CLI handler), `<verb-noun>.ts` for a server `preHandler` hook (`require-user.ts`), `<name>.plugin.ts` (Fastify `fp(...)` plugin that adds request hooks), `<name>.service.ts` only for a UI-coupled service that opens a `feature` component (dialog). |
 | Injects | `domain-logic` services and state facades, plus Angular framework and router primitives (`Router`, `DestroyRef`, `Injector`, `Title`, `Meta`, `DOCUMENT`), through `inject()` into `private readonly` fields. Nothing from `data-access`. |
 | Reads data | A `Signal` from a state facade (`this.favoritesState.get()`), a `resource()` returned by a service, or `toSignal()` over a service `Observable`. |
-| Triggers work | Calls a service method. Fire-and-forget names the promise, then `void load.catch(ignoreRecordedError)`: the orchestrator already wrote the error to state and rethrew, and the `catch` only stops an unhandled rejection. Only a method that records its error through `fail$` may be fired this way; a bare forwarder's caller handles the error itself. A trigger that can fire again before the last call settles (a per-click delete) needs a guard in the orchestrator (`exhaustMap`, or latest-mutation tracking), or a stale response wins. `ignoreRecordedError` is one shared no-op, `export const ignoreRecordedError = (): void => undefined;` in `utils/ignore-recorded-error.util.ts` (an empty `{}` body fails `no-empty-function`). |
+| Triggers work | Calls a service method. Fire-and-forget names the promise, then `void load.catch(ignoreRecordedError)`: the orchestrator already wrote the error to state and rethrew, and the `catch` only stops an unhandled rejection. Only a method that records its error through `fail$` may be fired this way; a bare forwarder's caller handles the error itself. A trigger that can fire again before the last call settles needs the overlap rules under Orchestrator flow. `ignoreRecordedError` is one shared no-op, `export const ignoreRecordedError = (): void => undefined;` in `utils/ignore-recorded-error.util.ts` (an empty `{}` body fails `no-empty-function`). |
 | Route input | Route params arrive as `input()` through `withComponentInputBinding()`, not by injecting `ActivatedRoute`. |
 | Owns | Page-level concerns: forms (Signal Forms `form()` on Angular 22+), SEO config, translation (`*transloco`, `t('key')`), `@defer` boundaries. |
 | Feeds `ui` | Passes plain values and already-translated strings as inputs; listens to outputs. |
@@ -132,13 +132,20 @@ Decides and orchestrates. The only layer that composes I/O with state.
 
 | File | Role | Injects | Returns |
 |---|---|---|---|
-| `<name>.state.service.ts` | Facade over one state slice. The only `Store` consumer in the app. No logic, no I/O. | `Store` only | `get()` / `getState()`: `Signal<T>` via `selectSignal`; `getSnapshot()`: `T` via `selectSnapshot`; `set()`, `loading(isLoading: boolean)`, `error()`, `clear()`: `void`, each one `dispatch`. `set()` and `error()` also clear loading in the reducer. |
+| `<name>.state.service.ts` | Facade over one state slice. The only `Store` consumer in the app. No logic, no I/O. | `Store` only | `get()` / `getState()`: `Signal<T>` via `selectSignal`; `getSnapshot()`: `T` via `selectSnapshot`; `set()`, `addOne()`, `remove(id)`, `loading(isLoading: boolean)`, `error()`, `clear()`: `void`, each one `dispatch`. |
 | `<name>.service.ts` | Orchestrator. Calls `data-access`, writes results through the facade, owns the error policy. | `.api.ts` classes, state facades, cross-cutting app services (`NotifyService`, session state), runtime tokens | `Observable<T>` with a `$` suffix, or a `ResourceRef` from `resource()`. |
 | `<name>.service.ts` (UI-wide state) | Shared view state with no persistence: `signal()` exposed through `asReadonly()`. | nothing or other services | `Signal<T>` |
 | `<name>.provider.ts` | `provideX()` for a service, `APP_INITIALIZER`-style setup. | — | `EnvironmentProviders` |
 | `<name>.interceptor.ts`, `<name>.redirect.ts` | Functional interceptors and route redirects. | services | per Angular signature |
 
-Orchestrator flow, in order: `defer()` so `state.loading(true)` runs only on subscribe → `api.x$()` → `tap` into `state.set(value)` → `catchError` into `this.fail$(error)`, which writes `state.error(message)` and rethrows (`HttpErrorResponse` does not extend `Error`, so `fail$` checks it by name) → `finalize` into `state.loading(false)` → `takeUntil(...)` last (`rxjs/no-unsafe-takeuntil`). `defer` covers an Observable that is never subscribed; `finalize` covers one cancelled by `switchMap`, `takeUntil`, or unsubscribe. Session-scoped requests use `takeUntil(this.sessionState.invalidated$(generation))`. A runtime switch (HTTP vs browser messaging) is a branch here, not in `data-access`. The `Loading` reducer patches only `loading`, never data or `error`: `finalize` runs after `set` / `error`, and a reducer that resets them wipes the result. A boolean `loading` assumes one request in flight per slice; overlapping triggers go through `switchMap` / `exhaustMap` at the trigger or a request-generation guard, or the older response overwrites the newer one.
+Orchestrator flow, in order: `defer()` so `state.loading(true)` runs only on subscribe → `api.x$()` → `tap` into `state.set(value)` → `catchError` into `this.fail$(error)`, which writes `state.error(message)` and rethrows (`HttpErrorResponse` does not extend `Error`, so `fail$` checks it by name) → `finalize` into `state.loading(false)` (or the pending-count release, below) → `takeUntil(...)` last (`rxjs/no-unsafe-takeuntil`). `defer` covers an Observable that is never subscribed; `finalize` covers one cancelled by `switchMap`, `takeUntil`, or unsubscribe. Session-scoped requests use `takeUntil(this.sessionState.invalidated$(generation))`. A runtime switch (HTTP vs browser messaging) is a branch here, not in `data-access`. The `Loading` reducer never touches data, and clears `error` only when `isLoading` is `true`: `finalize` runs after `set` / `error`, and a reducer that resets them wipes the result.
+
+Overlap rules, for any slice whose triggers can overlap (two component instances, repeated clicks):
+
+1. **Loading:** the orchestrator counts pending requests; `loading(true)` when the count leaves 0, `loading(false)` when it returns to 0. A boolean flipped per request goes false while another is in flight.
+2. **List loads:** tag each request with a generation number and `set()` only from the latest, or the older response overwrites the newer one.
+3. **Per-item mutations:** write per-item actions (`remove(id)`, `addOne(item)`), never a full-list `set()`, and keep a per-key latest-mutation map so a stale response for the same item is dropped.
+4. **`exhaustMap`:** only for repeated same-intent triggers (a reload button). On per-item deletes it silently drops the second item.
 
 A third-party UI service (`MatSnackBar`, `MatDialog` without a component) is wrapped by an app service here (`NotifyService`), so `feature` injects the wrapper.
 
@@ -235,8 +242,8 @@ Talks to the outside or remembers. No decisions: no retry policy, no user-facing
 | `<name>.messaging.ts` | Exported functions wrapping `browser.runtime.sendMessage` in an `Observable`, validating the reply with a type predicate. |
 | `<name>.engine.ts` | A storage engine (`StorageEngine` for NGXS, cookie storage for SSR). |
 | `<name>.token.ts` | An `InjectionToken` with a root factory that reads the platform (`IS_EXTENSION_RUNTIME`). |
-| `+state/<name>.state.ts` | `@State({ name: TOKEN, defaults: INITIAL })` + `@Injectable({ providedIn: 'root' })`. Not `@Service`: NGXS needs `@Injectable`, and lint-suite `@angular-eslint/use-injectable-provided-in` rejects a bare `@Injectable()`. Static `@Selector()`s (`selectState`, `select<Thing>`). `@Action` handlers only `patchState` / `setState`: no I/O, no `dispatch` chains. |
-| `+state/<name>.state.action.ts` | One flat exported class per action, named `<Slice><Verb>` (`GeoLocationSet`): `public static readonly type = '[GeoLocation] Set'`, payload as a `public readonly` field set in the constructor. No `namespace` grouping: it is not erasable syntax. Handlers: `Set` patches data and clears `loading` / `error`; `Error` patches `error` and clears `loading`; `Loading` patches `loading` only. |
+| `+state/<name>.state.ts` | `@State({ name: TOKEN, defaults: INITIAL })` + `@Injectable({ providedIn: 'root' })`. Not `@Service`: NGXS docs decorate `@State` with `@Injectable`, and lint-suite `@angular-eslint/use-injectable-provided-in` rejects a bare `@Injectable()`. Static `@Selector()`s (`selectState`, `select<Thing>`). `@Action` handlers only `patchState` / `setState`: no I/O, no `dispatch` chains. |
+| `+state/<name>.state.action.ts` | One flat exported class per action, named `<Slice><Verb>` (`GeoLocationSet`): `public static readonly type = '[GeoLocation] Set'`, payload as a `public readonly` field set in the constructor. No `namespace` grouping: it is not erasable syntax. Handlers: `Set` patches data and clears `error`; `AddOne` / `Remove` patch one item; `Error` patches `error`; `Loading` patches `loading` and clears `error` when `true`, never data. `loading` itself is released by the orchestrator (see overlap rules). |
 | `+state/<name>.state.token.ts` | `new StateToken<NameState>('name')`. |
 | `+state/<name>.state.provider.ts` | `provideNameState = (): EnvironmentProviders => provideStates([NameState], withStorageFeature([...]))`. Session, local, or cookie storage chosen here. |
 
@@ -363,7 +370,7 @@ Create only the folders that hold a file.
 
 ## Procedure
 
-1. Read the Angular version and check lint: `npx eslint --print-config <file> | grep -c boundaries/dependencies`. Zero means the graph is unenforced; apply it by review and say so. `boundaries` also matches `test/utils/` and `test/common/` as the `utils` and `common` layers, so a spec util that wires a service is flagged; until lint-suite adds a `**/test/**` override, keep that wiring in the spec.
+1. Read the Angular version and check lint: `npx eslint --print-config <file> | grep -c boundaries/dependencies`. Zero means the graph is unenforced; apply it by review and say so. `boundaries` also matches `test/utils/` and `test/common/` as the `utils` and `common` layers, so a spec util that wires a service is flagged; until lint-suite adds a `**/test/**` override, keep that wiring in the spec. In a `feature` or `ui` spec, stub the `domain-logic` service instead of wiring `data-access`, which `boundaries` rejects there.
 2. List the module's concerns: types and constants, pure logic, I/O or state, entry adapters (components, handlers), presentational components. Two or more: lay the layer folders that will hold a file.
 3. Place each file by the ladder.
 4. Walk every import against the graph. A violation moves the file or adds a `domain-logic` function, never a lint disable.
@@ -390,7 +397,9 @@ Each row was found in a real module.
 | `state.loading()` called before the Observable is subscribed | Move it inside `defer()`. |
 | `void firstValueFrom(x$)` with no `catch` while the orchestrator rethrows | Name the promise and `void load.catch(ignoreRecordedError)`. |
 | `process.env` parsed inside each request | Parse once in `config/` at bootstrap. |
-| `Loading` reducer resets data or `error` | Patch `loading` only; `finalize` would wipe the result. |
+| `Loading` reducer resets data | Patch `loading` (and clear `error` when `true`); `finalize` would wipe the result. |
+| `exhaustMap` guarding per-item deletes | Per-item `remove(id)` action plus per-key latest-mutation tracking. |
+| Boolean `loading` flipped per request on an overlapping slice | Pending-request count in the orchestrator. |
 | Actions grouped in `export namespace XActions` | Flat `XSet` / `XLoading` / `XError` classes. |
 | Exception class with methods, getters, or a `.class.ts` name | `common/<name>.exception.ts` with a constructor and `public readonly` fields only. Keep `statusCode`: Fastify's default error handler reads it, and dropping it turns a 403 into a 500. |
 | Stub in `common/`, `+state/`, or a production barrel | `test/stubs/` per `unit-testing.md`. |
