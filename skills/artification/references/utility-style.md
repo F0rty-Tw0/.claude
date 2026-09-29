@@ -12,7 +12,7 @@ A utility is a pure behavior boundary, not helper storage. Extract only when pur
 | Placement | Use the nearest owner's `utils/`; never a global dumping ground. Never a `.const.ts` file or a `common/` folder: those hold constants and types only. In a monorepo the cross-package home is the shared `utils` lib, which imports its types from the shared `common` lib. |
 | Filename | Use `utils/<behavior>.util.ts`, never generic `utils.ts`. |
 | Grouping | Group only cohesive behavior. |
-| Imports | Import the `.util.ts` file directly; no barrel. |
+| Imports | Inside a module, import the `.util.ts` file directly; no barrel. From another module, through its root `index.ts`. |
 | Local helpers | Keep trivial or caller-specific helpers with their caller. |
 | Effects | Keep I/O, caches, time, randomness, environment, framework context, and orchestration outside `utils/`. |
 

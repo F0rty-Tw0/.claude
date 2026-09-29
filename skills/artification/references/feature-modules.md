@@ -20,7 +20,7 @@
 
 ## Core Principle
 
-Slice first, layer second. One feature = one folder. Inside it, every file sits in a layer folder, and imports flow one way. The folder says what a file may touch, so its blast radius is read from the path alone.
+Slice first, layer second. One feature = one folder. Inside it, every file sits in a layer folder, and imports flow one way. A module below the layering trigger stays flat, and a chunk split off by `module-size.md` sits in the same layer folder as its entry file. The folder says what a file may touch, so its blast radius is read from the path alone.
 
 The graph is the `boundaries` config of `lint-suite` (`eslint-plugin-boundaries`, matched by folder name, default disallow). It ships in `recommended` only; a repo that spreads `base`, `typescript`, … individually has **no** layer enforcement until it also spreads `boundaries`. Without it, apply the graph by review.
 
@@ -39,6 +39,7 @@ The graph is the `boundaries` config of `lint-suite` (`eslint-plugin-boundaries`
 - `ui` never imports `domain-logic` or `feature`.
 - `domain-logic` never imports `feature`. A service that needs a component (opening a dialog) is a `feature` service.
 - `data-access` never imports `domain-logic`.
+- `config/` is not a `boundaries` element, so lint leaves it unchecked. Treat it like `common/`: it imports only `common/` and is imported by `data-access` and composition roots.
 - A `feature` that needs one `data-access` call still goes through a `domain-logic` function, even a one-line forwarder. The forwarder is the only legal road and the seam where the next rule lands.
 
 ## Placement Ladder
@@ -47,7 +48,7 @@ First matching rung wins.
 
 1. Type, constant, contract schema, exception class → `common/`.
 2. Pure function → `utils/`.
-3. Touches the outside (network, DB, SDK, file system, browser messaging, storage) or holds state → `data-access/`.
+3. Touches the outside (network, DB, SDK, file system, browser messaging, storage) or holds store or persisted state → `data-access/`. View-only state shared across components (`signal()` with no persistence) is `domain-logic`.
 4. Decides, sequences calls, maps errors to state, or wraps a store → `domain-logic/`.
 5. Receives a route, request, guard check, or tool call, or renders with injected app services → `feature/`.
 6. Renders only from inputs → `ui/`.
@@ -60,9 +61,9 @@ Entry adapters. On the frontend these are smart components; on a server, request
 | Concern | Rule |
 |---|---|
 | Files | `<name>.component.ts` (smart component), `<name>.guard.ts` (functional `CanActivateFn`), `<name>.seo.config.ts` (page metadata), `<name>.handler.ts` (HTTP / MCP / CLI handler), `<verb-noun>.ts` for a server `preHandler` hook (`require-user.ts`), `<name>.plugin.ts` (Fastify `fp(...)` plugin that adds request hooks), `<name>.service.ts` only for a UI-coupled service that opens a `feature` component (dialog). |
-| Injects | `domain-logic` services and state facades only, through `inject()` into `private readonly` fields. |
+| Injects | `domain-logic` services and state facades, plus Angular framework and router primitives (`Router`, `DestroyRef`, `Injector`, `Title`, `Meta`, `DOCUMENT`), through `inject()` into `private readonly` fields. Nothing from `data-access`. |
 | Reads data | A `Signal` from a state facade (`this.favoritesState.get()`), a `resource()` returned by a service, or `toSignal()` over a service `Observable`. |
-| Triggers work | Calls a service method. Fire-and-forget names the promise, then `void load.catch(ignoreRecordedError)`: the orchestrator already wrote the error to state and rethrew, and the `catch` only stops an unhandled rejection. `ignoreRecordedError` is one shared no-op in `utils/`. |
+| Triggers work | Calls a service method. Fire-and-forget names the promise, then `void load.catch(ignoreRecordedError)`: the orchestrator already wrote the error to state and rethrew, and the `catch` only stops an unhandled rejection. `ignoreRecordedError` is one shared no-op, `export const ignoreRecordedError = (): void => undefined;` in `utils/ignore-recorded-error.util.ts` (an empty `{}` body fails `no-empty-function`). |
 | Route input | Route params arrive as `input()` through `withComponentInputBinding()`, not by injecting `ActivatedRoute`. |
 | Owns | Page-level concerns: forms (Signal Forms `form()` on Angular 22+), SEO config, translation (`*transloco`, `t('key')`), `@defer` boundaries. |
 | Feeds `ui` | Passes plain values and already-translated strings as inputs; listens to outputs. |
@@ -131,15 +132,15 @@ Decides and orchestrates. The only layer that composes I/O with state.
 
 | File | Role | Injects | Returns |
 |---|---|---|---|
-| `<name>.state.service.ts` | Facade over one state slice. The only `Store` consumer in the app. No logic, no I/O. | `Store` only | `get()` / `getState()`: `Signal<T>` via `selectSignal`; `getSnapshot()`: `T` via `selectSnapshot`; `set()`, `loading()`, `error()`, `clear()`: `void`, each one `dispatch`. |
+| `<name>.state.service.ts` | Facade over one state slice. The only `Store` consumer in the app. No logic, no I/O. | `Store` only | `get()` / `getState()`: `Signal<T>` via `selectSignal`; `getSnapshot()`: `T` via `selectSnapshot`; `set()`, `loading(isLoading: boolean)`, `error()`, `clear()`: `void`, each one `dispatch`. `set()` and `error()` also clear loading in the reducer. |
 | `<name>.service.ts` | Orchestrator. Calls `data-access`, writes results through the facade, owns the error policy. | `.api.ts` classes, state facades, cross-cutting app services (`NotifyService`, session state), runtime tokens | `Observable<T>` with a `$` suffix, or a `ResourceRef` from `resource()`. |
 | `<name>.service.ts` (UI-wide state) | Shared view state with no persistence: `signal()` exposed through `asReadonly()`. | nothing or other services | `Signal<T>` |
 | `<name>.provider.ts` | `provideX()` for a service, `APP_INITIALIZER`-style setup. | — | `EnvironmentProviders` |
 | `<name>.interceptor.ts`, `<name>.redirect.ts` | Functional interceptors and route redirects. | services | per Angular signature |
 
-Orchestrator flow, in order: `defer()` so `state.loading()` runs only on subscribe → `api.x$()` → `tap` into `state.set(value)` → `catchError` into `this.fail$(error)`, which writes `state.error(message)` and rethrows. Never call `state.loading()` eagerly: an Observable that is never subscribed, or cancelled by `switchMap`, leaves the slice stuck in loading. Session-scoped requests add `takeUntil(this.sessionState.invalidated$(generation))`. A runtime switch (HTTP vs browser messaging) is a branch here, not in `data-access`.
+Orchestrator flow, in order: `defer()` so `state.loading(true)` runs only on subscribe → `api.x$()` → `tap` into `state.set(value)` → `catchError` into `this.fail$(error)`, which writes `state.error(message)` and rethrows → `finalize` into `state.loading(false)` → `takeUntil(...)` last (`rxjs/no-unsafe-takeuntil`). `defer` covers an Observable that is never subscribed; `finalize` covers one cancelled by `switchMap`, `takeUntil`, or unsubscribe. Session-scoped requests use `takeUntil(this.sessionState.invalidated$(generation))`. A runtime switch (HTTP vs browser messaging) is a branch here, not in `data-access`.
 
-A third-party UI service (`MatSnackBar`, `MatDialog` without a component, `Router`) is wrapped by an app service here (`NotifyService`), so `feature` injects the wrapper.
+A third-party UI service (`MatSnackBar`, `MatDialog` without a component) is wrapped by an app service here (`NotifyService`), so `feature` injects the wrapper.
 
 ```ts
 // geo-location/domain-logic/geo-location.state.service.ts
@@ -154,6 +155,14 @@ export class GeoLocationStateService {
   public set(location: Location | null): void {
     this.store.dispatch(new GeoLocationActions.Set(location));
   }
+
+  public loading(isLoading: boolean): void {
+    this.store.dispatch(new GeoLocationActions.Loading(isLoading));
+  }
+
+  public error(message: string): void {
+    this.store.dispatch(new GeoLocationActions.Error(message));
+  }
 }
 
 // geo-location/domain-logic/geo-location.service.ts
@@ -166,12 +175,13 @@ export class GeoLocationService {
     const request$ = defer(() => this.startRequest$());
     const setLocation = (location: Location): void => this.state.set(location);
     const failLocation = (error: unknown): Observable<never> => this.fail$(error);
+    const stopLoading = (): void => this.state.loading(false);
 
-    return request$.pipe(tap(setLocation), catchError(failLocation));
+    return request$.pipe(tap(setLocation), catchError(failLocation), finalize(stopLoading));
   }
 
   private startRequest$(): Observable<Location> {
-    this.state.loading();
+    this.state.loading(true);
 
     return this.api.getProviderLocation$();
   }
@@ -261,7 +271,7 @@ No `utils/` folder and no `.util.ts` inside `data-access/`. A pure helper the st
 ```ts
 // prompt-favorites/data-access/prompt-favorites.db.ts
 export const deleteFavoriteById = async (favoriteId: string, userId: string): Promise<number> => {
-  const deleteQuery = 'DELETE FROM prompt_favorites WHERE favorite_id = $1 AND user_id = $2';
+  const deleteQuery = 'DELETE FROM prompt_favorites WHERE favorite_id = $1 AND user_id = $2 RETURNING favorite_id';
   const deleteValues = [favoriteId, userId];
   const results = await executeQuery<FavoriteId, string>(deleteQuery, deleteValues, 'Deleting prompt favorite');
 
@@ -275,7 +285,7 @@ export const deleteFavoriteById = async (favoriteId: string, userId: string): Pr
 |---|---|
 | `common/` | `<name>.type.ts`, `<name>.const.ts`, `<name>.schema.ts` (request / response contract: `z.object({...}) satisfies z.ZodType<Payload>`), `<name>.exception.ts` (exception classes with a constructor only). Never functions, never stubs. |
 | `config/` | Backend: `<name>-env.schema.ts` with a private zod schema, the inferred type, and `get<Name>Env()` that parses `process.env` once at bootstrap and throws with `cause`. `<name>.config.ts` builds a typed config object from it. Frontend: environment `InjectionToken`s. Nothing else reads `process.env`. |
-| Composition roots | `main.ts`, `app.config.ts`, `app.routes.ts`, `ngxs.config.ts`, `shell/`, `routes.ts`, `server.ts`, an extension `background.ts`. They wire providers, register plugins, and map routes to `feature` handlers. No logic, no direct `data-access` calls. |
+| Composition roots | `main.ts`, `app.config.ts`, `app.routes.ts`, `ngxs.config.ts`, `shell/`, `routes.ts`, `server.ts`, an extension `background.ts`. They wire providers, register plugins, and map routes to `feature` handlers. No logic, and no `data-access` calls beyond wiring `provideXState()`. |
 
 Server `routes.ts` per slice: `const router = fastify.withTypeProvider<ZodTypeProvider>()`, a plugin-scoped `router.addHook('preHandler', requireUser)`, and `{ schema: { body, params, querystring } }` from `common/` on every route.
 
@@ -285,7 +295,7 @@ Server `routes.ts` per slice: `const router = fastify.withTypeProvider<ZodTypePr
 |---|---|
 | 22+ | `@Service()` for every root singleton: `.service.ts`, `.state.service.ts`, `.api.ts`. It implies `providedIn: 'root'` and supports `inject()` only. |
 | 22+ | Non-root scope: `@Service({ autoProvided: false })`, then list it in the route or component `providers`. Custom creation: `@Service({ factory: () => ... })`. |
-| 22+ | `@Injectable({ providedIn: ... })` only where `@Service` cannot go: NGXS `@State` classes, a class used as a `useClass` / `useExisting` target, a class that must keep constructor injection. Never a bare `@Injectable()`: lint-suite `use-injectable-provided-in` rejects it. |
+| 22+ | `@Injectable({ providedIn: ... })` only where `@Service` cannot go: NGXS `@State` classes, provider keys on the decorator itself (`@Injectable({ providedIn: 'root', useClass: ... })`), a class that must keep constructor injection. Never a bare `@Injectable()`: lint-suite `use-injectable-provided-in` rejects it. |
 | 21 and below | `@Injectable({ providedIn: 'root' })` for the same roots. |
 | 22+ | Omit `changeDetection: OnPush` (default). Below 22, set it on every component. |
 | 19+ | Omit `standalone: true` (default). Never `CommonModule`; import the directives the template uses. |
@@ -300,7 +310,9 @@ Read the version from the workspace catalog or `package.json` before choosing.
 | Root barrel | One `index.ts` at the module root is its public API. Named exports only, `export type { }` on its own line. Start empty; add a symbol only when another module imports it. No `export *`. |
 | Root barrel contents | Services, facades, `provideX()`, `common/` types and constants, and the pure `utils/` functions another module calls. Never an `.api.ts`, a `.db.ts`, or a `+state/` class: a consumer that needs them is skipping `domain-logic`. |
 | Internal imports | No layer barrels inside a module. Import each file directly: `../data-access/geo-location.api.ts`. |
-| Cross-module | Another module is imported only through its root barrel. Lint cannot see through the barrel, so the graph still holds by hand: a `data-access` file imports only another module's `common` / `utils` exports. |
+| Cross-module, aliased | A workspace alias (`@frontend/geo`) resolves to the library's root `index.ts`: the only way in. |
+| Cross-module, relative | Sibling modules in one app: a type-only import points at the other module's `common/<name>.type.ts` (lint-suite `type-placement` rejects a relative type import from an `index.ts`); a value import goes through its root `index.ts`. |
+| Graph across modules | Lint cannot see through a barrel, so the graph still holds by hand: a `data-access` file imports only another module's `common` / `utils` exports. |
 | Shared modules | Code two feature modules use lives in `shared/<name>/` with the same layers. Never a `shared/` or `api/` facade folder inside a feature. |
 
 ## Naming
@@ -350,7 +362,7 @@ Create only the folders that hold a file.
 
 ## Procedure
 
-1. Read the Angular version and check lint: `npx eslint --print-config <file> | grep -c boundaries/dependencies`. Zero means the graph is unenforced; apply it by review and say so.
+1. Read the Angular version and check lint: `npx eslint --print-config <file> | grep -c boundaries/dependencies`. Zero means the graph is unenforced; apply it by review and say so. `boundaries` also matches `test/utils/` and `test/common/` as the `utils` and `common` layers, so a spec util that wires a service is flagged; until lint-suite adds a `**/test/**` override, keep that wiring in the spec.
 2. List the module's concerns. Two or more: lay the layer folders that will hold a file.
 3. Place each file by the ladder.
 4. Walk every import against the graph. A violation moves the file or adds a `domain-logic` function, never a lint disable.
@@ -370,7 +382,8 @@ Each row was found in a real module.
 | `domain-logic` service imports a `feature` component to open a dialog | Move the dialog service to `feature/`. |
 | `ui` imports a pipe from `domain-logic` | A display pipe is `ui/<name>.pipe.ts`. |
 | Mapper in `data-access` | `utils/<name>-mapper.util.ts`, called by `domain-logic`. |
-| `api/` folder re-exporting another layer | Delete it; import the module's root barrel. |
+| `api/` folder re-exporting another layer | Delete it; import the module's root barrel, and its `common/<name>.type.ts` for types. |
+| Relative `import type` from another module's `index.ts` | Import its `common/<name>.type.ts`; `type-placement` fails otherwise. |
 | Root barrel exports `+state` classes or tokens | Export the facade and `provideXState()`; keep the state class private. |
 | NGXS `@State` with a bare `@Injectable()` | `@Injectable({ providedIn: 'root' })`; lint-suite `use-injectable-provided-in` fails otherwise. |
 | `state.loading()` called before the Observable is subscribed | Move it inside `defer()`. |
