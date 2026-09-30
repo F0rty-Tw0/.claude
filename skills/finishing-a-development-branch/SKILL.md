@@ -14,7 +14,8 @@ Reuse this session's test evidence if nothing changed since it ran; otherwise ru
 ```bash
 GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
 GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master   # base branch; confirm with the user if unsure
+DEFAULT=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
+git merge-base HEAD "origin/$DEFAULT"   # base branch; confirm with the user if empty or unsure
 ```
 
 | State | Menu |

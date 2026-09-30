@@ -11,7 +11,7 @@ Two axes by default: code and prose. The prose axis is what a code-only reviewer
 
 - No argument → the current `git diff` (staged + unstaged). Empty diff → `HEAD~1..HEAD`.
 - A path, PR, or diff → that target.
-- "repo" / "whole repo" → walk the tree, skipping vendored, generated, `node_modules`, `dist`, and lockfiles. If it is too large to read serially, split the dirs into at most 3 groups, one read-only explore agent per group, and merge their findings into one list.
+- "repo" / "whole repo" → walk the tree, skipping vendored, generated, `node_modules`, `dist`, and lockfiles. If it is too large to read serially, split the dirs into at most 3 groups, one read-only `Explore` agent per group, and merge their findings into one list.
 - `code` argument, or a pre-merge review of a diff/PR → code axis only.
 - No material to review → say so. Do not return an empty list or claim zero savings.
 
@@ -34,7 +34,7 @@ Two axes by default: code and prose. The prose axis is what a code-only reviewer
 
 ## What not to flag
 
-Input validation at trust boundaries, error handling that prevents data loss, security, accessibility, documented `// rdx:` / `// ponytail:` shortcuts, and comments that explain *why*.
+Input validation at trust boundaries, error handling that prevents data loss, security, accessibility, documented `// ponytail:` shortcuts, and comments that explain *why*.
 When callers or public contracts are unknown, mark the finding `(check)` instead of ordering the deletion.
 
 ## Output

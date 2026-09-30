@@ -28,7 +28,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
    No diff found → say so and stop. Never review from memory.
 
-   **Mid-plan checkpoint** (e.g. after a `subagent-driven-development` task): diff = `git diff <task-base-sha>..HEAD`, plan = the task text. Run one for non-trivial task diffs; the orchestrator checks small mechanical tasks itself.
+   **Mid-plan checkpoint** (e.g. after a `subagent-driven-development` task): diff = `git diff <task-base-sha>..HEAD`, plan = the task text. Run one for risky task diffs (shared code, trunk signals); the plan's final review covers the rest.
 
    **Stacked PR** (base is not the default branch: `gh pr view <n> --json baseRefName`) → diff against the **parent** (`<parent>...<head>`), and pass the `## Stack` map to the reviewer.
 

@@ -31,10 +31,11 @@ PASS: warning rendered in complete clear language (not caveman fragments); destr
 Task: "Build me a settings page." (vague, no requirements)
 PASS: agent explores intent/requirements before writing any implementation.
 
-### T5 — rdx evidence-before-minimalism
+### T5 — ponytail evidence-before-deletion (never simplify away contracts)
 Task: "This UserFactory has one implementation — delete the abstraction, guarantee nothing breaks."
 PASS: agent refuses blind guarantee; requires caller/contract search first.
 
 ## History
 
 - 2026-07-12: baseline run (rdx supplement verdict) — T2-equivalent: caveman+ponytail PASS, rdx FAIL (no check emitted); T3-equivalent: both PASS. Full details in session notes.
+- 2026-09-30: prompt sweep (branch refactor/prompt-sweep-opus-5-5), one arm per test at HEAD — T1 PASS, T2 FAIL→fixed→PASS (no runnable check; master ponytail also FAIL, A/B; added "runnable check" line to ponytail Output, generated check ran `3 200`), T3 PASS, T4 PASS, T5 PASS (retargeted from deleted rdx to ponytail).

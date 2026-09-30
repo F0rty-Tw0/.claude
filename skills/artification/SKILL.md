@@ -19,7 +19,7 @@ Engineer has dyslexia and ADHD and reads code by scanning its shape, not word by
 - A ternary branch, a chain receiver, a callback body, and a wrapped arrow body each get a name, so no expression has to be read inside-out.
 - A nested object, array of objects, or call chain inside an object literal gets a name, so the literal is a list of names.
 - No `as` casts. A cast hides a typing gap; a predicate or a corrected type closes it.
-- No useless comments. A comment restating the code or narrating a choice is deleted; a comment that carries a fact the code cannot (external bug link, directive reason, invariant, a `// ponytail:` shortcut's ceiling and upgrade path) stays.
+- No useless comments. A comment restating the code, narrating a choice, or marking a shortcut (`// ponytail:`) is deleted; a comment that carries a fact the code cannot (external bug link, directive reason, invariant) stays.
 - Every function states its return type and every class member its accessibility, so a signature is read without opening the body.
 - Imports are grouped and alphabetical with `import type` on its own line, so the dependency list is scanned, not searched.
 - A condition the compiler proves constant is deleted or the type is fixed, so no check lies about the data.

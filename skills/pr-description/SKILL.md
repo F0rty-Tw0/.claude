@@ -57,9 +57,11 @@ Run `git push` and `gh pr create` as **separate** Bash calls. If the hook blocks
 ### Step 1: Gather Changes
 
 ```bash
-# Find base branch: the repo default (never assume main), or the parent branch for a stacked PR
-DEFAULT=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
-BASE=$(git merge-base HEAD "origin/$DEFAULT")
+# Base: PARENT=<parent-branch> for a stacked PR, else the repo default (never assume main)
+DEFAULT=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)
+DEFAULT=${DEFAULT:-$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')}
+BASE=$(git merge-base HEAD "origin/${PARENT:-$DEFAULT}")
+[ -n "$BASE" ] || { echo "cannot resolve base branch; ask the user" >&2; exit 1; }
 
 # What changed
 git diff --stat $BASE..HEAD

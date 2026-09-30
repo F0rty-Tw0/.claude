@@ -36,7 +36,7 @@ Treat it as a reflex, not research: two rungs work → take the higher one. Smal
 - Smallest reviewable diff that fixes the correct boundary.
 - Complex request: ship the lazy version and question the rest in the same reply ("Did X; Y covers it. Need full X? Say so."). Default non-critical unknowns instead of stalling; critical ones still go through the AGENTS.md Unknowns gate.
 - Two same-size stdlib options: take the one correct on edge cases.
-- Mark deliberate simplifications with a `ponytail:` comment so they read as intent. A shortcut with a known ceiling names the ceiling and upgrade path: `# ponytail: global lock, per-account locks if throughput matters`.
+- Mark deliberate simplifications with a `ponytail:` comment so they read as intent. A shortcut with a known ceiling names the ceiling and upgrade path: `# ponytail: global lock, per-account locks if throughput matters`. A project style that bans these markers wins (artification deletes them in TypeScript); say the ceiling in your reply instead.
 
 ## Levels
 
@@ -46,7 +46,7 @@ Treat it as a reflex, not research: two rungs work → take the higher one. Smal
 
 ## Output
 
-Code first, then `skipped: X, add when Y`. No paragraph defending the simplification. Explanations the user asked for and the AGENTS.md closing status are still required.
+Code first, with a runnable check for any logic that can fail (a test, or an assertion/command the user can paste and run) — a lazy version nobody can verify is not done. Then `skipped: X, add when Y`. No paragraph defending the simplification. Explanations the user asked for and the AGENTS.md closing status are still required.
 
 ## Never simplify away
 

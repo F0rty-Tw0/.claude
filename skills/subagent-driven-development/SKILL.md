@@ -22,7 +22,7 @@ Execute a plan by dispatching a fresh implementer subagent per task. You check e
 
 1. Dispatch an implementer (`./implementer-prompt.md`) with the full task text and scene-setting context. Don't make it read the plan file.
 2. If it asks questions, answer completely, then re-dispatch.
-3. Read the task's diff against the task text: missing requirements, unrequested extras. Fix small gaps yourself; re-dispatch the implementer for task-sized ones. Dispatch the spec reviewer (`./spec-reviewer-prompt.md`) only when the diff is too large to check in a handful of reads.
+3. Read the task's diff against the task text: missing requirements, unrequested extras. Fix small gaps yourself; re-dispatch the implementer for task-sized ones. Dispatch the spec reviewer (`./spec-reviewer-prompt.md`) only when the diff is too large to check in a handful of reads. For a risky task (shared code, trunk signals) also run a skill:code-review mid-plan checkpoint; otherwise the final review covers it.
 4. Tick the task's checkbox. Next task.
 
 Agent frontmatter sets the model; pick the agent, not a model.

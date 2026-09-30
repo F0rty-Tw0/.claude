@@ -109,7 +109,7 @@ When the plan will be executed task by task, write its tasks in the format in `r
 - Use `AskUserQuestion` for preference questions (scope, priority, timeline, risk tolerance); plain text for questions
   needing specific values (port numbers, names)
 - Use the built-in `Explore` agent only when a codebase question needs a wide multi-directory sweep; answer single lookups directly
-- Optional: a cross-model check via agentic-mcp if configured (find it with `ToolSearch`); never block on it
+- Optional: a cross-model check via agentic-mcp, only if the user opted in for this repo (it sends plan and code context to an external provider); never block on it
   </Tool_Usage>
 
 <Examples>
