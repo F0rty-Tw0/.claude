@@ -1,13 +1,11 @@
 ---
 name: pr-description
-description: Writes PR titles and descriptions sized to the change, with a blast-radius-scaled Proof section behind a fresh code-review gate. Use when creating or updating a pull request or describing branch changes for one.
+description: Writes compact PR titles and descriptions with a blast-radius-scaled Proof section behind a fresh code-review gate. Use when creating or updating a pull request or describing branch changes for one.
 ---
 
 # PR Description Generator
 
-Write PR titles and descriptions that are concise, honest about impact, and sound like a human wrote them.
-
-For a long prose body, optionally polish it with skill:anthropic-skills:avoid-ai-writing; Red Flags below covers short ones.
+Write PR titles and descriptions that are concise, honest about impact, and sound like a human wrote them. Analyze fully; write only what a reviewer needs to decide.
 
 ## When to Use
 
@@ -21,11 +19,11 @@ For a long prose body, optionally polish it with skill:anthropic-skills:avoid-ai
 0. Proof gate        → proof bundle + fresh adversarial review (code-review skill); BLOCK → stop and ask
 1. Gather changes    → git diff, git log against base branch
 2. Scan repo context → understand what areas the changes touch and what depends on them
-3. Audience + size   → ask: for us or for someone else? then small / medium / large
+3. Audience          → ask: for us or for someone else? Same compact body; for us may add a collapsed details block
 4. Write title       → short, specific, lowercase
-5. Write description → proportional to change size
+5. Write summary     → 1–3 sentences, whatever the size
 6. Add ticket link   → extract ticket number from branch name, append "Closes #<number>"
-7. Polish            → check Red Flags; optionally avoid-ai-writing
+7. Polish            → check Red Flags
 8. Present           → show to user, ready for gh pr create
 ```
 
@@ -43,13 +41,13 @@ Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`h
    - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
    - `APPROVE — …` → continue.
    - UI change without its before/after pair → same as BLOCK: say why it's missing and ask *capture first (Recommended)* / *open without, gap listed in Not verified*. UI PRs used to ship with no screenshots at all.
-4. **Scale proof to blast radius** — keep small PRs small. (For-us format. The for-someone-else format in Step 3 always uses its compact Proof instead.)
+4. **Scale proof to blast radius** — the body always gets the compact `## Proof` from Step 3. For us, the class decides what goes in the collapsed block under it:
 
-| Class | `## Proof` contains |
+| Class | `<details>` block contains |
 |---|---|
-| Leaf | Test command + counts, visual/log for visible change, **Not verified** line, review verdict — ~4 lines |
-| Branch | + base-failure check (bug fix), one non-mocked runtime log |
-| Trunk | Full `templates/pr-proof.md`: gate, rollback, invariants, canary metric, human must deep-read list |
+| Leaf | no block |
+| Branch | base-failure output (bug fix), one non-mocked runtime log |
+| Trunk | the rest of `templates/pr-proof.md`: gate, invariants, canary metric, human must deep-read list, raw test output |
 
 Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
 
@@ -85,12 +83,12 @@ Before writing, understand the blast radius:
 
 Mention impact only when it's real and non-obvious. Don't manufacture significance.
 
-### Step 3: Audience, then Size
+### Step 3: Audience
 
-**Ask first** with AskUserQuestion: *Who is this PR for?* Ask once per PR, or once for a whole `meaningful-prs` stack.
+**Ask first** with AskUserQuestion: *Who is this PR for?* Ask once per PR, or once for a whole `meaningful-prs` stack. Both get the same compact body, because long bodies go unread and bury the proof.
 
-- **For us (Recommended in own repos)** — our repo or team. Use the size-based format below with the full blast-radius `## Proof` from Step 0. Some extra context is fine.
-- **For someone else** — upstream, OSS, another team, a reviewer without our context. **Very short, nothing else:**
+- **For us (Recommended in own repos)** — our repo or team. Compact body, plus one collapsed block after `## Proof` when the class adds detail (Step 0 table): `<details><summary>Proof details</summary>` … `</details>`, with a blank line after `</summary>` or GitHub renders the markdown inside as plain text.
+- **For someone else** — upstream, OSS, another team, a reviewer without our context. Compact body only.
 
 ```
 <title>
@@ -109,17 +107,7 @@ Mention impact only when it's real and non-obvious. Don't manufacture significan
 Closes #<n>         ← only if the branch has a ticket
 ```
 
-  No `What changed` / `Impact` / `Test plan` sections, no review history, no deep-read list. For the external format, the size table below does not apply.
-
-### Size (for-us format)
-
-| Size   | Criteria                             | Output length         |
-| ------ | ------------------------------------ | --------------------- |
-| Small  | 1-3 files, <50 lines, single concern | Plain sentences, no sections |
-| Medium | 4-10 files, one feature or theme     | Short bullet list     |
-| Large  | 10+ files, multiple concerns         | Sections with bullets |
-
-Match output to change size: a 1-line bugfix gets no Problem/Solution/Impact sections, and a 15-file feature gets more than a 2-sentence summary.
+No `What changed` / `Impact` / `Test plan` sections and no review history. A non-obvious impact from Step 2 (callers, config, deploy order) gets one sentence in the summary; anything longer goes in the details block, for us only.
 
 ### Step 4: Write the Title
 
@@ -143,62 +131,23 @@ Add JWT Authentication, Session Management, Password Reset, and Rate Limiting
 Refactor: Enhance Payment Service Architecture for Better Maintainability
 ```
 
-### Step 5: Write the Description
+### Step 5: Write the Summary
 
-**Format based on size:**
-
-**Small changes (1-3 files):**
+1–3 sentences whatever the size; the diff shows the size, the summary says what a reviewer can't see in it.
 
 ```
 The user list was running a separate query per row to load profiles.
 Added a JOIN so it's one query. Fixes 30s load times with 500+ users.
 ```
 
-That's it. No sections. No headers. No test plan for obvious changes.
-
-**Medium changes (4-10 files):**
+A 15-file feature is no longer, it just picks its sentences harder:
 
 ```
-## What changed
-- Extracted PaymentService (800 lines) into PaymentProcessor, RefundHandler, and WebhookReceiver
-- Updated 8 import sites to use new module paths
-- All 47 tests pass unchanged — no behavior changes
-
-## Worth noting
-- WebhookReceiver now owns all Stripe event routing, so new webhook types go there
-- The old `paymentService` import path no longer exists
+Adds JWT auth (login, register, password reset) with Redis sessions and rate limiting.
+Every existing endpoint now sits behind the auth middleware; cart and order calls need a session token.
 ```
 
-**Large changes (10+ files) — all 3 sections:**
-
-1. `## What changed` — what was added/modified
-2. `## Impact on existing code` — how this affects the rest of the codebase (callers, dependencies, config, deployment). Reviewers need this most.
-3. `## Test plan` — non-obvious verification steps only
-
-Don't skip the impact section: a change touching 10+ files affects something, so say what.
-
-```
-## What changed
-- JWT auth with login/register endpoints
-- Redis session management
-- Password reset flow (email → token → update)
-- Rate limiting on auth endpoints
-- Migrations for users, sessions, and reset_tokens tables
-
-## Impact on existing code
-- All existing endpoints (products, cart, orders) now sit behind the auth middleware
-- Cart and order endpoints require a valid session token
-- No changes to existing business logic
-
-## Test plan
-- Auth flow: register → login → access protected route → logout
-- Password reset: request → verify email → use token → confirm new password works
-- Rate limiting: hit login 10 times rapidly, confirm 429 response
-```
-
-**Keep it plain:** state what changed in factual words, include only non-obvious test steps, explain motivation only
-when it isn't self-evident, and use plain bullets and headings; say "no behavior changes" once if it applies.
-Red Flags below lists the specific tells to rewrite.
+Keep it plain: factual words, motivation only when it isn't self-evident, "no behavior changes" once if it applies. Red Flags below lists the tells to rewrite.
 
 ### Step 6: Add Ticket Link
 
@@ -220,9 +169,9 @@ If the branch has no recognizable ticket number, skip this step silently — don
 
 ### Step 7: Polish
 
-Check the title and description against Red Flags. For a long prose body, optionally run `skill:anthropic-skills:avoid-ai-writing`. Edit prose only; leave the `## Proof` section's commands, output, and verdict verbatim.
+Check the title and description against Red Flags. Edit prose only; leave the `## Proof` section's commands, output, and verdict verbatim.
 
-Append the `## Proof` section at the end of the body, before `Closes #…`: the class-scaled one from Step 0 for us, or the compact one from Step 3 for someone else. It does not count toward the size-based section limits.
+Append the compact `## Proof` from Step 3 at the end of the body, then the details block (for us, Branch and Trunk), then `Closes #…`.
 
 ### Step 8: Present
 
@@ -251,14 +200,8 @@ EOF
 
 ## Common Mistakes
 
-**Over-formatting small changes**
-A 1-line fix with Problem/Solution/Impact/Test Plan sections. Match output to change size.
-
-**Missing repo context**
-Describing changes in isolation without mentioning what they affect. A new auth middleware that wraps all existing endpoints is important context.
-
-**Padding the test plan**
-Listing every possible manual test. Include only non-obvious verification steps. If the test plan is "run the tests", you don't need a test plan section.
+**Writing the analysis into the body**
+Step 2 findings, file lists and test plans are for you. The body gets the one impact a reviewer would miss, e.g. a new auth middleware that wraps all existing endpoints.
 
 **AI voice**
 Using "enhances", "fosters", "ensures", "leveraging". Write like a person.
@@ -267,10 +210,10 @@ Using "enhances", "fosters", "ensures", "leveraging". Write like a person.
 
 If your PR description has any of these, rewrite it:
 
-- More than 2 sections for a change under 5 files (`## Proof` excluded)
-- No `## Proof` section, or proof claims ("tests pass", "verified") with no pasted output
+- Any section besides `## Stack` and `## Proof`, or more than one `<details>` block
+- A summary over 3 sentences
+- No `## Proof` section, or proof claims ("tests pass", "verified") with no command and counts
 - Any bullet starting with a bold header followed by a colon
 - The word "comprehensive", "robust", "seamless", or "leverage"
-- A test plan padded with obvious steps
 - A title over 60 characters
 - Horizontal rules (`---`) between sections
