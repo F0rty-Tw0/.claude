@@ -31,7 +31,8 @@ Agent tool (subagent_type: "executor"):
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
     2. Write tests (following TDD if task says to)
-    3. Verify implementation works (e.g. pnpm test)
+    3. Verify implementation works (e.g. pnpm test). Run the focused test while
+       iterating and the full suite once before reporting.
     4. Stage the task's files by name. Commit only if the user authorized commits: [yes/no]
     5. Report back
 
@@ -77,12 +78,19 @@ Agent tool (subagent_type: "executor"):
 
     ## Report Format
 
-    When done, report:
-    - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+    Write the full report to [REPORT_FILE]:
     - What you implemented (or what you attempted, if blocked)
     - What you tested and test results
+    - TDD evidence: the RED command and failing output with why it was expected;
+      the GREEN command and passing output
     - Files changed
     - Any issues or concerns
+
+    Return at most 15 lines: status, files, a one-line test summary, concerns.
+    - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+
+    If resumed with review findings, fix them, re-run the covering tests, and
+    append a fix report to the same file.
 
     Use DONE_WITH_CONCERNS if you completed the work but have doubts about correctness.
     Use BLOCKED if you cannot complete the task. Use NEEDS_CONTEXT if you need
