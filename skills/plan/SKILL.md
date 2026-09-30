@@ -102,6 +102,8 @@ Every plan includes:
 
 Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
 
+After saving in interview or direct mode, link the plan and ask the user to review it before execution; approving the idea or scope doesn't approve a plan they haven't seen. Consensus mode gets this approval in step 7.
+
 When the plan will be executed task by task, write its tasks in the format in `references/task-format.md` (exact files, failing test, commands with expected output, PR-slice table). </Steps>
 
 <Tool_Usage>

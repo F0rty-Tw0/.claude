@@ -21,7 +21,7 @@ Use this skill:
 Search with an action-oriented query summarizing what you want to achieve using the `search` command. Run `modern-web-guidance` directly with `npx`.
 
 ```sh
-npx -y modern-web-guidance@latest search "<query>" --skill-version 2026_05_16-c5e7870
+npx -y modern-web-guidance@latest search "<query>" --skill-version 2026_09_04-7de96777
 ```
 
 **Example Output**:
@@ -61,14 +61,25 @@ Once you have a relevant `id` from the search results, call this script using th
 npx -y modern-web-guidance@latest retrieve "<id>"
 ```
 
+If the output is truncated, repeat the command with output redirected to a file and read that file.
 
 **Example Output**:
 `The markdown content of the guide describing implementation steps...`
 
-## Using npx
+---
 
--   On Windows, `npx` may fail; use `npx.cmd ...` instead.
--   Network access is required for fetching npm packages needed by the task.
+### Step 3. Verify Guidance Compliance
+
+When generating or modifying code, cross-check the implementation against the retrieved guide before concluding:
+- **Applicable Guidance & Fallbacks**: Ensure the relevant modern patterns and necessary fallback strategies from the guide are correctly applied, without forcing unrequested features.
+- **Task Fulfillment**: Confirm that the implementation fully satisfies the user's request.
+
+## Using npx / pnpx
+
+-   Prefer `pnpx` over `npx` when pnpm is available (`pnpx` takes no `-y` flag).
+-   On Windows, `npx` may fail from cmd or PowerShell; use `npx.cmd ...` there. In Git Bash, plain `npx` works.
+-   Network access is required. In a sandboxed or permission-gated environment, request approval before the first run, allowlisting `npx -y modern-web-guidance@latest *` (or `pnpx modern-web-guidance@latest *`), never bare `npx *` or `pnpx *`.
+-   If `~/.npm` is read-only, set `NPM_CONFIG_CACHE=/tmp/npm-cache`.
 -   If the `npx -y modern-web-guidance…` command hangs, you may be offline. Try running again in offline
     mode: `npx --offline …`.
 -   The `--skill-version` flag is used to determine if this SKILL.md is out of date. If it is, a warning
@@ -101,3 +112,10 @@ npx -y modern-web-guidance@latest retrieve "<id>"
     - _"Safari 17.4+"_ (for internal tools targeting macOS or Tauri-based desktop apps)
     - _"Never recommend or implement polyfills; if a Baseline Newly Available feature is required for core functionality, provide a lightweight custom fallback or redesign the approach."_ (to minimize bundle size and avoid technical debt)
     - _"Assume a modern execution environment where Baseline Newly Available features can be used natively, provided they are strictly feature-detected and degrade gracefully."_ (for progressive enhancement strategies)
+* **Reactive Policy Discovery**: Watch for environmental cues to suggest documenting a policy in CLAUDE.md or AGENTS.md. Suggest this if the developer:
+  - Mentions building for a restricted runtime (e.g., Electron or Tauri).
+  - Explicitly excludes specific targets (e.g., "we don't support Desktop Chrome").
+  - Expresses hesitation about polyfill complexity, bundle size, or performance cost.
+  - Questions if a feature is safe to use without fallbacks.
+
+  No defined policy format. This is an example: `**Browser Support:** Allow Newly Available features, but only adopt custom fallback code that adds <= 20 lines and does not require external dependencies.`

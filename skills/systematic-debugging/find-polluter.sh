@@ -18,9 +18,12 @@ echo "🔍 Searching for test that creates: $POLLUTION_CHECK"
 echo "Test pattern: $TEST_PATTERN"
 echo ""
 
-# Get list of test files
-TEST_FILES=$(find . -path "$TEST_PATTERN" | sort)
-TOTAL=$(echo "$TEST_FILES" | wc -l | tr -d ' ')
+# find emits ./-prefixed paths; accept the pattern with or without ./ and
+# also match '**/' collapsed so files directly under the base dir count.
+TEST_PATTERN="${TEST_PATTERN#./}"
+TEST_FILES=$(find . \( -path "./$TEST_PATTERN" -o -path "./${TEST_PATTERN//\*\*\//}" \) | sort -u)
+if [ -z "$TEST_FILES" ]; then TOTAL=0; else TOTAL=$(printf '%s\n' "$TEST_FILES" | wc -l | tr -d ' '); fi
+[ "$TOTAL" -eq 0 ] && { echo "No files match $TEST_PATTERN"; exit 2; }
 
 echo "Found $TOTAL test files"
 echo ""

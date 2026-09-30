@@ -8,20 +8,19 @@ Follows a structured completion process:
 
 1. **Verify tests pass** (stop if they fail - cannot proceed)
 2. **Determine base branch** (main/master)
-3. **Present exactly 4 options:**
+3. **Present exactly 3 options:**
    - Merge back to base branch locally
    - Push and create a Pull Request
    - Keep the branch as-is
-   - Discard this work
-4. **Execute the chosen option** with appropriate steps
-5. **Cleanup worktree** (only for merge and discard, and only worktrees this workflow created — `ExitWorktree` for `EnterWorktree` ones)
+4. **Execute the chosen option** with appropriate steps; discard runs only when the user explicitly asks, after a typed `discard` confirmation
+5. **Cleanup worktree** (only for merge and confirmed discard, and only worktrees this workflow created — `ExitWorktree` for `EnterWorktree` ones); a removal refused over uncommitted files goes to the user, never `--force`
 
 | Option       | Merge | Push | Keep Worktree | Cleanup Branch |
 | ------------ | ----- | ---- | ------------- | -------------- |
 | 1. Merge     | Yes   | -    | -             | Yes            |
 | 2. Create PR | -     | Yes  | Yes           | -              |
 | 3. Keep      | -     | -    | Yes           | -              |
-| 4. Discard   | -     | -    | -             | Yes (force)    |
+| Discard (explicit request only) | - | - | -   | Yes (force)    |
 
 ---
 

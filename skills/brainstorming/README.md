@@ -6,7 +6,7 @@ Turn ideas into fully formed designs and specs through natural collaborative dia
 
 Guides a structured ideation process:
 
-1. **Understanding** - Check project state, ask up to 3 questions per round (prefer multiple choice)
+1. **Understanding** - Check project state, ask up to 3 questions per round (prefer multiple choice), then write back your understanding for the user to correct
 2. **Exploring** - Propose 2-3 approaches with trade-offs, lead with recommendation
 3. **Presenting** - Break design into 200-300 word sections, validate each incrementally
 4. **Documenting** - Write validated design to `docs/specs/YYYY-MM-DD-<topic>-design.md`

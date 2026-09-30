@@ -4,15 +4,17 @@ Create distinctive, production-grade frontend interfaces that avoid generic "AI 
 
 ## What It Does
 
-Guides design thinking and implementation across five aesthetic dimensions:
+Guides design thinking and implementation across five aesthetic dimensions, plus a plan-review-build process and copy rules:
 
 | Dimension        | Focus                                                                  |
 | ---------------- | ---------------------------------------------------------------------- |
-| **Typography**   | Distinctive display font paired with a refined body font               |
+| **Typography**   | One or two distinctive families, clear type scale                      |
 | **Color**        | Dominant colors with sharp accents, CSS variables for consistency      |
 | **Motion**       | CSS animations, one orchestrated load with staggered reveals           |
 | **Composition**  | Asymmetry, overlap, diagonal flow, grid-breaking, negative space       |
 | **Atmosphere**   | Backgrounds and details that fit the direction, plus an avoid-list     |
+| **Process**      | Token plan, review against the brief, build, screenshot critique       |
+| **Copy**         | User-facing words: plain verbs, consistent action names, useful errors |
 
 Supports bold aesthetic directions: brutalist, art deco, organic, luxury, retro-futuristic, editorial, and more.
 

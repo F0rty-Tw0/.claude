@@ -112,14 +112,15 @@
     }
   },
   "promptSuggestionEnabled": false,
+  "awaySummaryEnabled": false,
   "dialogExpiry": "never",
   "autoUpdatesChannel": "latest",
+  "autoDreamEnabled": false,
   "skipWorkflowUsageWarning": false,
+  "precomputeCompactionEnabled": false,
   "autoContinueAtUsageLimit": true,
   "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true,
   "defaultMode": "auto",
-  "awaySummaryEnabled": false,
-  "precomputeCompactionEnabled": false,
-  "autoDreamEnabled": false
+  "switchModelsOnFlag": false
 }
