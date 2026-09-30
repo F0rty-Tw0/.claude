@@ -37,11 +37,12 @@ Branch diff over ~400 changed lines, mixing trunk and leaf changes, or holding i
 
 Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it.
 
-1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. UI change → screenshot.
+1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. UI change → before/after screenshot pair (`references/proof.md`, Visual pair).
 2. **Fresh review** — `code-review` review mode on `<base>...HEAD`. It dispatches an independent reviewer; do not review your own work in this session.
 3. **Verdict gate:**
    - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
    - `APPROVE — …` → continue.
+   - UI change without its before/after pair → same as BLOCK: say why it's missing and ask *capture first (Recommended)* / *open without, gap listed in Not verified*. UI PRs used to ship with no screenshots at all.
 4. **Scale proof to blast radius** — keep small PRs small. (For-us format. The for-someone-else format in Step 3 always uses its compact Proof instead.)
 
 | Class | `## Proof` contains |
@@ -51,6 +52,8 @@ Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`h
 | Trunk | Full `templates/pr-proof.md`: gate, rollback, invariants, canary metric, human must deep-read list |
 
 Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
+
+Screenshots go in with `gh pr create --attach <path>`, one flag per file, and the body references the same paths.
 
 Run `git push` and `gh pr create` as **separate** Bash calls. If the hook blocks a chained call, the push never runs, but commit-guard has already used up its one-shot flag.
 
@@ -101,7 +104,7 @@ Mention impact only when it's real and non-obvious. Don't manufacture significan
 - Verified: <one line>
 - Not verified: <one line>
 - Blockers: <one line each>   ← only on a draft opened despite BLOCK
-<screenshot link, UI changes only>
+<before/after table, UI changes only>
 
 Closes #<n>         ← only if the branch has a ticket
 ```

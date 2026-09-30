@@ -11,7 +11,7 @@ Proof = an artifact a reviewer can inspect or re-run. No artifact → no proof.
 | **Tests** | Test file in the diff; reviewer re-ran it; output pasted with pass/fail counts and exit code | "Tests pass" with no output; coverage % alone |
 | **Reproduction test** | Test fails on base, passes on head (bug fixes) | A test written after the fix that was never seen failing |
 | **Runtime evidence** | Real command/terminal log of the feature running end to end, non-mocked, with timestamps or IDs | Log of a unit test; a mocked run; "I ran it locally" |
-| **Visual proof** | Screenshot / recording / DOM snapshot of the user-visible change, incl. empty/error states | Description of what it "should look like" |
+| **Visual proof** | Before/after screenshot pair per changed screen (same route, viewport, data), embedded in the PR body, incl. empty/error states | After-only shots; a local path the reviewer can't open; description of what it "should look like" |
 | **Invariant assertions** | Tests assert a system rule ("balance never negative", "sum of ledger = balance") | Tests assert a return value is defined |
 | **Confidence statement** | Explicit **Verified:** list and **Not verified:** list | "High confidence", "should work" |
 
@@ -29,7 +29,7 @@ Proof = an artifact a reviewer can inspect or re-run. No artifact → no proof.
 4. **Base-failure check** (bug fixes): run the new test against the base tree. If it passes on base, it does not prove the fix.
    - Isolated copy: `WT=$(mktemp -d <scratch-dir>/review-base.XXXX) && git worktree add --detach "$WT" <base-sha>`, copy the test in, run it, then `git worktree remove --force "$WT"`. Never modify the user's working tree.
 5. **Mutation probe** (any change with tests): in a scratch copy, break one line of the code under test (flip a condition, drop an `await`, return early). Re-run tests. Still green → the tests are vanity (see `vanity-tests.md`).
-6. Visible change with no screenshot → take one yourself if a browser tool is available (Playwright MCP `browser_take_screenshot`), else list it as a proof gap.
+6. Visible change with no before/after pair → take them yourself if a browser tool is available (see Visual pair below), else list it as a proof gap.
 
 ## Author side — building the proof bundle
 
@@ -50,7 +50,11 @@ Base check: `concurrent credits` FAILS on base (balance = 5) — confirms the ra
 $ node scripts/demo-checkout.mjs   → log excerpt with order id + ledger rows
 
 ### Visual
-screenshot: badge (credit), badge (empty), flag OFF (renders nothing)
+| | Before | After |
+|---|---|---|
+| Badge, credit | ![](<scratch>/pr-shots/badge-credit-before.png) | ![](<scratch>/pr-shots/badge-credit-after.png) |
+| Badge, empty | ![](<scratch>/pr-shots/badge-empty-before.png) | ![](<scratch>/pr-shots/badge-empty-after.png) |
+Flag OFF: after is pixel-identical to before (shot omitted).
 
 ### Confidence
 Verified: race fixed under 50 parallel credits; negative/NaN rejected; flag OFF = old behavior byte-identical.
@@ -58,3 +62,14 @@ Not verified: behavior against real Postgres (in-memory store only); p99 latency
 ```
 
 The **Not verified** list is mandatory and must not be empty for trunk changes — an empty list on a trunk PR means the author did not look.
+
+### Visual pair (any user-visible change)
+
+Reviewers judge a UI change by comparing it to what was there; an after-only shot hides regressions and makes them diff the code in their head.
+
+1. **After:** run the app from HEAD, Playwright MCP `browser_take_screenshot` of each changed screen and state.
+2. **Before:** same route, viewport and seed data from the PR's base (the parent branch for a stacked PR), run from an isolated worktree as in the base-failure check. New screen → shoot the screen it's reached from.
+3. Save as `<scratch-dir>/pr-shots/<screen>-{before,after}.png`, reference them in the body by that exact path string, and pass the same string to `gh pr create --attach <path>` (or `gh pr edit`). `gh` uploads them and rewrites the body references to the hosted URLs; `--attach` needs `gh` ≥ 2.99, so check `gh pr create --help | grep -q -- --attach` first.
+4. Some uploads fail → `gh` still creates the PR and exits non-zero. Re-attach the missing ones with `gh pr edit <n> --attach`.
+
+No browser tool, app won't start, or `gh` too old → no pair; the PR doesn't open until the user decides (`pr-description` Step 0).
