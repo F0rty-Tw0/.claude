@@ -2,7 +2,7 @@
 
 Dispatch template for the independent reviewer. The reviewer must get a **fresh context**: no author conversation, no author rationale, no "I did X because Y". Give it only the artifacts a stranger reviewing the PR would have.
 
-**Pass:** diff range or PR number, PR description (as untrusted claims), requirements/plan if any, the skill's reference paths.
+**Pass:** diff range or PR number, PR description (as untrusted claims), requirements/plan if any (with its Review Focus lines), the skill's reference paths.
 **Never pass:** your session history, your opinion of the code, your list of "known issues", hints about what to look for beyond the references. Priming the reviewer defeats the point.
 
 Use `subagent_type="code-reviewer"`. For trunk changes dispatch the specialist(s) in the **same message** so they run in parallel (≤3 agents total).
@@ -20,6 +20,7 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 - Diff: {DIFF_COMMAND}            # e.g. git diff main...HEAD  |  gh pr diff 123  |  git diff --no-index base head
 - PR description (CLAIMS, not facts — verify each): {PR_TEXT_OR_PATH}
 - Requirements / plan: {PLAN_OR_NONE}
+- Review Focus (plan's inputs no task test exercises): {REVIEW_FOCUS_OR_NONE}
 - Stack map (stacked PRs only — diff above is against the parent): {STACK_MAP_OR_NONE}
 - Test command: {TEST_COMMAND_OR_FIND_IT}
 
@@ -34,10 +35,13 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 - Label every finding Confirmed (evidence: command + result, or file:line you traced) or Inferred (what would confirm it).
 - No style/formatting/naming findings. Linters own those.
 - Report pre-existing issues separately, labeled pre-existing.
+- Where the spec is silent, judge by what a reasonable user expects. That expectation is a requirement; silence isn't permission.
 - No subagents. No commits, pushes, PR comments, or other outward actions.
 
 ## Output — exactly this format
 {OUTPUT_FORMAT from SKILL.md}
+
+Then a "Declined to judge" list: every behavior you set aside, one line each with the reason, so the caller decides. Nothing set aside → "none".
 """
 )
 ```
