@@ -1,13 +1,13 @@
 # Caveman Skill
 
-Ultra-compressed communication mode for Claude Code. Cuts token usage ~75% while keeping full technical accuracy.
+Terse response register for Claude Code. Cuts filler while keeping full technical accuracy.
 
 ## Usage
 
 ```
-/caveman              # activate (default: full intensity)
-/caveman lite         # professional but tight
-/caveman full         # classic caveman (default)
+/caveman              # activate (default: lite)
+/caveman lite         # professional but tight (default)
+/caveman full         # classic caveman
 /caveman ultra        # maximum compression
 ```
 
@@ -17,17 +17,17 @@ Say `stop caveman` or `normal mode` to revert.
 
 ## Intensity Levels
 
-| Level | Style                                    | Token Savings |
-| ----- | ---------------------------------------- | ------------- |
-| lite  | No filler/hedging, full sentences        | ~40%          |
-| full  | Drop articles, fragments, short synonyms | ~65%          |
-| ultra | Abbreviations, arrows, single words      | ~75%          |
+| Level | Style                                    |
+| ----- | ---------------------------------------- |
+| lite  | No filler/hedging, full sentences        |
+| full  | Drop articles, fragments, short synonyms |
+| ultra | Abbreviations, arrows, single words      |
 
 ## How It Works
 
 **Drops:** articles (a/an/the), filler words, pleasantries, hedging language
 
-**Keeps:** technical terms exact, code blocks unchanged, error messages quoted verbatim
+**Keeps:** technical terms exact, code blocks unchanged, error messages quoted verbatim, negations (not/never/no/only/except), numbers and units
 
 **Pattern:** `[thing] [action] [reason]. [next step].`
 
@@ -46,11 +46,16 @@ Caveman mode automatically disengages for:
 - Security warnings
 - Irreversible action confirmations
 - Multi-step sequences where fragments risk misread
+- Statements that dropped words would make ambiguous
 
 Resumes after the critical section.
 
 ## Boundaries
 
-- Code, commits, and PRs are always written in normal language
+- Anything saved outside the chat (code, comments, commits, PRs, docs, issues, memory files, messages to others) is written in normal language
 - Persists across all responses until deactivated
 - Level persists until changed or session ends
+
+## Credits
+
+Adapted from [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman), MIT License, Copyright (c) 2026 Julius Brussee. See [LICENSE](LICENSE).
