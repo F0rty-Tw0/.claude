@@ -1,4 +1,6 @@
-<!-- Proof section for AI-assisted PRs. Paste into the PR body. Every line needs real output, not adjectives. See references/proof.md -->
+<!-- Full proof bundle for AI-assisted PRs. Every line needs real output, not adjectives. See references/proof.md.
+     In a PR body, pr-description (Step 3) puts compact one-line Proof in the body and the rest of this in a collapsed <details> block. -->
+
 
 ## Proof
 
@@ -22,7 +24,11 @@ $ <command that runs the feature for real, non-mocked>
 ```
 
 ### Visual (UI changes)
-<screenshots/recording: normal, empty, error, flag OFF>
+| | Before | After |
+|---|---|---|
+| <screen, state> | ![<screen> before](<scratch>/pr-shots/<screen>-before.png) | ![<screen> after](<scratch>/pr-shots/<screen>-after.png) |
+
+States: normal, empty, error, flag OFF. Attach each path with `gh pr create --attach` (references/proof.md, Visual pair).
 
 ### Confidence
 **Verified:** <specific behaviors, each backed by an artifact above>
