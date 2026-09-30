@@ -52,8 +52,8 @@ Do not advance a stage until its gate holds; if a gate can't be met, stop and re
 | Stage    | Gate before moving on                                                      |
 | -------- | -------------------------------------------------------------------------- |
 | IDEATE   | A written spec/approach exists (or task was already concrete -> skip)      |
-| PLAN     | Plan file under `.claude/local/plans/` with testable acceptance criteria   |
-| EXECUTE  | All plan tasks done; `build` exit 0 and affected tests pass (real output)  |
+| PLAN     | Plan file under `.claude/local/plans/` with testable acceptance criteria; interactive mode links the saved plan and waits for the user to review it (approving the idea or scope doesn't approve an unseen plan); `--auto` continues without the pause |
+| EXECUTE  | All plan tasks done; `build` exit 0 and the full project test suite passes (real output) |
 | REVIEW   | `code-review` verdict is not BLOCK; findings fixed or dismissed; every acceptance criterion mapped to the proof bundle; a TRUNK verdict stops for human sign-off, even in `--auto` |
 | FINISH   | Branch merged/PR opened and workspace/worktree cleaned up                  |
 
