@@ -1,13 +1,13 @@
 ---
 name: pr-description
-description: Use when creating or updating a pull request and need to generate a title and description, or when asked to describe branch changes for a PR
+description: Writes PR titles and descriptions sized to the change, with a blast-radius-scaled Proof section behind a fresh code-review gate. Use when creating or updating a pull request or describing branch changes for one.
 ---
 
 # PR Description Generator
 
 Write PR titles and descriptions that are concise, honest about impact, and sound like a human wrote them.
 
-**REQUIRED SUB-SKILL:** Use skill:humanizer on final output before presenting to user.
+For a long prose body, optionally polish it with skill:anthropic-skills:avoid-ai-writing; Red Flags below covers short ones.
 
 ## When to Use
 
@@ -25,17 +25,17 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 4. Write title       → short, specific, lowercase
 5. Write description → proportional to change size
 6. Add ticket link   → extract ticket number from branch name, append "Closes #<number>"
-7. Humanize          → run output through humanizer patterns
+7. Polish            → check Red Flags; optionally avoid-ai-writing
 8. Present           → show to user, ready for gh pr create
 ```
 
 ### Before Step 0: One PR or Several?
 
-Branch diff over ~400 changed lines, mixing trunk and leaf changes, or holding independent concerns → **REQUIRED SUB-SKILL:** use skill:meaningful-prs first. It splits the branch and then runs this skill once per PR. For a stacked PR, `BASE` (Step 1) and the Step 0 review use the **parent branch**, the reviewer gets the stack map, and `## Stack` goes before `## Proof`. Called from `meaningful-prs`? Skip this routing step.
+Branch diff over ~400 changed lines, mixing trunk and leaf changes, or holding independent concerns → run skill:meaningful-prs first. It splits the branch and then runs this skill once per PR. For a stacked PR, `BASE` (Step 1) and the Step 0 review use the **parent branch**, the reviewer gets the stack map, and `## Stack` goes before `## Proof`. Called from `meaningful-prs`? Skip this routing step.
 
 ### Step 0: Proof Gate
 
-**REQUIRED SUB-SKILL:** Use skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it.
+Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it.
 
 1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. UI change → screenshot.
 2. **Fresh review** — `code-review` review mode on `<base>...HEAD`. It dispatches an independent reviewer; do not review your own work in this session.
@@ -57,8 +57,9 @@ Run `git push` and `gh pr create` as **separate** Bash calls. If the hook blocks
 ### Step 1: Gather Changes
 
 ```bash
-# Find base branch
-BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
+# Find base branch: the repo default (never assume main), or the parent branch for a stacked PR
+DEFAULT=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
+BASE=$(git merge-base HEAD "origin/$DEFAULT")
 
 # What changed
 git diff --stat $BASE..HEAD
@@ -113,7 +114,7 @@ Closes #<n>         ← only if the branch has a ticket
 | Medium | 4-10 files, one feature or theme     | Short bullet list     |
 | Large  | 10+ files, multiple concerns         | Sections with bullets |
 
-**This is the most important step.** A 1-line bugfix does NOT get Problem/Solution/Impact sections. A 15-file feature does NOT get a 2-sentence summary. Match output to change size.
+Match output to change size: a 1-line bugfix gets no Problem/Solution/Impact sections, and a 15-file feature gets more than a 2-sentence summary.
 
 ### Step 4: Write the Title
 
@@ -163,13 +164,13 @@ That's it. No sections. No headers. No test plan for obvious changes.
 - The old `paymentService` import path no longer exists
 ```
 
-**Large changes (10+ files) — MUST include all 3 sections:**
+**Large changes (10+ files) — all 3 sections:**
 
 1. `## What changed` — what was added/modified
 2. `## Impact on existing code` — how this affects the rest of the codebase (callers, dependencies, config, deployment). Reviewers need this most.
 3. `## Test plan` — non-obvious verification steps only
 
-Skipping the impact section is the most common mistake. If the change touches 10+ files, it affects something — say what.
+Don't skip the impact section: a change touching 10+ files affects something, so say what.
 
 ```
 ## What changed
@@ -212,9 +213,9 @@ Closes #<ticket_number>
 
 If the branch has no recognizable ticket number, skip this step silently — don't ask the user.
 
-### Step 7: Humanize
+### Step 7: Polish
 
-Run the final title and description through `skill:humanizer` to remove AI-sounding language before presenting. Humanize prose only — leave the `## Proof` section's commands, output, and verdict verbatim.
+Check the title and description against Red Flags. For a long prose body, optionally run `skill:anthropic-skills:avoid-ai-writing`. Edit prose only; leave the `## Proof` section's commands, output, and verdict verbatim.
 
 Append the `## Proof` section at the end of the body, before `Closes #…`: the class-scaled one from Step 0 for us, or the compact one from Step 3 for someone else. It does not count toward the size-based section limits.
 

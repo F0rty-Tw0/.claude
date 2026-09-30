@@ -1,12 +1,10 @@
 # Bulletproofing Skills Against Rationalization
 
-Skills that enforce discipline (like TDD) need to resist rationalization. Agents are smart and will find loopholes when under pressure.
+Discipline skills (like TDD) get rationalized away under pressure. Use these techniques only for a failure your baseline run actually reproduced on the current model. Each counter is stated plainly, with its reason; current models over-apply absolute language, so heavy emphasis makes behavior rigid in gray areas.
 
-**Psychology note:** Understanding WHY persuasion techniques work helps you apply them systematically. See persuasion-principles.md for research foundation (Cialdini, 2021; Meincke et al., 2025) on authority, commitment, scarcity, social proof, and unity principles.
+## Name the specific workaround
 
-## Close Every Loophole Explicitly
-
-Don't just state the rule - forbid specific workarounds:
+A bare rule leaves room for the workaround the agent actually used. Name it and say why it fails:
 
 <Bad>
 ```markdown
@@ -16,74 +14,51 @@ Write code before test? Delete it.
 
 <Good>
 ```markdown
-Write code before test? Delete it. Start over.
-
-**No exceptions:**
-
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
+Write code before test? Delete it and start over. Keeping it "as reference"
+or adapting it while writing tests is testing after, because the tests end
+up shaped by the code.
 ```
 </Good>
 
-## Address "Spirit vs Letter" Arguments
+## Rationalization table
 
-Add foundational principle early:
-
-```markdown
-**Violating the letter of the rules is violating the spirit of the rules.**
-```
-
-This cuts off entire class of "I'm following the spirit" rationalizations.
-
-## Build Rationalization Table
-
-Capture rationalizations from baseline testing (see Testing section below). Every excuse agents make goes in the table:
+Record the excuses from baseline runs, verbatim, each with the reason it fails:
 
 ```markdown
 | Excuse                           | Reality                                                                 |
 | -------------------------------- | ----------------------------------------------------------------------- |
-| "Too simple to test"             | Simple code breaks. Test takes 30 seconds.                              |
-| "I'll test after"                | Tests passing immediately prove nothing.                                |
+| "Too simple to test"             | Simple code breaks. The test takes 30 seconds.                          |
+| "I'll test after"                | Tests that pass immediately prove nothing.                              |
 | "Tests after achieve same goals" | Tests-after = "what does this do?" Tests-first = "what should this do?" |
 ```
 
-## Create Red Flags List
+## Red flags list
 
-Make it easy for agents to self-check when rationalizing:
+A short list of the thoughts that precede the violation lets the agent self-check:
 
 ```markdown
-## Red Flags - STOP and Start Over
+## Red flags
 
 - Code before test
 - "I already manually tested it"
-- "Tests after achieve the same purpose"
-- "It's about spirit not ritual"
 - "This is different because..."
 
-**All of these mean: Delete code. Start over with TDD.**
+Any of these → delete the code and restart with a failing test.
 ```
 
-## Update CSO for Violation Symptoms
+## Description symptoms
 
-Add to description: symptoms of when you're ABOUT to violate the rule:
+Put the moment just before the violation into the description's "when":
 
 ```yaml
-description: use when implementing any feature or bugfix, before writing implementation code
+description: Test-first cycle for features and bug fixes. Use when implementing any feature or bugfix, before writing implementation code.
 ```
 
-## Common Rationalizations for Skipping Testing
+## Common reasons to skip testing a skill
 
-| Excuse                         | Reality                                                          |
-| ------------------------------ | ---------------------------------------------------------------- |
-| "Skill is obviously clear"     | Clear to you ≠ clear to other agents. Test it.                   |
-| "It's just a reference"        | References can have gaps, unclear sections. Test retrieval.      |
-| "Testing is overkill"          | Untested skills have issues. Always. 15 min testing saves hours. |
-| "I'll test if problems emerge" | Problems = agents can't use skill. Test BEFORE deploying.        |
-| "Too tedious to test"          | Testing is less tedious than debugging bad skill in production.  |
-| "I'm confident it's good"      | Overconfidence guarantees issues. Test anyway.                   |
-| "Academic review is enough"    | Reading ≠ using. Test application scenarios.                     |
-| "No time to test"              | Deploying untested skill wastes more time fixing it later.       |
-
-**All of these mean: Test before deploying. No exceptions.**
+| Excuse                         | Reality                                                     |
+| ------------------------------ | ----------------------------------------------------------- |
+| "Skill is obviously clear"     | Clear to you is not clear to another agent.                 |
+| "It's just a reference"        | References have gaps and unclear sections. Test retrieval.  |
+| "I'll test if problems emerge" | The problem is an agent that can't use the skill.           |
+| "Academic review is enough"    | Reading is not using. Test application scenarios.           |

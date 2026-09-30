@@ -57,7 +57,7 @@ Types expose architecture. Make ownership, mutability, and nested concepts expli
 | Arrow bodies | Expression body only when the whole arrow fits one line; otherwise block body with named steps. |
 | Casts | No `as` casts except `as const`. Narrow with type predicates, fix declared types, never `as unknown as`. |
 | Nested values | A property value that is an object literal, an array of objects, a call chain, or a ternary moves to a `const` and is referenced by name. Empty `{}`/`[]` stay inline. |
-| Comments | Only comments that carry a fact the code cannot: external-bug workaround with link, directive with reason, invariant the types cannot state, JSDoc on a public export. Delete restatements, narration, and `// ponytail:` markers. Not lint-enforced; judged per comment. |
+| Comments | Only comments that carry a fact the code cannot: external-bug workaround with link, directive with reason, invariant the types cannot state, JSDoc on a public export, `// ponytail:` marker naming a deliberate shortcut's ceiling and upgrade path. Delete restatements and narration. Not lint-enforced; judged per comment. |
 | Returned objects | Never return an object literal inline. Assign it to a named `const`, blank line, then `return` the name. Applies to `return` statements and to arrow expression bodies `() => ({ ... })`. |
 
 `readonly items: Item[]` means the property reference cannot be replaced while array contents remain mutable. This is intentional.
@@ -715,8 +715,9 @@ Code carries its intent in names. A useless comment is one the reader could rege
 - A lint or compiler directive, with its reason on the same line.
 - A non-obvious invariant the type system cannot state (array order that is load-bearing, an empty object a library requires).
 - A `/** JSDoc */` on a public export that documents the contract, not the implementation.
+- A `// ponytail:` marker on a deliberate shortcut, naming its ceiling and upgrade path (`// ponytail: O(n²) scan, index by id if lists grow`).
 
-Everything else is deleted: `// ponytail:` markers, restatements of what the next line does, `// TODO` without a ticket, and narrative about why an approach was chosen. If a comment explains a block, the block wants a named function. There is no lint rule for this; the test is whether deleting the comment loses a fact.
+Everything else is deleted: restatements of what the next line does, `// TODO` without a ticket, and narrative about why an approach was chosen. If a comment explains a block, the block wants a named function. There is no lint rule for this; the test is whether deleting the comment loses a fact.
 
 ### Returned Objects
 
@@ -840,4 +841,4 @@ Stop and re-check this reference when reasoning includes:
 | `value as Narrow` | A `(value: Wide): value is Narrow` predicate, then `if (isNarrow(value))`. |
 | `ReturnType<typeof fn>` or `typeof value` as a type | Import the library's exported type, or export the alias `fn` already returns. |
 | `report({ data: { name }, errors: [{ ... }] })` | `const data = { name }; const errors = [error];` then reference by name. |
-| `// ponytail: ...` or a comment restating the next line | Delete it. Name the const or function instead. Keep a comment only if deleting it loses a fact. |
+| A comment restating the next line | Delete it. Name the const or function instead. Keep a comment only if deleting it loses a fact. |

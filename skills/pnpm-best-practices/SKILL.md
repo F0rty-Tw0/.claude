@@ -1,6 +1,6 @@
 ---
 name: pnpm-best-practices
-description: Use when setting up a new pnpm project, migrating a repo from npm/yarn to pnpm, scaffolding pnpm-workspace.yaml, configuring CI for pnpm, hardening a pnpm project against supply-chain attacks, debugging corepack "Invalid package manager specification" errors, or aligning @nx/* versions in an Nx workspace
+description: pnpm setup, migration, workspace, CI, and supply-chain hardening, plus corepack and Nx version-alignment fixes. Use when starting or migrating a repo to pnpm, configuring pnpm in CI, debugging corepack "Invalid package manager specification" errors, or aligning @nx/* versions.
 ---
 
 # pnpm best practices
@@ -161,7 +161,7 @@ Before bulk-updating: `pnpm outdated`. Categorize the output.
 
 | Command | Use |
 |---|---|
-| `pnpm ci` | CI-optimized install — stricter than `--frozen-lockfile`; prefer over hand-tuned install flags in pipeline steps |
+| `pnpm ci` | `pnpm clean` then `pnpm install --frozen-lockfile` (same lockfile strictness). Use on agents that reuse a workspace; a fresh checkout gets the same result from the install step above |
 | `pnpm sbom` | Generate a software bill of materials — reach for this if the org needs supply-chain attestation |
 | `pnpm clean` | Prune the store/cache in one step instead of manually clearing `node_modules/.pnpm` |
 | `pnpm peers check` | Surface peer-dependency mismatches before they cause a runtime error |

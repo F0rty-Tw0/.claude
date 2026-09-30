@@ -39,7 +39,7 @@ git switch --detach <top of the longest chain>           # one ref
 git merge --no-edit <every other chain top / independent slice>
 # expected conflicts (e.g. a shared flag file): resolve BY HAND from the slices' own content,
 # then `git add <files> && git merge --continue`. Never copy the file from <stack>/src here; that would hide a bad split.
-git diff --stat <stack>/src HEAD                         # MUST be empty
+git diff --stat <stack>/src HEAD                         # must be empty
 git switch <stack>/src
 ```
 

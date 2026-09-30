@@ -1,6 +1,6 @@
 ---
 name: meaningful-prs
-description: Use when opening PRs for a branch that is large (roughly 400+ changed lines), mixes trunk and leaf changes, bundles a migration or widely-imported shared change with feature code, or holds several independent concerns — or when the user asks to split a PR, stack PRs, create stacked or dependent PRs, or restack after a parent PR merged.
+description: Splits a large or mixed branch into small PRs, stacked only on real dependencies. Use when a branch exceeds ~400 changed lines, mixes trunk and leaf changes or a migration with feature code, or the user asks to split, stack, or restack PRs.
 ---
 
 # Meaningful PRs
@@ -12,7 +12,7 @@ This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
 - Split by **blast radius** first, then by module or feature. Trunk lines must not hide inside leaf volume, so the review knob can do its job.
 - Every PR stands alone: it builds, its tests pass, it's safe to merge, and it ships dark.
 
-**REQUIRED SUB-SKILL:** Use skill:pr-description for every PR. It adds `## Proof` and a fresh `code-review`, and a hook blocks PRs without proof.
+Run skill:pr-description for every PR. It adds `## Proof` and a fresh `code-review`, and a hook blocks PRs without proof.
 
 ## Split or not
 
@@ -49,7 +49,7 @@ This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
    - `gh pr list --head <branch>`
    - migration number collisions on `origin/<default>`
    - the real typecheck/test script names
-2. **Split plan** as a table: Slice, Branch, Base, Blast (`code-review` `references/blast-radius.md`), Tasks/Files, ~Lines. If the plan has a **PR Slices** table (`plans-writing`), start from it and fill Files and ~Lines from `git diff --stat`.
+2. **Split plan** as a table: Slice, Branch, Base, Blast (`code-review` `references/blast-radius.md`), Tasks/Files, ~Lines. If the plan has a **PR Slices** table (`plan`, `references/task-format.md`), start from it and fill Files and ~Lines from `git diff --stat`.
 3. **One approval:** ask with AskUserQuestion, together with `pr-description`'s audience question (for us / for someone else) asked **once for the whole stack**. The approval covers the listed commits, the first push and the PRs. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
 4. **Build the slices.** Details and commands: `references/mechanics.md`.
    - Sync the source branch with `origin/<default>` first.

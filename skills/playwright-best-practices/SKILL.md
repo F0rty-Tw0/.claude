@@ -1,6 +1,6 @@
 ---
 name: playwright-best-practices
-description: Use when writing, refactoring, or reviewing Playwright end-to-end, component, API, or visual tests; building page objects, fixtures, or test data; configuring playwright.config, projects, sharding, or CI (GitHub Actions, GitLab, Docker); debugging failures, timeouts, or flaky runs; mocking network, clock, geolocation, permissions, WebSockets, or service workers; testing auth/OAuth/MFA, multi-user, multi-tab, iframes, uploads/downloads, drag-drop, forms, i18n, accessibility (axe-core), security (XSS/CSRF), Web Vitals, canvas/WebGL, Electron, or browser extensions; or choosing between POM, fixtures, mocks, and real services.
+description: The user's Playwright house style plus topic references (locators, fixtures, page objects, mocks, auth, config, CI, sharding, visual, accessibility and API tests, debugging). Use when writing, refactoring, reviewing, or debugging Playwright tests or playwright.config.
 ---
 
 # Playwright Best Practices
@@ -9,7 +9,7 @@ description: Use when writing, refactoring, or reviewing Playwright end-to-end, 
 
 Reference set for Playwright test development, rewritten to house style: one flat `FEATURE` describe per spec, `GIVEN <state>, <outcome>` test titles, `WHEN` / `THEN` / `AND` steps with one call each (only the spec opens steps; the title is the one `GIVEN`), page objects that own every locator, fixtures that own every page object, and one responsibility per file.
 
-**REQUIRED BACKGROUND:** skill:artification. Its `typescript-style.md` applies to every Playwright file unchanged. Its `spec-style.md` covers `describe` / `it` specs; Playwright specs follow `core/house-style.md`, which its Scope section points to.
+Load skill:artification too. Its `typescript-style.md` applies to every Playwright file unchanged. Its `spec-style.md` covers `describe` / `it` specs; Playwright specs follow `core/house-style.md`, which its Scope section points to.
 
 ## Read Order
 

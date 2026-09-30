@@ -10,7 +10,7 @@ You run scenarios without the skill (RED - watch agent fail), write skill addres
 
 **Core principle:** If you didn't watch an agent fail without the skill, you don't know if the skill prevents the right failures.
 
-**REQUIRED BACKGROUND:** You MUST understand skill:test-driven-development before using this skill. That skill defines the fundamental RED-GREEN-REFACTOR cycle. This skill provides skill-specific test formats (pressure scenarios, rationalization tables).
+The RED-GREEN-REFACTOR cycle itself is in skill:test-driven-development. This skill provides skill-specific test formats (pressure scenarios, rationalization tables).
 
 **Complete worked example:** See examples/CLAUDE_MD_TESTING.md for a full test campaign testing CLAUDE.md documentation variants.
 
@@ -46,7 +46,7 @@ Same cycle as code TDD, different test format.
 
 **Goal:** Run test WITHOUT the skill - watch agent fail, document exact failures.
 
-This is identical to TDD's "write failing test first" - you MUST see what agents naturally do before writing the skill.
+This is TDD's "write failing test first": see what agents naturally do before writing the skill.
 
 **Process:**
 
@@ -198,14 +198,9 @@ Write code before test? Delete it.
 
 <After>
 ```markdown
-Write code before test? Delete it. Start over.
-
-**No exceptions:**
-
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
+Write code before test? Delete it and start over. Keeping it "as reference"
+or adapting it while writing tests is testing after, because the tests end
+up shaped by the code.
 
 ````
 </After>
@@ -221,7 +216,7 @@ Write code before test? Delete it. Start over.
 ### 3. Red Flag Entry
 
 ```markdown
-## Red Flags - STOP
+## Red flags
 
 - "Keep as reference" or "adapt existing code"
 - "I'm following the spirit not the letter"
@@ -263,9 +258,8 @@ it crystal clear that Option A was the only acceptable answer?
 **Three possible responses:**
 
 1. **"The skill WAS clear, I chose to ignore it"**
-   - Not documentation problem
-   - Need stronger foundational principle
-   - Add "Violating letter is violating spirit"
+   - Not a wording problem
+   - State the reason behind the rule more clearly, so the agent sees what ignoring it costs
 
 2. **"The skill should have said X"**
    - Documentation problem
@@ -313,7 +307,7 @@ New rationalization: "Spirit not letter"
 ### Iteration 2 - Add Foundational Principle
 
 ```markdown
-Added: "Violating letter is violating spirit"
+Added: why the order matters for this exact excuse (tests shaped by existing code)
 Re-tested: Agent chose A (delete it)
 Cited: New principle directly
 Meta-test: "Skill was clear, I should follow it"

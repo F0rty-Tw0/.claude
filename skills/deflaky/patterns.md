@@ -8,7 +8,7 @@ One worked example per category. Adapt the structure; the **shape** is what matt
 
 **Symptom:** `Test timeout of 30000ms exceeded.` — but the offending `waitForURL` / `expect.poll` inside the test has a 60s+ timeout. The outer test budget bites first.
 
-**Rule:** the outer test budget MUST be larger than the longest inner wait, plus the cumulative time before that wait.
+**Rule:** the outer test budget must be larger than the longest inner wait, plus the cumulative time before that wait.
 
 ```ts
 // BAD — relies on default 30s, but the inner wait alone is 120s

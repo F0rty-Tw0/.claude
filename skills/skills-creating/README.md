@@ -28,8 +28,8 @@ Triggers when you:
 
 ---
 
-## The Iron Law
+## Core Rule
 
-No skill without a failing test first. Same as TDD - write skill before testing? Delete it. Start over. No exceptions.
+No behavior-changing skill without a failing baseline run first. Wording and factual fixes skip the pressure run.
 
 ---

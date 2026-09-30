@@ -15,7 +15,7 @@ metadata:
 
 2. When generating code, follow Angular's style guide and best practices for maintainability and performance. Use the Angular CLI for scaffolding components, services, directives, pipes, and routes to ensure consistency.
 
-3. Once you finish generating code, run `ng build` to ensure there are no build errors. If there are errors, analyze the error messages and fix them before proceeding. Do not skip this step, as it is critical for ensuring the generated code is correct and functional.
+3. Once you finish generating code, run `ng build` to ensure there are no build errors. If there are errors, analyze the error messages and fix them before proceeding.
 
 ## Creating New Projects
 
@@ -122,7 +122,7 @@ When writing or updating tests, consult the following references based on the ta
 - **Fundamentals**: Best practices for unit testing (Vitest), async patterns, and `TestBed`. Read [testing-fundamentals.md](references/testing-fundamentals.md)
 - **Component Harnesses**: Standard patterns for robust component interaction. Read [component-harnesses.md](references/component-harnesses.md)
 - **Router Testing**: Using `RouterTestingHarness` for reliable navigation tests. Read [router-testing.md](references/router-testing.md)
-- **End-to-End (E2E) Testing**: Best practices for E2E tests with Cypress. Read [e2e-testing.md](references/e2e-testing.md)
+- **End-to-End (E2E) Testing**: the user's e2e stack is Playwright; use skill:playwright-best-practices. Unit-spec shape and feature-module layering follow skill:artification where they differ from these references.
 
 ## Tooling
 

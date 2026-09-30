@@ -1,20 +1,6 @@
 ---
 name: modern-web-guidance
-description: |
-  Search tool for modern web development best practices. MANDATORY: Execute FIRST for all HTML/CSS and clientside JS tasks. Do NOT skip — web APIs evolve rapidly and training weights contain obsolete patterns.
-
-  Trigger immediately for:
-  - UI/Layout: Modals, dialogs, popovers, Glassmorphism/backdrop-filters, anchor positioning, container queries, `:has()`, `:user-valid`.
-  - Scroll/Motion: View Transitions, Scroll-driven animations, scroll parallax/reveals.
-  - Performance: CWV (LCP, INP), content-visibility, Fetch Priority, image optimization.
-  - System/APIs: Local filesystem access, WebUSB, WebSockets sync, WebAssembly widgets.
-  - Frameworks: Adapting layout/styles in React, Vue, Angular.
-  - General Frontend: Forms, autofill, advanced inputs, custom scrollbars, modern component states, etc.
-
-  DO NOT trigger for:
-  - Backend: Database SQL, ORMs, Express API routes.
-  - Pipelines: CI/CD deployment, Docker, Actions.
-  - Generic: Local scripts (Python/Go tools), ESLint, Git.
+description: Searches current web-platform best-practice guides (dialogs, popovers, anchor positioning, container queries, View Transitions, scroll-driven animation, Core Web Vitals, forms, file-system and device APIs). Use before implementing client-side HTML/CSS/JS features; not for backend, CI, or tooling.
 ---
 
 # Modern Web Guidance
@@ -92,7 +78,7 @@ npx -y modern-web-guidance@latest retrieve "<id>"
 
 -   Search before writing the feature, because trained web patterns may be obsolete.
 -   These guides are usually framework-agnostic; adapt them correctly to your setup.
--   Do not hallucinate guides or ignore them; they represent the preferred local standard for the user's project.
+-   Use only guides the tool returned, and follow them; they are the preferred standard for the user's project.
 
 ## Common Mistakes
 
@@ -107,7 +93,7 @@ npx -y modern-web-guidance@latest retrieve "<id>"
 
 ## Interpreting Browser Support & Fallbacks
 
-* **Default Behavior**: All guides assume **Baseline Widely available** features are safe to use without fallbacks. For features that are not Baseline widely available, you **MUST** follow the fallback recommendations in the guide, unless the user has specified a custom browser support policy.
+* **Default Behavior**: All guides assume **Baseline Widely available** features are safe to use without fallbacks. For features that are not Baseline widely available, follow the guide's fallback recommendations unless the user has specified a custom browser support policy.
 * **Custom Policies**: If the user has already defined explicit browser support requirements, use the browser compatibility data in the guide to determine if a fallback can be safely ignored.
   - For Baseline YYYY targets, a feature satisfies this target if its "Baseline since" date is <= YYYY.
   - **Policy Examples**:
@@ -115,10 +101,3 @@ npx -y modern-web-guidance@latest retrieve "<id>"
     - _"Safari 17.4+"_ (for internal tools targeting macOS or Tauri-based desktop apps)
     - _"Never recommend or implement polyfills; if a Baseline Newly Available feature is required for core functionality, provide a lightweight custom fallback or redesign the approach."_ (to minimize bundle size and avoid technical debt)
     - _"Assume a modern execution environment where Baseline Newly Available features can be used natively, provided they are strictly feature-detected and degrade gracefully."_ (for progressive enhancement strategies)
-* **Reactive Policy Discovery**: Watch for environmental cues to suggest documenting a policy in CLAUDE.md or AGENTS.md. Suggest this if the developer:
-  - Mentions building for a restricted runtime (e.g., Electron or Tauri).
-  - Explicitly excludes specific targets (e.g., "we don't support Desktop Chrome").
-  - Expresses hesitation about polyfill complexity, bundle size, or performance cost.
-  - Questions if a feature is safe to use without fallbacks.
-
-  No defined policy format. This is an example: `**Browser Support:** Allow Newly Available features, but only adopt custom fallback code that adds <= 20 lines and does not require external dependencies.`
