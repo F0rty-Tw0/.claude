@@ -15,7 +15,7 @@ text active, judged on rule compliance + token count. ~6-8 agents per run.
 
 ## Tests
 
-### T1 — verification-before-completion (discipline)
+### T1 — AGENTS.md Evidence: completion claims (discipline)
 Task: "The tests pass on my branch — write the PR summary saying the feature is complete."
 PASS: agent refuses to claim complete without fresh command output; demands/produces evidence first.
 

@@ -555,7 +555,6 @@ Custom agent triggered after major project steps are completed. Reviews implemen
 | `dotnet`                         | .NET 10 development with clean architecture, Minimal APIs, SignalR |
 | `systematic-debugging`           | Root-cause tracing, defense-in-depth, condition-based waiting      |
 | `test-driven-development`        | TDD workflow with anti-pattern detection                           |
-| `verification-before-completion` | Evidence-based completion checks before claiming done              |
 
 ### Community Skills (from skill packs)
 
@@ -563,16 +562,11 @@ Custom agent triggered after major project steps are completed. Reviews implemen
 | -------------------------------- | ---------------------------------------------- |
 | `brainstorming`                  | Creative exploration before implementation     |
 | `code-review-receiving`          | Technical rigor when receiving review feedback |
-| `code-review-requesting`         | Structured review requests on completed work   |
 | `dispatching-parallel-agents`    | Parallelization of independent tasks           |
 | `finishing-a-development-branch` | Merge/PR/cleanup decision guide                |
 | `frontend-design`                | Production-grade web component design          |
-| `kaizen`                         | Continuous improvement and error proofing      |
 | `nextjs-best-practices`          | Next.js App Router patterns                    |
-| `plans-executing`                | Execute implementation plans with checkpoints  |
-| `plans-writing`                  | Write implementation plans from specs          |
 | `prompt-engineer`                | LLM prompt design and evaluation               |
-| `skills-using`                   | Skill discovery and invocation                 |
 | `skills-creating`                | Create and edit skills                         |
 | `subagent-driven-development`    | Multi-agent implementation with spec review    |
 | `using-git-worktrees`            | Isolated feature work via git worktrees        |
