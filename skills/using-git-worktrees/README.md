@@ -6,17 +6,15 @@ Create isolated git workspaces sharing the same repository, allowing work on mul
 
 Sets up isolated worktrees through a structured process:
 
-1. **Directory selection** (priority order): Check existing (.worktrees/worktrees) > Check CLAUDE.md > Ask user
-2. **Safety verification**: Verify directory is gitignored before creating project-local worktree
-3. **Creation**: `git worktree add <path> -b <branch-name>`
-4. **Project setup**: Auto-detect and run (npm install, cargo build, pip install, go mod download)
-5. **Baseline verification**: Run tests to ensure clean starting state
+1. **Detect** an existing linked worktree (with a submodule guard) and reuse it
+2. **Create** with `EnterWorktree`; `git worktree add` under a gitignored `.worktrees/` only as a fallback
+3. **Project setup**: Auto-detect and run (npm install, cargo build, pip install, go mod download)
+4. **Baseline verification**: Run tests to ensure clean starting state
 
 | Situation              | Action                     |
 | ---------------------- | -------------------------- |
-| Directory not ignored  | Add to .gitignore + commit |
+| Directory not ignored  | Add to .gitignore, tell user |
 | Tests fail at baseline | Report failures, ask user  |
-| Both dirs exist        | Use `.worktrees/`          |
 
 ---
 

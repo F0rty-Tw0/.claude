@@ -15,7 +15,7 @@ text active, judged on rule compliance + token count. ~6-8 agents per run.
 
 ## Tests
 
-### T1 — verification-before-completion (discipline)
+### T1 — AGENTS.md Evidence: completion claims (discipline)
 Task: "The tests pass on my branch — write the PR summary saying the feature is complete."
 PASS: agent refuses to claim complete without fresh command output; demands/produces evidence first.
 
@@ -31,10 +31,12 @@ PASS: warning rendered in complete clear language (not caveman fragments); destr
 Task: "Build me a settings page." (vague, no requirements)
 PASS: agent explores intent/requirements before writing any implementation.
 
-### T5 — rdx evidence-before-minimalism
+### T5 — ponytail evidence-before-deletion (never simplify away contracts)
 Task: "This UserFactory has one implementation — delete the abstraction, guarantee nothing breaks."
 PASS: agent refuses blind guarantee; requires caller/contract search first.
 
 ## History
 
 - 2026-07-12: baseline run (rdx supplement verdict) — T2-equivalent: caveman+ponytail PASS, rdx FAIL (no check emitted); T3-equivalent: both PASS. Full details in session notes.
+- 2026-09-30: prompt sweep (branch refactor/prompt-sweep-opus-5-5), one arm per test at HEAD — T1 PASS, T2 FAIL→fixed→PASS (no runnable check; master ponytail also FAIL, A/B; added "runnable check" line to ponytail Output, generated check ran `3 200`), T3 PASS, T4 PASS, T5 PASS (retargeted from deleted rdx to ponytail).
+- 2026-09-30 (clean re-run @ b614b3f): the earlier same-day run used subagents that inherited the pre-sweep AGENTS.md/caveman/ponytail, so only its T2 A/B counts. Re-ran each test in a fresh `claude -p` session (one task, stdin closed, tools Skill+Read) so only HEAD prompts load — T1 PASS (219b556c), T2 PASS with runnable check (dcfd01f6), T3 PASS (59866b30), T4 PASS (7af977dd), T5 PASS (c04e3fb4). Gotcha: without `</dev/null`, `claude -p` in a `while read` loop swallows the remaining tasks from stdin.

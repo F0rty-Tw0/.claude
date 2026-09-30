@@ -46,14 +46,9 @@ Triggers when:
 
 ---
 
-## Iron Law
+## Core Rule
 
-```
-NO FLAKE FIX WITHOUT A MULTI-RUN AUDIT FIRST
-NO FIX WITHOUT A NAMED CATEGORY
-```
-
-Skipping the audit guarantees one of: papering over a real bug with retries, loosening assertions and silently hiding regressions, or bumping global timeouts and slowing the whole suite.
+No flake fix without a multi-run audit and a named category. Skipping the audit leads to papering over real bugs with retries, loosening assertions, or bumping global timeouts.
 
 ---
 

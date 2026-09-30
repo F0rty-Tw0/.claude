@@ -1,114 +1,48 @@
 ---
 name: subagent-driven-development
-description: Use when executing implementation plans with independent tasks in the current session
+description: Executes a written plan task by task with a fresh implementer subagent per task, a spec check of each diff, and one final code-review. Use for supervised execution of a plan in this session; small or tightly coupled plans run inline.
 ---
 
 # Subagent-Driven Development
 
-Execute a plan by dispatching a fresh implementer subagent per task. You check each task's diff against its spec yourself; one code-quality review covers the whole implementation at the end.
+Execute a plan by dispatching a fresh implementer subagent per task. You check each task's diff against its spec yourself; one code review covers the whole implementation at the end.
 
-**Why subagents:** You delegate tasks to specialized agents with isolated context. By crafting their instructions precisely, you keep them focused and preserve your own context for coordination. They never inherit your session history — you construct exactly what they need.
+**Continuous execution:** do not check in with the user between tasks. Stop only for a BLOCKED status you cannot resolve, genuine blocking ambiguity, or all tasks complete. They asked you to execute the plan, so "Should I continue?" wastes their time.
 
-**Core principle:** Fresh subagent per task + your own spec check per task + one final review = high quality without per-task review overhead.
+## Before starting
 
-**Continuous execution:** Do not check in with your human partner between tasks. Execute all tasks without stopping. Only stop for: a BLOCKED status you cannot resolve, genuine blocking ambiguity, or all tasks complete. "Should I continue?" prompts waste their time — they asked you to execute the plan.
+1. Read the plan once and review it critically. Raise real concerns (gaps, unclear steps, wrong assumptions) with the user before any code; don't guess past them.
+2. Confirm you are not on main/master, or that the user consented to working there. Isolation: skill:using-git-worktrees.
+3. Record the plan's base commit (`git rev-parse HEAD`) for the final review.
+4. Track progress with the plan file's `- [ ]` checkboxes.
 
-## When to Use
+**Inline mode:** small plans or tightly coupled tasks — execute them yourself in order, same checks, no implementer subagents.
 
-Use this skill when all three hold:
+## Per-task loop
 
-- You have an implementation plan.
-- Tasks are mostly independent (not tightly coupled).
-- You want to stay in this session.
+1. Record the task base: `BASE=$(git stash create); BASE=${BASE:-$(git rev-parse HEAD)}` (snapshots uncommitted work without touching the tree; falls back to HEAD when there is nothing to snapshot). Dispatch an implementer (`./implementer-prompt.md`) with the full task text and scene-setting context. Don't make it read the plan file.
+2. If it asks questions, answer completely, then re-dispatch.
+3. Read the task's diff (`git diff $BASE`, after `git add -N <files the task created>` so new files show up) against the task text: missing requirements, unrequested extras. Fix small gaps yourself; re-dispatch the implementer for task-sized ones. Dispatch the spec reviewer (`./spec-reviewer-prompt.md`) only when the diff is too large to check in a handful of reads. For a risky task (shared code, trunk signals) also run a skill:code-review mid-plan checkpoint; otherwise the final review covers it.
+4. Tick the task's checkbox. Next task.
 
-Otherwise:
+Agent frontmatter sets the model; pick the agent, not a model.
 
-- No plan → manual execution or brainstorm first.
-- Tightly coupled tasks → manual execution.
-- Want a parallel session → **skill:plans-executing**.
-
-**vs. plans-executing:** same session (no context switch), fresh subagent per task, automatic review checkpoints, no human-in-loop between tasks.
-
-## The Process
-
-1. Read the plan once. Extract every task with full text and context. Create all tasks with `TaskCreate`.
-2. For each task, run the per-task loop below.
-3. After all tasks: dispatch a final code reviewer over the entire implementation.
-4. Finish with **skill:finishing-a-development-branch**.
-
-**Per-task loop:**
-
-1. Dispatch implementer subagent (`./implementer-prompt.md`) with full task text + scene-setting context.
-2. If it asks questions, answer completely, then re-dispatch. Never rush it into implementation.
-3. Implementer implements, tests, commits.
-4. Read the task's diff against the task text (missing requirements, unrequested extras). Fix small gaps yourself; re-dispatch the implementer for task-sized ones. Dispatch the spec reviewer (`./spec-reviewer-prompt.md`) only when the diff is too large to check in a handful of reads.
-5. Mark task complete with `TaskUpdate`. Move to next task.
-
-## Model Selection
-
-Use the least powerful model that can handle each role.
-
-- **1-2 files, complete spec** (mechanical) → cheap, fast model. Most well-specified tasks are here.
-- **Multiple files, integration concerns** → standard model.
-- **Design judgment or broad codebase understanding, and all reviews** → most capable model.
-
-## Handling Implementer Status
-
-Implementers report one of four statuses:
+## Implementer status
 
 - **DONE:** proceed to the spec check.
-- **DONE_WITH_CONCERNS:** read the concerns first. Correctness/scope concerns → address before the spec check. Observations ("file getting large") → note and proceed.
-- **NEEDS_CONTEXT:** provide the missing context and re-dispatch.
-- **BLOCKED:** assess the blocker — context problem → add context, same model; needs more reasoning → more capable model; too large → break into pieces; plan is wrong → escalate to human.
+- **DONE_WITH_CONCERNS:** read the concerns. Correctness or scope concerns → address before the spec check. Observations ("file getting large") → note and proceed.
+- **NEEDS_CONTEXT:** provide it and re-dispatch.
+- **BLOCKED:** context problem → add context; needs more reasoning → `deep-executor`; too large → split the task; plan is wrong → escalate to the user.
 
-**Never** ignore an escalation or force the same model to retry without changing something.
+Never re-dispatch the same prompt to the same agent without changing something.
 
-## Prompt Templates
+## After all tasks
 
-- `./implementer-prompt.md` — dispatch implementer subagent
-- `./spec-reviewer-prompt.md` — dispatch spec compliance reviewer
-- `./code-quality-reviewer-prompt.md` — dispatch code quality reviewer
+1. Run the final review with skill:code-review over `<plan-base>..HEAD` (or the working-tree diff if nothing is committed), passing the plan as requirements and nothing else.
+2. Finish with skill:finishing-a-development-branch.
 
-## Example (one task)
+## Rules
 
-```
-Task 1: Hook installation script
-[Get Task 1 text + context, already extracted]
-[Dispatch implementer with full task text + context]
-
-Implementer: "Should the hook install at user or system level?"
-You: "User level (~/.config/worktrees/hooks/)"
-Implementer: [implements install-hook, 5/5 tests passing, committed]
-
-[Read Task 1 diff against task text: all requirements met, nothing extra]
-
-[Mark Task 1 complete, move to Task 2]
-```
-
-When the spec check finds gaps (e.g. "missing progress reporting; extra --json flag not requested"), fix them or re-dispatch the implementer, then re-check the diff.
-
-## Rules — Never
-
-- Start implementation on main/master without explicit user consent.
-- Skip the per-task spec check or the final code review.
-- Proceed to the next task with open review issues, or accept "close enough" on spec.
-- Dispatch multiple implementer subagents in parallel (conflicts). If tasks are truly independent and you want parallelism, that is a different skill: use **ultrapilot** or **team** with per-worker `isolation: "worktree"`, not this sequential-review loop.
-- Make a subagent read the plan file — provide full text instead.
-- Skip scene-setting context, or ignore subagent questions.
-
-These gates are the point: the per-task spec check prevents over/under-building, and the final review ensures the whole is well-built. Per-task verification belongs in your own loop, not in extra reviewer subagents.
-
-## Integration
-
-**Required workflow skills:**
-
-- **skill:using-git-worktrees** — isolated workspace (creates or verifies)
-- **skill:plans-writing** — creates the plan this skill executes
-- **skill:code-review-requesting** — dispatches `code-reviewer` with scoped diff context
-- **skill:finishing-a-development-branch** — complete development after all tasks
-
-**Subagents should use:**
-
-- **skill:test-driven-development** — subagents follow TDD per task
-
-**Alternative:** **skill:plans-executing** for a parallel session instead of same-session execution.
+- Implementers run one at a time: parallel implementers in one checkout conflict. For truly independent tasks, use skill:dispatching-parallel-agents with per-agent `isolation: "worktree"` instead of this loop (worktrees start from the last commit, so earlier uncommitted tasks are invisible to them).
+- Don't move to the next task with open spec gaps or accept "close enough".
+- Implementers follow skill:test-driven-development when the task has a test harness.

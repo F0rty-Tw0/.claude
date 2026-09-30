@@ -8,15 +8,11 @@ Tests must verify real behavior, not mock behavior. Mocks are a means to isolate
 
 **Core principle:** Test what the code does, not what the mocks do.
 
-**Following strict TDD prevents these anti-patterns.**
+## The three rules
 
-## The Iron Laws
-
-```
-1. NEVER test mock behavior
-2. NEVER add test-only methods to production classes
-3. NEVER mock without understanding dependencies
-```
+1. Test real behavior, not mock behavior.
+2. Keep test-only methods out of production classes.
+3. Understand a dependency before mocking it.
 
 ## Anti-Pattern 1: Testing Mock Behavior
 
@@ -206,7 +202,7 @@ const mockResponse = {
 - **Tests pass but integration fails** - Mock incomplete, real API complete
 - **False confidence** - Test proves nothing about real behavior
 
-**The Iron Rule:** Mock the COMPLETE data structure as it exists in reality, not just fields your immediate test uses.
+**Rule:** Mock the complete data structure as it exists in reality, not just fields your immediate test uses.
 
 **The fix:**
 

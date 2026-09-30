@@ -1,6 +1,6 @@
 # RDX Audit
 
-One-shot audit tool for identifying over-engineered logic and redundant, wordy comments or documentation sections.
+One-shot, read-only audit for over-engineered code and wordy comments or docs. Also covers the old `rdx-review` job (code-only pre-merge review).
 
 ## What It Does
 
@@ -15,8 +15,8 @@ One-shot audit tool for identifying over-engineered logic and redundant, wordy c
 ## When to Use
 
 Triggers when you:
-- Audit a file, diff, or the whole repository for bloat.
-- Request feedback on what code or documentation can be cut.
+- Audit a file, diff, PR, or the whole repository for bloat.
+- Review a diff for over-engineering before merge (`code` mode).
 - Run /rdx-audit or ask "what can I cut".
 
 ---

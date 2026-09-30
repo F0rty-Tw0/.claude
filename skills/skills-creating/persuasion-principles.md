@@ -29,7 +29,7 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 **Example:**
 
 ```markdown
-✅ Write code before test? Delete it. Start over. No exceptions.
+✅ Write code before test? Delete it and start over, because tests written after are shaped by the code.
 ❌ Consider writing tests first when feasible.
 ```
 
@@ -41,7 +41,7 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 
 - Require announcements: "Announce skill usage"
 - Force explicit choices: "Choose A, B, or C"
-- Use tracking: TaskCreate for checklists
+- Use tracking: a written checklist the agent ticks off
 
 **When to use:**
 
@@ -52,7 +52,7 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 **Example:**
 
 ```markdown
-✅ When you find a skill, you MUST announce: "I'm using [Skill Name]"
+✅ When you use a skill, announce it: "I'm using [Skill Name]"
 ❌ Consider letting your partner know which skill you're using.
 ```
 
@@ -164,8 +164,7 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 
 **Bright-line rules reduce rationalization:**
 
-- "YOU MUST" removes decision fatigue
-- Absolute language eliminates "is this an exception?" questions
+- A clear rule with its reason removes decision fatigue
 - Explicit anti-rationalization counters close specific loopholes
 
 **Implementation intentions create automatic behavior:**

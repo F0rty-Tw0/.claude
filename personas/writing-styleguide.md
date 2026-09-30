@@ -80,7 +80,7 @@ Load the persona before writing comments. Adapt:
 
 ## AI Writing Check
 
-Before publishing any written text (PR comments, descriptions, documentation, commit messages), apply the `humanizer` skill as a final pass. Scan your output for AI writing patterns — especially:
+Before publishing any written text (PR comments, descriptions, documentation, commit messages), apply the `anthropic-skills:avoid-ai-writing` skill as a final pass. Scan your output for AI writing patterns — especially:
 
 - Significance inflation ("pivotal", "crucial", "key role")
 - Filler phrases ("it's important to note", "in order to")
@@ -88,7 +88,7 @@ Before publishing any written text (PR comments, descriptions, documentation, co
 - Em dash overuse, rule-of-three lists, bold-header bullet lists
 - Generic positive conclusions, transition summaries ("Overall", "In conclusion")
 
-If you catch yourself writing like a chatbot, rewrite before posting. Use `skill:humanizer` for the full pattern catalog when unsure.
+If you catch yourself writing like a chatbot, rewrite before posting. Use `skill:anthropic-skills:avoid-ai-writing` for the full pattern catalog when unsure.
 
 ## Anti-patterns
 

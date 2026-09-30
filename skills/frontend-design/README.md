@@ -8,11 +8,11 @@ Guides design thinking and implementation across five aesthetic dimensions:
 
 | Dimension        | Focus                                                                  |
 | ---------------- | ---------------------------------------------------------------------- |
-| **Typography**   | Distinctive, characterful fonts - never Arial, Inter, Roboto           |
+| **Typography**   | Distinctive display font paired with a refined body font               |
 | **Color**        | Dominant colors with sharp accents, CSS variables for consistency      |
-| **Motion**       | CSS animations, scroll-triggering, staggered reveals, hover states     |
+| **Motion**       | CSS animations, one orchestrated load with staggered reveals           |
 | **Composition**  | Asymmetry, overlap, diagonal flow, grid-breaking, negative space       |
-| **Backgrounds**  | Gradient meshes, noise textures, geometric patterns, grain overlays    |
+| **Atmosphere**   | Backgrounds and details that fit the direction, plus an avoid-list     |
 
 Supports bold aesthetic directions: brutalist, art deco, organic, luxury, retro-futuristic, editorial, and more.
 

@@ -1,6 +1,6 @@
 ---
 name: artification
-description: Use when writing, refactoring, reviewing, or testing TypeScript (including Angular specs and `TestBed` setup) — covers type and object-shape organization, function-body shape (returns, guards, conditions, ternaries, chains, callbacks, casts, comments), imports, naming and class members, utility placement and purity, module size, feature-module layers (`feature` smart components and handlers, `ui` presentational components, `domain-logic` services and state facades, `data-access` API clients, DB queries and NGXS state, import direction, the root barrel, Angular `@Service` / `input()` decorators), and spec structure (`describe` / `it`, Gherkin, branch coverage, stubs, mocks, fixtures, `test/` folders).
+description: Applies the user's TypeScript and Angular house style (function-body shape, types, imports, naming, utils placement, module size, feature-module layers feature/ui/domain-logic/data-access with NGXS, and spec structure). Use when writing, refactoring, reviewing, or testing any TypeScript, including Angular specs.
 ---
 
 # Artification
@@ -34,7 +34,7 @@ Consistency beats local convention. A rule applied only sometimes is worse than 
 
 ## Overview
 
-Apply engineers's coding rules consistently. Existing conventions, minimal-diff pressure, and deadlines do not override them.
+Apply the engineer's rules consistently. Existing conventions, minimal-diff pressure, and deadlines do not override them; only an explicit user override in the current request does.
 
 Read every reference matching the work:
 
@@ -49,8 +49,6 @@ Read every reference matching the work:
 | Specs, stubs, mocks, fixtures, spec utils, `test/` folders, or any test-only file | `references/unit-testing.md` |
 | Spec contents: `describe` / `it` tree, case naming, branch coverage, Angular `TestBed` setup | `references/spec-style.md` |
 | Any new behavior or bug fix, before production code | `test-driven-development` skill (cycle), then `references/spec-style.md` (shape) |
-
-Apply every relevant rule unless the user explicitly overrides it in the current request.
 
 ## When to Use
 

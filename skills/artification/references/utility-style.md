@@ -60,7 +60,7 @@ export const normalizeSearchTerms = (terms: string[]): string[] => {
 
 Import directly; no barrel. Keep private types here; place cross-file types per `typescript-style.md`.
 
-**REQUIRED SUB-SKILL:** Use skill:test-driven-development for new behavior. Pure moves require observable coverage; add tests only for uncovered contracts.
+Use skill:test-driven-development for new behavior. Pure moves require observable coverage; add tests only for uncovered contracts.
 
 ## Advanced Example
 

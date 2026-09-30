@@ -1,6 +1,6 @@
 ---
 name: nx-workspace-scafold
-description: Use when scaffolding a pnpm/Nx TypeScript monorepo or establishing its root TypeScript, ESLint, Prettier, and Vitest configuration, especially for Node ESM packages.
+description: Scaffolds a pnpm/Nx TypeScript monorepo with a verified-compatible toolchain and deliberate root config. Use when creating the workspace or its root TypeScript, ESLint, Prettier, and Vitest configuration, especially for Node ESM packages.
 ---
 
 # Nx Workspace Scaffold
@@ -13,7 +13,7 @@ Scaffold a compatible toolchain with minimal, intentional configuration.
 - Check peer ranges and installed compiler defaults. Align `nx` with direct `@nx/*` versions. Select the latest compatible releases unless the user explicitly chooses otherwise.
 - Verified: Nx 23.2.1, TypeScript 6.0.3, lint-suite 2.1.0, and Vitest 4.1.11. Treat this snapshot as evidence, not permanent version policy. TypeScript 7.0.2 lacks the legacy API required by this stack; `ts.readConfigFile is not a function` is a dependency mismatch, not a tsconfig defect.
 - If an explicit version has no supported combination, explain the conflict and obtain a decision. Do not silently downgrade, suppress peer warnings, or patch dependency internals.
-- Pin the package manager and catalogs. Preserve release-age and lifecycle gates; allow only required, inspected install scripts. Retain overrides only while their version-specific need remains.
+- Pin the package manager and catalogs. Preserve release-age and lifecycle gates; allow only required, inspected install scripts. Retain overrides only while their version-specific need remains. pnpm specifics (corepack pin, catalogs, `allowBuilds`, release-age): skill:pnpm-best-practices.
 
 ## Keep configuration deliberate
 

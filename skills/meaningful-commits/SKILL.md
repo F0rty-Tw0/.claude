@@ -1,6 +1,6 @@
 ---
 name: meaningful-commits
-description: Use whenever the user asks to commit ("commit", "commit this", "make commits"), before running git commit
+description: Splits work into one production-file-plus-test commit each, staged by path and green before commit. Use when the user asks to commit ("commit", "commit this", "make commits"), before running git commit.
 ---
 
 # Meaningful Commits
@@ -11,15 +11,7 @@ Create small, reviewable commits by pairing each production file with its test i
 
 Core principle: one behavioral unit per commit.
 
-## When to Use
-
-Use this skill when:
-
-- The user explicitly asked for commits
-- Work spans multiple file+test pairs
-- You want clean history and easy rollback
-
-Do not use this skill when the user did not request commits.
+Use only when the user asked for commits.
 
 ## Commit Unit Rule
 
@@ -38,7 +30,7 @@ No prod+test pair (docs, config, single-file fix, already-finished work)? One co
 1. Choose the next production file to complete.
 2. Add or update its corresponding test.
 3. Run focused verification for that pair.
-4. Stage only the pair files by path (`git add <prod-file> <test-file>`) — never `git add -A` or `git add .`, which sweep in unrelated work.
+4. Stage only the pair files by path (`git add <prod-file> <test-file>`) — not `git add -A` or `git add .`, which sweep in unrelated work.
 5. Commit with a clear why-focused message.
 6. Repeat for the next pair.
 
@@ -50,13 +42,5 @@ No prod+test pair (docs, config, single-file fix, already-finished work)? One co
 
 ## Common Mistakes
 
-- Bundling multiple unrelated file pairs into one commit
-- Committing production code without the related test
+- Bundling unrelated pairs, or production code without its test, into one commit
 - Committing incidental formatting or refactor noise
-- Creating commits when user did not request commits
-
-## Quick Reference
-
-- Unit scope: `one prod file + one test file`
-- Commit timing: `after verification, before next pair`
-- Message focus: `why this pair changed`

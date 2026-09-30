@@ -1,68 +1,22 @@
 ---
 name: test-driven-development
-description: Use when implementing any feature or bugfix, before writing implementation code
+description: Red-green-refactor cycle with a watched failing test, wired to artification spec conventions. Use when implementing a feature or bug fix in production code that has a test harness.
 ---
 
 # Test-Driven Development (TDD)
 
-## Overview
+Write the test first, watch it fail, write the minimal code to pass. A test you never saw fail may not test anything: a test written after the code passes immediately, and it checks what you built rather than what was required.
 
-Write the test first. Watch it fail. Write minimal code to pass.
+Applies to new features, bug fixes, refactoring, and behavior changes. Throwaway prototypes, generated code, and configuration files are exceptions — confirm with the user.
 
-**Core principle:** If you didn't watch the test fail, you don't know if it tests the right thing.
+Wrote implementation before its test? Set it aside, write the test, watch it fail for the right reason, then implement from the test. Never delete code you didn't write this session.
 
-## When to Use
+## The cycle
 
-**Always:**
+### RED — one failing test
 
-- New features
-- Bug fixes
-- Refactoring
-- Behavior changes
+One behavior, `FEATURE` / `GIVEN` / `WHEN` / `THEN` names, real code (mocks only when unavoidable).
 
-**Exceptions (ask your human partner):**
-
-- Throwaway prototypes
-- Generated code
-- Configuration files
-
-## The Iron Law
-
-```
-NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
-```
-
-If you wrote implementation before its test, set that code aside, write the test, watch it fail for the right reason, then implement from the test. Code adapted from an unverified draft is tests-after. Never delete code you didn't write this session.
-
-## Red-Green-Refactor
-
-```dot
-digraph tdd_cycle {
-    rankdir=LR;
-    red [label="RED\nWrite failing test", shape=box, style=filled, fillcolor="#ffcccc"];
-    verify_red [label="Verify fails\ncorrectly", shape=diamond];
-    green [label="GREEN\nMinimal code", shape=box, style=filled, fillcolor="#ccffcc"];
-    verify_green [label="Verify passes\nAll green", shape=diamond];
-    refactor [label="REFACTOR\nClean up", shape=box, style=filled, fillcolor="#ccccff"];
-    next [label="Next", shape=ellipse];
-
-    red -> verify_red;
-    verify_red -> green [label="yes"];
-    verify_red -> red [label="wrong\nfailure"];
-    green -> verify_green;
-    verify_green -> refactor [label="yes"];
-    verify_green -> green [label="no"];
-    refactor -> verify_green [label="stay\ngreen"];
-    verify_green -> next;
-    next -> red;
-}
-```
-
-### RED - Write Failing Test
-
-Write one minimal test showing what should happen.
-
-<Good>
 ```typescript
 describe('FEATURE: retry operation', () => {
   describe('GIVEN an operation that fails twice then succeeds', () => {
@@ -82,132 +36,34 @@ describe('FEATURE: retry operation', () => {
   });
 });
 ```
-Gherkin tree, tests real behavior, one outcome
-</Good>
 
-<Bad>
+A `jest.fn()` chain asserting `toHaveBeenCalledTimes(3)` would test the mock, not the retry.
+
+### Verify RED
+
+Run it (`pnpm test path/to/test.spec.ts`). It must **fail** (not error), with the expected message, because the feature is missing. Passes → it tests existing behavior; fix the test. Errors → fix the error and re-run.
+
+### GREEN — minimal code
+
+The simplest code that passes. No options, features, or refactors beyond the test.
+
+### Verify GREEN
+
+The test passes, other tests still pass, and output is clean (no errors or warnings). Test fails → fix the code, not the test.
+
+### REFACTOR
+
+Only when green: remove duplication, improve names, extract helpers. Stay green; add no behavior. Then the next failing test.
+
+## Bug fixes
+
+Write a failing test that reproduces the bug, then follow the cycle. The test proves the fix and guards against regression.
+
+## Angular components
+
+TestBed plus component harnesses; test rendered behavior, not component internals like `componentInstance.hasError`.
+
 ```typescript
-test('retry works', async () => {
-  const mock = jest.fn()
-    .mockRejectedValueOnce(new Error())
-    .mockRejectedValueOnce(new Error())
-    .mockResolvedValueOnce('success');
-  await retryOperation(mock);
-  expect(mock).toHaveBeenCalledTimes(3);
-});
-```
-Vague name, tests mock not code
-</Bad>
-
-**Requirements:**
-
-- One behavior
-- `FEATURE` / `GIVEN` / `WHEN` / `THEN` names (shape rules in `skills/artification/references/spec-style.md`)
-- Real code (no mocks unless unavoidable)
-
-### Verify RED - Watch It Fail
-
-**MANDATORY. Never skip.**
-
-```bash
-pnpm test path/to/test.spec.ts
-```
-
-Confirm:
-
-- Test fails (not errors)
-- Failure message is expected
-- Fails because feature missing (not typos)
-
-**Test passes?** You're testing existing behavior. Fix test.
-
-**Test errors?** Fix error, re-run until it fails correctly.
-
-### GREEN - Minimal Code
-
-Write simplest code to pass the test.
-
-<Good>
-```typescript
-async function retryOperation<T>(fn: () => Promise<T>): Promise<T> {
-  for (let i = 0; i < 3; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (i === 2) throw e;
-    }
-  }
-  throw new Error('unreachable');
-}
-```
-Just enough to pass
-</Good>
-
-<Bad>
-```typescript
-async function retryOperation<T>(
-  fn: () => Promise<T>,
-  options?: {
-    maxRetries?: number;
-    backoff?: 'linear' | 'exponential';
-    onRetry?: (attempt: number) => void;
-  }
-): Promise<T> {
-  // YAGNI
-}
-```
-Over-engineered
-</Bad>
-
-Don't add features, refactor other code, or "improve" beyond the test.
-
-### Verify GREEN - Watch It Pass
-
-**MANDATORY.**
-
-```bash
-pnpm test path/to/test.spec.ts
-```
-
-Confirm:
-
-- Test passes
-- Other tests still pass
-- Output pristine (no errors, warnings)
-
-**Test fails?** Fix code, not test.
-
-**Other tests fail?** Fix now.
-
-### REFACTOR - Clean Up
-
-After green only:
-
-- Remove duplication
-- Improve names
-- Extract helpers
-
-Keep tests green. Don't add behavior.
-
-### Repeat
-
-Next failing test for next feature.
-
-## Good Tests
-
-| Quality          | Good                                | Bad                                                 |
-| ---------------- | ----------------------------------- | --------------------------------------------------- |
-| **Minimal**      | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
-| **Clear**        | `THEN` names the outcome            | `test('test1')`                                     |
-| **Shows intent** | Demonstrates desired API            | Obscures what code should do                        |
-
-## Angular / Component Testing
-
-For Angular components, use TestBed and component harnesses. The same TDD rules apply — write the failing test first.
-
-<Good>
-```typescript
-// RED: failing test for an Angular component
 describe('FEATURE: LoginComponent', () => {
   describe('GIVEN the auth service is stubbed', () => {
     let fixture: ComponentFixture<LoginComponent>;
@@ -230,179 +86,25 @@ describe('FEATURE: LoginComponent', () => {
   });
 });
 ```
-Gherkin tree, one `overrideProvider` per line, harness, one outcome
-</Good>
 
-<Bad>
-```typescript
-it('shows error', () => {
-  const fixture = TestBed.createComponent(LoginComponent);
-  fixture.detectChanges();
-  // Testing internal state instead of rendered behavior
-  expect(fixture.componentInstance.hasError).toBe(true);
-});
-```
-Tests implementation detail, not user-visible behavior
-</Bad>
+E2E: Playwright, `pnpm exec playwright test`.
 
-For e2e tests use Playwright: `pnpm exec playwright test`.
+## When stuck
 
-## Why Order Matters
+| Problem | Try |
+|---|---|
+| Don't know how to test it | Write the wished-for API and the assertion first; ask the user |
+| Test too complicated | The design is too complicated; simplify the interface |
+| Must mock everything | Code too coupled; use dependency injection |
+| Setup is huge | Extract helpers; still complex → simplify the design |
 
-**"I'll write tests after to verify it works"**
+## Project conventions (TypeScript / Angular)
 
-Tests written after code pass immediately. Passing immediately proves nothing:
-
-- Might test wrong thing
-- Might test implementation, not behavior
-- Might miss edge cases you forgot
-- You never saw it catch the bug
-
-Test-first forces you to see the test fail, proving it actually tests something.
-
-**"I already manually tested all the edge cases"**
-
-Manual testing is ad-hoc. You think you tested everything but:
-
-- No record of what you tested
-- Can't re-run when code changes
-- Easy to forget cases under pressure
-- "It worked when I tried it" ≠ comprehensive
-
-Automated tests are systematic. They run the same way every time.
-
-**"Deleting X hours of work is wasteful"**
-
-Sunk cost fallacy. The time is already gone. Your choice now:
-
-- Delete and rewrite with TDD (X more hours, high confidence)
-- Keep it and add tests after (30 min, low confidence, likely bugs)
-
-The "waste" is keeping code you can't trust. Working code without real tests is technical debt.
-
-**"TDD is dogmatic, being pragmatic means adapting"**
-
-TDD IS pragmatic:
-
-- Finds bugs before commit (faster than debugging after)
-- Prevents regressions (tests catch breaks immediately)
-- Documents behavior (tests show how to use code)
-- Enables refactoring (change freely, tests catch breaks)
-
-"Pragmatic" shortcuts = debugging in production = slower.
-
-**"Tests after achieve the same goals - it's spirit not ritual"**
-
-No. Tests-after answer "What does this do?" Tests-first answer "What should this do?"
-
-Tests-after are biased by your implementation. You test what you built, not what's required. You verify remembered edge cases, not discovered ones.
-
-Tests-first force edge case discovery before implementing. Tests-after verify you remembered everything (you didn't).
-
-30 minutes of tests after ≠ TDD. You get coverage, lose proof tests work.
-
-## Example: Bug Fix
-
-**Bug:** Empty email accepted
-
-**RED**
-
-```typescript
-describe('FEATURE: submit form', () => {
-  describe('GIVEN an empty email', () => {
-    it('WHEN the form is submitted THEN an "Email required" error is returned', async () => {
-      const form: FormData = { ...FORM_DATA_STUB, email: '' };
-
-      const result = await submitForm(form);
-
-      expect(result.error).toBe('Email required');
-    });
-  });
-});
-```
-
-**Verify RED**
-
-```bash
-$ pnpm test
-FAIL: expected 'Email required', got undefined
-```
-
-**GREEN**
-
-```typescript
-function submitForm(data: FormData) {
-  if (!data.email?.trim()) {
-    return { error: 'Email required' };
-  }
-  // ...
-}
-```
-
-**Verify GREEN**
-
-```bash
-$ pnpm test
-PASS
-```
-
-**REFACTOR**
-Extract validation for multiple fields if needed.
-
-## Verification Checklist
-
-Before marking work complete:
-
-- [ ] Every new function/method has a test
-- [ ] Watched each test fail before implementing
-- [ ] Each test failed for expected reason (feature missing, not typo)
-- [ ] Wrote minimal code to pass each test
-- [ ] All tests pass
-- [ ] Output pristine (no errors, warnings)
-- [ ] Tests use real code (mocks only if unavoidable)
-- [ ] Edge cases and errors covered
-
-An unchecked box is unfinished work: add the missing test and watch it fail before calling the task done.
-
-## When Stuck
-
-| Problem                | Solution                                                             |
-| ---------------------- | -------------------------------------------------------------------- |
-| Don't know how to test | Write wished-for API. Write assertion first. Ask your human partner. |
-| Test too complicated   | Design too complicated. Simplify interface.                          |
-| Must mock everything   | Code too coupled. Use dependency injection.                          |
-| Test setup huge        | Extract helpers. Still complex? Simplify design.                     |
-
-## Debugging Integration
-
-Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
-
-Never fix bugs without a test.
-
-## Project Conventions (TypeScript / Angular)
-
-This file owns the cycle. Shape and placement of the spec are owned by the `artification` skill:
+This file owns the cycle. The `artification` skill owns spec shape and placement; examples here show the cycle only.
 
 | Concern | Reference |
 |---|---|
 | Where the spec, stubs, mocks, fixtures, spec utils live | `skills/artification/references/unit-testing.md` |
 | `describe` / `it` tree (`FEATURE` / `GIVEN` / `WHEN` / `THEN`), branch coverage, `TestBed` overrides | `skills/artification/references/spec-style.md` |
 
-Examples in this file show the cycle only. Test names and nesting follow `spec-style.md`, not the examples here.
-
-## Testing Anti-Patterns
-
-When adding mocks or test utilities, read testing-anti-patterns.md to avoid common pitfalls:
-
-- Testing mock behavior instead of real behavior
-- Adding test-only methods to production classes
-- Mocking without understanding dependencies
-
-## Final Rule
-
-```
-Production code → test exists and failed first
-Otherwise → not TDD
-```
-
-No exceptions without your human partner's permission.
+Adding mocks or test utilities? Read `testing-anti-patterns.md` first: testing mock behavior, test-only methods on production classes, and mocking without understanding the dependency.

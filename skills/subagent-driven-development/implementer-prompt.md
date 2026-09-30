@@ -3,7 +3,7 @@
 Use this template when dispatching an implementer subagent.
 
 ```
-Task tool (general-purpose):
+Agent tool (subagent_type: "executor"):
   description: "Implement Task N: [task name]"
   prompt: |
     You are implementing Task N: [task name]
@@ -32,7 +32,7 @@ Task tool (general-purpose):
     1. Implement exactly what the task specifies
     2. Write tests (following TDD if task says to)
     3. Verify implementation works (e.g. pnpm test)
-    4. Commit your work
+    4. Stage the task's files by name. Commit only if the user authorized commits: [yes/no]
     5. Report back
 
     Work from: [directory]
@@ -58,7 +58,7 @@ Task tool (general-purpose):
     It is always OK to stop and say "this is too hard for me." Bad work is worse than
     no work. You will not be penalized for escalating.
 
-    **STOP and escalate when:**
+    **Escalate when:**
     - The task requires architectural decisions with multiple valid approaches
     - You need to understand code beyond what was provided and can't find clarity
     - The task involves restructuring existing code in ways the plan didn't anticipate

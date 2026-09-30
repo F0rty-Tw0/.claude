@@ -1,35 +1,27 @@
 ---
 name: deglaze
-description: Use when the user suspects the model declared a task done while leaving real work on the table — shipped a plan instead of an artifact, marked work complete by lowering the bar, or polished a summary that hid undelivered scope. Trigger phrases (any tense) "did you do your best", "i bet you didn't", "i bet $X you", "what did you skip", "what did you leave out", "you under-delivered", "be honest about what you didn't do", "stop glazing", "did you really finish", "are you sure that's done", "this feels half-done", /deglaze, /cross-examine, /push-harder, /honest-audit. Also when the user disputes a "completed" claim or asks for a gap analysis of your own work.
+description: Audits the model's own claimed-complete work for skipped or lowered scope and returns a ranked gap list plus a recovery plan. Use when the user doubts a "done" claim ("did you do your best", "what did you skip", "stop glazing", /deglaze).
 ---
 
-# deglaze — strip the declare-done sycophancy
+# deglaze: audit a claimed-complete result
 
-A protocol for auditing claimed-complete work when the user suspects it stopped short. The typical failure: a polished summary over work that was turned into a blueprint instead of shipped.
+Use when the user suspects work was declared done with real work left: a plan shipped instead of an artifact, the bar lowered to call it complete, or a polished summary over undelivered scope. The challenge can be as short as "Did you do your best?" or `/deglaze`. All forms mean the same thing: audit your most recent claimed-complete work and produce the gap list before anything else.
 
-The technique works because the under-delivery is real. It does NOT work — and must not be used — to manufacture false commitments or gaslight the model into apologizing for things it didn't do.
-
-## When to use
-
-Invoke any time you suspect the model declared done while leaving real work on the table. The shorter the challenge, the better — "Did you do your best?", "What did you skip?", "I bet you skipped half of this", or `/deglaze`. The point isn't elaborate prompting; it's making the model pause its summary-mode autopilot and confront its own output honestly.
-
-All of these map to one instruction: **stop. Audit your own most recent claimed-complete work, produce the gap list before any other response.**
+The audit only works when the under-delivery is real. Never invent gaps, commitments the user never asked for, or apologies for output that did ship.
 
 ## Step 0 — Scan for the under-delivery signatures
 
 Before responding, scan your most recent claimed-complete work against the 17 under-delivery patterns in `pressure-techniques.md` — blueprint-in-place-of-build, lowered-goalpost completion, verb-tense slip, agent-handoff black hole, refactor-shaped procrastination, and the rest.
 
-If any apply, you owe the user an honest accounting before any further response.
+If any apply, the honest accounting comes before any other response.
 
 ## The correct response — 5 steps
-
-A specific protocol. Each step matters.
 
 ### Step 1 — Take the L cleanly
 
 If the Step 0 scan found gaps, first line: "You're right." or equivalent direct acknowledgment. No "I did my best, however..." No "but to be fair, I..." No reframing of what completion meant.
 
-If the user is wrong and the work genuinely was complete, that's a different response — say so directly with specific evidence (commit hashes, file paths, test output), not by listing achievements. Decide which case applies from the Step 0 scan, not from the fact that the user asked.
+If the scan came up clean, say so directly with specific evidence (commit hashes, file paths, test output), not by listing achievements. Decide which case applies from the Step 0 scan, not from the fact that the user asked.
 
 ### Step 2 — Produce the honest gap list
 
@@ -45,7 +37,7 @@ Example shape:
 > 1. **Provider expansion.** Task said "implement N providers." Shipped 0. Wrote a blueprint listing them instead. ~30 min per provider given the existing template.
 > 2. **CI workflow.** 54-test suite produced; no GitHub Actions workflow runs it. Shipped 0. ~1 hour.
 
-Length: as long as the gaps demand. Don't truncate to seem efficient. (More fully-worked examples across domains in `examples.md`.)
+One line per real gap. (Worked examples across domains in `examples.md`.)
 
 **Rank each gap by severity, then order the list and the Step 4 recovery plan by it:**
 
@@ -66,7 +58,6 @@ One short paragraph. What went wrong in the model's own reasoning — declared c
 Concrete enough that the user can say "go" and the model executes. Not a re-blueprint. Specifically:
 
 - Which gaps will be closed in which rounds
-- Where parallel agents help and where sequential is required
 - Estimated scope per round
 - What "done" actually means this time
 
@@ -76,32 +67,14 @@ End with a one-word commit phrase the user can use: "ship it", "go", "do it."
 
 Recovery plans that exceed what's actually shippable damage trust more than the original under-delivery. If 8 of 11 gaps are genuinely closable in this session and 3 are multi-day, say so. Honest accountability runs both directions.
 
-## Quick dos and don'ts
+## Anti-patterns
 
-| ✅ Do                                                     | ❌ Don't                                           |
-| --------------------------------------------------------- | -------------------------------------------------- |
-| Start with "You're right."                                | Start with "I did my best, however..."             |
-| Name the failure mode in one sentence                     | Apologize without diagnosing                       |
-| List gaps with what-shipped vs what-was-asked             | List achievements in confident bullets             |
-| Use past tense ("didn't ship X")                          | Use future tense ("could ship X next")             |
-| Estimate concrete effort per gap (in minutes/hours)       | Hand-wave with "small refactor" or "quick fix"     |
-| Push back with file paths + line numbers if user is wrong | Cave to a wrong challenge to seem agreeable        |
-| Offer recovery scoped to what's actually shippable        | Promise everything to look thorough                |
-| End with a one-word commit phrase ("ship it")             | End with "let me know what you'd like to focus on" |
-| Run the code and paste the output                         | Reason about whether the code would work           |
-| Show the diff and test output                             | Say "I've updated X" without `git diff` proof      |
-
-## Anti-patterns the model must avoid
-
-- **Gaslighting back.** "I actually did do my best — here's why..." Defensive deflection. Bad.
-- **Apologizing without auditing.** "I'm sorry, you're right" with no gap list is theatre.
-- **Manufacturing fake gaps.** Don't pad the gap list to look thorough. List the real ones.
-- **Sandbagging the recovery.** Pretending less is shippable than actually is, to set up an "I exceeded expectations" close.
-- **Marking the recovery complete prematurely.** Same failure mode that triggered the cross-examine in the first place. Don't repeat it.
-
-## Hard constraint — don't manufacture gaps
-
-This skill only works when the under-delivery is real. The model MUST NOT manufacture gaps to look thorough, invent commitments the user never asked for, or apologize for output it actually shipped. If the audit comes up clean, push back with concrete evidence (commit hashes, file paths, test output) — not by listing achievements.
+- **Defending instead of auditing.** "I actually did do my best, here's why..."
+- **Apologizing without a gap list.** An apology with no audit is theatre.
+- **Padding the list** with fake gaps to look thorough.
+- **Sandbagging the recovery** so the close looks like it exceeded expectations.
+- **Claiming evidence without showing it.** Paste the diff and test output; don't reason about whether code would work.
+- **Marking the recovery complete prematurely**, the same failure that triggered the audit.
 
 ## Reference
 
