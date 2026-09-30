@@ -83,7 +83,7 @@ The maintainer may:
 
 ## When to write to `.out-of-scope/`
 
-Only when an **enhancement** (not a bug) is rejected as `wontfix`. The flow:
+Only when an **enhancement** (not a bug) is rejected as `wontfix`. A request closed because the feature already exists doesn't belong here; it would cause false matches on later checks. The flow:
 
 1. Maintainer decides a feature request is out of scope
 2. Check if a matching `.out-of-scope/` file already exists
