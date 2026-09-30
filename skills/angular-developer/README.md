@@ -10,13 +10,16 @@ Routes to a focused reference doc per topic instead of guessing from training da
 | --- | --- |
 | Components | Anatomy, template control flow, inputs/outputs, host bindings |
 | Reactivity | `signal`, `computed`, `linkedSignal`, `resource`, `effect` |
+| HTTP | `provideHttpClient`, `HttpClient`, interceptors, `httpResource` |
 | Forms | Signal forms (preferred for v21+), reactive forms, template-driven forms |
 | DI | `inject()`, providers, injection context, hierarchical injectors |
+| Pipes | Built-in and custom pipes, pure vs impure, reuse in TypeScript |
 | Angular Aria | Accessible headless components — accordion, listbox, combobox, menu, tabs, tree, grid |
 | Routing | Route definitions, loading strategies, guards, resolvers, rendering strategies |
 | Styling | Tailwind CSS integration, component style encapsulation, animations |
-| Testing | Unit tests (Vitest), component harnesses, router testing, E2E (Cypress) |
-| Tooling | CLI scaffolding, code modernization migrations, Angular MCP server |
+| Testing | Unit tests (Vitest), component harnesses, router testing, E2E (Playwright, via playwright-best-practices) |
+| Naming | v20+ "intent over role" file and class naming |
+| Tooling | CLI scaffolding, code modernization migrations, Angular MCP server, environment configuration |
 
 For new projects, defaults to the latest stable Angular and signal forms (v21+) unless the user specifies otherwise.
 
