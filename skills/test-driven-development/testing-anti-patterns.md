@@ -14,6 +14,28 @@ Tests must verify real behavior, not mock behavior. Mocks are a means to isolate
 2. Keep test-only methods out of production classes.
 3. Understand a dependency before mocking it.
 
+## Before writing the test body
+
+Name the production change that would make this test fail, and check it's a bug, not a decision.
+
+- Can't name one → test an observable behavior instead.
+- Only intentional decisions can fail it (a constant, message wording) → test the behavior that depends on the decision: not `expect(MAX_RETRIES).toBe(5)`, but a failing call is retried 5 times and never a 6th.
+
+Derive expected values by hand as literals. A value built with the code under test or its helpers passes whatever the code does:
+
+```typescript
+// ❌ BAD: the same builder computes both sides
+const expected = buildSearchQuery({ tag: 'urgent' });
+expect(buildSearchQuery({ tag: 'urgent' })).toBe(expected);
+
+// ✅ GOOD: hand-derived literal
+expect(buildSearchQuery({ tag: 'urgent' })).toBe('tag:"urgent"');
+```
+
+Test scripts and configs by running them and asserting outputs, never by matching their text. Test the contract at your boundary (the route you register, the query you emit, the payload you produce), not the framework's mechanics.
+
+Before finishing, mentally mutate the code: wrong constant, wrong branch, missing side effect, empty return, missing validation. Each realistic mutation should fail at least one test; one that fails none marks an unprotected behavior or a tautological test.
+
 ## Anti-Pattern 1: Testing Mock Behavior
 
 **The violation:**

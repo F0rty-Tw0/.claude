@@ -51,6 +51,8 @@ The simplest code that passes. No options, features, or refactors beyond the tes
 
 The test passes, other tests still pass, and output is clean (no errors or warnings). Test fails → fix the code, not the test.
 
+Before calling the change done, run the project's full test command (e.g. `pnpm test`), even when the task named one spec file. A task's scope limits what you build, not what you verify. Report every failure that run shows by name, including ones you didn't cause.
+
 ### REFACTOR
 
 Only when green: remove duplication, improve names, extract helpers. Stay green; add no behavior. Then the next failing test.
@@ -97,6 +99,9 @@ E2E: Playwright, `pnpm exec playwright test`.
 | Test too complicated | The design is too complicated; simplify the interface |
 | Must mock everything | Code too coupled; use dependency injection |
 | Setup is huge | Extract helpers; still complex → simplify the design |
+| "Test after" | A test written after passes immediately and checks what you built, not what was required |
+| "Already tested manually" | No record and no re-run |
+| "Deleting it wastes the hours" | Sunk cost; set it aside and rebuild from the test |
 
 ## Project conventions (TypeScript / Angular)
 
@@ -107,4 +112,4 @@ This file owns the cycle. The `artification` skill owns spec shape and placement
 | Where the spec, stubs, mocks, fixtures, spec utils live | `skills/artification/references/unit-testing.md` |
 | `describe` / `it` tree (`FEATURE` / `GIVEN` / `WHEN` / `THEN`), branch coverage, `TestBed` overrides | `skills/artification/references/spec-style.md` |
 
-Adding mocks or test utilities? Read `testing-anti-patterns.md` first: testing mock behavior, test-only methods on production classes, and mocking without understanding the dependency.
+Writing a test body, or adding mocks or test utilities? Read `testing-anti-patterns.md` first: naming the change that should fail the test, testing mock behavior, test-only methods on production classes, and mocking without understanding the dependency.
