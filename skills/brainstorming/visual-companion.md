@@ -4,7 +4,7 @@ Browser-based visual brainstorming companion for showing mockups, diagrams, and 
 
 ## Offering it
 
-When upcoming questions will involve visual content, offer it once, in a message of its own so the user can answer it on its own terms, then wait:
+The first time a question would be clearer shown than told, offer it once, in a message of its own so the user can answer it on its own terms, then wait:
 
 > "Some of what we're working on might be easier to explain if I can show it to you in a web browser. I can put together mockups, diagrams, comparisons, and other visuals as we go. This feature is still new and can be token-intensive. Want to try it? (Requires opening a local URL)"
 
@@ -36,24 +36,30 @@ A question *about* a UI topic is not automatically a visual question. "What kind
 
 The server watches a directory for HTML files and serves the newest one to the browser. You write HTML content to `screen_dir`, the user sees it in their browser and can click to select options. Selections are recorded to `state_dir/events` that you read on your next turn.
 
-**Content fragments vs full documents:** If your HTML file starts with `<!DOCTYPE` or `<html`, the server serves it as-is (just injects the helper script). Otherwise, the server automatically wraps your content in the frame template — adding the header, CSS theme, selection indicator, and all interactive infrastructure. **Write content fragments by default.** Only write full documents when you need complete control over the page.
+**Content fragments vs full documents:** If your HTML file starts with `<!DOCTYPE` or `<html`, the server serves it as-is (just injects the helper script). Otherwise, the server automatically wraps your content in the frame template — adding the header, CSS theme, connection status, and all interactive infrastructure. **Write content fragments by default.** Only write full documents when you need complete control over the page.
 
 ## Starting a Session
 
 ```bash
-# Start server with persistence (mockups saved to project)
-scripts/start-server.sh --project-dir /path/to/project
+# Start server with persistence (mockups saved to project).
+# --open opens the user's browser on the first screen; pass it only after they accept the companion.
+scripts/start-server.sh --project-dir /path/to/project --open
 
-# Returns: {"type":"server-started","port":52341,"url":"http://localhost:52341",
+# Returns: {"type":"server-started","port":52341,
+#           "url":"http://localhost:52341/?key=ab12…",
 #           "screen_dir":"/path/to/project/.worktrees/brainstorm/12345-1706000000/content",
 #           "state_dir":"/path/to/project/.worktrees/brainstorm/12345-1706000000/state"}
 ```
 
-Save `screen_dir` and `state_dir` from the response. Tell user to open the URL.
+Save `screen_dir` and `state_dir` from the response. Tell user to open the URL. With `--open` the browser opens itself when you push the first screen; still share the URL, since headless and remote setups don't auto-open.
+
+**The URL carries a session key (`?key=…`).** Always give the user the complete `url` field. The server rejects requests without the key, so a bare `http://host:port` gets a "Session key required" page. The key gates both HTTP and the WebSocket. After the first load a cookie remembers it, so reloads and `/files/*` assets work without it.
+
+Other startup flags: `--idle-timeout-minutes <n>` sets the idle shutdown (default 240), `--foreground` / `--background` override the auto-detected mode.
 
 **Finding connection info:** The server writes its startup JSON to `$STATE_DIR/server-info`. If you launched the server in the background and didn't capture stdout, read that file to get the URL and port. When using `--project-dir`, check `<project>/.worktrees/brainstorm/` for the session directory.
 
-**Note:** Pass the project root as `--project-dir` so mockups persist in `.worktrees/brainstorm/` and survive server restarts. Without it, files go to `/tmp` and get cleaned up. Remind the user to add `.worktrees/` to `.gitignore` if it's not already there.
+**Note:** Pass the project root as `--project-dir` so mockups persist in `.worktrees/brainstorm/` and survive server restarts. It also stores the bound port and key in `.worktrees/brainstorm/.last-port` and `.last-token`, so a restart reuses the same URL. Without it, files go to `/tmp` and get cleaned up. Remind the user to add `.worktrees/` to `.gitignore` if it's not already there.
 
 **Launching the server by platform:**
 
@@ -102,7 +108,7 @@ Use `--url-host` to control what hostname is printed in the returned URL JSON.
 ## The Loop
 
 1. **Check server is alive**, then **write HTML** to a new file in `screen_dir`:
-   - Before each write, check that `$STATE_DIR/server-info` exists. If it doesn't (or `$STATE_DIR/server-stopped` exists), the server has shut down — restart it with `start-server.sh` before continuing. The server auto-exits after 30 minutes of inactivity.
+   - Before each write, check that `$STATE_DIR/server-info` exists. If it doesn't (or `$STATE_DIR/server-stopped` exists), the server has shut down — restart it with `start-server.sh` and the same `--project-dir` before continuing. It reuses the port and key, so the user's open tab reconnects on its own (it shows a "paused" overlay while the server is down) and you don't need to send a new URL. The server auto-exits after 4 hours idle (see `--idle-timeout-minutes`).
    - Use semantic filenames: `platform.html`, `visual-style.html`, `layout.html`
    - **Never reuse filenames** — each screen gets a fresh file
    - Use Write tool — **never use cat/heredoc** (dumps noise into terminal)
@@ -135,7 +141,7 @@ Use `--url-host` to control what hostname is printed in the returned URL JSON.
 
 ## Writing Content Fragments
 
-Write just the content that goes inside the page. The server wraps it in the frame template automatically (header, theme CSS, selection indicator, and all interactive infrastructure).
+Write just the content that goes inside the page. The server wraps it in the frame template automatically (header, theme CSS, connection status, and all interactive infrastructure).
 
 **Minimal example:**
 
@@ -181,7 +187,7 @@ The frame template provides these CSS classes for your content:
 </div>
 ```
 
-**Multi-select:** Add `data-multiselect` to the container to let users select multiple options. Each click toggles the item. The indicator bar shows the count.
+**Multi-select:** Add `data-multiselect` to the container to let users select multiple options. Each click toggles the item's selected styling.
 
 ```html
 <div class="options" data-multiselect>
@@ -288,6 +294,8 @@ scripts/stop-server.sh $SESSION_DIR
 ```
 
 If the session used `--project-dir`, mockup files persist in `.worktrees/brainstorm/` for later reference. Only `/tmp` sessions get deleted on stop.
+
+The script signals only a process it can match to this session's instance id. If the recorded PID belongs to something else, it returns `{"status": "stale_pid"}`, clears the PID file, and kills nothing.
 
 ## Reference
 
