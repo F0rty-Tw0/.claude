@@ -1,40 +1,14 @@
 # Subagent-Driven Development
 
-Execute implementation plans by dispatching a fresh subagent per task with two-stage review after each: spec compliance first, then code quality.
-
-## What It Does
-
-Orchestrates plan execution with quality gates:
-
-1. **Read plan** and extract all tasks with full text and context
-2. **Per task:**
-   - Dispatch implementer subagent (answers questions, implements, tests, commits)
-   - Dispatch spec reviewer (does code match the plan?)
-   - If issues found: implementer fixes, reviewer re-reviews
-   - Dispatch code quality reviewer (is it well-built?)
-   - If issues found: implementer fixes, reviewer re-reviews
-   - Mark task complete
-3. **After all tasks:** Final code review, then finishing-a-development-branch
-
-Fresh subagent per task prevents context pollution. Review loops ensure fixes actually work.
-
----
+Executes an implementation plan in the current session: a fresh implementer subagent per task, the orchestrator checks each task's diff against its spec, and one final `code-review` covers the whole change.
 
 ## When to Use
 
-Triggers when you:
-
-- Have an implementation plan with independent tasks
-- Want to execute in the current session (vs plans-executing for parallel sessions)
-- Need two-stage review (spec compliance + code quality) after each task
-
----
+- You have a written plan (see `plan`, `references/task-format.md`) and want supervised execution in this session.
+- Small or tightly coupled plans run inline (no implementer subagents), same checks.
 
 ## Key Rules
 
-- Never skip either review stage
-- Never start code quality before spec compliance passes
-- Never dispatch parallel implementation subagents (conflicts)
-- If reviewer finds issues, implementer fixes and reviewer re-reviews until approved
-
----
+- Implementers run one at a time; truly independent tasks go to `dispatching-parallel-agents` with worktree isolation.
+- No check-ins between tasks; stop only when blocked or done.
+- Implementers commit only if the user authorized commits.

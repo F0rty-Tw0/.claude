@@ -1,6 +1,14 @@
 # Visual Companion Guide
 
-Browser-based visual brainstorming companion for showing mockups, diagrams, and options.
+Browser-based visual brainstorming companion for showing mockups, diagrams, and options. It is a tool, not a mode: accepting it does not route every question through the browser.
+
+## Offering it
+
+When upcoming questions will involve visual content, offer it once, in a message of its own so the user can answer it on its own terms, then wait:
+
+> "Some of what we're working on might be easier to explain if I can show it to you in a web browser. I can put together mockups, diagrams, comparisons, and other visuals as we go. This feature is still new and can be token-intensive. Want to try it? (Requires opening a local URL)"
+
+If they decline, continue text-only.
 
 ## When to Use
 

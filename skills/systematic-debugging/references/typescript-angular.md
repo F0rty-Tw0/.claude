@@ -85,7 +85,7 @@ function processResult(result: Result<Payment>) {
 const config = JSON.parse(raw) as AppConfig;
 config.apiUrl.trim(); // Crashes if apiUrl is missing
 
-// ✅ Validate the shape at the boundary (Layer 1 defense-in-depth)
+// ✅ Validate the shape at the entry boundary (see defense-in-depth.md)
 function parseConfig(raw: string): AppConfig {
   const parsed = JSON.parse(raw);
   if (typeof parsed.apiUrl !== 'string') {

@@ -8,7 +8,7 @@ Identifies independent problem domains and dispatches focused agents in parallel
 
 1. **Identify** independent domains (group failures by what's broken)
 2. **Create** focused agent tasks with specific scope, goals, and constraints
-3. **Dispatch** all agents in parallel
+3. **Dispatch** in parallel, at most 3 agents per wave; worktree isolation when agents share files
 4. **Review and integrate** results - check for conflicts, run full suite
 
 Agent prompts should be: focused (one domain), self-contained (all context included), and specific about expected output.

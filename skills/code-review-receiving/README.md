@@ -15,7 +15,7 @@ Follows a structured response pattern for review feedback:
 | **Respond**  | Technical acknowledgment or reasoned pushback       |
 | **Implement**| One item at a time, test each                       |
 
-Handles source-specific review (human partner vs external reviewers), YAGNI checks, and implementation ordering (blocking > simple > complex).
+Handles source-specific review (the user vs external reviewers), YAGNI checks, and implementation ordering (blocking > simple > complex).
 
 ---
 

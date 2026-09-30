@@ -14,7 +14,7 @@ Follows a structured completion process:
    - Keep the branch as-is
    - Discard this work
 4. **Execute the chosen option** with appropriate steps
-5. **Cleanup worktree** (only for merge and discard options)
+5. **Cleanup worktree** (only for merge and discard, and only worktrees this workflow created — `ExitWorktree` for `EnterWorktree` ones)
 
 | Option       | Merge | Push | Keep Worktree | Cleanup Branch |
 | ------------ | ----- | ---- | ------------- | -------------- |
@@ -31,6 +31,6 @@ Triggers when you:
 
 - Complete implementation with all tests passing
 - Need to decide how to integrate finished work
-- Are called by subagent-driven-development or plans-executing after all tasks complete
+- Are called by subagent-driven-development, ralph, or flow after all tasks complete
 
 ---

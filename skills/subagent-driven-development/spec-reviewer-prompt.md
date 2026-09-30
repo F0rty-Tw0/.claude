@@ -5,7 +5,7 @@ Use this template when dispatching a spec compliance reviewer subagent.
 **Purpose:** Verify implementer built what was requested (nothing more, nothing less)
 
 ```
-Task tool (general-purpose):
+Agent tool (subagent_type: "code-reviewer"):
   description: "Review spec compliance for Task N"
   prompt: |
     You are reviewing whether an implementation matches its specification.
@@ -23,16 +23,7 @@ Task tool (general-purpose):
     The implementer's report is a summary, not evidence: it may be incomplete or
     optimistic. Check each claim against the code itself.
 
-    **DO NOT:**
-    - Take their word for what they implemented
-    - Trust their claims about completeness
-    - Accept their interpretation of requirements
-
-    **DO:**
-    - Read the actual code they wrote
-    - Compare actual implementation to requirements line by line
-    - Check for missing pieces they claimed to implement
-    - Look for extra features they didn't mention
+    Read the code they wrote and compare it to the requirements line by line.
 
     ## Your Job
 
@@ -52,8 +43,6 @@ Task tool (general-purpose):
     - Did they interpret requirements differently than intended?
     - Did they solve the wrong problem?
     - Did they implement the right feature but wrong way?
-
-    **Verify by reading code, not by trusting report.**
 
     Report:
     - ✅ Spec compliant (if everything matches after code inspection)

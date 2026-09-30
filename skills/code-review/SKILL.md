@@ -1,20 +1,18 @@
 ---
 name: code-review
-description: Use when the user asks to review code, a diff, a branch, or a pull request — especially AI-generated or agent-authored changes — before merging, when a PR claims "fixed", "verified", or "all tests pass" without evidence, when tests look suspiciously green, when asked to babysit a PR's CI, or when planning a feature-gated launch, canary rollout, or pre-launch attack on staging.
+description: Risk-gradient code review that classifies blast radius, re-runs proof, audits vanity tests, and dispatches an independent reviewer. Use to review a diff, branch, or PR (especially agent-authored), build a PR proof bundle, babysit PR CI, or plan a gated launch.
 argument-hint: "[review|proof|babysit|attack|launch] [PR#... | base..head | path]"
 ---
 
 # Code Review — Risk-Gradient, Proof-Based, Adversarial
 
-AI tools write more code than a human can read line by line. So review effort follows **blast radius**, not line count. Claims get replaced by **proof**. And the reviewer is never the author.
-
-**Core rule:** classify the change first, demand artifacts over promises, and send an independent zero-trust reviewer. Never grade style — linters own it.
+Review effort follows **blast radius**, not line count; claims are replaced by **proof**; the reviewer is never the author. Classify the change first, demand artifacts over promises, send an independent zero-trust reviewer. Style belongs to linters.
 
 ## Modes
 
 | Arg | When | Reference |
 |---|---|---|
-| `review` (default) | Review a diff / branch / PR | this file + all `references/*` |
+| `review` (default) | Review a diff / branch / PR | this file + `references/blast-radius.md`; other references when a step cites them |
 | `proof` | You wrote the change; build the PR proof bundle | `references/proof.md`, `templates/pr-proof.md` |
 | `babysit <PR#>` | Watch CI + comments on a loop, fix mechanical failures locally | `references/babysit.md` |
 | `attack` | Before opening a feature gate: break the product in staging | `references/attack.md` |
@@ -30,13 +28,15 @@ AI tools write more code than a human can read line by line. So review effort fo
 
    No diff found → say so and stop. Never review from memory.
 
+   **Mid-plan checkpoint** (e.g. after a `subagent-driven-development` task): diff = `git diff <task-base-sha>..HEAD`, plan = the task text. Run one for non-trivial task diffs; the orchestrator checks small mechanical tasks itself.
+
    **Stacked PR** (base is not the default branch: `gh pr view <n> --json baseRefName`) → diff against the **parent** (`<parent>...<head>`), and pass the `## Stack` map to the reviewer.
 
-2. **Independence.** Dispatch the reviewer with `references/reviewer-prompt.md`. Always dispatch, even for small diffs: if this session wrote any of the code, it is biased and must not review it.
+2. **Independence.** Dispatch the reviewer with `references/reviewer-prompt.md`. Always dispatch, even for small diffs: a session that wrote any of the code is biased.
 
    Pass only artifacts: diff, PR text, plan. Never pass your session's rationale, opinions, or a hint list.
 
-3. **Trunk escalation.** Check the trunk signals from `references/blast-radius.md` (greps and fan-in, not file names alone). If any shows (`references/blast-radius.md`), dispatch the `security-reviewer` and/or `performance-reviewer` in the **same message**, ≤3 agents total.
+3. **Trunk escalation.** Check the trunk signals from `references/blast-radius.md` (greps and fan-in, not file names alone). If any shows, dispatch the `security-reviewer` and/or `performance-reviewer` in the **same message**, ≤3 agents total.
 
    If the reviewer later classifies the change as trunk and no specialist was sent, send one then.
 

@@ -1,12 +1,10 @@
 # Systematic Debugging
 
-Enforces root cause investigation before attempting any fixes. Random fixes waste time and create new bugs.
-
-The Iron Law: NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.
+Root cause investigation before fixes: a patch on the symptom tends to move the bug rather than remove it.
 
 ## What It Does
 
-Guides debugging through four mandatory phases:
+Guides debugging through four phases:
 
 | Phase                  | Key Activities                                      | Success Criteria            |
 | ---------------------- | --------------------------------------------------- | --------------------------- |
@@ -23,20 +21,13 @@ If 3+ fixes fail, stops to question the architecture rather than continuing to f
 
 Triggers when you:
 
-- Encounter any bug, test failure, or unexpected behavior
-- Are under time pressure (emergencies make guessing tempting)
+- Hit a non-obvious bug, test failure, or regression
 - Have already tried multiple fixes that didn't work
-- See "just one quick fix" that seems obvious
 
 ---
 
-## Real-World Impact
+## Supporting files
 
-- Systematic approach: 15-30 minutes to fix
-- Random fixes approach: 2-3 hours of thrashing
-- First-time fix rate: 95% vs 40%
-- New bugs introduced: Near zero vs common
-
-Includes supporting techniques: root-cause-tracing, defense-in-depth, and condition-based-waiting.
+Includes supporting techniques: root-cause-tracing, defense-in-depth, and condition-based-waiting. Skill-authoring pressure scenarios live in `evals/`.
 
 ---
