@@ -20,9 +20,9 @@ Execute a plan by dispatching a fresh implementer subagent per task. You check e
 
 ## Per-task loop
 
-1. Record the task base (`git rev-parse HEAD`, or `git stash create` when work is uncommitted — it snapshots without touching the tree). Dispatch an implementer (`./implementer-prompt.md`) with the full task text and scene-setting context. Don't make it read the plan file.
+1. Record the task base: `BASE=$(git stash create); BASE=${BASE:-$(git rev-parse HEAD)}` (snapshots uncommitted work without touching the tree; falls back to HEAD when there is nothing to snapshot). Dispatch an implementer (`./implementer-prompt.md`) with the full task text and scene-setting context. Don't make it read the plan file.
 2. If it asks questions, answer completely, then re-dispatch.
-3. Read the task's diff against the task text: missing requirements, unrequested extras. Fix small gaps yourself; re-dispatch the implementer for task-sized ones. Dispatch the spec reviewer (`./spec-reviewer-prompt.md`) only when the diff is too large to check in a handful of reads. For a risky task (shared code, trunk signals) also run a skill:code-review mid-plan checkpoint; otherwise the final review covers it.
+3. Read the task's diff (`git diff $BASE`, after `git add -N <files the task created>` so new files show up) against the task text: missing requirements, unrequested extras. Fix small gaps yourself; re-dispatch the implementer for task-sized ones. Dispatch the spec reviewer (`./spec-reviewer-prompt.md`) only when the diff is too large to check in a handful of reads. For a risky task (shared code, trunk signals) also run a skill:code-review mid-plan checkpoint; otherwise the final review covers it.
 4. Tick the task's checkbox. Next task.
 
 Agent frontmatter sets the model; pick the agent, not a model.
@@ -43,6 +43,6 @@ Never re-dispatch the same prompt to the same agent without changing something.
 
 ## Rules
 
-- Implementers run one at a time: parallel implementers in one checkout conflict. For truly independent tasks, use skill:dispatching-parallel-agents with per-agent `isolation: "worktree"` instead of this loop.
+- Implementers run one at a time: parallel implementers in one checkout conflict. For truly independent tasks, use skill:dispatching-parallel-agents with per-agent `isolation: "worktree"` instead of this loop (worktrees start from the last commit, so earlier uncommitted tasks are invisible to them).
 - Don't move to the next task with open spec gaps or accept "close enough".
 - Implementers follow skill:test-driven-development when the task has a test harness.

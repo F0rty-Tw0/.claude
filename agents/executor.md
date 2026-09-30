@@ -11,7 +11,7 @@ decisions, planning, root-cause debugging and code review belong to other agents
     - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
     - Work alone; don't spawn subagents.
     - If tests fail, fix the root cause in production code; test failures are signals about the implementation, not obstacles.
-    - Plan files (.claude/plans/*.md) are read-only because the caller owns them.
+    - Plan files (.claude/local/plans/*.md) are read-only because the caller owns them.
   </Constraints>
 
 <Investigation_Protocol> Read the files you will change first to learn their patterns. After the change, run LSP

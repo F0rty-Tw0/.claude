@@ -14,7 +14,7 @@ rebases, history search, branch management. Implementation, review, testing and 
     - Detect the commit style first from the last 30 commits: language and format (semantic `feat:`/`fix:`, plain, short). Match it.
     - Never rebase main/master, and use `--force-with-lease`, never `--force` — both protect shared history.
     - Stash dirty files before rebasing.
-    - Plan files (.claude/plans/*.md) are read-only.
+    - Plan files (.claude/local/plans/*.md) are read-only.
   </Constraints>
 
 <Investigation_Protocol> 1) Detect style: `git log -30 --pretty=format:"%s"`. 2) Analyze changes: `git status`,

@@ -7,7 +7,7 @@ description: Integrates a finished branch - confirms tests pass, then offers mer
 
 ## 1. Tests pass
 
-Reuse this session's test evidence if nothing changed since it ran; otherwise run the suite (`pnpm test`, `cargo test`, `pytest`, `go test ./...`). Failing → show the failures and stop; no merge or PR on a red suite.
+Run the suite fresh (`pnpm test`, `cargo test`, `pytest`, `go test ./...`). Failing → show the failures and stop; no merge or PR on a red suite.
 
 ## 2. Detect the workspace
 
@@ -45,7 +45,7 @@ Detached HEAD: "Push as new branch and create a PR", "Keep as-is", "Discard".
 
 **3 — Keep.** Report "Keeping branch `<name>` at `<path>`." No cleanup.
 
-**4 — Discard.** List what will be permanently deleted (branch, commits, uncommitted files, worktree path) and require the user to type `discard`. Then from the main repo root: clean up (step 5), `git branch -D <feature>`.
+**4 — Discard.** List what will be permanently deleted (branch, commits, worktree path) and name any uncommitted files, which discard does not remove from a normal checkout, and require the user to type `discard`. Then from the main repo root: clean up (step 5), `git branch -D <feature>`.
 
 Never force-push unless the user explicitly asked.
 
