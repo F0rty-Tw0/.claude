@@ -60,6 +60,16 @@ description: Diagnoses flaky async tests caused by race conditions and timing de
 - Normal volume. Current models over-apply capitals, "MUST", and "no exceptions", which makes behavior rigid in gray areas.
 - Show one strong example of the target shape instead of a long "don't" list. One language, from a real scenario.
 - Give a default, not a menu of options.
+- Choose the form of the guidance by the baseline failure:
+
+  | Baseline failure | Form |
+  |---|---|
+  | Breaks a rule under pressure | Prohibition plus rebuttal |
+  | Wrong output shape | A recipe stating what the output is |
+  | Omits a required element | A required slot in the template |
+  | Should depend on a condition | A conditional keyed to an observable predicate |
+
+  No nuance clauses: "don't X unless it matters" reopens the negotiation. Exemption clauses don't scope; restructure so the rule can't reach the exempt part.
 - Refer to other skills by name (`skill:systematic-debugging`). Never `@path` a file: that force-loads it into context immediately.
 - Use a small graphviz flowchart only for a non-obvious decision or loop, never for linear steps or reference data. Style rules: [graphviz-conventions.dot](graphviz-conventions.dot).
 - Name only tools that exist in the harness (Bash, Read, Edit, Write, Agent, Skill, AskUserQuestion).
@@ -72,6 +82,8 @@ New skills and behavior-changing edits get a baseline run without the change, th
 1. **RED** - run the scenario with a subagent that does not have the skill. Record what it did and the reasons it gave, verbatim.
 2. **GREEN** - write the smallest skill that addresses those specific failures. Re-run with the skill; the agent should now comply.
 3. **REFACTOR** - a new failure reproduced? Add one plain counter for it, with its reason, and re-test. Add nothing for failures you only imagine.
+
+Before a full pressure run, micro-test the wording: a fresh sample per call with the whole skill as context, always with a no-guidance control. If the control doesn't fail, don't write the guidance. Run 5+ reps per variant and read every flagged match by hand. Run-to-run variance means the wording isn't binding.
 
 | Skill type | Test with | Passes when |
 |---|---|---|
