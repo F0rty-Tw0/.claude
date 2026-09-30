@@ -21,13 +21,13 @@ One agent per independent problem domain, running concurrently.
 - One agent per component, each with an exclusive file set (`src/api/**`, `src/ui/**`). No file is owned by two agents.
 - Same files, or a real risk of collision → give each agent `isolation: "worktree"`. Its own checkout turns the ownership map into a merge plan instead of an honor-system lock.
 - Shared boundary files (`package.json`, `tsconfig.json`, shared types) are not edited by parallel agents; update them sequentially at merge time.
-- Merge worktree branches at the end. A merge conflict is a decomposition miss — note it.
+- Merge worktree branches at the end; if commits weren't authorized, apply each worktree's diff instead (`git -C <wt> diff HEAD | git apply`). A merge conflict is a decomposition miss — note it.
 - An agent that contradicts another's boundary assumptions is re-dispatched, not merged.
 
 ## Dispatch
 
 1. **Baseline first:** run the suite and record the exact failing test names and count. The merged result must beat it.
-2. Send the wave in one message. Use `executor` for well-scoped fixes, `deep-executor` for cross-system work, `debugger` only to diagnose (it does not implement fixes). Add `run_in_background: true` for long runs.
+2. Send the wave in one message. Use `executor` for well-scoped fixes, `deep-executor` for cross-system work, `debugger` only to diagnose (it does not implement fixes).
 
 ```
 Agent(subagent_type="executor", description="Fix abort test failures",

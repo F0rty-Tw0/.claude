@@ -18,6 +18,8 @@ DEFAULT=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's
 git merge-base HEAD "origin/$DEFAULT"   # base branch; confirm with the user if empty or unsure
 ```
 
+Uncommitted work (`git status --porcelain` not empty — the default when commits weren't authorized): say so first. Merge and PR need commits, so offer to commit via skill:meaningful-commits (only with the user's go-ahead) before options 1–2.
+
 | State | Menu |
 |---|---|
 | Normal repo, or linked worktree on a named branch | 4 options |
@@ -43,7 +45,7 @@ Detached HEAD: "Push as new branch and create a PR", "Keep as-is", "Discard".
 
 **3 — Keep.** Report "Keeping branch `<name>` at `<path>`." No cleanup.
 
-**4 — Discard.** List what will be permanently deleted (branch, commits, worktree path) and require the user to type `discard`. Then from the main repo root: clean up (step 5), `git branch -D <feature>`.
+**4 — Discard.** List what will be permanently deleted (branch, commits, uncommitted files, worktree path) and require the user to type `discard`. Then from the main repo root: clean up (step 5), `git branch -D <feature>`.
 
 Never force-push unless the user explicitly asked.
 

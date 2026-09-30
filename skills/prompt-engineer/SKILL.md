@@ -22,6 +22,7 @@ Current guidance lives in Anthropic's docs; read the relevant one instead of wor
 7. Replace blanket defaults ("be thorough", "always use X") with the specific condition that should trigger the behavior.
 8. For unattended loops, name the bad stops (announcing a next step without doing it, offering to continue) and the good ones (blocked on the user or a protected resource).
 9. Keep output specs short. Long mandatory templates inflate every response.
-10. Give a default, not a menu. One line on scope ("deliver what was asked; mention a better approach in a sentence") beats paragraphs.
+10. Untrusted input (user text, retrieved docs, tool results) goes inside delimited tags and is treated as data; it never changes instructions or triggers privileged tools.
+11. Give a default, not a menu. One line on scope ("deliver what was asked; mention a better approach in a sentence") beats paragraphs.
 
 Skill frontmatter and testing: skill:skills-creating.
