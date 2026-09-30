@@ -57,6 +57,8 @@ gh pr create --base <stack>/1-<name>  --head <stack>/2-<name> --title "…" --bo
 gh pr edit <n> --body-file <scratch>/prN.md
 ```
 
+A UI PR repeats its `--attach <path>` flags on the create and on every `gh pr edit --body-file`: the body file holds local image paths, and a re-send without them overwrites the hosted URLs.
+
 An old PR is already open for the source branch → comment "superseded by #a #b #c". Close it only if the user says so.
 
 ## Review changes requested on a lower PR (new user request needed)

@@ -40,18 +40,18 @@ Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`h
 3. **Verdict gate:**
    - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
    - `APPROVE — …` → continue.
-   - UI change without its before/after pair → same as BLOCK: say why it's missing and ask *capture first (Recommended)* / *open without, gap listed in Not verified*. UI PRs used to ship with no screenshots at all.
+   - UI change without its before/after pair (the reviewer reports it as a proof gap) → same as BLOCK: say why it's missing and ask *capture first (Recommended)* / *open as draft, gap listed in Not verified*. UI PRs used to ship with no screenshots at all.
 4. **Scale proof to blast radius** — the body always gets the compact `## Proof` from Step 3. For us, the class decides what goes in the collapsed block under it:
 
 | Class | `<details>` block contains |
 |---|---|
 | Leaf | no block |
 | Branch | base-failure output (bug fix), one non-mocked runtime log |
-| Trunk | the rest of `templates/pr-proof.md`: gate, invariants, canary metric, human must deep-read list, raw test output |
+| Trunk | the rest of `templates/pr-proof.md`: gate, invariants, canary metric, raw test output |
 
 Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
 
-Screenshots go in with `gh pr create --attach <path>`, one flag per file, and the body references the same paths.
+Screenshots go in with `gh pr create --attach <path>`, one flag per file, and the body references the same paths. Every later create or edit that sends a body (`--body`, `--body-file`) repeats the same `--attach` flags: the body still holds local paths, and without them it overwrites the hosted URLs and the images break.
 
 Run `git push` and `gh pr create` as **separate** Bash calls. If the hook blocks a chained call, the push never runs, but commit-guard has already used up its one-shot flag.
 
@@ -101,13 +101,16 @@ Mention impact only when it's real and non-obvious. Don't manufacture significan
 - Tests: `<cmd>` → <pass/fail counts>
 - Verified: <one line>
 - Not verified: <one line>
+- Review: <verdict> @ <short sha>
+- Deep-read: <file:line ranges>   ← Trunk only
 - Blockers: <one line each>   ← only on a draft opened despite BLOCK
-<before/after table, UI changes only>
+
+<before/after table, UI changes only; the blank line above keeps GitHub from rendering it as text inside the last bullet>
 
 Closes #<n>         ← only if the branch has a ticket
 ```
 
-No `What changed` / `Impact` / `Test plan` sections and no review history. A non-obvious impact from Step 2 (callers, config, deploy order) gets one sentence in the summary; anything longer goes in the details block, for us only.
+No `What changed` / `Impact` / `Test plan` sections and no review history. A non-obvious impact from Step 2 (callers, config, deploy order) gets one sentence in the summary; anything longer goes in the details block, for us only (a Leaf PR may add one just for that).
 
 ### Step 4: Write the Title
 
@@ -192,11 +195,13 @@ Output the title and description as two separate markdown code blocks so the use
 If the user wants to create the PR directly, use:
 
 ```bash
-gh pr create --title "<title>" --body "$(cat <<'EOF'
+gh pr create --title "<title>" --attach <scratch>/pr-shots/<screen>-before.png --attach <scratch>/pr-shots/<screen>-after.png --body "$(cat <<'EOF'
 <description>
 EOF
 )"
 ```
+
+`--attach` only for UI PRs, one flag per image path in the body.
 
 ## Common Mistakes
 

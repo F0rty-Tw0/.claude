@@ -52,8 +52,9 @@ $ node scripts/demo-checkout.mjs   → log excerpt with order id + ledger rows
 ### Visual
 | | Before | After |
 |---|---|---|
-| Badge, credit | ![](<scratch>/pr-shots/badge-credit-before.png) | ![](<scratch>/pr-shots/badge-credit-after.png) |
-| Badge, empty | ![](<scratch>/pr-shots/badge-empty-before.png) | ![](<scratch>/pr-shots/badge-empty-after.png) |
+| Badge, credit | ![Badge credit before](<scratch>/pr-shots/badge-credit-before.png) | ![Badge credit after](<scratch>/pr-shots/badge-credit-after.png) |
+| Badge, empty | ![Badge empty before](<scratch>/pr-shots/badge-empty-before.png) | ![Badge empty after](<scratch>/pr-shots/badge-empty-after.png) |
+
 Flag OFF: after is pixel-identical to before (shot omitted).
 
 ### Confidence
@@ -68,8 +69,8 @@ The **Not verified** list is mandatory and must not be empty for trunk changes �
 Reviewers judge a UI change by comparing it to what was there; an after-only shot hides regressions and makes them diff the code in their head.
 
 1. **After:** run the app from HEAD, Playwright MCP `browser_take_screenshot` of each changed screen and state.
-2. **Before:** same route, viewport and seed data from the PR's base (the parent branch for a stacked PR), run from an isolated worktree as in the base-failure check. New screen → shoot the screen it's reached from.
-3. Save as `<scratch-dir>/pr-shots/<screen>-{before,after}.png`, reference them in the body by that exact path string, and pass the same string to `gh pr create --attach <path>` (or `gh pr edit`). `gh` uploads them and rewrites the body references to the hosted URLs; `--attach` needs `gh` ≥ 2.99, so check `gh pr create --help | grep -q -- --attach` first.
+2. **Before:** same route, viewport and seed data from the PR's base (the parent branch for a stacked PR), run from an isolated worktree as in the base-failure check, with dependencies installed there first (skill:using-git-worktrees does both). New screen → shoot the screen it's reached from.
+3. Save as `<scratch-dir>/pr-shots/<screen>-{before,after}.png`, reference them in the body by that exact path string, and pass the same string to `gh pr create --attach <path>` (or `gh pr edit`). `gh` uploads them and rewrites the body references to the hosted URLs; `--attach` needs `gh` ≥ 2.99, so check `gh pr create --help | grep -q -- --attach` first. Give each image alt text (`![Badge empty after](…)`); `gh` keeps what the body says. Any later body re-send repeats the same `--attach` flags, or the local paths overwrite the hosted URLs.
 4. Some uploads fail → `gh` still creates the PR and exits non-zero. Re-attach the missing ones with `gh pr edit <n> --attach`.
 
 No browser tool, app won't start, or `gh` too old → no pair; the PR doesn't open until the user decides (`pr-description` Step 0).

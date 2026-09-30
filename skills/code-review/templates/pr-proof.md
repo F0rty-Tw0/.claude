@@ -26,7 +26,7 @@ $ <command that runs the feature for real, non-mocked>
 ### Visual (UI changes)
 | | Before | After |
 |---|---|---|
-| <screen, state> | ![](<scratch>/pr-shots/<screen>-before.png) | ![](<scratch>/pr-shots/<screen>-after.png) |
+| <screen, state> | ![<screen> before](<scratch>/pr-shots/<screen>-before.png) | ![<screen> after](<scratch>/pr-shots/<screen>-after.png) |
 
 States: normal, empty, error, flag OFF. Attach each path with `gh pr create --attach` (references/proof.md, Visual pair).
 
