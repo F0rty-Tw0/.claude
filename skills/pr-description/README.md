@@ -10,7 +10,7 @@ Every PR gets the same compact body:
 | ---- | -------- |
 | Summary | 1–3 sentences: what changed, why if not obvious, one non-obvious impact |
 | `## Stack` | Only for stacked PRs, 1–3 lines |
-| `## Proof` | Blast radius + rollback, test command + counts, verified / not verified, before/after screenshots for UI |
+| `## Proof` | Blast radius + rollback, test command + counts, before/after pair of the change running (screenshot or CLI/console output), verified / not verified |
 | `<details>` | For our own PRs only: runtime logs, base-failure output, Trunk gate/invariants/deep-read list |
 
 Process: Proof gate (code-review) > Gather changes > Scan repo context > Ask audience > Write title (<60 chars, lowercase) > Write summary > Add ticket link > Polish (Red Flags) > Present.

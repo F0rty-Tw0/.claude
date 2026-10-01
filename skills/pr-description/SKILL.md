@@ -35,18 +35,18 @@ Branch diff over ~400 changed lines, mixing trunk and leaf changes, or holding i
 
 Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it.
 
-1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. UI change → before/after screenshot pair (`references/proof.md`, Visual pair).
+1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. Every PR → before/after pair of the change running: screenshot for UI, CLI/console/HTTP output otherwise. Test output or the diff never counts as the pair (`references/proof.md`, Before/after pair).
 2. **Fresh review** — `code-review` review mode on `<base>...HEAD`. It dispatches an independent reviewer; do not review your own work in this session.
 3. **Verdict gate:**
    - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
    - `APPROVE — …` → continue.
-   - UI change without its before/after pair (the reviewer reports it as a proof gap) → same as BLOCK: say why it's missing and ask *capture first (Recommended)* / *open as draft, gap listed in Not verified*. UI PRs used to ship with no screenshots at all.
+   - No before/after pair (the reviewer reports it as a proof gap) → same as BLOCK: say why it's missing and ask *capture first (Recommended)* / *open as draft with `Before: not captured — <why>` and the gap in Not verified*. PRs used to ship with proof that code was written, not that it worked.
 4. **Scale proof to blast radius** — the body always gets the compact `## Proof` from Step 3. For us, the class decides what goes in the collapsed block under it:
 
 | Class | `<details>` block contains |
 |---|---|
 | Leaf | no block |
-| Branch | base-failure output (bug fix), one non-mocked runtime log |
+| Branch | base-failure output (bug fix), full runtime output behind the trimmed pair |
 | Trunk | the rest of `templates/pr-proof.md`: gate, invariants, canary metric, raw test output |
 
 Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
@@ -99,13 +99,15 @@ Mention impact only when it's real and non-obvious. Don't manufacture significan
 ## Proof
 - Blast radius: <Leaf|Branch|Trunk> <n>/10 — rollback: <flag off | revert | …>
 - Tests: `<cmd>` → <pass/fail counts>
+- Before: `<same cmd / steps on base>` → <old output or behavior>   ← screenshot table below for UI
+- After: `<same cmd / steps on head>` → <new output or behavior>
 - Verified: <one line>
 - Not verified: <one line>
 - Review: <verdict> @ <short sha>
 - Deep-read: <file:line ranges>   ← Trunk only
 - Blockers: <one line each>   ← only on a draft opened despite BLOCK
 
-<before/after table, UI changes only; the blank line above keeps GitHub from rendering it as text inside the last bullet>
+<before/after screenshot table for UI changes, or fenced output when one line can't show it; the blank line above keeps GitHub from rendering it as text inside the last bullet>
 
 Closes #<n>         ← only if the branch has a ticket
 ```
@@ -218,6 +220,7 @@ If your PR description has any of these, rewrite it:
 - Any section besides `## Stack` and `## Proof`, or more than one `<details>` block
 - A summary over 3 sentences
 - No `## Proof` section, or proof claims ("tests pass", "verified") with no command and counts
+- No `Before:`/`After:` pair, or one showing test output or code added instead of the change running
 - Any bullet starting with a bold header followed by a colon
 - The word "comprehensive", "robust", "seamless", or "leverage"
 - A title over 60 characters

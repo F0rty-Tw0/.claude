@@ -17,18 +17,25 @@ $ <exact test command>
 - New tests: <what behavior each proves>
 - Base check (bug fixes): <test name> FAILS on base: <output line>
 
-### Runtime evidence
+### Before / After (every PR — the change running, not the code added)
+Before (base <sha>):
 ```
-$ <command that runs the feature for real, non-mocked>
-<log excerpt with ids/timestamps>
+$ <same command / curl / steps, run on base>
+<output showing the old behavior>
 ```
+After (head <sha>):
+```
+$ <same command, run on head>
+<output showing the new behavior>
+```
+UI changes — screenshot pair instead of, or alongside, the text pair:
 
-### Visual (UI changes)
 | | Before | After |
 |---|---|---|
 | <screen, state> | ![<screen> before](<scratch>/pr-shots/<screen>-before.png) | ![<screen> after](<scratch>/pr-shots/<screen>-after.png) |
 
-States: normal, empty, error, flag OFF. Attach each path with `gh pr create --attach` (references/proof.md, Visual pair).
+States: normal, empty, error, flag OFF. Attach each path with `gh pr create --attach` (references/proof.md, Before/after pair).
+Base not capturable → `Before: not captured — <why>`, and add it to Not verified.
 
 ### Confidence
 **Verified:** <specific behaviors, each backed by an artifact above>
