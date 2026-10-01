@@ -158,7 +158,7 @@ A step is the unit of the trace and the unit of the spec. Rules:
 | Return value | A step may return a value: `const orderId = await test.step('AND the order is placed', (): Promise<string> => checkoutPage.placeOrder());`. |
 | Sync `expect` | `expect(value).toBe(…)` on a plain value is synchronous: the step callback is `(): void =>`. Only `expect(locator)` / `expect(page)` matchers and `expect.poll` return promises and take `(): Promise<void> =>`. |
 | Reads | A value a check needs is read inside the check: the `expect*` method or util reads the body, cookies, or state it asserts. No step only reads a value. An API spec checks the status first (`'THEN the status is 201'`), then the body (`'AND the body names the item'`), each check reading what it asserts. |
-| Non-void calls | `page.goto` / `reload` / `goBack` return `Promise<Response \| null>`; `route`, `addInitScript`, `exposeFunction`, `exposeBinding` return `Promise<Disposable>` since Playwright 1.63. An expression body cannot be typed `Promise<void>`, so use a block body with one `await`: `async (): Promise<void> => { await page.reload(); }`. Still one call. Same for a page-object, util, or mock arrow that wraps one of these. A step never routes; see Arrange. |
+| Non-void calls | `page.goto` / `reload` / `goBack` return `Promise<Response \| null>`; `route`, `addInitScript`, `exposeFunction`, `exposeBinding` return `Promise<Disposable>` since Playwright 1.59. An expression body cannot be typed `Promise<void>`, so use a block body with one `await`: `async (): Promise<void> => { await page.reload(); }`. Still one call. Same for a page-object, util, or mock arrow that wraps one of these. A step never routes; see Arrange. |
 
 Before, a body with no steps and inline locators:
 

@@ -23,7 +23,7 @@ Every sample belongs to the `projects` feature. `Project` (`id`, `name`) is in `
 | Create goes through the UI | It is the operation under test. Read, update, and delete seed their row through the API, then drive the UI |
 | Persistence is checked after a reload | A list updated from local state passes even when the save never reached the server |
 | Cleanup lives in fixture teardown | It runs when the test fails; `afterEach` does not know what the test created |
-| Names are unique per test | `buildProjectName()` prefixes `TEST_DATA_PREFIX` and a counter, so parallel workers never match each other's rows and the run's sweep catches leftovers |
+| Names are unique per test | `buildProjectName()` is `TEST_DATA_PREFIX` plus `randomUUID()`, so parallel workers never match each other's rows and the run's sweep catches leftovers. A module-level counter restarts in every worker process and collides |
 
 ## Seeded Fixture
 
@@ -87,7 +87,7 @@ export class ProjectsPage {
   }
 
   public row(name: string): Locator {
-    return this.rows.filter({ hasText: name });
+    return this.rows.filter({ has: this.page.getByRole('cell', { exact: true, name }) });
   }
 
   public async goto(): Promise<void> {

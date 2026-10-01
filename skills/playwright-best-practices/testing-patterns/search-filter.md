@@ -74,7 +74,6 @@ export const searchTerms = (calls: Request[]): string[] => calls.map(termOf).fil
 ```ts
 // e2e/catalog/catalog-search.test.ts
 import { expect, test } from './catalog.fixture';
-import { PRODUCT_LIST_STUB } from './test/stubs/catalog.stub';
 import { searchTerms } from './test/utils/search-terms.spec.util';
 
 test.describe('FEATURE: catalog search', () => {
@@ -83,9 +82,7 @@ test.describe('FEATURE: catalog search', () => {
 
     await test.step('AND keyboard is typed key by key', (): Promise<void> => catalogPage.typeSearch('keyboard'));
 
-    await test.step('THEN the results are shown', (): Promise<void> => catalogPage.expectResultCount(PRODUCT_LIST_STUB.items.length));
-
-    await test.step('AND exactly one search was sent, for keyboard', (): Promise<void> => expect.poll((): string[] => searchTerms(productCalls)).toEqual(['keyboard']));
+    await test.step('THEN exactly one search was sent, for keyboard', (): Promise<void> => expect.poll((): string[] => searchTerms(productCalls)).toEqual(['keyboard']));
   });
 });
 ```

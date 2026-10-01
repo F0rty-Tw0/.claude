@@ -63,7 +63,7 @@ export default defineConfig({
 | `fullyParallel: false` (default) | Yes            | No (serial)            |
 | `fullyParallel: true`            | Yes            | Yes                    |
 
-**One shared external resource:** give every test that touches it the same `lock` name in its details object (1.63). Tests sharing a lock never run at the same time, across files, workers, and projects; everything else stays parallel. Keep the name in `e2e/common/playwright.const.ts` so two files cannot misspell it. A test can hold several locks (`lock: ['db', 'sandbox-merchant']`), and `test.describe.configure({ lock })` locks a whole file. With `fullyParallel` off, a file's tests run together, so a lock on any of them is held for the whole file.
+**One shared external resource:** give every test that touches it the same `lock` name in its details object (1.63). Tests sharing a lock never run at the same time, across files, workers, and projects; everything else stays parallel. Keep the name in `e2e/common/playwright.const.ts` so two files cannot misspell it. A test can hold several locks (`lock: ['db', 'sandbox-merchant']`), and `test.describe('FEATURE: …', { lock: X }, …)` locks every test in the describe (`describe.configure` takes only `mode`, `retries`, `timeout`). With `fullyParallel` off, a file's tests run together, so a lock on any of them is held for the whole file.
 
 ```ts
 // e2e/payouts/payouts.e2e.ts

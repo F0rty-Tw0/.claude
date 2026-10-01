@@ -56,8 +56,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   testMatch: '**/*.@(e2e|test).ts',
   use,
-  webServer,
-  workers: process.env.CI ? 1 : undefined
+  webServer
 });
 ```
 
@@ -138,13 +137,7 @@ test.describe('FEATURE: guest checkout', () => {
 
 ## Component Tests
 
-Test individual components in isolation using Playwright Component Testing.
-
-```bash
-npm init playwright@latest -- --ct
-```
-
-For comprehensive component testing patterns including mounting, props, events, slots, mocking, and framework-specific examples (React, Vue, Svelte), see **[component-testing.md](../testing-patterns/component-testing.md)**.
+Test individual components in isolation through stories, a gallery, and the built-in `mount` fixture. There is no template package; stories, gallery contract, config, and framework notes are in **[component-testing.md](../testing-patterns/component-testing.md)**.
 
 ## API Tests
 

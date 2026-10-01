@@ -185,8 +185,8 @@ export const unmockedMock = (): RouteHandler => {
   return async (route: Route): Promise<void> => {
     const url = route.request().url();
 
-    test.abort(`Unmocked request: ${url}`);
     await route.abort();
+    test.abort(`Unmocked request: ${url}`);
   };
 };
 ```

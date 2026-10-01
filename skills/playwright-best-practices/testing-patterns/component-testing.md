@@ -41,7 +41,7 @@ To debug a story, open the gallery URL and run `await window.mount({ story: 'but
 
 ### Configuration
 
-Component specs end in `.test.tsx`, so the E2E config (`**/*.@(e2e|test).ts`) never collects them. `mount` navigates to `baseURL`, so `baseURL` is the gallery URL. `serviceWorkers: 'block'` keeps the app's service worker from shadowing `page.route` mocks; `reuseContext: true` reuses the context across tests in a worker. `GALLERY_URL` lives in `common/playwright.const.ts`.
+Component specs end in `.test.tsx`, so the E2E config (`**/*.@(e2e|test).ts`) never collects them. `mount` navigates to `baseURL`, so `baseURL` is the gallery URL. `serviceWorkers: 'block'` keeps the app's service worker from shadowing `page.route` mocks; `reuseContext: true` (experimental) reuses the context across tests in a worker; its reset is best-effort and leaves granted permissions, geolocation, and offline state in place, so a story that sets them needs its own context. `GALLERY_URL` lives in `common/playwright.const.ts`.
 
 ```ts
 // e2e/playwright-ct.config.ts
@@ -355,7 +355,7 @@ The gallery's `window.mount` is the only framework-specific code. Specs, helpers
 | Package | Status |
 |---|---|
 | `@playwright/experimental-ct-react`, `-react17`, `-vue` | No longer updated since 1.62. |
-| `@playwright/experimental-ct-svelte` | Removed in 1.58. |
+| `@playwright/experimental-ct-svelte` | Removed in 1.59. |
 | `@playwright/experimental-ct-vue2`, `-solid` | No longer updated since 1.49. |
 
 Existing suites keep running on a pinned Playwright version and get no fixes. Migrate with the [official guide](https://playwright.dev/docs/test-components#migration-from-the-experimental-packages): keep the old CT config running until the last spec is ported, then drop the package, `playwright/index.html`, `playwright/index.ts*`, and the version pin.
