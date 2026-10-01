@@ -15,7 +15,7 @@
 
 ## Core Principle
 
-**Mock at the boundary, test your stack end-to-end.** Mock third-party services you don't own (payment gateways, email providers, OAuth). Never mock your own frontend-to-backend communication. Tests prove YOUR code works, not that third-party APIs are available.
+**Mock third parties everywhere; mock your own API only in a `.test.ts`.** Third-party services you don't own (payment gateways, email providers, OAuth) are stubbed in any spec. Your own frontend-to-backend calls run real in `.e2e.ts`, which proves the stack works together. Routing your own API is allowed when a test needs a state the backend cannot produce on demand (an error, an empty list, a slow response); that spec is a `.test.ts`, and an `.e2e.ts` over the same flow keeps the mocks honest.
 
 Every route handler is a factory in `test/mocks/<name>.mock.ts`. A fixture or the spec's opening page-object call installs it before navigating: `page.route(pattern, nameMock())`. No step routes. Response bodies are typed constants, never inline literals. The file suffix follows the same boundary: a spec is `<feature>.test.ts` when a test run routes your own origin (`**/api/**`, `**/graphql`, `**/ws/**`, own assets, `routeFromHAR`) through its own `page.route`, a fixture that routes, or an opening-call option it passes. A page object that can route but is called without that option does not count. Every other spec is `<feature>.e2e.ts`, including one that only stubs third-party hosts (payment gateway, analytics, OAuth provider).
 
@@ -23,7 +23,7 @@ Every route handler is a factory in `test/mocks/<name>.mock.ts`. A fixture or th
 
 | Scenario | Mock? | Strategy |
 | --- | --- | --- |
-| Your own REST/GraphQL API | Never | Hit real API against staging or local dev |
+| Your own REST/GraphQL API | `.e2e.ts`: never. `.test.ts`: yes | `.e2e.ts` hits the real API; `.test.ts` routes it with typed stubs for error, empty, and edge states |
 | Your database (through your API) | Never | Seed via API or fixtures |
 | Authentication (your auth system) | Mostly no | Use `storageState` to skip login in most tests |
 | Stripe / payment gateway | Always | `route.fulfill()` with expected responses |
@@ -40,7 +40,8 @@ Every route handler is a factory in `test/mocks/<name>.mock.ts`. A fixture or th
 
 ```text
 Is this service part of YOUR codebase?
-├── YES → Do NOT mock. Test the real integration.
+├── YES → .e2e.ts: do NOT mock. Test the real integration.
+│   ├── Need a state it cannot produce on demand (error, empty, slow)? → Route it in a .test.ts.
 │   ├── Is it slow? → Optimize the service, not the test.
 │   └── Is it flaky? → Fix the service. Flaky infra is a bug.
 └── NO → It's a third-party service.
@@ -501,7 +502,7 @@ test.describe('FEATURE: billing mock contract', () => {
 
 | Don't Do This | Problem | Do This Instead |
 | --- | --- | --- |
-| Mock your own API | Tests pass, app breaks. Zero integration coverage. | Hit your real API. Mock only third-party services. |
+| Mock your own API with no `.e2e.ts` over the same flow | Tests pass, app breaks. Zero integration coverage. | Keep an `.e2e.ts` on the real API; route your own API only in `.test.ts` for states the backend cannot produce on demand. |
 | Mock everything for speed | You test a fiction. Frontend and backend may be incompatible. | Mock only external boundaries. |
 | Never mock anything | Tests are slow, flaky, fail when third parties have outages. | Mock third-party services. |
 | Use outdated mocks | Mock returns different shape than real API. | Run contract validation tests. Re-record HAR files regularly. |

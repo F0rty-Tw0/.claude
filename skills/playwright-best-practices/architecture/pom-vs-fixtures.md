@@ -12,11 +12,11 @@
 
 Use all three patterns together. Most projects benefit from a hybrid approach:
 
-- **Page objects** for UI interaction (pages/components with 5+ interactions)
+- **Page objects** for every UI interaction: specs never call `page.getBy*`, so each locator lives on a page or helper object
 - **Custom fixtures** for test infrastructure (auth state, database, API clients, anything with lifecycle)
 - **Util functions** for stateless utilities (generate data, format values, build URLs)
 
-If only using one pattern, choose **custom fixtures**. They handle setup/teardown, compose well, and Playwright is built around them.
+Page objects and fixtures always come together: the fixture constructs the page object and hands it to the spec. Utils join only when there is non-browser logic.
 
 Every sample below belongs to the `booking` feature and follows the layout in `core/house-style.md`.
 
@@ -28,24 +28,21 @@ Every sample below belongs to the `booking` feature and follows the layout in `c
 | **Lifecycle** | Manual (constructor/methods) | Built-in (`use()` with automatic teardown) | None |
 | **Composability** | Constructor injection or fixture wiring | Depend on other fixtures | Call other functions |
 | **Location** | `pages/`, `helpers/` | `<feature>.fixture.ts` | `test/utils/*.spec.util.ts`, `utils/*.util.ts` |
-| **Best for** | Pages with many reused interactions | Resources needing setup AND teardown | Simple logic with no side effects |
+| **Best for** | Every page or widget a spec touches, even one interaction | Resources needing setup AND teardown | Simple logic with no side effects |
 
 ## Selection Flowchart
 
 ```text
 What kind of reusable code?
 |
-+-- Interacts with browser page/component?
++-- Touches the browser (locator, fill, click, navigate, assert)?
 |   |
-|   +-- Has 5+ interactions (fill, click, navigate, assert)?
-|   |   +-- YES: Used in 3+ test files?
-|   |   |   +-- YES --> PAGE OBJECT
-|   |   |   +-- NO --> Inline or small util
-|   |   +-- NO --> UTIL FUNCTION
+|   +-- Widget that appears on several pages?
+|   |   +-- YES --> HELPER OBJECT (helpers/, scoped to a Locator root)
+|   |   +-- NO --> PAGE OBJECT method, however few interactions
 |   |
 |   +-- Needs setup before AND cleanup after test?
-|       +-- YES --> CUSTOM FIXTURE
-|       +-- NO --> PAGE OBJECT method or UTIL
+|       +-- YES --> CUSTOM FIXTURE that hands over the page object
 |
 +-- Manages resource with lifecycle (create/destroy)?
 |   +-- Examples: auth state, DB connection, API client, test user
@@ -56,14 +53,13 @@ What kind of reusable code?
 |   +-- YES --> UTIL FUNCTION
 |
 +-- Not sure?
-    +-- Start with UTIL FUNCTION
-    +-- Promote to PAGE OBJECT when interactions grow
+    +-- Needs page --> PAGE OBJECT; no page --> UTIL FUNCTION
     +-- Promote to FIXTURE when lifecycle needed
 ```
 
 ## Page Objects
 
-Best for pages/components with 5+ interactions appearing in 3+ test files. The booking form takes a named `BookingDetails` type, so the method signature has no inline object literal.
+Every page a spec touches gets one, even for a single click, because specs never hold locators. The booking form takes a named `BookingDetails` type, so the method signature has no inline object literal.
 
 ```ts
 // e2e/booking/common/booking.type.ts
@@ -436,4 +432,4 @@ export async function clickButton(page: Page, name: string) {
 }
 ```
 
-Prefer: only abstract when there is real duplication (3+ usages) or complexity (5+ interactions). A single click belongs on the page object that owns the button.
+Prefer: a method on the page object that owns the button, even for a single click. A util that takes `page` is a page-object method in the wrong place.
