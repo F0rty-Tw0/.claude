@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 const hook = new URL('./pr-proof-guard.js', import.meta.url).pathname;
 const dir = mkdtempSync(join(tmpdir(), 'pr-proof-guard-'));
-const PROOF = '# t\n\n## Proof\n$ node --test\nok\n';
+const PROOF = '# t\n\n## Proof\nBefore: a\nAfter: b\n$ node --test\nok\n';
 const okBody = join(dir, 'ok.md');
 const badBody = join(dir, 'bad.md');
 writeFileSync(okBody, PROOF);
@@ -31,11 +31,11 @@ const BLOCK = 2;
 const heredocBody = (proof) => `gh pr create --title x --body "$(cat <<'EOF'\nsummary with "quotes" and (#9) parens\n\n${proof}\n$ node --test\nEOF\n)"`;
 const cases = [
   // valid bodies
-  ['heredoc body with proof', "gh pr create --title x --body \"$(cat <<'EOF'\nsummary\n\n## Proof\n$ node --test\nEOF\n)\"", ALLOW],
-  ['heredoc body with quotes and parens', heredocBody('## Proof'), ALLOW],
-  ['inline body opening with the heading', 'gh pr create --draft --title x --body "## Proof\nblockers: ..."', ALLOW],
-  ['edit body with proof', 'gh pr edit 5 --body "x\n## Proof\nok"', ALLOW],
-  ['--body= form with proof', 'gh pr create --body="x\n## Proof\nok"', ALLOW],
+  ['heredoc body with proof', "gh pr create --title x --body \"$(cat <<'EOF'\nsummary\n\n## Proof\nBefore: a\nAfter: b\n$ node --test\nEOF\n)\"", ALLOW],
+  ['heredoc body with quotes and parens', heredocBody('## Proof\nBefore: a\nAfter: b'), ALLOW],
+  ['inline body opening with the heading', 'gh pr create --draft --title x --body "## Proof\nBefore: a\nAfter: b\nblockers: ..."', ALLOW],
+  ['edit body with proof', 'gh pr edit 5 --body "x\n## Proof\nBefore: a\nAfter: b\nok"', ALLOW],
+  ['--body= form with proof', 'gh pr create --body="x\n## Proof\nBefore: a\nAfter: b\nok"', ALLOW],
   ['body file with proof', `gh pr create -t x --body-file ${okBody}`, ALLOW],
   ['--body-file= form', `gh pr create --body-file=${okBody}`, ALLOW],
   ['body file under ~', 'gh pr create --body-file ~/ok.md', ALLOW],
@@ -44,17 +44,17 @@ const cases = [
   ['relative body file against process cwd', 'gh pr create -F ok.md', ALLOW, { cwd: null, spawnCwd: dir }],
   ['relative body file after leading cd', 'cd sub && gh pr create --body-file only-in-sub.md', ALLOW],
   ['--body "$(cat file)"', 'gh pr create --title x --body "$(cat ok.md)"', ALLOW],
-  ['stdin body from preceding heredoc', "cat <<'EOF' | gh pr create --title x -F -\nsummary\n## Proof\nok\nEOF", ALLOW],
-  ['stdin body from attached heredoc', "gh pr create --body-file - <<'EOF'\nsummary\n## Proof\nok\nEOF", ALLOW],
-  ['stdin body from pipe', "printf '## Proof\\nok' | gh pr create -F -", ALLOW],
-  ['stdin body from printf with \\n before the heading', "printf 'summary\\n\\n## Proof\\nok\\n' | gh pr create -F -", ALLOW],
-  ['stdin body from echo pipe', "echo '## Proof' | gh pr create -F -", ALLOW],
+  ['stdin body from preceding heredoc', "cat <<'EOF' | gh pr create --title x -F -\nsummary\n## Proof\nBefore: a\nAfter: b\nok\nEOF", ALLOW],
+  ['stdin body from attached heredoc', "gh pr create --body-file - <<'EOF'\nsummary\n## Proof\nBefore: a\nAfter: b\nok\nEOF", ALLOW],
+  ['stdin body from pipe', "printf '## Proof\\nBefore: a\\nAfter: b\\nok' | gh pr create -F -", ALLOW],
+  ['stdin body from printf with \\n before the heading', "printf 'summary\\n\\n## Proof\\nBefore: a\\nAfter: b\\nok\\n' | gh pr create -F -", ALLOW],
+  ['stdin body from echo pipe', "echo '## Proof\nBefore: a\nAfter: b' | gh pr create -F -", ALLOW],
   ['stdin body from cat file pipe', 'cat ok.md | gh pr create -F -', ALLOW],
   ['stdin body from < redirect', 'gh pr create -F - < ok.md', ALLOW],
-  ['stdin body from here-string', "gh pr create -F - <<< '## Proof'", ALLOW],
+  ['stdin body from here-string', "gh pr create -F - <<< '## Proof\nBefore: a\nAfter: b'", ALLOW],
   ['relative body file after leading cd ;', 'cd sub; gh pr create --body-file only-in-sub.md', ALLOW],
-  ['last body flag wins (proof last)', 'gh pr create --body nope --body "## Proof\nok"', ALLOW],
-  ['heredoc closed as EOF) on one line, judged by its text', "gh pr create --body \"$(cat <<'EOF'\nsum\n## Proof\nok\nEOF)\"", ALLOW],
+  ['last body flag wins (proof last)', 'gh pr create --body nope --body "## Proof\nBefore: a\nAfter: b\nok"', ALLOW],
+  ['heredoc closed as EOF) on one line, judged by its text', "gh pr create --body \"$(cat <<'EOF'\nsum\n## Proof\nBefore: a\nAfter: b\nok\nEOF)\"", ALLOW],
   ['escaped quote inside double quotes', 'echo "a \\" ; gh pr create --fill"', ALLOW],
   ['writing a different file before reading the body file', 'echo x > other.md && gh pr create -F ok.md 2>/dev/null', ALLOW],
   // not a PR body at all
@@ -86,22 +86,22 @@ const cases = [
   ['body file without proof', `gh pr create -t x -F ${badBody}`, BLOCK],
   ['missing body file', 'gh pr create -t x --body-file /nope.md', BLOCK],
   ['stdin body without proof', 'echo nope | gh pr create -F -', BLOCK],
-  ['literal backslash-n is not a newline', 'gh pr create --body "summary\\n## Proof\\nok"', BLOCK],
+  ['literal backslash-n is not a newline', 'gh pr create --body "summary\\n## Proof\\nBefore: a\\nAfter: b\\nok"', BLOCK],
   // proof outside the body does not count
-  ['proof in the title', 'gh pr create --title "## Proof" --body "nothing"', BLOCK],
-  ['proof in the title, no body', "gh pr create --title '## Proof'", BLOCK],
-  ['proof in an earlier command', "echo '## Proof' && gh pr create --body nope", BLOCK],
+  ['proof in the title', 'gh pr create --title "## Proof\nBefore: a\nAfter: b" --body "nothing"', BLOCK],
+  ['proof in the title, no body', "gh pr create --title '## Proof\nBefore: a\nAfter: b'", BLOCK],
+  ['proof in an earlier command', "echo '## Proof\nBefore: a\nAfter: b' && gh pr create --body nope", BLOCK],
   ['proof in a trailing comment', "gh pr create --body 'nope' # '## Proof'", BLOCK],
-  ['last body flag wins (proof first)', 'gh pr create --body "## Proof\nok" --body nope', BLOCK],
-  ['proof in an unrelated heredoc', "cat > x <<'A'\n## Proof\nA\ngh pr create --body \"$(cat <<'B'\nno\nB\n)\"", BLOCK],
+  ['last body flag wins (proof first)', 'gh pr create --body "## Proof\nBefore: a\nAfter: b\nok" --body nope', BLOCK],
+  ['proof in an unrelated heredoc', "cat > x <<'A'\n## Proof\nBefore: a\nAfter: b\nA\ngh pr create --body \"$(cat <<'B'\nno\nB\n)\"", BLOCK],
   // stdin: only this invocation's own stdin source counts
-  ['stdin proof in an earlier command', "echo '## Proof' >/dev/null; echo nope | gh pr create -F -", BLOCK],
-  ['stdin proof in a later command', "echo nope | gh pr create -F - ; echo '## Proof'", BLOCK],
+  ['stdin proof in an earlier command', "echo '## Proof\nBefore: a\nAfter: b' >/dev/null; echo nope | gh pr create -F -", BLOCK],
+  ['stdin proof in a later command', "echo nope | gh pr create -F - ; echo '## Proof\nBefore: a\nAfter: b'", BLOCK],
   ['stdin proof mid-line after the invocation', 'echo nope | gh pr create -F - && echo x## Proof', BLOCK],
   ['stdin proof mid-line in the pipe source', "echo 'x## Proof' | gh pr create -F -", BLOCK],
   ['stdin with no source', 'gh pr create -F -', BLOCK],
-  ['stdin proof in the previous command, no pipe', "echo '## Proof'; gh pr create -F -", BLOCK],
-  ['stdin proof before ||, not a pipe', "echo '## Proof' || gh pr create -F -", BLOCK],
+  ['stdin proof in the previous command, no pipe', "echo '## Proof\nBefore: a\nAfter: b'; gh pr create -F -", BLOCK],
+  ['stdin proof before ||, not a pipe', "echo '## Proof\nBefore: a\nAfter: b' || gh pr create -F -", BLOCK],
   ['stdin from cat file pipe without proof', 'cat bad.md | gh pr create -F -', BLOCK],
   ['stdin from < redirect without proof', 'gh pr create --body-file - < bad.md', BLOCK],
   ['stdin from here-string without proof', 'gh pr create -F - <<< nope', BLOCK],
@@ -141,10 +141,48 @@ for (const [name, command, expected, opts] of cases) {
   });
 }
 
+// The Proof section needs a before/after pair of the change running: Before:/After: lines or a `| Before | After |` table.
+writeFileSync(join(dir, 'nopair.md'), '# t\n\n## Proof\n- Tests: `node --test` → 9 pass\n');
+const pairCases = [
+  ['bullet lines', 'gh pr create --body "x\n## Proof\n- Before: `cli x` → error\n- After: `cli x` → ok"', ALLOW],
+  ['bold labels', 'gh pr create --body "x\n## Proof\n**Before:** shot\n**After:** shot"', ALLOW],
+  ['screenshot table', 'gh pr create --body "x\n## Proof\n| | Before | After |\n|---|---|---|\n| home | ![a](a.png) | ![b](b.png) |"', ALLOW],
+  ['gap written on the Before line', 'gh pr create --body "x\n## Proof\n- Before: not captured — new repo\n- After: ok\n- Not verified: before"', ALLOW],
+  ['pair in the details block under Proof', 'gh pr create --body "x\n## Proof\n- Tests: ok\n<details>\n\nBefore: a\nAfter: b\n</details>"', ALLOW],
+  ['heading without a pair', 'gh pr create --body "x\n## Proof\n- Tests: `node --test` → 9 pass"', BLOCK],
+  ['only an After line', 'gh pr create --body "x\n## Proof\n- After: ok"', BLOCK],
+  ['prose mentioning before and after', 'gh pr create --body "x\n## Proof\nafter the fix it works, before it did not"', BLOCK],
+  ['pair above the Proof heading', 'gh pr create --body "Before: a\nAfter: b\n## Proof\nok"', BLOCK],
+  ['pair in a later section', 'gh pr create --body "x\n## Proof\nok\n## Notes\nBefore: a\nAfter: b"', BLOCK],
+  ['body file without a pair', 'gh pr create -F nopair.md', BLOCK],
+  ['echo pipe without a pair', "echo '## Proof' | gh pr create -F -", BLOCK],
+  ['here-string without a pair', "gh pr create -F - <<< '## Proof'", BLOCK],
+  ['printf without a pair', "printf '## Proof\\nok' | gh pr create -F -", BLOCK],
+];
+for (const [name, command, expected] of pairCases) {
+  test(`pair: ${expected === ALLOW ? 'allows' : 'blocks'}: ${name}`, () => {
+    const { status, stderr } = run(command);
+    assert.strictEqual(status, expected, stderr);
+    if (expected === BLOCK) assert.match(stderr, /no before\/after pair/);
+  });
+}
+
+test('pair block message says tests alone do not count and how to record a gap', () => {
+  const { stderr } = run('gh pr create --body "x\n## Proof\nok"');
+  assert.match(stderr, /Test-runner output alone does not count/);
+  assert.match(stderr, /Before: not captured/);
+});
+
+test('a body with no Proof heading gets the heading message, not the pair one', () => {
+  const { stderr } = run('gh pr create --body "x"');
+  assert.match(stderr, /has no `## Proof` section/);
+  assert.doesNotMatch(stderr, /before\/after pair/);
+});
+
 // The hook runs before the command, so a body file written by the same command is read stale or missing.
 const sameCallWrites = [
-  ['new file', "cat > new.md <<'EOF'\n# t\n## Proof\nok\nEOF\ngh pr create --body-file new.md"],
-  ['older file without proof', "cat > bad.md <<'EOF'\n# t\n## Proof\nok\nEOF\ngh pr create -F bad.md"],
+  ['new file', "cat > new.md <<'EOF'\n# t\n## Proof\nBefore: a\nAfter: b\nok\nEOF\ngh pr create --body-file new.md"],
+  ['older file without proof', "cat > bad.md <<'EOF'\n# t\n## Proof\nBefore: a\nAfter: b\nok\nEOF\ngh pr create -F bad.md"],
   ['older file with proof, new heredoc without', "cat > ok.md <<'EOF'\n# t\nno proof now\nEOF\ngh pr create --body-file ok.md"],
   ['append redirect', 'echo x >> ok.md; gh pr create -F ok.md'],
   ['tee -a', `echo x | tee -a ${okBody} && gh pr create -F ok.md`],
@@ -167,10 +205,10 @@ for (const [name, command] of sameCallWrites) {
 // Round-two targeted review: each of these kills a mutation that the table above let survive.
 const mutationKillers = [
   ['last stdin redirect wins', `gh pr create -F - < ${okBody} < ${badBody}`, BLOCK],
-  ['only the invocation\'s own heredoc counts', "cat <<'A' >/dev/null\n## Proof\nA\ngh pr create -F - <<'B'\nnope\nB", BLOCK],
-  ['unterminated stdin heredoc is not a body', 'gh pr create -F - <<EOF\n## Proof', BLOCK],
+  ['only the invocation\'s own heredoc counts', "cat <<'A' >/dev/null\n## Proof\nBefore: a\nAfter: b\nA\ngh pr create -F - <<'B'\nnope\nB", BLOCK],
+  ['unterminated stdin heredoc is not a body', 'gh pr create -F - <<EOF\n## Proof\nBefore: a\nAfter: b', BLOCK],
   ['a write AFTER the invocation is fine', 'gh pr create -F ok.md && echo done > ok.md', ALLOW],
-  ['last short -b wins', 'gh pr create -b "## Proof" -b no', BLOCK],
+  ['last short -b wins', 'gh pr create -b "## Proof\nBefore: a\nAfter: b" -b no', BLOCK],
   ['reading the body via a cat pipe is not a write', 'cat ok.md | gh pr create -F -', ALLOW],
 ];
 for (const [name, command, expected] of mutationKillers) {
