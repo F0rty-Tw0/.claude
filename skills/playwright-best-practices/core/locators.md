@@ -78,6 +78,28 @@ Most robust approach - matches how users and assistive technology perceive the p
 | `getByRole('list').getByRole('listitem')` | Items inside a list |
 | `getByRole('navigation')`, `getByRole('main')`, `getByRole('dialog')`, `getByRole('alert')` | Landmarks and live regions |
 
+State filters narrow a role to the ARIA state the user sees:
+
+| Option | Matches |
+|---|---|
+| `getByRole('checkbox', { checked: true })` | Checked boxes only |
+| `getByRole('button', { name: 'Bold', pressed: true })` | Toggle button in its pressed state |
+| `getByRole('button', { name: 'Filters', expanded: false })` | Collapsed disclosure or menu trigger |
+| `getByRole('tab', { selected: true })` | Active tab or selected option |
+| `getByRole('button', { name: 'Delete', description: 'Removes the draft' })` | Accessible description (`aria-describedby`), for buttons whose names collide |
+
+Per-element cookbook:
+
+| Element | Query |
+|---|---|
+| Search input | `getByRole('searchbox', { name: 'Search' })` (`<input type="search">`) |
+| Radio in a fieldset | `getByRole('group', { name: 'Shipping' }).getByRole('radio', { name: 'Express' })`; an ARIA radio group is `radiogroup` |
+| Table column header | `getByRole('columnheader', { name: 'Price' })` |
+| Table row by content | `getByRole('row', { name: /Ada Lovelace/ })`; a row's name is its cells' text |
+| Button inside a section | `getByRole('region', { name: 'Billing' }).getByRole('button', { name: 'Update' })`; a `<section>` is a `region` only when it has an accessible name |
+| Link inside nav | `getByRole('navigation').getByRole('link', { name: 'Pricing' })` |
+| Icon-only button | `getByRole('button', { name: 'Close' })`; the name comes from `aria-label` |
+
 ### getByLabel
 
 For form elements with associated labels.
@@ -170,6 +192,10 @@ export class ProductsPage {
 | `filter({ hasNotText: 'Out of stock' })` | Items whose text does not contain it |
 | `filter({ has: locator })` | Items containing a matching child |
 | `filter({ hasText }).filter({ has })` | Both conditions |
+| `.visible()` | Visible matches only, re-checked on every use |
+| `filter({ visible: false })` | Hidden matches only |
+
+`.visible()` replaces the `:visible` CSS pseudo-class. Use it for responsive layouts that render the same control twice (desktop and mobile nav) and hide one: `page.getByRole('link', { name: 'Pricing' }).visible()`.
 
 ### Chaining
 
@@ -243,7 +269,7 @@ export class ProductsPage {
 
 ## Shadow DOM
 
-Playwright pierces shadow DOM by default, so `page.getByRole('button', { name: 'Shadow Button' })` finds a button inside a shadow root with no extra syntax. Explicit traversal, when needed, is `page.locator('my-component').locator('internal:shadow=button')`.
+Every `getBy*` and CSS locator pierces open shadow roots, so `page.getByRole('button', { name: 'Shadow Button' })` finds a button inside a web component with no extra syntax. Two things do not pierce: XPath, and closed shadow roots (`attachShadow({ mode: 'closed' })`). Closed roots and the init-script workaround are in [iframes.md](../browser-apis/iframes.md#shadow-dom).
 
 ## Iframes
 
@@ -290,6 +316,8 @@ export class EditorPage {
 | `await locator.highlight()` | Highlight the element in headed mode |
 | `await locator.count()` | Count matches without waiting |
 | `(await locator.count()) > 0` | Check existence without waiting |
+| `await locator.normalize()` | Same element, rewritten to a test-id or role locator; paste the result into the page object in place of a CSS selector |
+| `await page.pickLocator()` | Hover-to-pick mode in a headed run; returns the picked element's locator |
 | `PWDEBUG=1 npx playwright test` | Open the Playwright Inspector |
 
 ```bash
@@ -304,7 +332,7 @@ PWDEBUG=1 npx playwright test
 | Element not found       | Check visibility, wait for load, verify selector |
 | Stale element           | Locators are lazy; re-query if DOM changes       |
 | Dynamic IDs             | Use stable attributes like role, text, test-id   |
-| Hidden elements         | Use `{ force: true }` only when necessary        |
+| Hidden elements         | Find why it is hidden: wrong element matched, an interaction must reveal it first, or a responsive duplicate (`.visible()`). `{ force: true }` skips actionability checks and hides the bug the user would hit |
 
 ## Anti-Patterns to Avoid
 

@@ -168,6 +168,33 @@ export const test = base.extend<OrdersFixtures>({
 export { expect } from '@playwright/test';
 ```
 
+### Fail Fast with test.abort()
+
+`test.abort(message)` fails the running test at once from a fixture, hook, or route handler. Use it where a misconfigured run would otherwise wait out its timeout and report a misleading locator failure, such as a request no mock answers.
+
+A catch-all mock aborts on any own-origin API call the feature did not mock. Playwright runs the most recently registered matching route first, so the specific mocks a `goto(options)` registers later still answer their own paths.
+
+```ts
+// e2e/alerts/test/mocks/unmocked.mock.ts
+import type { Route } from '@playwright/test';
+import { test } from '@playwright/test';
+
+import type { RouteHandler } from '../../../common/playwright.type';
+
+export const unmockedMock = (): RouteHandler => {
+  return async (route: Route): Promise<void> => {
+    const url = route.request().url();
+
+    test.abort(`Unmocked request: ${url}`);
+    await route.abort();
+  };
+};
+```
+
+An `auto` fixture installs it for every test in the feature: `await page.route('**/api/**', unmockedMock());`, then `await use();`. Routing the own origin makes every spec of the feature a `.test.ts`.
+
+A fixture body that throws already fails the test, so a dead backend or a non-2xx seed call needs a `throw` with the URL, status, and body, not `test.abort`. A route handler is different: it runs outside the test body, on the browser's request, so `test.abort` is the call that turns an unexpected request into this test's failure.
+
 ## Fixture Scopes
 
 ### Test Scope (Default)

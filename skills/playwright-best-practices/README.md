@@ -10,7 +10,7 @@ Playwright reference set covering E2E, component, API, visual, accessibility, se
 | Core | `core/` — structure, locators, assertions, POM, fixtures, data, config, projects, global setup, annotations, tags, refactoring an existing suite. |
 | Advanced | `advanced/` — auth flows, multi-user, multi-context, clock, network, third-party, mobile. |
 | Browser APIs | `browser-apis/` — WebSockets, service workers, iframes, geolocation, permissions, clipboard, media. |
-| Patterns | `testing-patterns/` — API, GraphQL, component, visual, canvas, a11y, security, performance, forms, files, drag-drop, i18n, Electron, extensions. |
+| Patterns | `testing-patterns/` — API, GraphQL, component (stories), visual, canvas, a11y, security, performance, forms, CRUD, search and filter, edge cases, files, drag-drop, i18n, Electron, extensions. |
 | Frameworks | `frameworks/` — React, Angular, Vue/Nuxt, Next.js. |
 | Debugging | `debugging/` — failures, flaky tests, console errors, error states. |
 | Infrastructure | `infrastructure-ci-cd/` — CI providers, Docker, sharding, performance, reporting, coverage. |

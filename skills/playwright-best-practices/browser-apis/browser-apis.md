@@ -7,6 +7,7 @@
 3. [Clipboard](#clipboard)
 4. [Notifications](#notifications)
 5. [Camera & Microphone](#camera--microphone)
+6. [Web Storage](#web-storage)
 
 Each section is its own feature (`store-finder`, `alerts`, `share`, `video-call`). Browser-side code (`page.evaluate`, `page.addInitScript`) is self-contained, because Playwright serialises the function, and lives in a `test/mocks/` factory or a `test/utils/*.spec.util.ts` wrapper that returns a typed value. Fake browser globals are installed with `Object.defineProperty`, so no `window as any` cast is needed.
 
@@ -207,7 +208,7 @@ test.describe('FEATURE: share', () => {
 
 ### Mock Notification API
 
-The fake `Notification` class records every construction in `sessionStorage` and fires `onclick` on the next tick, which covers both the "was it created" and the "click handler" cases. It is installed with `page.addInitScript` before any navigation.
+The fake `Notification` class records every construction in `sessionStorage` and fires `onclick` on the next tick, which covers both the "was it created" and the "click handler" cases. It is installed with `page.addInitScript` before any navigation. The fake runs in the page, so it writes storage directly; the fixture reads it back through `page.sessionStorage` ([Web Storage](#web-storage)).
 
 ```ts
 // e2e/alerts/common/alerts.type.ts
@@ -259,6 +260,7 @@ export const notificationMock = (): (() => void) => installFakeNotification;
 
 ```ts
 // e2e/alerts/alerts.fixture.ts
+import type { Page } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
 import type { FakeNotificationApi, NotificationRecord } from './common/alerts.type';
@@ -270,9 +272,10 @@ type AlertsFixtures = {
   readonly fakeNotification: FakeNotificationApi;
 };
 
-const readCreated = (): NotificationRecord[] => {
-  const raw = sessionStorage.getItem('notifications') ?? '[]';
-  const records: NotificationRecord[] = JSON.parse(raw);
+const readCreated = async (page: Page): Promise<NotificationRecord[]> => {
+  const raw = await page.sessionStorage.getItem('notifications');
+  const json = raw ?? '[]';
+  const records: NotificationRecord[] = JSON.parse(json);
 
   return records;
 };
@@ -289,7 +292,7 @@ export const test = base.extend<AlertsFixtures>({
     await page.addInitScript(notificationMock());
 
     const api: FakeNotificationApi = {
-      created: (): Promise<NotificationRecord[]> => page.evaluate(readCreated),
+      created: (): Promise<NotificationRecord[]> => readCreated(page),
       raise: (title: string): Promise<void> => page.evaluate(raiseNotification, title)
     };
 
@@ -443,6 +446,29 @@ test.describe('FEATURE: video call with camera access denied', () => {
 });
 ```
 
+## Web Storage
+
+`page.localStorage` and `page.sessionStorage` read and write the page's storage for its current origin, so no `page.evaluate` poke is needed. Every method is async.
+
+| Need | Call |
+|---|---|
+| One key | `getItem('theme')` returns `string \| null` |
+| Every entry | `items()` returns `{ name, value }[]` |
+| Write | `setItem('theme', 'dark')`; the app read storage on load, so reload before asserting what it renders |
+| Remove | `removeItem('theme')`, no-op when absent; `clear()` empties the origin |
+| Seed before the first load | `storageState` in the project or `context.setStorageState()`; WebStorage acts on the page's current origin, so the page must already be open |
+
+A check reads storage inside its `THEN` through a one-line util, polled because the app writes it after the click:
+
+```ts
+// e2e/preferences/test/utils/stored-theme.spec.util.ts
+import type { Page } from '@playwright/test';
+
+export const storedTheme = (page: Page): Promise<string | null> => page.localStorage.getItem('theme');
+```
+
+The step is `'THEN the dark theme is stored'` → `(): Promise<void> => expect.poll((): Promise<string | null> => storedTheme(page)).toBe('dark')`.
+
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern | Problem | Solution |
@@ -452,6 +478,7 @@ test.describe('FEATURE: video call with camera access denied', () => {
 | Not testing permission denial | Misses error handling | Test both granted and denied states; deny through an opening-call option that runs `context.clearPermissions()` |
 | Using real camera/mic | CI has no devices | Mock `getUserMedia` with an init script |
 | `window as any` in init scripts | Hides the shape, breaks typecheck | `Object.defineProperty(window, name, { value })` |
+| `page.evaluate(() => localStorage.getItem(key))` | Untyped browser round trip for a built-in | `page.localStorage.getItem(key)` |
 
 ## Related References
 

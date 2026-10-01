@@ -70,6 +70,7 @@ export class ProfilePage {
 | Count | `toHaveCount(5)` |
 | Attributes | `toHaveAttribute('href', '/home')`, `toHaveAttribute('alt', /logo/i)` |
 | CSS | `toHaveClass(/primary/)`, `toHaveCSS('color', 'rgb(0, 0, 255)')` |
+| Pseudo-element CSS | `toHaveCSS('color', 'rgb(220, 38, 38)', { pseudo: 'after' })` reads `::after`; `pseudo` takes `'before'` or `'after'` |
 | Input value | `toHaveValue('user@example.com')`, `toBeEmpty()` |
 | Focus | `toBeFocused()` |
 | Checked state | `toBeChecked()`, `not.toBeChecked()` |
@@ -198,6 +199,8 @@ export class DashboardPage {
   }
 }
 ```
+
+`expect.soft.poll(fn).toBe(value)` polls like [expect.poll()](#expectpoll) and records a soft failure instead of stopping the test.
 
 ### Soft Assertions with Early Exit
 
@@ -336,32 +339,35 @@ A web-first assertion covers every element state, so a spec never calls `locator
 
 ### Wait for Function
 
-`page.waitForFunction` runs a predicate in the browser until it returns truthy. Reach for it only when no locator expresses the condition; `expect(status).toHaveText('Ready')` replaces the second method below.
+`locator.waitForFunction(fn, arg?)` calls `fn` with the matched element until it returns truthy. The locator is re-resolved on every retry, so a re-render does not break the wait. Reach for it only when no web-first assertion expresses the condition: `toHaveText`, `toHaveAttribute`, and `toHaveJSProperty` cover most of them. An image finishing decode has no matcher:
 
 ```ts
 // e2e/report/pages/report.page.ts
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
-const isLoaded = (): boolean => document.querySelector('.loaded') !== null;
-
-const hasText = (selector: string): boolean => document.querySelector(selector)?.textContent === 'Ready';
+const isDecoded = (element: Element): boolean => element instanceof HTMLImageElement && element.complete && element.naturalWidth > 0;
 
 export class ReportPage {
+  public readonly chartImage: Locator;
+
   private readonly page: Page;
 
   public constructor(page: Page) {
     this.page = page;
+    this.chartImage = page.getByRole('img', { name: 'Revenue chart' });
   }
 
-  public async waitForLoaded(): Promise<void> {
-    await this.page.waitForFunction(isLoaded);
+  public async goto(): Promise<void> {
+    await this.page.goto('/report');
   }
 
-  public async waitForStatusReady(): Promise<void> {
-    await this.page.waitForFunction(hasText, '.status');
+  public async waitForChartDecoded(): Promise<void> {
+    await this.chartImage.waitForFunction(isDecoded);
   }
 }
 ```
+
+`page.waitForFunction` stays for page-global state with no element (`window.appReady`). A predicate that calls `document.querySelector` is a locator in disguise: use `locator.waitForFunction` or a web-first assertion.
 
 ## Polling & Retrying
 
@@ -483,6 +489,7 @@ export default defineConfig({ expect: expectOptions, testMatch: '**/*.@(e2e|test
 | One describe | `test.describe.configure({ timeout: 60000 })` at the top of the `describe` callback |
 | One test | `test.setTimeout(60000)` as the first line of the test body, before the first step |
 | One assertion | `expect(locator).toBeVisible({ timeout: 10000 })` inside the `expect*` method |
+| Cancel early | `{ signal }` takes an `AbortSignal` on actions and web-first assertions; aborting rejects the call at once instead of waiting out the timeout |
 
 ## Best Practices
 
@@ -500,7 +507,11 @@ export default defineConfig({ expect: expectOptions, testMatch: '**/*.@(e2e|test
 | --------------------------------------------------------- | ----------------------------- | -------------------------------------------- |
 | `await page.waitForTimeout(5000)`                         | Slow, flaky, arbitrary timing | Use auto-waiting or `waitForResponse`        |
 | `await new Promise(resolve => setTimeout(resolve, 1000))` | Same as above                 | Use `waitForResponse` or element state waits |
-| Generic assertions on DOM elements                        | No auto-retry, flaky          | Use web-first assertions with `expect()`     |
+| `expect(await locator.isVisible()).toBe(true)`            | Read once, no retry           | `await expect(locator).toBeVisible()`        |
+| `expect(await locator.textContent()).toBe('Saved')`       | Read once, no retry           | `await expect(locator).toHaveText('Saved')`  |
+| `expect(await locator.count()).toBe(3)`                   | Read once, no retry           | `await expect(locator).toHaveCount(3)`       |
+| `expect(locator).toBeVisible()` with no `await`           | Never awaited: passes or fails after the line moved on | `await` it; enable `@typescript-eslint/no-floating-promises` |
+| `toBeVisible()` right before `click()` on the same locator | The click already waits for visibility | Drop it; assert what the click changes |
 | `locator.waitFor({ state })` in a spec                    | Wait without an assertion     | Web-first `expect*` method on the page object |
 
 ## Related References

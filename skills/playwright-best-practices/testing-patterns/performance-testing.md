@@ -368,6 +368,24 @@ export const readHeapUsage = (): HeapUsage => {
 };
 ```
 
+### CPU Throttling
+
+A developer laptop hides main-thread cost that a mid-range phone exposes. Chromium's DevTools protocol slows the CPU by a factor: `Emulation.setCPUThrottlingRate` with `rate: 1` is no throttle, `4` is four times slower. It needs a CDP session, so it runs in Chromium projects only; `newCDPSession` throws elsewhere.
+
+```ts
+// e2e/performance/test/utils/cpu-throttle.spec.util.ts
+import type { Page } from '@playwright/test';
+
+export const throttleCpu = async (page: Page, rate: number): Promise<void> => {
+  const session = await page.context().newCDPSession(page);
+  const params = { rate };
+
+  await session.send('Emulation.setCPUThrottlingRate', params);
+};
+```
+
+`PerformancePage.goto(path, { cpuSlowdown })` calls it before it navigates, so the throttle is an option on the opening call. A throttled budget test is its own spec run by the Chromium project, with budgets set for the throttled rate; never compare a throttled number against an unthrottled baseline.
+
 ## Performance Budgets
 
 ### Define Budgets
@@ -608,6 +626,7 @@ The `load time` test in `performance.e2e.ts` above records the annotation and de
 | --------------------------- | ------------------------- | -------------------------------- |
 | Testing only once           | Results vary              | Run multiple times, use averages |
 | Ignoring network conditions | Unrealistic results       | Test with throttling             |
+| Measuring on an unthrottled CPU only | Main-thread cost hidden by a fast machine | Chromium project with `Emulation.setCPUThrottlingRate` |
 | No baseline comparison      | Can't detect regressions  | Track metrics over time          |
 | Testing in dev mode         | Slow, not production-like | Test production builds           |
 | `waitForTimeout` before reading a metric | Hides the race, slows the suite | `expect.poll` or a buffered `PerformanceObserver` |

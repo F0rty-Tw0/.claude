@@ -43,12 +43,15 @@ Load skill:artification too. Its `typescript-style.md` applies to every Playwrig
 | Service workers, PWA, offline-first | `browser-apis/service-workers.md` |
 | API tests, `request` fixture | `testing-patterns/api-testing.md` |
 | GraphQL | `testing-patterns/graphql-testing.md` |
-| Component tests (`@playwright/experimental-ct-*`) | `testing-patterns/component-testing.md` |
+| Component tests (stories, gallery, `mount`) | `testing-patterns/component-testing.md` |
 | Screenshots, visual diffs, canvas, WebGL | `testing-patterns/visual-regression.md`, `testing-patterns/canvas-webgl.md` |
 | axe-core, keyboard, ARIA | `testing-patterns/accessibility.md` |
 | XSS, CSRF, headers, auth boundaries | `testing-patterns/security-testing.md` |
 | Web Vitals, Lighthouse, budgets | `testing-patterns/performance-testing.md` |
 | Forms, validation messages | `testing-patterns/forms-validation.md` |
+| CRUD flows, delete confirm, optimistic UI | `testing-patterns/crud.md` |
+| Search, filters, debounce, pagination | `testing-patterns/search-filter.md` |
+| Empty/one/many, boundary input, double submit, side service down | `testing-patterns/edge-cases.md` |
 | Upload, download, file system | `testing-patterns/file-operations.md`, `testing-patterns/file-upload-download.md` |
 | Drag and drop | `testing-patterns/drag-drop.md` |
 | Locale, currency, RTL | `testing-patterns/i18n.md` |
@@ -56,6 +59,7 @@ Load skill:artification too. Its `typescript-style.md` applies to every Playwrig
 | Browser extensions | `testing-patterns/browser-extensions.md` |
 | React, Angular, Vue/Nuxt, Next.js specifics | `frameworks/<name>.md` |
 | Element not found, timeout, race | `debugging/debugging.md`, `core/assertions-waiting.md`, `core/locators.md` |
+| Reading a `trace.zip` from the terminal, known error message | `debugging/debugging.md` (Terminal Trace Analysis, Common Error Messages) |
 | Flaky under `--workers`, state leak | `debugging/flaky-tests.md`, `core/fixtures-hooks.md` |
 | Console errors, uncaught exceptions | `debugging/console-errors.md` |
 | Error boundaries, loading states, failures | `debugging/error-testing.md` |
@@ -68,7 +72,7 @@ Load skill:artification too. Its `typescript-style.md` applies to every Playwrig
 ## Validation Loop
 
 1. `npx playwright test --reporter=list` on the touched specs.
-2. Red: open the trace (`npx playwright show-trace`), fix the locator, wait, or step, re-run.
+2. Red: read the trace (`npx playwright trace open <trace.zip>`, then `trace actions --errors-only`; see `debugging/debugging.md`), fix the locator, wait, or step, re-run.
 3. Green: `npx playwright test --repeat-each=3` on the same specs. Still green means done.
 4. Refactoring a real suite: `scripts/lint-samples.sh e2e/<feature>` must print `clean`, and the test and `expect` counts must not drop; see `core/refactoring.md`.
 5. Skill authors: `scripts/lint-samples.sh` must print `clean` after editing any reference file.

@@ -7,7 +7,8 @@
 3. [Nested iFrames](#nested-iframes)
 4. [Dynamic iFrames](#dynamic-iframes)
 5. [iFrame Navigation](#iframe-navigation)
-6. [Common Patterns](#common-patterns)
+6. [Shadow DOM](#shadow-dom)
+7. [Common Patterns](#common-patterns)
 
 Every sample belongs to the `checkout` feature. A `FrameLocator` is a page-object field like any other locator; specs never call `page.frameLocator` or `page.frame`.
 
@@ -397,6 +398,36 @@ test.describe('FEATURE: frame navigation', () => {
 });
 ```
 
+## Shadow DOM
+
+Unlike a frame, a shadow root needs no `frameLocator`. Every `getBy*` and CSS locator pierces open shadow roots, so a page-object field such as `page.getByRole('button', { name: 'Pay' })` reaches a button inside `<card-widget>`.
+
+| Root or selector | Pierced |
+|---|---|
+| Open shadow root, `getBy*` or CSS | Yes |
+| Nested open shadow roots | Yes |
+| XPath (`locator('xpath=…')`) | No |
+| Closed shadow root (`attachShadow({ mode: 'closed' })`) | No |
+
+A closed root is usually a third-party widget. Force it open before any page script runs: an init script wraps `Element.prototype.attachShadow` and rewrites the mode. The function runs in the browser, so it lives in a util and closes over nothing.
+
+```ts
+// e2e/checkout/test/utils/open-shadow-roots.spec.util.ts
+export const openShadowRoots = (): void => {
+  const attachShadow = Element.prototype.attachShadow;
+
+  const attachOpen = function (this: Element, init: ShadowRootInit): ShadowRoot {
+    const openInit: ShadowRootInit = { ...init, mode: 'open' };
+
+    return attachShadow.call(this, openInit);
+  };
+
+  Element.prototype.attachShadow = attachOpen;
+};
+```
+
+The feature fixture runs `await page.addInitScript(openShadowRoots);` before `use`, so every page object in the feature sees the widget's internals as open shadow DOM. The script changes what the app runs; keep it to specs that must reach into a widget you do not own, and test your own components through their public surface.
+
 ## Common Patterns
 
 ### iFrame Fixture
@@ -496,6 +527,7 @@ export const widgetMock = (path: string = WIDGET_PATH): RouteHandler => {
 | Assuming same-origin | Cross-origin has different timing | Always wait for iframe content explicitly |
 | Ignoring nested iframes | Element not found | Chain frameLocator calls for nested frames |
 | `page.frameLocator` in a spec | Spec knows the DOM | `FrameLocator` field on the page object |
+| XPath into a web component | XPath does not pierce shadow roots | `getBy*` or CSS, which pierce open roots |
 
 ## Related References
 

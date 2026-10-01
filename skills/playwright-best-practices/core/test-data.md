@@ -14,6 +14,7 @@ Under the house layout a "factory" is two files: a typed base value `<TYPE>_STUB
 3. [Data-Driven Testing](#data-driven-testing)
 4. [Test Data Fixtures](#test-data-fixtures)
 5. [Database Seeding](#database-seeding)
+6. [Cleanup](#cleanup)
 
 ## Factory Pattern
 
@@ -482,6 +483,7 @@ import { test as base } from '@playwright/test';
 
 import type { User } from './common/users.type';
 import { ProfilePage } from './pages/profile.page';
+import { deleteUser } from './test/utils/delete-user.spec.util';
 import { buildUser } from './test/utils/user-builder.spec.util';
 
 type UsersFixtures = {
@@ -498,7 +500,7 @@ export const test = base.extend<UsersFixtures>({
     const user: User = await response.json();
 
     await use(user);
-    await request.delete(`/api/test/users/${user.id}`);
+    await deleteUser(request, user.id);
   }
 });
 
@@ -582,6 +584,103 @@ export const test = base.extend<DbFixtures>({
 export { expect } from '@playwright/test';
 ```
 
+## Cleanup
+
+Three layers, each catching what the one before missed.
+
+| Layer | Runs | Catches |
+|---|---|---|
+| Fixture teardown, below `use` | After every test, pass or fail | Everything the fixture created |
+| Prefix sweep in `globalTeardown` | Once per run | Rows a crashed worker or killed run left behind |
+| Tenant per worker | Worker start and end | Cross-worker collisions on shared rows |
+
+### Fixture Teardown
+
+Code below `await use(value)` runs even when the test fails, so cleanup lives there, never in `afterEach`. Teardown must not hide the real result: a delete that throws because the test already removed the row adds a second, misleading error. The delete util treats "already gone" as success and fails loudly on anything else, naming the id so a leak can be traced.
+
+```ts
+// e2e/users/test/utils/delete-user.spec.util.ts
+import type { APIRequestContext } from '@playwright/test';
+
+const GONE_STATUSES = [200, 204, 404];
+
+export const deleteUser = async (request: APIRequestContext, id: string): Promise<void> => {
+  const response = await request.delete(`/api/test/users/${id}`);
+  const status = response.status();
+  const isGone = GONE_STATUSES.includes(status);
+
+  if (!isGone) throw new Error(`Cleanup of user ${id} failed with ${status}`);
+};
+```
+
+`seededUser` above calls it after `use`.
+
+### Prefix Sweep
+
+Every builder prefixes names with `TEST_DATA_PREFIX` (`'e2e-'`, in `common/playwright.const.ts`). `globalTeardown` deletes everything carrying it through a test-only endpoint. When parallel CI runs share one backend, the config appends the run id to the prefix and passes it on as a plain value, so one run never sweeps another's live rows.
+
+```ts
+// e2e/global-teardown.ts
+import { request } from '@playwright/test';
+
+import { BASE_URL, TEST_DATA_PREFIX } from './common/playwright.const';
+
+const globalTeardown = async (): Promise<void> => {
+  const api = await request.newContext({ baseURL: BASE_URL });
+  const params = { prefix: TEST_DATA_PREFIX };
+
+  await api.delete('/api/test/data', { params });
+  await api.dispose();
+};
+
+export default globalTeardown;
+```
+
+### Tenant per Worker
+
+When tests share an account or tenant, give each worker its own. The fixture is worker-scoped, so it cannot take the test-scoped `request` fixture; it opens its own context from the worker-scoped `playwright` fixture and disposes it after the delete.
+
+```ts
+// e2e/billing/billing.fixture.ts
+import { test as base } from '@playwright/test';
+
+import { BASE_URL } from '../common/playwright.const';
+import type { Tenant } from './common/billing.type';
+import { BillingPage } from './pages/billing.page';
+import { buildTenant } from './test/utils/tenant-builder.spec.util';
+
+type BillingFixtures = {
+  readonly billingPage: BillingPage;
+};
+
+type BillingWorkerFixtures = {
+  readonly tenant: Tenant;
+};
+
+export const test = base.extend<BillingFixtures, BillingWorkerFixtures>({
+  billingPage: async ({ page, tenant }, use): Promise<void> => {
+    await use(new BillingPage(page, tenant));
+  },
+  tenant: [
+    async ({ playwright }, use, workerInfo): Promise<void> => {
+      const api = await playwright.request.newContext({ baseURL: BASE_URL });
+      const data = buildTenant(workerInfo.workerIndex);
+      const response = await api.post('/api/test/tenants', { data });
+      const tenant: Tenant = await response.json();
+
+      await use(tenant);
+      await api.delete(`/api/test/tenants/${tenant.id}`);
+      await api.dispose();
+    },
+    { scope: 'worker' }
+  ]
+});
+
+export { expect } from '@playwright/test';
+```
+
+`buildTenant(index)` names the tenant `${TEST_DATA_PREFIX}tenant-${index}`, so the sweep also catches a tenant whose worker crashed.
+
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern                    | Problem                         | Solution                   |
@@ -593,6 +692,11 @@ export { expect } from '@playwright/test';
 | Payload literal inside `route.fulfill` | Untyped, drifts from the API silently | Typed stub in `test/stubs/`, passed through the mock parameter |
 | `const <X>_BODY` declared in a `.mock.ts` | Data in a behavior file; no one looks there | Move to `test/stubs/` as `<TYPE>_STUB`, import as the parameter default |
 | One mock factory per response variant | Same interception copied N times | One factory, `(<payload>: <Type> = <TYPE>_STUB)`, callers pass a spread |
+| Hardcoded ids (`/users/42`) | Breaks on reset; collides across workers | Use the id the seed fixture returns |
+| Relying on rows that already exist in the database | Passes only on the machine that has them | Seed what the title names in a fixture |
+| Running against production data | Mutates real records; leaks personal data into traces | Dedicated test environment, synthetic data only |
+| Cleanup in `afterEach` | Separated from what created it; has to guess what exists when setup failed halfway | Teardown below `use` in the seeding fixture |
+| `request` in a worker-scoped fixture | `request` is test-scoped; the fixture fails to resolve | `playwright.request.newContext()`, disposed in teardown |
 
 ## Related References
 

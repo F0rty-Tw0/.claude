@@ -255,53 +255,30 @@ test.describe('FEATURE: attachments replace', () => {
 
 ### Drag and Drop Upload
 
-When the drop zone has no file input, build a `DataTransfer` in the page with `evaluateHandle`, add a `File` to it, and dispatch `drop` with the handle. `dropFile` owns all three calls.
-
-```ts
-// e2e/attachments/test/utils/drop-file.spec.util.ts
-import type { JSHandle, Locator, Page } from '@playwright/test';
-
-import type { UploadFile } from '../../common/attachments.type';
-
-type DropPayload = {
-  readonly bytes: number[];
-  readonly mimeType: string;
-  readonly name: string;
-};
-
-const createDataTransfer = (): DataTransfer => new DataTransfer();
-
-const addFile = (dataTransfer: DataTransfer, payload: DropPayload): void => {
-  const file = new File([new Uint8Array(payload.bytes)], payload.name, { type: payload.mimeType });
-
-  dataTransfer.items.add(file);
-};
-
-export const dropFile = async (page: Page, zone: Locator, file: UploadFile): Promise<void> => {
-  const payload: DropPayload = { bytes: [...file.buffer], mimeType: file.mimeType, name: file.name };
-  const dataTransfer: JSHandle<DataTransfer> = await page.evaluateHandle(createDataTransfer);
-
-  await dataTransfer.evaluate(addFile, payload);
-  await zone.dispatchEvent('drop', { dataTransfer });
-};
-```
+When the drop zone has no file input, `DropZoneHelper.drop(file)` calls `locator.drop({ files })` (helper in [file-upload-download.md](file-upload-download.md#drag-and-drop-zones)). Playwright builds the `DataTransfer` in the page and dispatches `dragenter`, `dragover`, and `drop` at the zone's center, in every browser.
 
 ```ts
 // e2e/attachments/drop-event.e2e.ts
 import { expect, test } from './attachments.fixture';
 import { PDF_FILE_STUB } from './test/stubs/attachments.stub';
-import { dropFile } from './test/utils/drop-file.spec.util';
 
 test.describe('FEATURE: attachments drop event', () => {
-  test('GIVEN report.pdf, dropping it on the zone reports the upload', async ({ attachmentsPage, page }): Promise<void> => {
+  test('GIVEN report.pdf, dropping it on the zone reports the upload', async ({ attachmentsPage }): Promise<void> => {
     await test.step('WHEN the attachments page is opened', (): Promise<void> => attachmentsPage.goto());
 
-    await test.step('AND report.pdf is dropped on the zone', (): Promise<void> => dropFile(page, attachmentsPage.dropZone.root, PDF_FILE_STUB));
+    await test.step('AND report.pdf is dropped on the zone', (): Promise<void> => attachmentsPage.dropZone.drop(PDF_FILE_STUB));
 
     await test.step('THEN the alert reports the upload', (): Promise<void> => expect(attachmentsPage.alert).toContainText('report.pdf uploaded'));
   });
 });
 ```
+
+| Payload | Drops |
+|---|---|
+| `{ files: { name, mimeType, buffer } }` | One file |
+| `{ data: { 'text/plain': 'hello', 'text/uri-list': 'https://example.com' } }` | Text or a link, keyed by MIME type |
+
+If the zone's `dragover` listener does not call `preventDefault()`, the browser treats the drop as refused: Playwright dispatches `dragleave` and `drop()` throws. Most zones that reject a file type still accept the drop and then show an error, which the spec asserts like any alert. A zone that refuses at `dragover` makes `drop()` reject, and its check is `rejects.toThrow()` on that promise.
 
 ### Simpler Drag and Drop
 
