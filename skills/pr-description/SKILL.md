@@ -33,7 +33,7 @@ Branch diff over ~400 changed lines, mixing trunk and leaf changes, or holding i
 
 ### Step 0: Proof Gate
 
-Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it.
+Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it, or without a `Before:`/`After:` pair (or `| Before | After |` table) under it.
 
 1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. Every PR → before/after pair of the change running: screenshot for UI, CLI/console/HTTP output otherwise. Test output or the diff never counts as the pair (`references/proof.md`, Before/after pair).
 2. **Fresh review** — `code-review` review mode on `<base>...HEAD`. It dispatches an independent reviewer; do not review your own work in this session.

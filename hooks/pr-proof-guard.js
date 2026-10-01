@@ -67,12 +67,20 @@ const expandHome = (p) => p.replace(/^~(?=\/|$)/, os.homedir());
 const cd = masked.match(/^[ \t]*cd[ \t]+([^\s;&]+)[ \t]*(?:&&|;)/d);
 const baseDir = path.resolve(cwd, cd ? expandHome(unquote(cmd.slice(...cd.indices[1]))) : '.');
 
-// The Proof section runs from its heading to the next `## ` heading. A pair is a `| … Before | After |` table row, or a
-// line starting (after bullets/bold/quote marks) with `Before:` and one with `After:`; prose like "after the fix" is not.
+// The Proof section runs from its heading to the next `## ` heading outside a code fence (output may print markdown).
+// A pair is a `| … Before | After |` table row, or a line starting (after bullets/bold/quote marks) with `Before:` and
+// one with `After:`, a parenthetical allowed before the colon (`Before (base abc123):`); prose like "after the fix" is not.
 const PROOF_HEADING = /^[ \t]*## Proof\b/m;
-const pairLine = (word) => new RegExp(String.raw`^[ \t>*|-]*${word}\b(?:\*\*)?[ \t]*[:|]`, 'im');
+const pairLine = (word) => new RegExp(String.raw`^[ \t>*|-]*${word}\b(?:\*\*)?(?:[ \t]*\([^)\n]*\))?[ \t]*[:|]`, 'im');
 const hasPair = (text) => {
-  const section = text.slice(text.search(PROOF_HEADING)).split(/\n(?=[ \t]*## )/)[0];
+  const lines = text.slice(text.search(PROOF_HEADING)).split('\n');
+  let inFence = false;
+  const end = lines.findIndex((line, i) => {
+    if (/^[ \t]*(```|~~~)/.test(line)) inFence = !inFence;
+
+    return i > 0 && !inFence && /^[ \t]*## /.test(line);
+  });
+  const section = (end < 0 ? lines : lines.slice(0, end)).join('\n');
 
   return /^[ \t]*\|.*\bBefore\b.*\|.*\bAfter\b/im.test(section) || (pairLine('Before').test(section) && pairLine('After').test(section));
 };

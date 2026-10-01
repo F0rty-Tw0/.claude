@@ -86,7 +86,7 @@ Pick the form by what changed:
 
 1. **After:** run HEAD for real. UI → Playwright MCP `browser_take_screenshot` of each changed screen and state. Everything else → run the command and keep the exact command plus its output (trim to the lines that show the change; keep ids/timestamps).
 2. **Before:** the same steps on the PR's base (the parent branch for a stacked PR), run from an isolated worktree as in the base-failure check, with dependencies installed there first (skill:using-git-worktrees does both). New screen → shoot the screen it's reached from.
-3. **In the body:** text pairs go in as `Before:` / `After:` lines or code blocks; screenshots as a `| Before | After |` table. `hooks/pr-proof-guard.js` blocks a `## Proof` with neither.
+3. **In the body:** text pairs go in as `Before:` / `After:` lines (a parenthetical like `Before (base a1b2c3d):` is fine), long output in a code block under each line; screenshots as a `| Before | After |` table. `hooks/pr-proof-guard.js` blocks a `## Proof` with neither.
 4. **Can't capture before** (new repo, base won't build, external service gone) → write `Before: not captured — <why>`, list it under Not verified, and let the user decide (`pr-description` Step 0).
 
 Screenshots:

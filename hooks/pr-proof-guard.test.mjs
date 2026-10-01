@@ -2,7 +2,7 @@
 import { after, test } from 'node:test';
 import assert from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -143,15 +143,27 @@ for (const [name, command, expected, opts] of cases) {
 
 // The Proof section needs a before/after pair of the change running: Before:/After: lines or a `| Before | After |` table.
 writeFileSync(join(dir, 'nopair.md'), '# t\n\n## Proof\n- Tests: `node --test` → 9 pass\n');
+// The proof template's text pair must pass on its own: screenshot table rows stripped so they can't carry it.
+const template = readFileSync(new URL('../skills/code-review/templates/pr-proof.md', import.meta.url), 'utf8');
+writeFileSync(join(dir, 'template.md'), template.split('\n').filter((line) => !line.startsWith('|')).join('\n'));
 const pairCases = [
   ['bullet lines', 'gh pr create --body "x\n## Proof\n- Before: `cli x` → error\n- After: `cli x` → ok"', ALLOW],
   ['bold labels', 'gh pr create --body "x\n## Proof\n**Before:** shot\n**After:** shot"', ALLOW],
   ['screenshot table', 'gh pr create --body "x\n## Proof\n| | Before | After |\n|---|---|---|\n| home | ![a](a.png) | ![b](b.png) |"', ALLOW],
   ['gap written on the Before line', 'gh pr create --body "x\n## Proof\n- Before: not captured — new repo\n- After: ok\n- Not verified: before"', ALLOW],
   ['pair in the details block under Proof', 'gh pr create --body "x\n## Proof\n- Tests: ok\n<details>\n\nBefore: a\nAfter: b\n</details>"', ALLOW],
+  ['proof template text pair, no table', 'gh pr create -F template.md', ALLOW],
+  ['parenthetical before the colon', 'gh pr create --body "x\n## Proof\nBefore (base abc123):\nold\nAfter (head def456):\nnew"', ALLOW],
+  ['bold word, colon outside', 'gh pr create --body "x\n## Proof\n**Before**: a\n**After**: b"', ALLOW],
+  ['lowercase labels', 'gh pr create --body "x\n## Proof\n- before: a\n- after: b"', ALLOW],
+  ['pair after a fence that prints a ## line', 'gh pr create -F - <<\'EOF\'\nx\n## Proof\n```\n## Heading in output\n```\n- Before: a\n- After: b\nEOF', ALLOW],
+  ['pair under ### subsections', 'gh pr create --body "x\n## Proof\n### Tests\nok\n### Before / After\nBefore: a\nAfter: b"', ALLOW],
   ['heading without a pair', 'gh pr create --body "x\n## Proof\n- Tests: `node --test` → 9 pass"', BLOCK],
   ['only an After line', 'gh pr create --body "x\n## Proof\n- After: ok"', BLOCK],
   ['prose mentioning before and after', 'gh pr create --body "x\n## Proof\nafter the fix it works, before it did not"', BLOCK],
+  ['line-start prose without a colon', 'gh pr create --body "x\n## Proof\nAfter the fix it works\nBefore the fix it crashed"', BLOCK],
+  ['labels mid-line', 'gh pr create --body "x\n## Proof\n- Tests: 3 fail before: 9 pass after: ok"', BLOCK],
+  ['parenthetical not followed by a colon', 'gh pr create --body "x\n## Proof\nBefore (x) it was\nAfter (y) it is"', BLOCK],
   ['pair above the Proof heading', 'gh pr create --body "Before: a\nAfter: b\n## Proof\nok"', BLOCK],
   ['pair in a later section', 'gh pr create --body "x\n## Proof\nok\n## Notes\nBefore: a\nAfter: b"', BLOCK],
   ['body file without a pair', 'gh pr create -F nopair.md', BLOCK],
