@@ -18,9 +18,8 @@
 
 ```bash
 npm init playwright@latest
-npm install -D @playwright/experimental-ct-vue
 npx playwright test
-npx playwright test -c playwright-ct.config.ts
+npx playwright test -c e2e/playwright-ct.config.ts
 ```
 
 ## Configuration
@@ -101,37 +100,63 @@ export default defineConfig({
 
 ### Component Testing
 
-```ts
-// e2e/playwright-ct.config.ts
-import { defineConfig, devices } from '@playwright/experimental-ct-vue';
-
-const use = { ctPort: 3100, trace: 'on-first-retry' } as const;
-
-const projects = [{ name: 'chromium', use: devices['Desktop Chrome'] }];
-
-export default defineConfig({
-  projects,
-  testMatch: '**/*.test.tsx',
-  use
-});
-```
+Component tests use the stories model: plain `@playwright/test`, the built-in `mount` fixture, and a gallery page your Vite dev server serves. The config, gallery contract, and shared `Mount` type are in [component-testing.md](../testing-patterns/component-testing.md#setup--configuration). Vue's gallery mounts one reactive host and swaps a `shallowRef` story and props on each `window.mount`, so `update(props)` keeps component state.
 
 ## Patterns
 
-### Component Testing with Experimental CT
+### Component Testing with Stories
 
 **Use when**: Testing complex interactive Vue components in isolation (data tables, form components, custom dropdowns).
 
 **Avoid when**: Component depends heavily on Pinia stores, Vue Router, or backend data. Use E2E tests instead.
 
-`mount` returns a `Locator` rooted at the component. A helper object wraps that root so the spec never queries it directly.
+A Vue story file is a `.story.ts` of `defineComponent` exports. Props a test passes must be declared at runtime (`props`), or Vue treats them as attributes. A callback cannot cross from the spec, so `Recorded` owns the listener and records each `change` payload into a hidden input.
+
+```ts
+// e2e/stepper/test/stories/stepper.story.ts
+import type { VNode } from 'vue';
+import { defineComponent, h, ref } from 'vue';
+
+import Stepper from '@/components/Stepper.vue';
+
+const value = { default: 0, type: Number };
+
+const props = { value };
+
+export const Default = defineComponent({
+  props,
+  setup(current): () => VNode {
+    return (): VNode => h(Stepper, { value: current.value });
+  }
+});
+
+export const Recorded = defineComponent({
+  setup(): () => VNode[] {
+    const changes = ref<number[]>([]);
+    const record = (next: number): void => {
+      changes.value = [...changes.value, next];
+    };
+
+    return (): VNode[] => {
+      const recordedValue = JSON.stringify(changes.value);
+      const stepper = h(Stepper, { onChange: record, value: 10 });
+      const recorded = h('input', { 'data-testid': 'changes', hidden: true, readonly: true, value: recordedValue });
+
+      return [stepper, recorded];
+    };
+  }
+});
+```
+
+`mount` returns the gallery's `#root` locator. A helper object wraps it so the spec never queries it directly.
 
 ```ts
 // e2e/stepper/helpers/stepper.helper.ts
 import type { Locator } from '@playwright/test';
-import { expect } from '@playwright/experimental-ct-vue';
+import { expect } from '@playwright/test';
 
 export class StepperHelper {
+  public readonly changes: Locator;
   public readonly decrementButton: Locator;
   public readonly incrementButton: Locator;
 
@@ -139,6 +164,7 @@ export class StepperHelper {
 
   public constructor(root: Locator) {
     this.root = root;
+    this.changes = root.getByTestId('changes');
     this.decrementButton = root.getByRole('button', { name: '-' });
     this.incrementButton = root.getByRole('button', { name: '+' });
   }
@@ -150,24 +176,25 @@ export class StepperHelper {
   public async expectValue(value: number): Promise<void> {
     await expect(this.root.getByText(`Value: ${value}`)).toBeVisible();
   }
+
+  public async expectChanges(expected: number[]): Promise<void> {
+    const recorded = JSON.stringify(expected);
+
+    await expect(this.changes).toHaveValue(recorded);
+  }
 }
 ```
 
-A test util owns the `mount` call so each case is one step. `StepperProps` and `StepperListeners` are named types in `common/stepper.type.ts`.
+A test util owns the `mount` call so each case is one step. `StepperStory` (`'Default' | 'Recorded'`) and `StepperProps` are named in `common/stepper.type.ts`; `Mount` is shared from `e2e/common/playwright.type.ts`.
 
 ```ts
 // e2e/stepper/test/utils/stepper-mount.spec.util.ts
-import type { ComponentFixtures } from '@playwright/experimental-ct-vue';
-
-import Stepper from '@/components/Stepper.vue';
-
-import type { StepperListeners, StepperProps } from '../../common/stepper.type';
+import type { Mount } from '../../../common/playwright.type';
+import type { StepperProps, StepperStory } from '../../common/stepper.type';
 import { StepperHelper } from '../../helpers/stepper.helper';
 
-type Mount = ComponentFixtures['mount'];
-
-export const mountStepper = async (mount: Mount, props: StepperProps, on?: StepperListeners): Promise<StepperHelper> => {
-  const root = await mount(Stepper, { on, props });
+export const mountStepper = async (mount: Mount, story: StepperStory, props?: StepperProps): Promise<StepperHelper> => {
+  const root = await mount(`stepper/${story}`, props);
 
   return new StepperHelper(root);
 };
@@ -175,41 +202,38 @@ export const mountStepper = async (mount: Mount, props: StepperProps, on?: Stepp
 
 ```tsx
 // e2e/stepper/stepper.test.tsx
-import { expect, test } from '@playwright/experimental-ct-vue';
+import { test } from '@playwright/test';
 
-import type { StepperListeners } from './common/stepper.type';
 import type { StepperHelper } from './helpers/stepper.helper';
 import { mountStepper } from './test/utils/stepper-mount.spec.util';
 
 test.describe('FEATURE: stepper', () => {
   test('GIVEN a stepper at 0, clicking + increments the value', async ({ mount }): Promise<void> => {
-    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, { value: 0 }));
+    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, 'Default', { value: 0 }));
 
     await test.step('AND + is clicked', (): Promise<void> => stepper.increment());
 
     await test.step('THEN the value reads 1', (): Promise<void> => stepper.expectValue(1));
   });
 
-  test('GIVEN a change listener, clicking + twice emits change with each value', async ({ mount }): Promise<void> => {
-    const changes: number[] = [];
-    const listeners: StepperListeners = { change: (value: number): number => changes.push(value) };
-    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, { value: 10 }, listeners));
+  test('GIVEN a recorded stepper at 10, clicking + twice emits change with each value', async ({ mount }): Promise<void> => {
+    const stepper = await test.step('WHEN the recorded stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, 'Recorded'));
 
     await test.step('AND + is clicked', (): Promise<void> => stepper.increment());
 
     await test.step('AND + is clicked again', (): Promise<void> => stepper.increment());
 
-    await test.step('THEN change was emitted with 11 then 12', (): void => expect(changes).toEqual([11, 12]));
+    await test.step('THEN change was emitted with 11 then 12', (): Promise<void> => stepper.expectChanges([11, 12]));
   });
 });
 ```
 
-| `mount` option | Purpose | Example value |
-|---|---|---|
-| `props` | Component props | `{ value: 0 }` |
-| `on` | Emitted-event listeners | `{ change: recordChange }` |
-| `slots` | Slot content as HTML strings | `{ default: '<span class="label">Quantity</span>' }` |
-| `hooksConfig` | Data passed to `beforeMount` hooks | `{ routes }` |
+| experimental-ct `mount` option | Stories equivalent |
+|---|---|
+| `props` | `mount(id, props)`, plain serializable data, declared in the story's runtime `props` |
+| `on` (emitted-event listeners) | A `Recorded` story that listens and writes the payloads to a hidden input |
+| `slots` | One story export per slot composition |
+| `hooksConfig` | A data prop the story or the gallery reads |
 
 ### Pinia Store Testing Through UI
 
@@ -700,31 +724,7 @@ test.describe('FEATURE: nuxt posts', () => {
 
 ## Component Testing Dependencies
 
-Components depending on Pinia or Vue Router need these provided in the CT bootstrap. `HooksConfig` names the shape a test passes through `hooksConfig`.
-
-```ts
-// e2e/playwright/index.ts
-import { beforeMount } from '@playwright/experimental-ct-vue/hooks';
-import { createPinia } from 'pinia';
-import type { RouteRecordRaw } from 'vue-router';
-import { createMemoryHistory, createRouter } from 'vue-router';
-
-type HooksConfig = {
-  readonly routes?: RouteRecordRaw[];
-};
-
-beforeMount<HooksConfig>(async ({ app, hooksConfig }): Promise<void> => {
-  const pinia = createPinia();
-
-  app.use(pinia);
-
-  if (!hooksConfig?.routes) return;
-
-  const router = createRouter({ history: createMemoryHistory(), routes: hooksConfig.routes });
-
-  app.use(router);
-});
-```
+Pinia and Vue Router are installed by the gallery, not per spec. Its `window.mount` creates the host app once and calls `app.use(createPinia())` and `app.use(router)` with a memory-history router, so every story gets them. A route a test needs is a prop (`mount('nav/Default', { route: '/dashboard' })`); the story pushes it to the router before rendering. This replaces `beforeMount` with `hooksConfig`. See the gallery contract in [component-testing.md](../testing-patterns/component-testing.md#gallery).
 
 ## Testing v-model
 
@@ -819,7 +819,7 @@ test.describe('FEATURE: home page', () => {
 | --- | --- | --- |
 | `page.evaluate(() => app.__vue_app__.config.globalProperties.$store)` | Accesses Vue internals; breaks on upgrades | Assert on UI that state produces |
 | `page.locator('[data-v-abc123]')` | Scoped style hashes change on every build | Use `getByRole`, `getByText`, `getByTestId` |
-| Import `.vue` files in E2E tests | E2E tests run in Node.js; `.vue` needs compilation | Use `@playwright/experimental-ct-vue` for component tests |
+| Import `.vue` files in E2E tests | E2E tests run in Node.js; `.vue` needs compilation | Component tests: a story under `test/stories/`, mounted by id through the gallery |
 | `page.waitForTimeout(300)` for transitions | Arbitrary waits are fragile | `await expect(locator).toBeVisible()` auto-waits |
 | Mock Pinia by patching `window.__pinia` | Fragile; may not trigger reactivity | Control state through UI or mock API responses |
 | Test composables via `page.evaluate` | Composables need Vue's setup context | Test through components or unit test with Vitest |

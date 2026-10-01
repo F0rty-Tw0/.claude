@@ -1,111 +1,146 @@
 # Component Testing
 
+Playwright 1.62 replaced the `@playwright/experimental-ct-*` runtime with **stories and a gallery**: plain `@playwright/test` specs, the built-in `mount` fixture, and a gallery page served by your own dev server. New suites start here; existing CT suites see [Legacy experimental-ct](#legacy-experimental-ct).
+
 ## Table of Contents
 
-1. [Setup & Configuration](#setup--configuration)
-2. [Mounting Components](#mounting-components)
-3. [Props & State Testing](#props--state-testing)
-4. [Events & Interactions](#events--interactions)
-5. [Slots & Children](#slots--children)
-6. [Mocking Dependencies](#mocking-dependencies)
-7. [Framework-Specific Patterns](#framework-specific-patterns)
+1. [Model](#model)
+2. [Setup & Configuration](#setup--configuration)
+3. [Mounting Stories](#mounting-stories)
+4. [Props & Updates](#props--updates)
+5. [Callbacks & Events](#callbacks--events)
+6. [Providers, Slots & Mocks](#providers-slots--mocks)
+7. [Framework Notes](#framework-notes)
+8. [Legacy experimental-ct](#legacy-experimental-ct)
+
+## Model
+
+| Piece | What it is | Owner |
+|---|---|---|
+| Story | A wrapper component exported from a `*.story.tsx` (or `.ts` / `.vue`) file. One named export per scenario: hard-coded props, providers, state, recorded callbacks. Runs in the browser. | `e2e/<feature>/test/stories/` |
+| Gallery | One page under `playwright/gallery/`, served by the app's dev server. Exposes `window.mount({ story, props })` and `window.unmount()`, renders into `#root`. | You; framework-specific glue |
+| `mount(storyId, props?)` | Built-in fixture (1.62). Navigates to `baseURL`, calls `window.mount`, returns a `Locator` for `#root` with `update(props)` and `unmount()` added. | `@playwright/test` |
+
+Everything the component needs is set up inside the story. Everything the test asserts is observable through the page: DOM, URL, network. `props` cross the boundary as plain serializable data; callbacks never do.
 
 ## Setup & Configuration
 
-### Installation
+### Gallery
 
-One command scaffolds React, Vue, Svelte, or Solid; the prompt picks the framework.
+The gallery is yours to own; there is no template package. `npx playwright init-skills` installs Playwright's agent skills; a coding agent with them scaffolds one for the detected framework and bundler. It must honour this contract:
 
-```bash
-npm init playwright@latest -- --ct
-```
+| Contract | Rule |
+|---|---|
+| `window.mount({ story, props })` | Resolves the id to a story export (typically `import.meta.glob`), renders it with `props` into `#root`, returns a promise that rejects on an unknown story or a render throw. The rejection surfaces as the test's `mount()` throwing. |
+| Root reuse | Create the framework root on the first call and render into it on every call. `update(props)` calls `window.mount` again without navigating; reusing the root is what preserves component state. |
+| `window.unmount()` | Unmounts the current story. Only needed to assert teardown effects; every `mount` navigates fresh. |
+| Global setup | App-wide providers, plugins, styles, and an in-browser mock worker go in the `window.mount` body. This replaces `beforeMount` / `afterMount`. |
+| Story ids | The gallery owns resolution. Recommended: file path without `.story.*`, plus the export name; any unique suffix resolves. With stories under `e2e/<feature>/test/stories/`, point the glob and the id rule at `e2e/`, so `button/Default` resolves `e2e/button/test/stories/button.story.tsx` export `Default`. |
+
+To debug a story, open the gallery URL and run `await window.mount({ story: 'button/Default' })` in the devtools console; that is the call the fixture makes.
 
 ### Configuration
 
-Every nested object is a named const. `ctViteConfig` carries the `@` alias, resolved from the config's folder (a bare `'/src'` means the filesystem root to Vite), so component imports match the app. Specs end in `.test.tsx`; the E2E config collects `**/*.@(e2e|test).ts`, so it never runs them. The config sits in `e2e/`, so it sets no `testDir` and `snapshotDir` is relative to that folder.
+Component specs end in `.test.tsx`, so the E2E config (`**/*.@(e2e|test).ts`) never collects them. `mount` navigates to `baseURL`, so `baseURL` is the gallery URL. `serviceWorkers: 'block'` keeps the app's service worker from shadowing `page.route` mocks; `reuseContext: true` reuses the context across tests in a worker. `GALLERY_URL` lives in `common/playwright.const.ts`.
 
 ```ts
 // e2e/playwright-ct.config.ts
-import { resolve as resolvePath } from 'node:path';
+import { defineConfig, devices } from '@playwright/test';
 
-import { defineConfig, devices } from '@playwright/experimental-ct-react';
+import { GALLERY_URL } from './common/playwright.const';
 
-const alias = { '@': resolvePath(__dirname, '../src') };
+const use = { ...devices['Desktop Chrome'], baseURL: GALLERY_URL, reuseContext: true, serviceWorkers: 'block' } as const;
 
-const resolve = { alias };
-
-const ctViteConfig = { resolve };
-
-const use = { ctPort: 3100, ctViteConfig } as const;
-
-const projects = [
-  { name: 'chromium', use: devices['Desktop Chrome'] },
-  { name: 'firefox', use: devices['Desktop Firefox'] },
-  { name: 'webkit', use: devices['Desktop Safari'] }
-];
+const webServer = { command: 'npm run dev', reuseExistingServer: !process.env.CI, url: GALLERY_URL };
 
 export default defineConfig({
-  projects,
+  forbidOnly: Boolean(process.env.CI),
   snapshotDir: './__snapshots__',
   testMatch: '**/*.test.tsx',
-  use
+  use,
+  webServer
 });
 ```
 
+Run with `npx playwright test -c e2e/playwright-ct.config.ts`. A project in the main config works the same way; give it its own `testMatch`, `baseURL`, and `use`.
+
 ### Project Structure
 
-`e2e/playwright/index.html` and `e2e/playwright/index.tsx` are the CT entry point and setup (providers, styles, hooks); CT looks for the `playwright/` folder next to its config. The setup file nests providers in JSX, so it is `.tsx` and `index.html` loads `./index.tsx`. Each component gets a feature folder: the spec, a helper object in `helpers/`, and a `.tsx` mount util in `test/utils/`.
-
 ```text
-src/
-  components/
-    Button.tsx
-    Counter.tsx
+playwright/
+  gallery/
+    index.html                  #root plus the entry module
+    main.tsx                    window.mount / window.unmount, story glob
 e2e/
   playwright-ct.config.ts
+  common/
+    playwright.type.ts          Mount, StoryRoot, RouteHandler
   button/
     button.test.tsx
     helpers/
       button.helper.ts
     test/
+      stories/
+        button.story.tsx
       utils/
-        button-mount.spec.util.tsx
-  playwright/
-    index.html
-    index.tsx
+        button-mount.spec.util.ts
 ```
 
-## Mounting Components
+`mount` is generic, so its type is read off the fixture args once and shared:
 
-### Basic Mount
+```ts
+// e2e/common/playwright.type.ts
+import type { PlaywrightTestArgs, Route } from '@playwright/test';
 
-`mount` returns a `MountResult`: a `Locator` with `update` and `unmount`. A helper object in `helpers/` takes that root, owns every child locator, and holds each assertion in an `expect*` method as a plain `await expect(…)` line; only the spec opens steps. A mount util in `test/utils/` renders the component as JSX, so the mount step is one call. React CT mounts JSX only: the CT transform rewrites JSX in the spec and in every `.tsx` file it imports, so the util is a `.tsx` file. `ButtonProps` is the component's exported props type; the label is its `children`.
+export type Mount = PlaywrightTestArgs['mount'];
+
+export type RouteHandler = (route: Route) => Promise<void>;
+
+export type StoryRoot = Awaited<ReturnType<Mount>>;
+```
+
+## Mounting Stories
+
+A story file exports one component per scenario. `Default` spreads whatever data props the test passes; the label is the button's `children`.
+
+```tsx
+// e2e/button/test/stories/button.story.tsx
+import type { ReactElement } from 'react';
+
+import type { ButtonProps } from '@/components/Button';
+import { Button } from '@/components/Button';
+
+export const Default = (props: ButtonProps): ReactElement => <Button {...props} />;
+
+export const WithIcon = (): ReactElement => <Button icon='check'>Submit</Button>;
+```
+
+A helper object in `helpers/` takes the `#root` locator `mount` returns, owns every child locator, and holds each assertion in an `expect*` method.
 
 ```ts
 // e2e/button/helpers/button.helper.ts
-import { expect } from '@playwright/experimental-ct-react';
 import type { Locator } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export class ButtonHelper {
+  public readonly button: Locator;
   public readonly icon: Locator;
 
-  private readonly root: Locator;
-
   public constructor(root: Locator) {
-    this.root = root;
+    this.button = root.getByRole('button');
     this.icon = root.locator('svg');
   }
 
   public async click(): Promise<void> {
-    await this.root.click();
+    await this.button.click();
   }
 
   public async expectText(text: string): Promise<void> {
-    await expect(this.root).toContainText(text);
+    await expect(this.button).toContainText(text);
   }
 
   public async expectVariant(variant: string): Promise<void> {
-    await expect(this.root).toHaveClass(new RegExp(variant));
+    await expect(this.button).toHaveClass(new RegExp(variant));
   }
 
   public async expectIcon(): Promise<void> {
@@ -114,31 +149,28 @@ export class ButtonHelper {
 }
 ```
 
-```tsx
-// e2e/button/test/utils/button-mount.spec.util.tsx
-import type { ComponentFixtures } from '@playwright/experimental-ct-react';
+The mount util makes the opening step one call. `mount<typeof Default>` type-checks `props` against the story's signature; the type-only import is erased, so the spec never loads JSX.
 
+```ts
+// e2e/button/test/utils/button-mount.spec.util.ts
 import type { ButtonProps } from '@/components/Button';
-import { Button } from '@/components/Button';
 
+import type { Mount } from '../../../common/playwright.type';
 import { ButtonHelper } from '../../helpers/button.helper';
+import type { Default } from '../stories/button.story';
 
-type Mount = ComponentFixtures['mount'];
-
-export const mountButton = async (mount: Mount, props: ButtonProps, label: string): Promise<ButtonHelper> => {
-  const root = await mount(<Button {...props}>{label}</Button>);
+export const mountButton = async (mount: Mount, props: ButtonProps): Promise<ButtonHelper> => {
+  const root = await mount<typeof Default>('button/Default', props);
 
   return new ButtonHelper(root);
 };
 ```
 
-### Mount with Props
-
-No fixture file exists for CT, so the spec imports `test` from the CT package. Props are a typed const above the first step.
+No fixture file exists for component specs, so the spec imports `test` from `@playwright/test`. Props are a typed const above the first step.
 
 ```tsx
 // e2e/button/button.test.tsx
-import { test } from '@playwright/experimental-ct-react';
+import { test } from '@playwright/test';
 
 import type { ButtonProps } from '@/components/Button';
 
@@ -146,119 +178,50 @@ import type { ButtonHelper } from './helpers/button.helper';
 import { mountButton } from './test/utils/button-mount.spec.util';
 
 test.describe('FEATURE: button', () => {
-  test('GIVEN default props, mounting renders the label', async ({ mount }): Promise<void> => {
-    const button = await test.step('WHEN the button is mounted', (): Promise<ButtonHelper> => mountButton(mount, {}, 'Click me'));
+  test('GIVEN a label, mounting renders it', async ({ mount }): Promise<void> => {
+    const props: ButtonProps = { children: 'Click me' };
+    const button = await test.step('WHEN the default story is mounted', (): Promise<ButtonHelper> => mountButton(mount, props));
 
     await test.step('THEN the label reads Click me', (): Promise<void> => button.expectText('Click me'));
   });
 
-  test('GIVEN a primary large button with an icon, mounting renders the variant classes and the icon', async ({ mount }): Promise<void> => {
-    const props: ButtonProps = { icon: 'check', size: 'large', variant: 'primary' };
-
-    const button = await test.step('WHEN the button is mounted', (): Promise<ButtonHelper> => mountButton(mount, props, 'Submit'));
+  test('GIVEN primary large props, mounting applies both variant classes', async ({ mount }): Promise<void> => {
+    const props: ButtonProps = { children: 'Submit', size: 'large', variant: 'primary' };
+    const button = await test.step('WHEN the default story is mounted', (): Promise<ButtonHelper> => mountButton(mount, props));
 
     await test.step('THEN the primary class is applied', (): Promise<void> => button.expectVariant('primary'));
 
     await test.step('AND the large class is applied', (): Promise<void> => button.expectVariant('large'));
-
-    await test.step('AND the icon is visible', (): Promise<void> => button.expectIcon());
   });
 });
 ```
 
-### Mount with Wrapper/Provider
+| Variant | Shape |
+|---|---|
+| Prop matrix | A `for` loop over an `as const` tuple, one `test` per value, title and step interpolating it; each passes `{ variant }` to `mountButton`. |
+| Fixed composition (icon, children tree) | Its own story export (`WithIcon`), mounted by id with no props. A JSX tree never crosses from the spec. |
+| Visual diff | `expect(root).toHaveScreenshot()` inside an `expect*` helper method, on the `#root` locator, not the page. |
 
-Global providers live in the CT setup file, `e2e/playwright/index.tsx`. `beforeMount` receives the component as `App` and returns it nested in the providers as JSX; `hooksConfig` is the per-test object a spec passes to `mount`, typed once in `e2e/common/hooks-config.type.ts`. The same hook installs browser globals a component reads (`analyticsMock()` in `e2e/test/mocks/analytics.mock.ts` returns no-op `track` and `identify`).
+## Props & Updates
+
+`update(props)` re-renders the same story with new props without remounting, so component state survives. The helper keeps the `StoryRoot` (the augmented locator) and owns `update`; the spec step stays one call. Internal state is asserted through the DOM, never through an instance.
 
 ```ts
-// e2e/common/hooks-config.type.ts
-export type FeatureFlags = {
-  readonly newFeature: boolean;
-};
-
-export type HooksConfig = {
-  readonly featureFlags?: FeatureFlags;
-};
-```
-
-```tsx
-// e2e/playwright/index.tsx
-import { beforeMount } from '@playwright/experimental-ct-react/hooks';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
-
-import { ThemeProvider } from '@/providers/theme';
-import '@/styles/globals.css';
-
-import type { HooksConfig } from '../e2e/common/hooks-config.type';
-import { analyticsMock } from '../e2e/test/mocks/analytics.mock';
-
-const queryClient = new QueryClient();
-
-beforeMount<HooksConfig>(async ({ App, hooksConfig }): Promise<ReactElement> => {
-  Object.assign(window, { analytics: analyticsMock(), featureFlags: hooksConfig?.featureFlags });
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
-});
-```
-
-| Variant | Where |
-|---|---|
-| Per-test provider (`AuthProvider` around `UserProfile`) | The `.tsx` mount util nests `<AuthProvider initialUser={initialUser}><UserProfile /></AuthProvider>`; the spec passes the user. |
-| Global styles | `import '@/styles/globals.css'` in `e2e/playwright/index.tsx`, as above. |
-
-## Props & State Testing
-
-### Testing Prop Variations
-
-A `for` loop over an `as const` tuple generates one `test` per variant. The title interpolates the variant so each case names itself.
-
-```tsx
-// e2e/button/button-variants.test.tsx
-import { test } from '@playwright/experimental-ct-react';
-
-import type { ButtonHelper } from './helpers/button.helper';
-import { mountButton } from './test/utils/button-mount.spec.util';
-
-const VARIANTS = ['danger', 'ghost', 'primary', 'secondary'] as const;
-
-test.describe('FEATURE: button variants', () => {
-  for (const variant of VARIANTS) {
-    test(`GIVEN the ${variant} variant, mounting applies the ${variant} class`, async ({ mount }): Promise<void> => {
-      const button = await test.step(`WHEN the ${variant} button is mounted`, (): Promise<ButtonHelper> => mountButton(mount, { variant }, 'Button'));
-
-      await test.step(`THEN the ${variant} class is applied`, (): Promise<void> => button.expectVariant(variant));
-    });
-  }
-});
-```
-
-### Updating Props and Internal State
-
-`MountResult.update` re-renders with a new JSX element. It ignores anything else: a non-JSX argument re-renders the original element and drops the new props without an error. The helper object keeps the root as `MountResult` and owns `update`, so it is a `.helper.tsx` file and the spec step stays one call. Internal state is asserted through the DOM (`aria-checked`, text), never through the instance. `mountCounter(mount, props)` in `test/utils/counter-mount.spec.util.tsx` has the `mountButton` shape and returns a `CounterHelper`.
-
-```tsx
-// e2e/counter/helpers/counter.helper.tsx
-import type { MountResult } from '@playwright/experimental-ct-react';
-import { expect } from '@playwright/experimental-ct-react';
+// e2e/counter/helpers/counter.helper.ts
 import type { Locator } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 import type { CounterProps } from '@/components/Counter';
-import { Counter } from '@/components/Counter';
+
+import type { StoryRoot } from '../../common/playwright.type';
 
 export class CounterHelper {
   public readonly count: Locator;
   public readonly incrementButton: Locator;
 
-  private readonly root: MountResult;
+  private readonly root: StoryRoot;
 
-  public constructor(root: MountResult) {
+  public constructor(root: StoryRoot) {
     this.root = root;
     this.count = root.getByTestId('count');
     this.incrementButton = root.getByRole('button', { name: '+' });
@@ -269,7 +232,7 @@ export class CounterHelper {
   }
 
   public async update(props: CounterProps): Promise<void> {
-    await this.root.update(<Counter {...props} />);
+    await this.root.update(props);
   }
 
   public async expectCount(count: number): Promise<void> {
@@ -278,331 +241,149 @@ export class CounterHelper {
 }
 ```
 
+`mountCounter(mount, props)` in `test/utils/counter-mount.spec.util.ts` has the `mountButton` shape over `counter/Default`.
+
 ```tsx
 // e2e/counter/counter.test.tsx
-import { test } from '@playwright/experimental-ct-react';
+import { test } from '@playwright/test';
 
 import type { CounterHelper } from './helpers/counter.helper';
 import { mountCounter } from './test/utils/counter-mount.spec.util';
 
 test.describe('FEATURE: counter', () => {
-  test('GIVEN a count of 0, updating initialCount to 10 makes the count read 10', async ({ mount }): Promise<void> => {
-    const counter = await test.step('WHEN the counter is mounted', (): Promise<CounterHelper> => mountCounter(mount, { initialCount: 0 }));
-
-    await test.step('THEN the count reads 0', (): Promise<void> => counter.expectCount(0));
-
-    await test.step('WHEN initialCount is updated to 10', (): Promise<void> => counter.update({ initialCount: 10 }));
-
-    await test.step('THEN the count reads 10', (): Promise<void> => counter.expectCount(10));
-  });
-
-  test('GIVEN a count of 0, clicking + makes the count read 1', async ({ mount }): Promise<void> => {
-    const counter = await test.step('WHEN the counter is mounted', (): Promise<CounterHelper> => mountCounter(mount, { initialCount: 0 }));
+  test('GIVEN a step of 1, raising the step prop keeps the count already reached', async ({ mount }): Promise<void> => {
+    const counter = await test.step('WHEN the counter is mounted', (): Promise<CounterHelper> => mountCounter(mount, { step: 1 }));
 
     await test.step('AND + is clicked', (): Promise<void> => counter.increment());
 
     await test.step('THEN the count reads 1', (): Promise<void> => counter.expectCount(1));
+
+    await test.step('WHEN the step prop is updated to 5', (): Promise<void> => counter.update({ step: 5 }));
+
+    await test.step('AND + is clicked', (): Promise<void> => counter.increment());
+
+    await test.step('THEN the count reads 6', (): Promise<void> => counter.expectCount(6));
   });
 });
 ```
 
-| Variant | Helper-object method body |
-|---|---|
-| Controlled input | `fill('hello')` on the input, then `update` with `value: 'hello'`; the spec asserts `toHaveValue('hello')` through `expectValue`. |
-| Toggle with `role="switch"` | `click()` on the root; `expectChecked(true)` asserts `toHaveAttribute('aria-checked', 'true')` on `root.getByRole('switch')`. |
+## Callbacks & Events
 
-## Events & Interactions
-
-### Testing Callbacks and Payloads
-
-Callback props are recorded into a typed array the spec owns. `recordInto` in the mount util returns a handler that pushes each payload; the assertion step compares the array. `Credentials` and `SubmitHandler` are named in `common/login-form.type.ts`; `CREDENTIALS_STUB` is in `test/stubs/login-form.stub.ts`.
-
-```ts
-// e2e/login-form/helpers/login-form.helper.ts
-import type { Locator } from '@playwright/test';
-
-import type { Credentials } from '../common/login-form.type';
-
-export class LoginFormHelper {
-  public readonly emailInput: Locator;
-  public readonly passwordInput: Locator;
-  public readonly submitButton: Locator;
-
-  private readonly root: Locator;
-
-  public constructor(root: Locator) {
-    this.root = root;
-    this.emailInput = root.getByLabel('Email');
-    this.passwordInput = root.getByLabel('Password');
-    this.submitButton = root.getByRole('button', { name: 'Sign in' });
-  }
-
-  public async submit(credentials: Credentials): Promise<void> {
-    await this.emailInput.fill(credentials.email);
-    await this.passwordInput.fill(credentials.password);
-    await this.submitButton.click();
-  }
-}
-```
+A callback cannot cross from Node to the browser. The story owns the state, provides the callback, and records each payload into a hidden input; the test asserts the recorded value with `toHaveValue`, which retries until the state lands. `Credentials` is named in `common/login-form.type.ts`.
 
 ```tsx
-// e2e/login-form/test/utils/login-form-mount.spec.util.tsx
-import type { ComponentFixtures } from '@playwright/experimental-ct-react';
+// e2e/login-form/test/stories/login-form.story.tsx
+import type { ReactElement } from 'react';
+import { useState } from 'react';
 
 import { LoginForm } from '@/components/LoginForm';
 
-import type { Credentials, SubmitHandler } from '../../common/login-form.type';
-import { LoginFormHelper } from '../../helpers/login-form.helper';
+import type { Credentials } from '../../common/login-form.type';
 
-type Mount = ComponentFixtures['mount'];
+export const Recorded = (): ReactElement => {
+  const [submissions, setSubmissions] = useState<Credentials[]>([]);
+  const recorded = JSON.stringify(submissions);
+  const record = (credentials: Credentials): void => {
+    const next = [...submissions, credentials];
 
-export const recordInto = (submissions: Credentials[]): SubmitHandler => {
-  return (data: Credentials): void => {
-    submissions.push(data);
+    setSubmissions(next);
   };
-};
 
-export const mountLoginForm = async (mount: Mount, onSubmit: SubmitHandler): Promise<LoginFormHelper> => {
-  const root = await mount(<LoginForm onSubmit={onSubmit} />);
-
-  return new LoginFormHelper(root);
+  return (
+    <>
+      <LoginForm onSubmit={record} />
+      <form hidden>
+        <input data-testid='submissions' readOnly value={recorded} />
+      </form>
+    </>
+  );
 };
 ```
 
-```tsx
-// e2e/login-form/login-form.test.tsx
-import { expect, test } from '@playwright/experimental-ct-react';
+`LoginFormHelper` gains `submissions` (`root.getByTestId('submissions')`) and `expectSubmissions(expected: Credentials[])`, which asserts `toHaveValue` against `JSON.stringify(expected)`. The spec mounts `login-form/Recorded`, submits `CREDENTIALS_STUB`, and checks `'THEN the form recorded the credentials once'` with `form.expectSubmissions([CREDENTIALS_STUB])`. The negative case is the same shape: act, then assert the recorded value did not change.
 
-import type { Credentials } from './common/login-form.type';
-import type { LoginFormHelper } from './helpers/login-form.helper';
-import { CREDENTIALS_STUB } from './test/stubs/login-form.stub';
-import { mountLoginForm, recordInto } from './test/utils/login-form-mount.spec.util';
-
-test.describe('FEATURE: login form', () => {
-  test('GIVEN valid credentials, submitting them passes them to onSubmit once', async ({ mount }): Promise<void> => {
-    const submissions: Credentials[] = [];
-    const form = await test.step('WHEN the form is mounted', (): Promise<LoginFormHelper> => mountLoginForm(mount, recordInto(submissions)));
-
-    await test.step('AND credentials are submitted', (): Promise<void> => form.submit(CREDENTIALS_STUB));
-
-    await test.step('THEN onSubmit received the credentials once', (): void => expect(submissions).toEqual([CREDENTIALS_STUB]));
-  });
-});
-```
-
-| Interaction | Helper-object method body | Spec assertion |
+| Interaction | Story records | Helper assertion |
 |---|---|---|
-| Click event | `this.root.click()` with `onClick` recorded through `recordInto` | `expect(clicks).toHaveLength(1)` |
-| Select payload | `this.root.getByRole('combobox').click()` then `this.root.getByRole('option', { name }).click()` | `expect(values).toEqual(['b'])` |
-| Keyboard navigation | `this.trigger.click()`, then `this.root.press('ArrowDown')` twice and `this.root.press('Enter')` in `pickSecondByKeyboard()` | `expectSelected('Banana')` asserts `toHaveText` on the trigger |
+| Click count | `onClick` increments a counter into `data-testid='clicks'` | `toHaveValue('1')` |
+| Select payload | `onChange` value into `data-testid='selected'` | `toHaveValue('b')` |
+| Keyboard navigation | Nothing extra; the trigger shows the selection | `pickSecondByKeyboard()` presses `ArrowDown` twice and `Enter`; `expectSelected('Banana')` asserts `toHaveText` |
 
-## Slots & Children
+## Providers, Slots & Mocks
 
-### Testing Named Slots (Vue)
-
-Vue's `mount` takes a `slots` option keyed by slot name with HTML strings. The slot set is a typed stub so a spec overrides one slot at a time.
-
-```ts
-// e2e/modal/test/stubs/modal.stub.ts
-import type { ModalSlots } from '../../common/modal.type';
-
-export const MODAL_SLOTS_STUB: ModalSlots = {
-  default: '<p>Modal content</p>',
-  footer: '<button>Close</button>',
-  header: '<h2>Modal Title</h2>'
-};
-```
-
-```ts
-// e2e/modal/test/utils/modal-mount.spec.util.ts
-import type { ComponentFixtures } from '@playwright/experimental-ct-vue';
-
-import Modal from '@/components/Modal.vue';
-
-import type { ModalSlots } from '../../common/modal.type';
-import { ModalHelper } from '../../helpers/modal.helper';
-
-type Mount = ComponentFixtures['mount'];
-
-export const mountModal = async (mount: Mount, slots: ModalSlots): Promise<ModalHelper> => {
-  const root = await mount(Modal, { slots });
-
-  return new ModalHelper(root);
-};
-```
-
-```tsx
-// e2e/modal/modal.test.tsx
-import { test } from '@playwright/experimental-ct-vue';
-
-import type { ModalHelper } from './helpers/modal.helper';
-import { MODAL_SLOTS_STUB } from './test/stubs/modal.stub';
-import { mountModal } from './test/utils/modal-mount.spec.util';
-
-test.describe('FEATURE: modal slots', () => {
-  test('GIVEN all slots filled, mounting renders each slot', async ({ mount }): Promise<void> => {
-    const modal = await test.step('WHEN the modal is mounted', (): Promise<ModalHelper> => mountModal(mount, MODAL_SLOTS_STUB));
-
-    await test.step('THEN the heading reads Modal Title', (): Promise<void> => modal.expectHeading('Modal Title'));
-
-    await test.step('AND the footer button reads Close', (): Promise<void> => modal.expectButton('Close'));
-  });
-});
-```
-
-`ModalHelper` exposes `heading` (`root.getByRole('heading')`) and `closeButton` (`root.getByRole('button')`) and asserts them in `expectHeading` / `expectButton` as plain `await expect(…)` lines.
-
-| Variant | Mount util body |
+| Need | Where it goes |
 |---|---|
-| React children | `<Card><h2>Title</h2><p>Description</p></Card>`; the helper object asserts `getByRole('heading')` and `getByText('Description')`. |
-| Render prop | A function child runs in the test process, so the browser gets a promise back and React renders nothing. A story component in `test/stories/data-fetcher.story.tsx` renders `<DataFetcher url={url}>{renderUser}</DataFetcher>` in the browser, where `renderUser` returns a `Loading...` span while `loading` and the name span after; the util mounts `<DataFetcherStory url={url} />`. Assert `Loading...` visible, then the name visible. |
+| App-wide providers (theme, query client, i18n, store) and global CSS | The gallery's `window.mount` body, wrapping every story. |
+| A provider for some stories only | A shared `decorator` component next to the gallery; the story wraps itself in it. |
+| Per-test variation (feature flag, route, initial user) | A data prop the story or decorator reads: `mount('feature-banner/Default', { newFeature: true })`. Replaces `hooksConfig`. |
+| Children, slots, render props, refs | One story export per composition. A render prop or ref lives inside the story, where it runs in the browser. |
+| API calls on mount | `page.route` before `mount`, since `mount` navigates. The mount util routes, so the route is part of the opening call. |
+| Browser globals (`analytics`, `featureFlags`) | Installed in `window.mount` or the story, from props. |
 
-## Mocking Dependencies
-
-### Mocking Imports
-
-`e2e/playwright/index.tsx` above installs globals and reads `hooksConfig` in `beforeMount`. A spec passes `hooksConfig` through the mount util; the generic on `mount` types it.
-
-```tsx
-// e2e/feature-banner/test/utils/feature-banner-mount.spec.util.tsx
-import type { ComponentFixtures } from '@playwright/experimental-ct-react';
-
-import { FeatureBanner } from '@/components/FeatureBanner';
-
-import type { HooksConfig } from '../../../common/hooks-config.type';
-import { FeatureBannerHelper } from '../../helpers/feature-banner.helper';
-
-type Mount = ComponentFixtures['mount'];
-
-export const mountFeatureBanner = async (mount: Mount, hooksConfig: HooksConfig): Promise<FeatureBannerHelper> => {
-  const root = await mount<HooksConfig>(<FeatureBanner />, { hooksConfig });
-
-  return new FeatureBannerHelper(root);
-};
-```
-
-```tsx
-// e2e/feature-banner/feature-banner.test.tsx
-import { test } from '@playwright/experimental-ct-react';
-
-import type { FeatureFlags, HooksConfig } from '../common/hooks-config.type';
-import type { FeatureBannerHelper } from './helpers/feature-banner.helper';
-import { mountFeatureBanner } from './test/utils/feature-banner-mount.spec.util';
-
-test.describe('FEATURE: feature banner', () => {
-  test('GIVEN the newFeature flag on, mounting shows the new feature text', async ({ mount }): Promise<void> => {
-    const featureFlags: FeatureFlags = { newFeature: true };
-    const hooksConfig: HooksConfig = { featureFlags };
-    const banner = await test.step('WHEN the banner is mounted', (): Promise<FeatureBannerHelper> => mountFeatureBanner(mount, hooksConfig));
-
-    await test.step('THEN the new feature text is shown', (): Promise<void> => banner.expectText('New Feature'));
-  });
-});
-```
-
-### Mocking API Calls
-
-A component that fetches on mount needs the route installed before `mount`. The handler is a factory in `test/mocks/`; the mount util `mountUserProfile(mount, page, user)` routes `userMock(user)` on `page` before it mounts with `user.id`, so the route is part of the opening call and no step or hook installs it. `User` is named in `common/user-profile.type.ts`; `USER_STUB` is in `test/stubs/user.stub.ts`.
+A component that fetches on mount: the util takes `page` and routes the stub-defaulted mock first. `User` is in `common/user-profile.type.ts`; `userMock(user)` in `test/mocks/user.mock.ts` has the `sessionMock` shape from [house-style.md](../core/house-style.md#test-data-and-mocks).
 
 ```ts
-// e2e/user-profile/test/mocks/user.mock.ts
-import type { Route } from '@playwright/test';
+// e2e/user-profile/test/utils/user-profile-mount.spec.util.ts
+import type { Page } from '@playwright/test';
 
-import type { RouteHandler } from '../../../common/playwright.type';
+import type { Mount } from '../../../common/playwright.type';
 import type { User } from '../../common/user-profile.type';
-import { USER_STUB } from '../stubs/user.stub';
+import { UserProfileHelper } from '../../helpers/user-profile.helper';
+import { userMock } from '../mocks/user.mock';
 
-export const userMock = (user: User = USER_STUB): RouteHandler => {
-  return (route: Route): Promise<void> => route.fulfill({ json: user });
+export const mountUserProfile = async (mount: Mount, page: Page, user: User): Promise<UserProfileHelper> => {
+  await page.route('**/api/users/*', userMock(user));
+  const root = await mount('user-profile/Default', { userId: user.id });
+
+  return new UserProfileHelper(root);
 };
 ```
 
-```tsx
-// e2e/user-profile/user-profile.test.tsx
-import { test } from '@playwright/experimental-ct-react';
+The spec's opening step is `'WHEN the profile is mounted'` with `mountUserProfile(mount, page, USER_STUB)`; the title names the state (`'GIVEN a stubbed user api, mounting shows the user name'`).
 
-import type { UserProfileHelper } from './helpers/user-profile.helper';
-import { USER_STUB } from './test/stubs/user.stub';
-import { mountUserProfile } from './test/utils/user-profile-mount.spec.util';
+## Framework Notes
 
-test.describe('FEATURE: user profile', () => {
-  test('GIVEN a stubbed user api, mounting shows the user name', async ({ mount, page }): Promise<void> => {
-    const profile = await test.step('WHEN the profile is mounted', (): Promise<UserProfileHelper> => mountUserProfile(mount, page, USER_STUB));
+The gallery's `window.mount` is the only framework-specific code. Specs, helpers, and utils are identical across frameworks.
 
-    await test.step('THEN the user name is shown', (): Promise<void> => profile.expectName(USER_STUB.name));
-  });
-});
-```
+| Framework | Story file | Notes |
+|---|---|---|
+| React | `*.story.tsx`, named exports | The gallery reuses one `createRoot` so `update` reconciles. |
+| Vue | `*.story.ts` exporting `defineComponent` stories, or `*.story.vue` (one story, default export, id is the path alone) | The gallery mounts a reactive host once and swaps a `shallowRef` story and props; recreating the app resets state on `update`. Pinia and Vue Router install in `window.mount`. `v-model`: a stateful story binds it and records `modelValue` into a hidden input. Slots: a `.story.vue` per composition. |
+| Svelte, Solid, others | Whatever the dev server compiles | Same contract; only the gallery's render call differs. |
 
-### Mocking Hooks
+## Legacy experimental-ct
 
-A custom hook that reads a global is mocked the same way as a feature flag: add the field to `HooksConfig` (`readonly mockAuth?: AuthState`), have `beforeMount` assign it to the global the hook reads, and pass it through `hooksConfig` in the mount util. The spec then asserts on the rendered result (`Admin Panel` visible), not on the hook.
+| Package | Status |
+|---|---|
+| `@playwright/experimental-ct-react`, `-react17`, `-vue` | No longer updated since 1.62. |
+| `@playwright/experimental-ct-svelte` | Removed in 1.58. |
+| `@playwright/experimental-ct-vue2`, `-solid` | No longer updated since 1.49. |
 
-## Framework-Specific Patterns
+Existing suites keep running on a pinned Playwright version and get no fixes. Migrate with the [official guide](https://playwright.dev/docs/test-components#migration-from-the-experimental-packages): keep the old CT config running until the last spec is ported, then drop the package, `playwright/index.html`, `playwright/index.ts*`, and the version pin.
 
-| Framework | Package | Mount signature | Notes |
-|---|---|---|---|
-| React | `@playwright/experimental-ct-react` | `mount(<Comp {...props} />)` in a `.tsx` mount util | Refs: a callback ref runs in the test process and receives the string `ref: <Node>`, not the element; assert what the ref drives (focus, scroll) through the helper object. Context: the mount util nests `<UserContext.Provider value={value}><UserGreeting /></UserContext.Provider>`. |
-| Vue | `@playwright/experimental-ct-vue` | `mount(Comp, { props, slots, on })` | `v-model` binds through `modelValue` plus an `'onUpdate:modelValue'` listener in `props`. |
-| Svelte | `@playwright/experimental-ct-svelte` | `mount(Comp, { props })` | Same helper-object and mount-util shape; `on` carries event listeners. |
-| Solid | `@playwright/experimental-ct-solid` (last published at 1.48.2; no newer release) | `mount(<Comp {...props} />)` in a `.tsx` mount util | Same shape as React: JSX only. |
+| experimental-ct | Stories |
+|---|---|
+| `mount(<Button onClick={spy} />)` | Stateful story recording into a hidden input; helper asserts `toHaveValue` |
+| JSX children or slots from the spec | One story export per composition |
+| `update(<Counter step={5} />)` | `update({ step: 5 })` |
+| `beforeMount` / `afterMount`, `hooksConfig` | Gallery `window.mount` body; per-test variation as props |
+| `ctViteConfig`, `ctPort`, `ctTemplateDir` | Gone; the app's dev server serves the gallery, port lives in `webServer` and `baseURL` |
+| `defineConfig` from the CT package | `defineConfig` from `@playwright/test` |
 
-### Vue v-model
-
-The listener key needs quotes, so it stays in the props object; the mount util owns it.
-
-```ts
-// e2e/text-input/test/utils/text-input-mount.spec.util.ts
-import type { ComponentFixtures } from '@playwright/experimental-ct-vue';
-
-import TextInput from '@/components/TextInput.vue';
-
-import type { ModelListener } from '../../common/text-input.type';
-import { TextInputHelper } from '../../helpers/text-input.helper';
-
-type Mount = ComponentFixtures['mount'];
-
-export const mountTextInput = async (mount: Mount, modelValue: string, onUpdate: ModelListener): Promise<TextInputHelper> => {
-  const props = { modelValue, 'onUpdate:modelValue': onUpdate };
-  const root = await mount(TextInput, { props });
-
-  return new TextInputHelper(root);
-};
-```
-
-```tsx
-// e2e/text-input/text-input.test.tsx
-import { expect, test } from '@playwright/experimental-ct-vue';
-
-import type { TextInputHelper } from './helpers/text-input.helper';
-import { mountTextInput } from './test/utils/text-input-mount.spec.util';
-
-test.describe('FEATURE: text input v-model', () => {
-  test('GIVEN an empty model, typing text emits update:modelValue with the text', async ({ mount }): Promise<void> => {
-    const values: string[] = [];
-    const onUpdate = (value: string): number => values.push(value);
-    const input = await test.step('WHEN the input is mounted', (): Promise<TextInputHelper> => mountTextInput(mount, '', onUpdate));
-
-    await test.step('AND test is typed', (): Promise<void> => input.fill('test'));
-
-    await test.step('THEN the model received test', (): void => expect(values).toEqual(['test']));
-  });
-});
-```
+Story ids are strings: a rename breaks specs at run time, and suffix matching can resolve a different story after one. Keep ids unique per feature folder.
 
 ## Anti-Patterns to Avoid
 
-| Anti-Pattern                   | Problem             | Solution                          |
-| ------------------------------ | ------------------- | --------------------------------- |
-| Testing implementation details | Brittle tests       | Test behavior, not internal state |
-| Snapshot testing everything    | Maintenance burden  | Use for visual regression only    |
-| Not isolating components       | Hidden dependencies | Mock all external dependencies    |
-| Testing framework behavior     | Redundant           | Focus on your component logic     |
-| Skipping accessibility         | Misses real issues  | Include a11y checks in CT         |
-| `createElement` or object notation for React | `mount` throws `Object mount notation is not supported`; `update` keeps the old element | JSX in a `.tsx` mount util; spec passes props |
+| Anti-Pattern | Problem | Solution |
+|---|---|---|
+| Passing a callback or JSX through `mount` props | Props are serialized; functions and elements do not survive | Record into a hidden input inside a story; one story per composition |
+| `page.getByRole` on a component spec | The gallery page holds only `#root`, but the spec now knows the DOM | Helper object built from the `mount` root |
+| Routing after `mount` | `mount` navigates; the component already fetched | Route in the mount util before `mount` |
+| Testing implementation details | Brittle tests | Assert what the DOM shows or the story recorded |
+| New suite on `@playwright/experimental-ct-*` | Frozen packages, no fixes | Stories and the built-in `mount` |
+| Skipping accessibility | Misses real issues | Aria snapshots or axe on the `#root` locator; see [accessibility.md](accessibility.md) |
 
 ## Related References
 
 - **Accessibility**: See [accessibility.md](accessibility.md) for a11y testing in components
 - **Fixtures**: See [fixtures-hooks.md](../core/fixtures-hooks.md) for shared test setup
-- **React / Vue**: See [react.md](../frameworks/react.md) and [vue.md](../frameworks/vue.md) for full helper-object classes
+- **React / Vue**: See [react.md](../frameworks/react.md) and [vue.md](../frameworks/vue.md) for framework-specific stories

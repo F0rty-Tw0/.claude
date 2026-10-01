@@ -10,6 +10,8 @@
 6. [Quarantine and Management](#quarantine-and-management)
 7. [Prevention Strategies](#prevention-strategies)
 
+For a multi-run flake audit (repeat runs, categorising each failure), use skill:deflaky; this file owns the Playwright fixes it points to.
+
 ## Understanding Flakiness Types
 
 ### Categories of Flakiness
@@ -152,7 +154,12 @@ npx playwright show-trace path/to/trace.zip
 
 # Generate trace for specific test
 npx playwright test e2e/checkout/checkout.test.ts --trace on
+
+# Keep the failed attempt and every retry, so a fail and a pass of one test sit side by side
+npx playwright test e2e/checkout/checkout.test.ts --retries=2 --trace retain-on-failure-and-retries
 ```
+
+Diff the failing and the passing attempt with `npx playwright trace actions` and `trace snapshot` on each ([Terminal Trace Analysis](debugging.md#terminal-trace-analysis-agents)); the first action whose timing, call log, or snapshot differs is where the race is. A failed `expect` also carries `errorContext` on `test.info().errors` (1.60): the aria snapshot of the receiver when it failed, which shows what the page held instead of the expected state.
 
 ## Fixing Strategies by Type
 
@@ -466,7 +473,7 @@ cpulimit -l 50 -- npx playwright test
 docker run -it --rm \
   -v $(pwd):/work \
   -w /work \
-  mcr.microsoft.com/playwright:v1.40.0-jammy \
+  mcr.microsoft.com/playwright:v1.63.0-noble \
   npx playwright test
 ```
 
@@ -584,6 +591,62 @@ test.describe('FEATURE: checkout', () => {
 });
 ```
 
+### Reporter-Based Quarantine
+
+`reporter.preprocess()` (1.62) runs after the config resolves and before any test starts, and marks tests through `testRun`. A quarantine reporter reads the flaky list from your tracker and marks each listed test `fixme`, so the spec files stay untouched and leaving quarantine is a data change. The list is keyed on `titlePath()` joined with ` › `. A failed fetch falls back to an empty set, so an outage runs everything instead of skipping everything. A test tagged `@critical` is never quarantined. `QUARANTINE_URL` lives in `common/playwright.const.ts`.
+
+```ts
+// e2e/reporters/quarantine.reporter.ts
+import type { Reporter, TestCase } from '@playwright/test/reporter';
+
+import { QUARANTINE_URL } from '../common/playwright.const';
+
+type PreprocessParams = Parameters<NonNullable<Reporter['preprocess']>>[0];
+
+const isString = (value: unknown): value is string => typeof value === 'string';
+
+const toKey = (test: TestCase): string => test.titlePath().join(' › ');
+
+const isCritical = (test: TestCase): boolean => test.tags.includes('@critical');
+
+const toKeys = (body: unknown): string[] => {
+  if (!Array.isArray(body)) return [];
+
+  return body.filter(isString);
+};
+
+const fetchQuarantined = async (): Promise<Set<string>> => {
+  try {
+    const response = await fetch(QUARANTINE_URL);
+    const body: unknown = response.ok ? await response.json() : [];
+    const keys = toKeys(body);
+
+    return new Set(keys);
+  } catch {
+    return new Set();
+  }
+};
+
+export default class QuarantineReporter implements Reporter {
+  public async preprocess({ suite, testRun }: PreprocessParams): Promise<void> {
+    const quarantined = await fetchQuarantined();
+    const tests = suite.allTests();
+
+    for (const test of tests) {
+      const isQuarantined = quarantined.has(toKey(test)) && !isCritical(test);
+
+      if (isQuarantined) testRun.fixme(test, 'quarantined: flaky');
+    }
+  }
+
+  public printsToStdio(): boolean {
+    return false;
+  }
+}
+```
+
+Register it next to the normal reporter: `const reporter: ReporterDescription[] = [['list'], ['./reporters/quarantine.reporter.ts']];` above `defineConfig`. `testRun` also offers `skip`, `fail`, and `exclude`; `fixme` keeps the test visible in the report as skipped-to-fix.
+
 ## Prevention Strategies
 
 ### Test Burn-In
@@ -650,7 +713,7 @@ export class CatalogPage {
 
 ### Retry Budget
 
-Retry only in CI and keep timeouts modest, so retries diagnose flakes instead of masking them.
+Retry only in CI and keep timeouts modest, so retries diagnose flakes instead of masking them. `retryStrategy: 'isolated'` (1.62) runs every retry at the end of the run, one at a time in a single worker. A test that failed in the parallel run and passes in isolation is a concurrency flake (shared data, load, state leak); one that fails again alone is flaky on its own (race in the test or app).
 
 ```ts
 // e2e/playwright.config.ts
@@ -661,10 +724,24 @@ const expectOptions = { timeout: 10000 };
 export default defineConfig({
   expect: expectOptions,
   retries: process.env.CI ? 2 : 0,
+  retryStrategy: 'isolated',
   testMatch: '**/*.@(e2e|test).ts',
   timeout: 60000
 });
 ```
+
+### Static Checks
+
+A missing `await` is the most common flake source: the call races the next step or outlives the test, and fails as `Target page, context or browser has been closed` or a stray timeout. Lint catches it before any run.
+
+| Rule | Catches |
+|---|---|
+| `@typescript-eslint/no-floating-promises` | Any unhandled promise, including page-object and util calls the Playwright plugin cannot see; needs type-aware linting |
+| `playwright/missing-playwright-await` | An un-awaited `expect` matcher, `test.step`, or Playwright API call |
+| `playwright/no-wait-for-timeout` | `page.waitForTimeout()` |
+| `playwright/prefer-web-first-assertions` | `expect(await locator.isVisible()).toBe(true)` and similar one-shot checks that do not retry |
+
+Extend `playwright.configs['flat/recommended']` from `eslint-plugin-playwright` for the `e2e/` files; it enables the three plugin rules.
 
 ## Anti-Patterns to Avoid
 

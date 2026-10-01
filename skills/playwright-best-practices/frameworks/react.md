@@ -535,83 +535,78 @@ test.describe('FEATURE: widget error boundary', () => {
 
 `panelPage.goto(options?)` takes `PanelOptions` from `common/panel.type.ts`, `{ readonly widgets?: 'broken' | 'brokenOnce' }`, and routes `brokenWidgetsMock()` or `recoveringWidgetsMock()` on `**/api/widgets` before it navigates. The spec names the state; the page object picks the mock.
 
-### Component Testing (Experimental)
+### Component Testing (Stories)
 
 **Use when**: Testing complex interactive components in isolation: data tables, form wizards, rich editors. Needs a real browser but not the full app.
 **Avoid when**: Component depends heavily on backend data or routing. Use E2E instead.
 
-```ts
-// e2e/playwright-ct.config.ts
-import { defineConfig, devices } from '@playwright/experimental-ct-react';
-
-const use = { ctPort: 3100, trace: 'on-first-retry' } as const;
-
-const projects = [{ name: 'chromium', use: devices['Desktop Chrome'] }];
-
-export default defineConfig({
-  projects,
-  testMatch: '**/*.test.tsx',
-  use
-});
-```
-
-React CT mounts JSX only. The CT transform rewrites JSX in the spec and in every `.tsx` file it imports; `mount(createElement(Stepper, props))` throws `Object mount notation is not supported`. The mount util is therefore a `.tsx` file. `StepperProps` is the component's exported props type.
+Since 1.62 a component test mounts a **story** by id through the built-in `mount` fixture; the app's Vite dev server serves the gallery that renders it. Config, gallery contract, and the shared `Mount` type are in [component-testing.md](../testing-patterns/component-testing.md#setup--configuration). Spec, helper, and util stay plain `.ts` logic; JSX lives only in the story. `StepperProps` is the component's exported props type.
 
 ```tsx
-// e2e/stepper/test/utils/stepper-mount.spec.util.tsx
-import type { ComponentFixtures } from '@playwright/experimental-ct-react';
+// e2e/stepper/test/stories/stepper.story.tsx
+import type { ReactElement } from 'react';
+import { useState } from 'react';
 
 import type { StepperProps } from '@/components/Stepper';
 import { Stepper } from '@/components/Stepper';
 
-import { StepperHelper } from '../../helpers/stepper.helper';
+export const Default = (props: StepperProps): ReactElement => <Stepper {...props} />;
 
-type Mount = ComponentFixtures['mount'];
+export const Recorded = (): ReactElement => {
+  const [values, setValues] = useState<number[]>([]);
+  const recorded = JSON.stringify(values);
+  const record = (value: number): void => {
+    const next = [...values, value];
 
-export const mountStepper = async (mount: Mount, props: StepperProps): Promise<StepperHelper> => {
-  const root = await mount(<Stepper {...props} />);
+    setValues(next);
+  };
 
-  return new StepperHelper(root);
+  return (
+    <>
+      <Stepper initial={0} onChange={record} />
+      <input data-testid='changes' hidden readOnly value={recorded} />
+    </>
+  );
 };
 ```
 
+`mountStepper(mount, story, props?)` in `test/utils/stepper-mount.spec.util.ts` calls `` mount(`stepper/${story}`, props) `` and wraps the root in a `StepperHelper`; `StepperStory` is `'Default' | 'Recorded'` in `common/stepper.type.ts`. The Vue version in [vue.md](vue.md#component-testing-with-stories) shows the util and the full helper class.
+
 ```tsx
 // e2e/stepper/stepper.test.tsx
-import { expect, test } from '@playwright/experimental-ct-react';
+import { test } from '@playwright/test';
 
 import type { StepperHelper } from './helpers/stepper.helper';
 import { mountStepper } from './test/utils/stepper-mount.spec.util';
 
 test.describe('FEATURE: stepper', () => {
   test('GIVEN a stepper at 0, clicking + reads 1', async ({ mount }): Promise<void> => {
-    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0 }));
+    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, 'Default', { initial: 0 }));
 
     await test.step('AND + is clicked', (): Promise<void> => stepper.increment());
 
     await test.step('THEN the value reads 1', (): Promise<void> => stepper.expectValue(1));
   });
 
-  test('GIVEN an onChange handler, clicking + twice passes it each value', async ({ mount }): Promise<void> => {
-    const values: number[] = [];
-    const onChange = (value: number): number => values.push(value);
-    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, onChange }));
+  test('GIVEN a recorded stepper at 0, clicking + twice reports each value', async ({ mount }): Promise<void> => {
+    const stepper = await test.step('WHEN the recorded stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, 'Recorded'));
 
     await test.step('AND + is clicked', (): Promise<void> => stepper.increment());
 
     await test.step('AND + is clicked again', (): Promise<void> => stepper.increment());
 
-    await test.step('THEN onChange saw 1 then 2', (): void => expect(values).toEqual([1, 2]));
+    await test.step('THEN onChange saw 1 then 2', (): Promise<void> => stepper.expectChanges([1, 2]));
   });
 
   test('GIVEN a value at min, the decrement button is disabled', async ({ mount }): Promise<void> => {
-    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, { initial: 0, min: 0 }));
+    const stepper = await test.step('WHEN the stepper is mounted', (): Promise<StepperHelper> => mountStepper(mount, 'Default', { initial: 0, min: 0 }));
 
     await test.step('THEN - is disabled', (): Promise<void> => stepper.expectDecrementDisabled());
   });
 });
 ```
 
-`StepperHelper` in `helpers/stepper.helper.ts` takes the mounted `Locator` root, exposes `incrementButton` and `decrementButton`, and holds `expectValue` / `expectDecrementDisabled` as plain `expect` lines. The Vue version in [vue.md](vue.md#component-testing-with-experimental-ct) shows the full class.
+`StepperHelper` in `helpers/stepper.helper.ts` takes the `#root` locator, exposes `incrementButton`, `decrementButton`, and `changes`, and holds `expectValue`, `expectChanges`, and `expectDecrementDisabled` as plain `expect` lines.
 
 ## Setup
 
@@ -750,7 +745,7 @@ test.describe('FEATURE: panel unmount', () => {
 | Avoid | Problem | Prefer |
 |---|---|---|
 | `page.evaluate(() => store.getState())` | Couples tests to implementation | Assert on UI: `expect(badge).toHaveText('3')` |
-| Import components in E2E tests | E2E runs in Node, not browser | Use `@playwright/experimental-ct-react` for components |
+| Import components in E2E tests | E2E runs in Node, not browser | Mount a story by id through the built-in `mount` fixture |
 | `page.waitForTimeout(500)` after state changes | Timing varies across machines | `expect(locator).toHaveText('value')` auto-retries |
 | `page.locator('.MuiButton-root')` | Class names change between versions | `page.getByRole('button', { name: 'Submit' })` |
 | Test every component with CT | Overhead for simple components | CT for complex widgets, unit tests for logic, E2E for flows |

@@ -342,6 +342,66 @@ Every ARIA check is one phase: the `WHEN` step opens the page, an `AND` step cal
 | Expanded state | `faqPage.shippingButton` = `getByRole('button', { name: 'Shipping' })`, `faqPage.shippingPanel` = `getByRole('region', { name: 'Shipping' })` | `faqPage.toggleShipping()` | `expect(faqPage.shippingButton).toHaveAttribute('aria-expanded', 'true')`, then `expect(faqPage.shippingPanel).toBeVisible()` |
 | Live region | `checkoutPage.liveRegion` = `page.locator('[aria-live="polite"]')`, located by attribute because a live region has no role name | `checkoutPage.setQuantity('3')` | `expect(checkoutPage.liveRegion).toContainText('Total: $29.97')` |
 
+### Aria Snapshots
+
+`toMatchAriaSnapshot` compares the accessibility tree (roles, names, states) with a YAML baseline. It works on a locator and on the whole page. Called with `{ name }` it reads `<name>` from the test's snapshot folder; `--update-snapshots` writes it on the first run. The assertion lives in an `expect*` page-object method like any other; `accessibility.fixture.ts` registers `settingsPage` beside the other page objects.
+
+```ts
+// e2e/accessibility/pages/settings.page.ts
+import type { Locator, Page } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+const NAVIGATION_SNAPSHOT = { name: 'settings-navigation.aria.yml' };
+
+const PAGE_SNAPSHOT = { name: 'settings-page.aria.yml' };
+
+export class SettingsPage {
+  public readonly navigation: Locator;
+
+  private readonly page: Page;
+
+  public constructor(page: Page) {
+    this.page = page;
+    this.navigation = page.getByRole('navigation', { name: 'Settings' });
+  }
+
+  public async goto(): Promise<void> {
+    await this.page.goto('/settings');
+  }
+
+  public async expectNavigationTree(): Promise<void> {
+    await expect(this.navigation).toMatchAriaSnapshot(NAVIGATION_SNAPSHOT);
+  }
+
+  public async expectPageTree(): Promise<void> {
+    await expect(this.page).toMatchAriaSnapshot(PAGE_SNAPSHOT);
+  }
+}
+```
+
+```ts
+// e2e/accessibility/settings-tree.e2e.ts
+import { test } from './accessibility.fixture';
+
+test.describe('FEATURE: settings accessibility tree', () => {
+  test('GIVEN the default settings, the navigation and page trees match their baselines', async ({ settingsPage }): Promise<void> => {
+    await test.step('WHEN the settings page is opened', (): Promise<void> => settingsPage.goto());
+
+    await test.step('THEN the navigation tree matches its baseline', (): Promise<void> => settingsPage.expectNavigationTree());
+
+    await test.step('AND the page tree matches its baseline', (): Promise<void> => settingsPage.expectPageTree());
+  });
+});
+```
+
+| Call | Use |
+|---|---|
+| `toMatchAriaSnapshot(expected)` | Inline YAML for a small tree. Keep the string in `common/<feature>.const.ts`, not in the page object. |
+| `ariaSnapshot({ depth })` (1.59) | Text tree cut at `depth` levels, for a check or a debug print of a large region. |
+| `ariaSnapshot({ mode: 'ai' })` (1.59) | Adds `[ref=e2]` element refs and iframe content; the form coding agents read. |
+| `ariaSnapshot({ boxes: true })` (1.60) | Appends each element's viewport box. |
+| `ariaSnapshotJSON()` (1.63) | The same tree as a JSON value with the same options, on a locator or the page. An `expect*` util reads it and asserts structure with `toMatchObject`, no YAML parsing. |
+
 ## Focus Management
 
 ### Focus Trap in Modal
