@@ -617,7 +617,7 @@ const toKeys = (body: unknown): string[] => {
 
 const fetchQuarantined = async (): Promise<Set<string>> => {
   try {
-    const response = await fetch(QUARANTINE_URL);
+    const response = await fetch(QUARANTINE_URL, { signal: AbortSignal.timeout(5_000) });
     const body: unknown = response.ok ? await response.json() : [];
     const keys = toKeys(body);
 

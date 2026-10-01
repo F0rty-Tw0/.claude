@@ -571,7 +571,7 @@ Every variant is the `webServer` const from [Setup](#setup) with a different `co
 |---|---|---|
 | `await page.waitForTimeout(3000)` | Arbitrary waits are fragile | `await page.waitForURL('/path')` or `await expect(locator).toBeVisible()` |
 | Test `getServerSideProps` directly | Depends on req/res context | Navigate to page and verify rendered output |
-| Mock your own API routes | Hides real API bugs | Let real API handle requests; mock only external services |
+| Mocking your own API routes in an `.e2e.ts` | Hides real API bugs in the spec meant to hit the real stack | Real API in `.e2e.ts`; routed own-API mocks belong in a `.test.ts` ([when-to-mock.md](../architecture/when-to-mock.md)) |
 | `page.goto('http://localhost:3000/path')` | Breaks when port changes | Use `page.goto('/path')` with `baseURL` |
 | Run `npm run build` locally for every test | Extremely slow | Use `npm run dev` locally with `reuseExistingServer: true` |
 | Test `next/image` by checking exact URLs | Paths change between dev/prod | Assert on `alt`, visibility, `naturalWidth > 0`, `srcset` |

@@ -265,7 +265,7 @@ A listener on the context covers every tab and popup in it, including ones opene
 |---|---|---|
 | `context.on('page')` | Every new tab or popup in the context | Wrap each new page in its page object, or attach per-page listeners |
 | `context.on('console')`, `'request'`, `'response'`, `'dialog'` | The same events from any page in the context | One log or one dialog policy for all tabs |
-| `context.on('weberror')` (1.60) | An uncaught exception in any page; `webError.location()` gives file, line, column | Fail on errors in popups too; see [console-errors.md](../debugging/console-errors.md#capture-error-details) |
+| `context.on('weberror')` | An uncaught exception in any page; `webError.location()` (1.60) gives file, line, column | Fail on errors in popups too; see [console-errors.md](../debugging/console-errors.md#capture-error-details) |
 | `browser.on('context')` (1.60) | Every new context created on the browser | A worker-scoped fixture that applies the same routes or listeners to contexts a multi-user fixture creates with `browser.newContext()` |
 
 ### Different Users in Different Windows

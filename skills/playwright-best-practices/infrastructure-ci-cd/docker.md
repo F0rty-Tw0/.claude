@@ -96,7 +96,7 @@ services:
       timeout: 5s
       retries: 5
     tmpfs:
-      - /var/lib/postgresql/data
+      - /var/lib/postgresql
 
   e2e:
     image: mcr.microsoft.com/playwright:v1.63.0-noble
