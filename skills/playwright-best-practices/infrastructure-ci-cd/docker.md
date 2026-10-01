@@ -13,27 +13,27 @@
 
 ### Official Image Usage
 
-Run tests without building a custom image:
+Run tests without building a custom image. `--ipc=host` keeps Chromium from running out of shared memory; `--init` reaps zombie processes. `v1.63.0` is an example: the tag must equal the installed `@playwright/test` version.
 
 ```bash
-docker run --rm \
+docker run --rm --init --ipc=host \
   -v $(pwd):/app \
   -w /app \
   -e CI=true \
   -e BASE_URL=http://host.docker.internal:3000 \
-  mcr.microsoft.com/playwright:v1.48.0-noble \
+  mcr.microsoft.com/playwright:v1.63.0-noble \
   bash -c "npm ci && npx playwright test"
 ```
 
 Extract reports with bind mounts:
 
 ```bash
-docker run --rm \
+docker run --rm --init --ipc=host \
   -v $(pwd):/app \
   -v $(pwd)/playwright-report:/app/playwright-report \
   -v $(pwd)/test-results:/app/test-results \
   -w /app \
-  mcr.microsoft.com/playwright:v1.48.0-noble \
+  mcr.microsoft.com/playwright:v1.63.0-noble \
   bash -c "npm ci && npx playwright test"
 ```
 
@@ -42,7 +42,7 @@ docker run --rm \
 Build a custom image when you need additional dependencies or pre-installed packages:
 
 ```dockerfile
-FROM mcr.microsoft.com/playwright:v1.48.0-noble
+FROM mcr.microsoft.com/playwright:v1.63.0-noble
 
 WORKDIR /app
 
@@ -57,13 +57,11 @@ CMD ["npx", "playwright", "test"]
 Chromium-only slim image:
 
 ```dockerfile
-FROM node:latest-slim
-
-RUN npx playwright install --with-deps chromium
+FROM node:24-slim
 
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci && npx playwright install --with-deps chromium
 COPY . .
 
 CMD ["npx", "playwright", "test", "--project=chromium"]
@@ -87,7 +85,7 @@ services:
         condition: service_healthy
 
   db:
-    image: postgres:latest-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -101,7 +99,9 @@ services:
       - /var/lib/postgresql/data
 
   e2e:
-    image: mcr.microsoft.com/playwright:v1.48.0-noble
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    init: true
+    ipc: host
     working_dir: /app
     volumes:
       - .:/app
@@ -133,9 +133,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.48.0-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: npm ci
       - run: npx playwright test
         env:
@@ -146,7 +146,7 @@ jobs:
 
 ```yaml
 test:
-  image: mcr.microsoft.com/playwright:v1.48.0-noble
+  image: mcr.microsoft.com/playwright:v1.63.0-noble
   script:
     - npm ci
     - npx playwright test
@@ -158,8 +158,8 @@ test:
 pipeline {
     agent {
         docker {
-            image 'mcr.microsoft.com/playwright:v1.48.0-noble'
-            args '-u root'
+            image 'mcr.microsoft.com/playwright:v1.63.0-noble'
+            args '-u root --init --ipc=host'
         }
     }
     stages {
@@ -175,17 +175,12 @@ pipeline {
 
 ### Dev Container Setup
 
-VS Code Dev Container or GitHub Codespaces configuration:
+VS Code Dev Container or GitHub Codespaces configuration. The image ships Node 24 since 1.57, so no Node feature is needed:
 
 ```json
 {
   "name": "Playwright Dev",
-  "image": "mcr.microsoft.com/playwright:v1.48.0-noble",
-  "features": {
-    "ghcr.io/devcontainers/features/node:latest": {
-      "version": "20"
-    }
-  },
+  "image": "mcr.microsoft.com/playwright:v1.63.0-noble",
   "postCreateCommand": "npm ci",
   "customizations": {
     "vscode": {
@@ -213,7 +208,9 @@ VS Code Dev Container or GitHub Codespaces configuration:
 | Anti-Pattern | Problem | Solution |
 |---|---|---|
 | Installing browsers at runtime | Wastes 60-90 seconds per run | Use official image or bake browsers into custom image |
-| Running as non-root without sandbox config | Chromium sandbox permission errors | Run as root or disable sandbox |
+| Running untrusted sites as root | Root disables the Chromium sandbox | Root is fine for your own tests; for untrusted sites run as `--user pwuser` with Playwright's seccomp profile (`--security-opt seccomp=seccomp_profile.json`) |
+| Omitting `--ipc=host` | Chromium runs out of shared memory and crashes | `docker run --init --ipc=host` (Compose: `init: true`, `ipc: host`) |
+| Floating image tags | A rebuilt tag changes browsers under the same name | Pin `tag@sha256:<digest>`; see [Pin to immutable refs](github-actions.md#pin-to-immutable-refs) |
 | Bind-mounting `node_modules` from host | Platform-specific binary crashes | Use anonymous volume: `-v /app/node_modules` |
 | No health checks on dependent services | Tests start before database ready | Add `healthcheck` with `depends_on: condition: service_healthy` |
 | Building application inside Playwright container | Large image, slow builds | Separate app and e2e containers |
@@ -255,9 +252,9 @@ e2e:
 Match user IDs or run as root:
 
 ```bash
-docker run --rm -u $(id -u):$(id -g) \
+docker run --rm --init --ipc=host -u $(id -u):$(id -g) \
   -v $(pwd):/app -w /app \
-  mcr.microsoft.com/playwright:v1.48.0-noble \
+  mcr.microsoft.com/playwright:v1.63.0-noble \
   npx playwright test
 ```
 
@@ -266,19 +263,9 @@ docker run --rm -u $(id -u):$(id -g) \
 Docker Desktop I/O overhead. Copy files instead of mounting:
 
 ```dockerfile
-FROM mcr.microsoft.com/playwright:v1.48.0-noble
+FROM mcr.microsoft.com/playwright:v1.63.0-noble
 WORKDIR /app
 COPY . .
 RUN npm ci
 CMD ["npx", "playwright", "test"]
-```
-
-Or use delegated mount:
-
-```bash
-docker run --rm \
-  -v $(pwd):/app:delegated \
-  -w /app \
-  mcr.microsoft.com/playwright:v1.48.0-noble \
-  bash -c "npm ci && npx playwright test"
 ```

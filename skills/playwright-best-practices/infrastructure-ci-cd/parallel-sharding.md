@@ -63,7 +63,26 @@ export default defineConfig({
 | `fullyParallel: false` (default) | Yes            | No (serial)            |
 | `fullyParallel: true`            | Yes            | Yes                    |
 
-**Serial execution for specific files:** `test.describe.configure({ mode: 'serial' })` at the top of a spec runs its tests in order on one worker, and skips the rest after the first failure. Use it only for tests that cannot run in parallel because they share one external resource (a single sandbox account, a rate-limited third-party API), in their own spec with that reason stated next to it. It never chains tests: serial mode carries no page and no state from one test to the next, so a test that needs an earlier state gets it from a fixture. Below, the payment test starts from a `filledCheckoutPage` fixture that adds `ITEM_STUB` to the cart through `request` and opens checkout, so neither test needs the other and the file stays parallel.
+**One shared external resource:** give every test that touches it the same `lock` name in its details object (1.63). Tests sharing a lock never run at the same time, across files, workers, and projects; everything else stays parallel. Keep the name in `e2e/common/playwright.const.ts` so two files cannot misspell it. A test can hold several locks (`lock: ['db', 'sandbox-merchant']`), and `test.describe.configure({ lock })` locks a whole file. With `fullyParallel` off, a file's tests run together, so a lock on any of them is held for the whole file.
+
+```ts
+// e2e/payouts/payouts.e2e.ts
+import { SANDBOX_MERCHANT_LOCK } from '../common/playwright.const';
+import { test } from './payouts.fixture';
+import { PAYOUT_STUB } from './test/stubs/payout.stub';
+
+test.describe('FEATURE: payouts', () => {
+  test('GIVEN a funded sandbox merchant, requesting a payout lists it as pending', { lock: SANDBOX_MERCHANT_LOCK }, async ({ payoutsPage }): Promise<void> => {
+    await test.step('WHEN the payouts page is opened', (): Promise<void> => payoutsPage.goto());
+
+    await test.step('AND a payout is requested', (): Promise<void> => payoutsPage.request(PAYOUT_STUB));
+
+    await test.step('THEN the payout is listed as pending', (): Promise<void> => payoutsPage.expectPending(PAYOUT_STUB));
+  });
+});
+```
+
+**Serial execution for specific files:** `test.describe.configure({ mode: 'serial' })` at the top of a spec runs its tests in order on one worker, and skips the rest after the first failure. Reach for it only when the order itself is the contract, never for a shared resource (`lock` covers that without serializing the file), in its own spec with the reason stated next to it. It never chains tests: serial mode carries no page and no state from one test to the next, so a test that needs an earlier state gets it from a fixture. Below, the payment test starts from a `filledCheckoutPage` fixture that adds `ITEM_STUB` to the cart through `request` and opens checkout, so neither test needs the other and the file stays parallel.
 
 ```ts
 // e2e/checkout/checkout.e2e.ts
@@ -96,14 +115,14 @@ test.describe('FEATURE: checkout', () => {
 --shard=1/4        --shard=2/4      --shard=3/4      --shard=4/4
 ```
 
-**Config for sharded runs:** CI emits a `blob` report per shard for merging, plus `github` annotations.
+**Config for sharded runs:** each shard writes only a `blob` report. The `github` reporter is not recommended inside a sharded matrix; add it in the merge job (`merge-reports --reporter=html,github`) or in unsharded runs. With `fullyParallel: true`, shards split individual tests, so shards stay even when file sizes differ; without it, whole files go to shards.
 
 ```ts
 // e2e/playwright.config.ts
 import type { ReporterDescription } from '@playwright/test';
 import { defineConfig } from '@playwright/test';
 
-const ciReporter: ReporterDescription[] = [['blob'], ['github']];
+const ciReporter: ReporterDescription[] = [['blob']];
 const localReporter: ReporterDescription[] = [['html', { open: 'on-failure' }]];
 const reporter = process.env.CI ? ciReporter : localReporter;
 
@@ -127,7 +146,7 @@ npx playwright merge-reports --reporter=html ./all-blob-reports
 npx playwright merge-reports --reporter=html,json,junit ./all-blob-reports
 
 # Custom output location
-PLAYWRIGHT_HTML_REPORT=merged-report npx playwright merge-reports --reporter=html ./all-blob-reports
+PLAYWRIGHT_HTML_OUTPUT_DIR=merged-report npx playwright merge-reports --reporter=html ./all-blob-reports
 ```
 
 **GitHub Actions merge job:**
@@ -138,18 +157,18 @@ merge-reports:
   needs: test
   runs-on: ubuntu-latest
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - run: npm ci
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with:
         path: all-blob-reports
         pattern: blob-report-*
         merge-multiple: true
 
-    - run: npx playwright merge-reports --reporter=html ./all-blob-reports
+    - run: npx playwright merge-reports --reporter=html,github ./all-blob-reports
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: playwright-report
         path: playwright-report/
@@ -328,7 +347,7 @@ jobs:
       shard-count: ${{ steps.calc.outputs.count }}
       shard-matrix: ${{ steps.calc.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: npm ci
       - id: calc
         run: |
@@ -358,7 +377,7 @@ jobs:
       matrix:
         shard: ${{ fromJson(needs.calculate-shards.outputs.shard-matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: npm ci
       - run: npx playwright install --with-deps
       - run: npx playwright test --shard=${{ matrix.shard }}
@@ -372,12 +391,12 @@ jobs:
 | 50-200 tests, 5-15 min           | `'50%'` in CI  | 2-4    | Balance speed and cost                  |
 | 200+ tests, > 15 min             | `'50%'` in CI  | 4-8    | Keep feedback under 10 min              |
 | Flaky due to resource contention | Reduce to 2    | Keep   | Less CPU/memory pressure                |
-| Tests modify shared database     | 1 or isolate   | Useful | Sharding splits files; workers run them |
+| Tests modify shared database     | Keep; isolate data | Useful | Unique data per test; `lock` what cannot be isolated |
 | CI has limited resources         | 1 or `'25%'`   | More   | Compensate with more machines           |
 
 | Aspect         | Workers (in-process)      | Shards (across machines)   |
 | -------------- | ------------------------- | -------------------------- |
-| What it splits | Tests across CPU cores    | Test files across CI jobs  |
+| What it splits | Tests across CPU cores    | Tests across CI jobs (whole files without `fullyParallel`) |
 | Controlled by  | Config or `--workers` CLI | `--shard=X/Y` CLI flag     |
 | Shares memory  | Yes                       | No                         |
 | Report merging | Not needed                | Required (`merge-reports`) |
@@ -392,7 +411,7 @@ jobs:
 | Hardcoded shared user account           | Race conditions in parallel runs         | Each test creates unique data                        |
 | Sharding without blob reporter          | Each shard produces separate HTML report | Configure `reporter: [['blob']]` for CI              |
 | Sharding with 3 tests                   | Setup overhead exceeds time saved        | Only shard when suite > 5 minutes                    |
-| `test.describe.serial()` everywhere     | Kills parallelism, creates dependencies  | Seed prior state with a fixture; serial only for a shared external resource |
+| `test.describe.serial()` everywhere     | Kills parallelism, creates dependencies  | Seed prior state with a fixture; `lock` a shared external resource |
 | Workers > CPU cores                     | Context switching overhead               | Use `'50%'` or auto-detect                           |
 | Missing `fail-fast: false` in CI matrix | One shard failure cancels others         | Always set `fail-fast: false` for sharded strategies |
 
@@ -404,9 +423,9 @@ jobs:
 
 ### "No tests found" in some shards
 
-- **Too many shards**. Never exceed file count:
+- **Too many shards**. Never exceed the test count, or the file count when `fullyParallel` is off (files are then the unit):
   ```bash
-  npx playwright test --shard=1/10   # ok if 10 files
+  npx playwright test --shard=1/10   # ok with 10 files and fullyParallel off
   npx playwright test --shard=1/20   # too many, some shards empty
   ```
 
@@ -415,12 +434,12 @@ jobs:
 - **Blob reports collide**. Use unique names:
   ```yaml
   # Each shard
-  - uses: actions/upload-artifact@v4
+  - uses: actions/upload-artifact@v7
     with:
       name: blob-report-${{ strategy.job-index }}
       path: blob-report/
   # Merge step
-  - uses: actions/download-artifact@v4
+  - uses: actions/download-artifact@v8
     with:
       pattern: blob-report-*
       merge-multiple: true

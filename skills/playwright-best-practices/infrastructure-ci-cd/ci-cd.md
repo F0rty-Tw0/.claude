@@ -28,9 +28,9 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: "npm"
@@ -44,7 +44,7 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
@@ -71,9 +71,9 @@ jobs:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: "npm"
@@ -89,7 +89,7 @@ jobs:
 
       - name: Upload blob report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: blob-report
@@ -100,9 +100,9 @@ jobs:
     needs: [test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: "npm"
@@ -111,17 +111,17 @@ jobs:
         run: npm ci
 
       - name: Download blob reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
 
       - name: Merge reports
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        run: npx playwright merge-reports --reporter html,github ./all-blob-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: html-report
           path: playwright-report
@@ -136,12 +136,12 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     container:
-      # Use latest or more appropriate playwright version (match package.json)
-      image: mcr.microsoft.com/playwright:v1.40.0-jammy
+      # example tag: match the installed @playwright/test version
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: "npm"
@@ -160,7 +160,7 @@ jobs:
 ### Dockerfile
 
 ```dockerfile
-FROM mcr.microsoft.com/playwright:v1.40.0-jammy
+FROM mcr.microsoft.com/playwright:v1.63.0-noble
 
 WORKDIR /app
 
@@ -201,7 +201,7 @@ services:
 ```bash
 # Build and run
 docker build -t playwright-tests .
-docker run --rm -v $(pwd)/playwright-report:/app/playwright-report playwright-tests
+docker run --rm --init --ipc=host -v $(pwd)/playwright-report:/app/playwright-report playwright-tests
 
 # With docker-compose
 docker-compose run --rm playwright
@@ -230,8 +230,7 @@ const reporter: ReporterDescription[] = [
   ['list'],
   ['github'],
   ['junit', { outputFile: 'results.xml' }],
-  ['json', { outputFile: 'results.json' }],
-  ['blob', { outputDir: 'blob-report' }]
+  ['json', { outputFile: 'results.json' }]
 ];
 
 export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
@@ -239,12 +238,14 @@ export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
 
 ### CI-Specific Reporter
 
+For an unsharded run. A sharded matrix writes only `blob` per shard and adds `github` in the merge job (see [Sharding](#sharding)).
+
 ```ts
 // e2e/playwright.config.ts
 import type { ReporterDescription } from '@playwright/test';
 import { defineConfig } from '@playwright/test';
 
-const CI_REPORTER: ReporterDescription[] = [['github'], ['blob'], ['html']];
+const CI_REPORTER: ReporterDescription[] = [['github'], ['html', { open: 'never' }]];
 const LOCAL_REPORTER: ReporterDescription[] = [['list'], ['html']];
 
 export default defineConfig({
@@ -375,7 +376,7 @@ test.describe('FEATURE: login', () => {
 
 ```yaml
 - name: Cache Playwright browsers
-  uses: actions/cache@v4
+  uses: actions/cache@v6
   id: playwright-cache
   with:
     path: ~/.cache/ms-playwright
@@ -393,7 +394,7 @@ test.describe('FEATURE: login', () => {
 ### Cache Node Modules
 
 ```yaml
-- uses: actions/setup-node@v4
+- uses: actions/setup-node@v7
   with:
     node-version: 22
     cache: "npm"
@@ -477,7 +478,7 @@ export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 
 ## CI Configuration Reference
 
-CI-optimized config: `forbidOnly` blocks a stray `test.only`, retries and a single worker apply on CI only, and traces, screenshots, and videos are captured on the first retry or on failure.
+CI-optimized config for an unsharded run: `forbidOnly` blocks a stray `test.only`, retries apply on CI only, and traces, screenshots, and videos are captured on the first retry or on failure. Workers stay at the default (half the cores); size them to the runner instead of forcing `1`, which hides isolation bugs and serializes the suite (see [parallel-sharding.md](parallel-sharding.md#anti-patterns)).
 
 ```ts
 // e2e/playwright.config.ts
@@ -487,7 +488,7 @@ import { defineConfig } from '@playwright/test';
 const IS_CI = Boolean(process.env.CI);
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 
-const CI_REPORTER: ReporterDescription[] = [['github'], ['blob'], ['html']];
+const CI_REPORTER: ReporterDescription[] = [['github'], ['html', { open: 'never' }]];
 const LOCAL_REPORTER: ReporterDescription[] = [['list'], ['html']];
 
 const use = {
@@ -503,8 +504,7 @@ export default defineConfig({
   reporter: IS_CI ? CI_REPORTER : LOCAL_REPORTER,
   retries: IS_CI ? 2 : 0,
   testMatch: '**/*.@(e2e|test).ts',
-  use,
-  workers: IS_CI ? 1 : undefined
+  use
 });
 ```
 

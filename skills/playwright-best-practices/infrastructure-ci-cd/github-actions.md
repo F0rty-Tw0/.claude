@@ -16,7 +16,7 @@
 ```bash
 npx playwright install --with-deps    # browsers + OS dependencies
 npx playwright test --shard=1/4       # run shard 1 of 4
-npx playwright test --reporter=github # PR annotations
+npx playwright test --reporter=github # PR annotations (unsharded runs only)
 npx playwright merge-reports ./blob-report  # combine shard reports
 ```
 
@@ -49,13 +49,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - run: npm ci
 
       - name: Cache browsers
         id: browser-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -71,7 +71,7 @@ jobs:
       - run: npx playwright test
 
       - name: Upload report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: test-report
@@ -79,7 +79,7 @@ jobs:
           retention-days: 14
 
       - name: Upload traces
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: traces
@@ -119,13 +119,13 @@ jobs:
         shard: [1/4, 2/4, 3/4, 4/4]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - run: npm ci
 
       - name: Cache browsers
         id: browser-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -142,7 +142,7 @@ jobs:
         run: npx playwright test --shard=${{ matrix.shard }}
 
       - name: Upload blob report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: blob-${{ strategy.job-index }}
@@ -155,36 +155,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - run: npm ci
 
       - name: Download blob reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: all-blobs
           pattern: blob-*
           merge-multiple: true
 
       - name: Merge reports
-        run: npx playwright merge-reports --reporter=html ./all-blobs
+        run: npx playwright merge-reports --reporter=html,github ./all-blobs
 
       - name: Upload merged report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-report
           path: playwright-report/
           retention-days: 14
 ```
 
-**Config for sharding**—enable blob reporter:
+**Config for sharding**—shards write only `blob`. The `github` reporter is not recommended inside a sharded matrix (each shard annotates its own slice); the merge job above emits annotations once with `--reporter=html,github`:
 
 ```ts
 // e2e/playwright.config.ts
 import type { ReporterDescription } from '@playwright/test';
 import { defineConfig } from '@playwright/test';
 
-const CI_REPORTER: ReporterDescription[] = [['blob'], ['github']];
+const CI_REPORTER: ReporterDescription[] = [['blob']];
 const LOCAL_REPORTER: ReporterDescription[] = [['html', { open: 'on-failure' }]];
 
 export default defineConfig({
@@ -211,10 +211,10 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.48.0-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - run: npm ci
 
@@ -223,7 +223,7 @@ jobs:
         env:
           HOME: /root
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: test-report
@@ -258,13 +258,13 @@ jobs:
       API_TOKEN: ${{ secrets.API_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - run: npm ci
 
       - name: Cache browsers
         id: browser-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -280,7 +280,7 @@ jobs:
       - name: Run smoke tests
         run: npx playwright test --grep @smoke
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: staging-report
@@ -312,7 +312,7 @@ jobs:
       BASE_URL: ${{ vars.STAGING_URL }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - run: npm ci
 
@@ -322,7 +322,7 @@ jobs:
       - name: Run full regression
         run: npx playwright test --grep @regression
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: nightly-${{ github.run_number }}
@@ -331,14 +331,12 @@ jobs:
 
       - name: Notify on failure
         if: failure()
-        uses: slackapi/slack-github-action@latest
+        uses: slackapi/slack-github-action@v4
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
-            {
-              "text": "Nightly regression failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+            text: "Nightly regression failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 ```
 
 ### Reusable Workflow
@@ -376,9 +374,9 @@ jobs:
       TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
           cache: npm
@@ -387,7 +385,7 @@ jobs:
 
       - name: Cache browsers
         id: browser-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -403,7 +401,7 @@ jobs:
       - name: Run tests
         run: ${{ inputs.test-command }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: test-report
@@ -430,10 +428,31 @@ jobs:
       TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
 ```
 
+### Pin to Immutable Refs
+
+**Use when**: Always, for third-party actions and images. Tags such as `@v7` and `:v1.63.0-noble` are mutable; the owner can move them to new code.
+
+Action samples in this skill use major tags for readability (current as of 2026-10). Before copying, pin each action to the full commit SHA with the version as a comment, and each image to its digest:
+
+```yaml
+steps:
+  - uses: actions/checkout@<40-char-commit-sha> # v7.0.1
+container:
+  image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:<digest>
+```
+
+```bash
+gh api repos/actions/checkout/commits/v7.0.1 --jq .sha     # commit SHA for a tag
+docker buildx imagetools inspect mcr.microsoft.com/playwright:v1.63.0-noble  # Digest: line
+```
+
+`git/ref/tags/<tag>` returns the tag object for annotated tags, not the commit; the `commits/<tag>` endpoint always resolves to the commit. Let Dependabot or Renovate bump the SHA and the comment together.
+
 ## Scenario Guide
 
 | Scenario | Approach |
 |---|---|
+| Supply-chain hardening | [Pin to immutable refs](#pin-to-immutable-refs) |
 | Small suite (< 5 min) | Single job, no sharding |
 | Medium suite (5-20 min) | 2-4 shards with matrix |
 | Large suite (20+ min) | 4-8 shards + blob merge |
@@ -503,13 +522,13 @@ export default defineConfig({
 
 ```yaml
 # Upload in each shard
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@v7
   with:
     name: blob-${{ strategy.job-index }}
     path: blob-report/
 
 # Download in merge job
-- uses: actions/download-artifact@v4
+- uses: actions/download-artifact@v8
   with:
     path: all-blobs
     pattern: blob-*
@@ -531,7 +550,7 @@ export default defineConfig({
 
 **Cause**: `github` reporter not configured.
 
-**Fix**: Add `github` reporter for CI:
+**Fix**: Add the `github` reporter to an unsharded CI run. A sharded matrix adds it to the merge job instead (see [Sharded Execution](#sharded-execution)):
 
 ```ts
 // e2e/playwright.config.ts

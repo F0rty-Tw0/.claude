@@ -200,6 +200,9 @@ npx playwright test --project=chromium
 
 # Run multiple projects
 npx playwright test --project=chromium --project=firefox
+
+# Skip its dependencies (setup already ran, storage state is on disk)
+npx playwright test --project=chromium --no-deps
 ```
 
 ### Run by Grep

@@ -15,12 +15,16 @@
 ## CLI Quick Reference
 
 ```bash
-npx playwright init                           # scaffold config + first test
+npm init playwright@latest                    # scaffold config + first test
 npx playwright test --config=custom.config.ts # use alternate config
 npx playwright test --project=chromium        # run single project
 npx playwright test --reporter=html           # override reporter
 npx playwright test --grep @smoke             # run tests tagged @smoke
 npx playwright test --grep-invert @slow       # exclude @slow tests
+npx playwright test --only-changed=main       # files changed since a git ref, plus their importers
+npx playwright test --last-failed             # re-run only the last run's failures
+npx playwright test --fail-on-flaky-tests     # exit non-zero if a test passed only on retry
+npx playwright test --no-deps                 # skip project dependencies (setup projects)
 npx playwright show-report                    # open last HTML report
 DEBUG=pw:api npx playwright test              # verbose logging
 ```
@@ -67,7 +71,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 
 ## Production-Ready Config
 
-Every nested object (`expect`, `projects`, `reporter`, `use`, `webServer`) is a named const above `defineConfig`. `process.env` is read once into `IS_CI`; a project's `use` takes a `devices` entry directly.
+Every nested object (`expect`, `projects`, `reporter`, `use`, `webServer`) is a named const above `defineConfig`. `process.env` is read once into `IS_CI`; a project's `use` takes a `devices` entry directly. `retryStrategy: 'isolated'` (1.62) holds every retry until the end and runs them one by one in a single worker: a test that then passes failed from concurrency (shared data, load), one that still fails is broken on its own.
 
 ```ts
 // e2e/playwright.config.ts
@@ -122,6 +126,7 @@ export default defineConfig({
   projects,
   reporter: IS_CI ? ciReporter : localReporter,
   retries: IS_CI ? 2 : 0,
+  retryStrategy: 'isolated',
   testMatch: '**/*.@(e2e|test).ts',
   timeout: 30_000,
   use,

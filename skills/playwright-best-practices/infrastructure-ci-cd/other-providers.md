@@ -33,7 +33,7 @@ npx playwright test --reporter=dot,html     # multiple reporters
 pipeline {
     agent {
         docker {
-            image 'mcr.microsoft.com/playwright:v1.48.0-noble'
+            image 'mcr.microsoft.com/playwright:v1.63.0-noble'
             args '-u root'
         }
     }
@@ -106,7 +106,7 @@ pipeline {
                 stage('Shard 1') {
                     agent {
                         docker {
-                            image 'mcr.microsoft.com/playwright:v1.48.0-noble'
+                            image 'mcr.microsoft.com/playwright:v1.63.0-noble'
                             args '-u root'
                         }
                     }
@@ -124,7 +124,7 @@ pipeline {
                 stage('Shard 2') {
                     agent {
                         docker {
-                            image 'mcr.microsoft.com/playwright:v1.48.0-noble'
+                            image 'mcr.microsoft.com/playwright:v1.63.0-noble'
                             args '-u root'
                         }
                     }
@@ -142,7 +142,7 @@ pipeline {
                 stage('Shard 3') {
                     agent {
                         docker {
-                            image 'mcr.microsoft.com/playwright:v1.48.0-noble'
+                            image 'mcr.microsoft.com/playwright:v1.63.0-noble'
                             args '-u root'
                         }
                     }
@@ -160,7 +160,7 @@ pipeline {
                 stage('Shard 4') {
                     agent {
                         docker {
-                            image 'mcr.microsoft.com/playwright:v1.48.0-noble'
+                            image 'mcr.microsoft.com/playwright:v1.63.0-noble'
                             args '-u root'
                         }
                     }
@@ -192,7 +192,7 @@ version: 2.1
 executors:
   pw:
     docker:
-      - image: mcr.microsoft.com/playwright:v1.48.0-noble
+      - image: mcr.microsoft.com/playwright:v1.63.0-noble
     working_directory: ~/app
 
 jobs:
@@ -249,12 +249,12 @@ workflows:
 version: 2.1
 
 orbs:
-  node: circleci/node@latest
+  node: circleci/node@7.2.1
 
 executors:
   pw:
     docker:
-      - image: mcr.microsoft.com/playwright:v1.48.0-noble
+      - image: mcr.microsoft.com/playwright:v1.63.0-noble
 
 jobs:
   e2e:
@@ -467,7 +467,7 @@ Running as non-root in container causes sandbox issues.
 ```groovy
 agent {
     docker {
-        image 'mcr.microsoft.com/playwright:v1.48.0-noble'
+        image 'mcr.microsoft.com/playwright:v1.63.0-noble'
         args '-u root'
     }
 }
@@ -482,7 +482,7 @@ Image version mismatch with `@playwright/test` version. Use `latest` tag or matc
 
 ```yaml
 docker:
-  - image: mcr.microsoft.com/playwright:v1.48.0-noble
+  - image: mcr.microsoft.com/playwright:v1.63.0-noble
 ```
 
 ### Azure DevOps: Test results not showing
