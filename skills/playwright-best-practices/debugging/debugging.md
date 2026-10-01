@@ -40,6 +40,9 @@ npx playwright test --headed
 
 # Interactive debugging (headed, paused, step-through)
 npx playwright test --debug
+
+# Same run, driven from a terminal or a coding agent over playwright-cli (1.59)
+npx playwright test --debug=cli
 ```
 
 `slowMo` adds an `N` ms delay per action, which makes test execution easier to follow while debugging.
@@ -107,8 +110,11 @@ export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 | `trace` value | Behavior |
 |---|---|
 | `'on-first-retry'` | Record on the first retry only |
+| `'on-all-retries'` | Record every retry |
 | `'on'` | Always record |
-| `'retain-on-failure'` | Record every test, keep only failures |
+| `'retain-on-failure'` | Record every run, keep only failed runs |
+| `'retain-on-first-failure'` | Record the first run only, keep it if it failed |
+| `'retain-on-failure-and-retries'` | Record every run, keep failed runs and every retry, so a failing and a passing attempt of one test can be diffed (1.59) |
 | `'off'` | Never record |
 
 ### View Traces
@@ -120,6 +126,32 @@ npx playwright show-trace trace.zip
 # From test-results
 npx playwright show-trace test-results/test-name/trace.zip
 ```
+
+### Terminal Trace Analysis (agents)
+
+`npx playwright trace` (1.59) reads a trace from the shell, so a coding agent can inspect a failure without the GUI. `open` extracts the trace; every later command reads the open one until `close`.
+
+```bash
+npx playwright trace open test-results/dashboard-GIVEN-a-live-data-api/trace.zip
+npx playwright trace actions --errors-only
+npx playwright trace action 12
+npx playwright trace snapshot 12 --phase before
+npx playwright trace close
+```
+
+| Command | Shows |
+|---|---|
+| `open <trace.zip>` | Extracts the trace; prints browser, viewport, duration, action and error counts |
+| `actions [--grep <pattern>] [--errors-only]` | Action tree with ids and timing; `--errors-only` keeps failed actions |
+| `action <id>` | Params, result, call log, source line, available snapshot phases |
+| `snapshot <id> [--phase before\|action\|after]` | The accessibility snapshot of the DOM at that action; `-- eval "<js>"` or `-- screenshot` runs one command against the frozen DOM |
+| `requests [--failed] [--method <m>] [--status <code>] [--grep <url>]`, `request <id>` | Network log, one request's headers and body |
+| `console [--errors-only] [--warnings] [--browser] [--stdio]` | Browser console and runner stdout / stderr |
+| `errors` | Every error with its stack and action |
+| `screenshot <id> -o <path>`, `attachments`, `attachment <n>` | Screencast frame and test attachments |
+| `close` | Removes the extracted data |
+
+Workflow: open, list failed actions, read the failing action's call log, snapshot it at `before` to see what the locator saw, then check `requests --failed` and `console --errors-only`. For a flake, record with `trace: 'retain-on-failure-and-retries'`, run the same commands on the failing and the passing attempt, and diff the two `actions` lists and the snapshots at the first action where they diverge.
 
 ### Trace Contents
 
@@ -303,7 +335,7 @@ npx playwright install --with-deps
 
 # Run in Docker (same as CI)
 docker run --rm -v $(pwd):/work -w /work \
-  mcr.microsoft.com/playwright:v1.40.0-jammy \
+  mcr.microsoft.com/playwright:v1.63.0-noble \
   npx playwright test
 ```
 
@@ -474,6 +506,20 @@ export class DashboardPage {
 ```
 
 ## Common Issues
+
+### Common Error Messages
+
+| Message | Cause | Fix |
+|---|---|---|
+| `strict mode violation: <locator> resolved to N elements` | The locator matches more than one element and the action needs one | Narrow it in the page object: scope to a parent, add `name` / `exact`, or `filter({ hasText })` |
+| `Target page, context or browser has been closed` | The test or fixture finished, or a popup closed, while a call was still pending | Await every call (see [Static checks](flaky-tests.md#static-checks)); keep the page open until the last `THEN` |
+| `Execution context was destroyed, most likely because of a navigation` | `evaluate` ran while the page navigated | Wait for the navigation with `expect(page).toHaveURL()` first, or use a locator call that retries |
+| `Executable doesn't exist at <path>` | Browsers missing for the installed Playwright version | `npx playwright install --with-deps`; in CI, cache keyed on the Playwright version |
+| `Frame was detached` | The iframe was removed or reloaded under the call | Use `frameLocator`, which re-resolves; assert the frame content after it reloads |
+| `Test timeout of 30000ms exceeded.` | The whole test (hooks and fixtures included) ran past `timeout` | Find the stuck step in the trace; `test.slow('reason')` only when the work is truly long |
+| `locator.click: Timeout 30000ms exceeded.` with `waiting for element to be visible, enabled and stable` in the call log | Actionability never passed: hidden, disabled, or still animating | Assert the precondition state in an `expect*` method; fix the app state, not the timeout |
+| `Element is not attached to the DOM` | The element re-rendered between resolve and action | Act through a locator, never a stored `ElementHandle` |
+| `<element> intercepts pointer events` in the call log | An overlay, toast, or sticky header covers the target | Close or wait out the overlay through its page object; never `force: true` |
 
 ### Element Not Found
 

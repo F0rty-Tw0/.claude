@@ -257,6 +257,17 @@ test.describe('FEATURE: dashboard window sync', () => {
 });
 ```
 
+### Context-Level Events
+
+A listener on the context covers every tab and popup in it, including ones opened after the listener is registered; a listener on `page` misses them. Register it in the fixture above `use`, like any page listener.
+
+| Event | Fires for | Use |
+|---|---|---|
+| `context.on('page')` | Every new tab or popup in the context | Wrap each new page in its page object, or attach per-page listeners |
+| `context.on('console')`, `'request'`, `'response'`, `'dialog'` | The same events from any page in the context | One log or one dialog policy for all tabs |
+| `context.on('weberror')` (1.60) | An uncaught exception in any page; `webError.location()` gives file, line, column | Fail on errors in popups too; see [console-errors.md](../debugging/console-errors.md#capture-error-details) |
+| `browser.on('context')` (1.60) | Every new context created on the browser | A worker-scoped fixture that applies the same routes or listeners to contexts a multi-user fixture creates with `browser.newContext()` |
+
 ### Different Users in Different Windows
 
 > **For multi-user collaboration patterns** (admin/user interactions, real-time collaboration, role-based testing, concurrent actions), see [multi-user.md](multi-user.md). This file focuses on single-user scenarios with multiple tabs/windows/popups.

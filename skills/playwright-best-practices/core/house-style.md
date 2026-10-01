@@ -61,7 +61,7 @@ e2e/
   playwright.config.ts
   playwright.fixture.ts                 mergeTests of every feature fixture
   common/
-    playwright.type.ts                  types every feature shares, e.g. RouteHandler
+    playwright.type.ts                  types every feature shares, e.g. RouteHandler, Mount, StoryRoot
     playwright.const.ts                 BASE_URL, timeouts, shared paths
     <behavior>.spec.util.ts             test-only utils every feature shares, e.g. expect-body
   <feature>/
@@ -82,7 +82,7 @@ e2e/
       stubs/
         <feature>.stub.ts               typed base values
       stories/
-        <name>.story.tsx                component wrapper for props a CT spec cannot pass (functions, refs)
+        <name>.story.tsx                CT stories, one named export per scenario, mounted by id
       utils/
         <behavior>.spec.util.ts         test-only builders and utils
     utils/

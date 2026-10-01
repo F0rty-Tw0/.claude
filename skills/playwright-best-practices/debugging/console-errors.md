@@ -127,6 +127,8 @@ export const test = base.extend<ConsoleFixtures>({
 export { expect } from '@playwright/test';
 ```
 
+A check that runs only at the end needs no listener: `page.consoleMessages()` and `page.pageErrors()` (1.56) return up to the last 200 entries, and `filter: 'since-navigation'` (1.59) drops what came before the last navigation. An `expect*` util reads them inside the `THEN`. Keep the listener fixture for popups, more than 200 entries, or a step that must see messages as they arrive.
+
 A spec that only wants the lines attaches them to the report (see [Attach Console to Report](#attach-console-to-report)); a spec that asserts on them reads `consoleLogs` inside its `THEN`, as in the table under [Fail Test on Any Error](#fail-test-on-any-error).
 
 ### Capture by Type
@@ -163,7 +165,7 @@ The fixture member `consoleCapture` creates `{ errors: [], infos: [], warnings: 
 
 ### Capture with Stack Trace
 
-`message.location()` carries the source URL and line. The util turns a message into a `ConsoleError` so the report can point at the file.
+`message.location()` carries the source `url` plus a 0-based `line` and `column`; `lineNumber` / `columnNumber` are deprecated since 1.60. The util turns a message into a `ConsoleError` so the report can point at the file.
 
 ```ts
 // e2e/console/test/utils/console-error-detail.spec.util.ts
@@ -173,7 +175,7 @@ import type { ConsoleError } from '../../common/console.type';
 
 const toConsoleError = (message: ConsoleMessage): ConsoleError => {
   const source = message.location();
-  const consoleError: ConsoleError = { location: `${source.url}:${source.lineNumber}`, message: message.text() };
+  const consoleError: ConsoleError = { location: `${source.url}:${source.line}:${source.column}`, message: message.text() };
 
   return consoleError;
 };
@@ -333,6 +335,22 @@ export const logPageError = (error: Error): void => console.log(`  Message: ${er
 
 Reuse the `pageErrors` fixture and print each entry with `pageErrors.forEach(logPageError)` in a step. The `stack` property is already on the `Error`.
 
+`context.on('weberror')` fires for an uncaught exception in any page of the context, popups included, and `webError.location()` (1.60) gives the file, line, and column it was thrown from, in the same shape as `ConsoleMessage.location()`. The fixture member `webErrors: ConsoleError[]` registers `context.on('weberror', (webError: WebError): number => errors.push(toWebErrorDetail(webError)))` above `use`.
+
+```ts
+// e2e/console/test/utils/web-error.spec.util.ts
+import type { WebError } from '@playwright/test';
+
+import type { ConsoleError } from '../../common/console.type';
+
+export const toWebErrorDetail = (webError: WebError): ConsoleError => {
+  const source = webError.location();
+  const detail: ConsoleError = { location: `${source.url}:${source.line}:${source.column}`, message: webError.error().message };
+
+  return detail;
+};
+```
+
 ### Test Error Boundary Triggers
 
 React error boundaries catch render errors before they become `pageerror` events, so the listener only fires for errors the boundary missed. A `null` payload makes the widget crash on render; `dashboardPage.goto({ crashOn: 'data' })` routes `brokenDataMock()` before it navigates; the boundary shows its fallback and `pageErrors` stays empty. `crashOn` names the endpoint whose payload crashes its widget; it means the same on every dashboard page object in this skill. `null` is still a payload: `WIDGET_DATA_NULL_STUB` is typed `WidgetData | null` in `test/stubs/data.stub.ts`.
@@ -425,7 +443,7 @@ import type { ConsoleRecord } from '../../common/console.type';
 
 export const toConsoleRecord = (message: ConsoleMessage): ConsoleRecord => {
   const source = message.location();
-  const location = { line: source.lineNumber, url: source.url };
+  const location = { line: source.line, url: source.url };
   const record: ConsoleRecord = { location, text: message.text(), timestamp: Date.now(), type: message.type() };
 
   return record;

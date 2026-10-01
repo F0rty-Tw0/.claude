@@ -213,6 +213,8 @@ test.describe('FEATURE: chat socket', () => {
 });
 ```
 
+HAR and trace recordings include WebSocket requests since 1.61, so the trace of a failing run shows the socket beside the HTTP calls. `frameLog` stays for asserting on frames.
+
 ### Capture Sent Messages
 
 ```ts
@@ -325,6 +327,38 @@ export const chatSocketMock = (): ChatSocket => {
   return socket;
 };
 ```
+
+### Forward to the Real Server
+
+`ws.connectToServer()` opens the real connection and returns the server-side `WebSocketRoute`. Frames flow both ways on their own until a side gets an `onMessage` handler; from then on that direction is forwarded only by the handler. The relay below leaves page-to-server traffic untouched and drops one message type on its way to the page, so a test runs against the real backend minus the noise it cannot control.
+
+```ts
+// e2e/chat/test/mocks/chat-relay.mock.ts
+import type { WebSocketRoute } from '@playwright/test';
+
+import type { ChatSocket, SocketMessage } from '../../common/chat.type';
+
+export const chatRelayMock = (droppedType: string): ChatSocket['handler'] => {
+  return (ws: WebSocketRoute): void => {
+    const server = ws.connectToServer();
+    const relay = (frame: string | Buffer): void => {
+      const message: SocketMessage = JSON.parse(String(frame));
+
+      if (message.type !== droppedType) ws.send(frame);
+    };
+
+    server.onMessage(relay);
+  };
+};
+```
+
+`chatPage.goto(options)` takes `ChatOptions` (`{ readonly dropFromServer?: string }` in `common/chat.type.ts`); `chatPage.goto({ dropFromServer: 'typing' })` runs `page.routeWebSocket('**/ws/chat', chatRelayMock('typing'))` before it navigates, so the spec is a `.test.ts`.
+
+| Need | Call |
+|---|---|
+| Rewrite page-to-server frames | `ws.onMessage(handler)` on the page side; the handler calls `server.send(…)` |
+| Block both directions selectively | `onMessage` on both sides; nothing is forwarded automatically |
+| Branch on the subprotocol the page asked for | `ws.protocols()` (1.60) returns the `Sec-WebSocket-Protocol` list; close unsupported ones with `ws.close({ code: 1002, reason })` |
 
 ### WebSocket Mock Fixture
 

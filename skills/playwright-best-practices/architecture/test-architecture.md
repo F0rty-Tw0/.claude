@@ -154,24 +154,16 @@ Body assertions follow the list case: the status check first, then an `expect*` 
 - Third-party iframe interactions
 - Anything requiring multiple pages or browser contexts
 
-`mount` returns a `Locator`; a helper object in `helpers/` owns every child locator and assertion. The mount util wraps the JSX so a step stays one call. `Mount` is `(component: JSX.Element) => Promise<MountResult>` in `common/contact-form.type.ts`.
+`mount` mounts a story by id and returns the gallery's `#root` locator; a helper object in `helpers/` owns every child locator and assertion. `test/stories/contact-form.story.tsx` exports `Default`, which spreads data props (`submitting`) over a no-op `onSubmit`, and `Recorded`, which writes each submission to a hidden input ([component-testing.md](../testing-patterns/component-testing.md#callbacks--events)). The mount util keeps the opening step one call. `ContactFormStory` (`'Default' | 'Recorded'`) and `ContactFormProps` are in `common/contact-form.type.ts`; `Mount` is shared from `e2e/common/playwright.type.ts`.
 
-```tsx
-// e2e/contact-form/test/utils/mount.spec.util.tsx
-import { ContactForm } from '../../../../src/components/ContactForm';
-import type { ContactMessage, Mount, SubmitHandler } from '../../common/contact-form.type';
+```ts
+// e2e/contact-form/test/utils/contact-form-mount.spec.util.ts
+import type { Mount } from '../../../common/playwright.type';
+import type { ContactFormProps, ContactFormStory } from '../../common/contact-form.type';
 import { ContactFormHelper } from '../../helpers/contact-form.helper';
 
-export const noop = (): void => {};
-
-export const recordInto = (submissions: ContactMessage[]): SubmitHandler => {
-  return (data: ContactMessage): void => {
-    submissions.push(data);
-  };
-};
-
-export const mountContactForm = async (mount: Mount, onSubmit: SubmitHandler = noop, submitting = false): Promise<ContactFormHelper> => {
-  const root = await mount(<ContactForm onSubmit={onSubmit} submitting={submitting} />);
+export const mountContactForm = async (mount: Mount, story: ContactFormStory = 'Default', props?: ContactFormProps): Promise<ContactFormHelper> => {
+  const root = await mount(`contact-form/${story}`, props);
 
   return new ContactFormHelper(root);
 };
@@ -179,12 +171,12 @@ export const mountContactForm = async (mount: Mount, onSubmit: SubmitHandler = n
 
 ```tsx
 // e2e/contact-form/contact-form.test.tsx
-import { expect, test } from '@playwright/experimental-ct-react';
+import { test } from '@playwright/test';
 
 import type { ContactMessage } from './common/contact-form.type';
 import type { ContactFormHelper } from './helpers/contact-form.helper';
 import { MESSAGE_STUB } from './test/stubs/message.stub';
-import { mountContactForm, noop, recordInto } from './test/utils/mount.spec.util';
+import { mountContactForm } from './test/utils/contact-form-mount.spec.util';
 
 test.describe('FEATURE: contact form', () => {
   test('GIVEN an empty form, submitting shows both required-field errors', async ({ mount }): Promise<void> => {
@@ -204,17 +196,16 @@ test.describe('FEATURE: contact form', () => {
     await test.step('THEN the email error is shown', (): Promise<void> => form.expectErrors(['Enter a valid email']));
   });
 
-  test('GIVEN valid data, submitting calls onSubmit once', async ({ mount }): Promise<void> => {
-    const submissions: ContactMessage[] = [];
-    const form = await test.step('WHEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount, recordInto(submissions)));
+  test('GIVEN valid data, submitting reports the message once', async ({ mount }): Promise<void> => {
+    const form = await test.step('WHEN the recorded form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount, 'Recorded'));
 
     await test.step('AND the form is filled and submitted', (): Promise<void> => form.send(MESSAGE_STUB));
 
-    await test.step('THEN the handler received the message', (): void => expect(submissions).toEqual([MESSAGE_STUB]));
+    await test.step('THEN the form recorded the message once', (): Promise<void> => form.expectSubmissions([MESSAGE_STUB]));
   });
 
   test('GIVEN a form mid-submit, the send button is disabled', async ({ mount }): Promise<void> => {
-    const form = await test.step('WHEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount, noop, true));
+    const form = await test.step('WHEN the form is mounted', (): Promise<ContactFormHelper> => mountContactForm(mount, 'Default', { submitting: true }));
 
     await test.step('THEN the send button is disabled', (): Promise<void> => form.expectSubmitting());
   });
@@ -361,7 +352,7 @@ e2e/inventory/inventory.e2e.ts
 For this feature:
 
 - **11 API tests** — ~2 seconds total, no browser
-- **10 component tests** — ~5 seconds total, real browser but no server
+- **10 component tests** — ~5 seconds total, real browser, dev server only, no backend
 - **3 E2E tests** — ~15 seconds total, full stack
 
 Total: 24 tests, ~22 seconds. API tests catch most regressions. Component tests catch UI bugs. E2E tests prove wiring works. If E2E fails but API and component pass, the problem is in integration (routing, state management, API client).
