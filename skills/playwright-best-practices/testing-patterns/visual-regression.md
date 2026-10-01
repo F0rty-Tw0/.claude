@@ -247,7 +247,7 @@ jobs:
   visual-tests:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.48.0-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
       - uses: actions/checkout@v4
 
@@ -275,7 +275,7 @@ jobs:
 
 ```bash
 docker run --rm -v $(pwd):/work -w /work \
-  mcr.microsoft.com/playwright:v1.48.0-noble \
+  mcr.microsoft.com/playwright:v1.63.0-noble \
   npx playwright test --update-snapshots --project=visual
 ```
 
@@ -285,7 +285,7 @@ docker run --rm -v $(pwd):/work -w /work \
 {
   "scripts": {
     "test:visual": "npx playwright test --project=visual",
-    "test:visual:update": "docker run --rm -v $(pwd):/work -w /work mcr.microsoft.com/playwright:v1.48.0-noble npx playwright test --update-snapshots --project=visual"
+    "test:visual:update": "docker run --rm -v $(pwd):/work -w /work mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test --update-snapshots --project=visual"
   }
 }
 ```
@@ -612,7 +612,7 @@ export default defineConfig({ projects, testMatch: '**/*.@(e2e|test).ts' });
 
 ```bash
 docker run --rm -v $(pwd):/work -w /work \
-  mcr.microsoft.com/playwright:v1.48.0-noble \
+  mcr.microsoft.com/playwright:v1.63.0-noble \
   npx playwright test --update-snapshots --project=visual
 ```
 
@@ -640,7 +640,7 @@ Commit Linux-generated snapshots.
 
 ```yaml
 container:
-  image: mcr.microsoft.com/playwright:v1.48.0-noble
+  image: mcr.microsoft.com/playwright:v1.63.0-noble
 ```
 
 ### Animations cause random diff failures

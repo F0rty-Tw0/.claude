@@ -23,13 +23,13 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   fullyParallel: true,
   testMatch: '**/*.@(e2e|test).ts',
-  workers: process.env.CI ? 1 : undefined
+  workers: process.env.CI ? '50%' : undefined
 });
 ```
 
 ### Serial Execution When Needed
 
-`test.describe.configure({ mode: 'serial' })` at the top of a file runs its tests in order on one worker and skips the rest after the first failure; `test.describe.serial('FEATURE: …', …)` is the same call as a describe. Use it only for tests that cannot run in parallel because they share one external resource: a single sandbox account, a rate-limited third-party API, a global feature flag. Put those tests in their own spec, state the shared resource in the prose above it, and keep every other spec parallel.
+`test.describe.configure({ mode: 'serial' })` at the top of a file runs its tests in order on one worker and skips the rest after the first failure; `test.describe.serial('FEATURE: …', …)` is the same call as a describe. A shared external resource (a single sandbox account, a rate-limited third-party API, a global feature flag) takes a `lock` instead, which keeps the file parallel; see [parallel-sharding.md](parallel-sharding.md#worker-configuration). Serial mode is for when the order itself is the contract: put those tests in their own spec, state why in the prose above it, and keep every other spec parallel.
 
 Serial mode never chains tests. It does not carry a page, a login, or any other state from one test to the next: each test still gets a fresh context and starts from its own `GIVEN`. An ordered user path is a `JOURNEY` of independent legs instead. Below, the second leg starts from a `planStepPage` fixture that completes the profile through `request` and opens the plan step, so each leg runs alone and the spec stays parallel.
 

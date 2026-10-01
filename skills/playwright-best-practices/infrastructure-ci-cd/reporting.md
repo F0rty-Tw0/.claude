@@ -31,6 +31,9 @@ npx playwright test --reporter=junit         # CI integration
 # Combine reporters
 npx playwright test --reporter=dot,html
 
+# Add a reporter on top of the configured ones (--reporter replaces them)
+npx playwright test --add-reporter=perfetto
+
 # Merge sharded reports
 npx playwright merge-reports --reporter=html ./blob-report
 ```
@@ -73,6 +76,7 @@ export default defineConfig({
 | `junit` | JUnit XML | CI platforms |
 | `github` | PR annotations | GitHub Actions |
 | `blob` | Binary archive | Shard merging |
+| `perfetto` | Trace Event Format JSON (`test-results/perfetto.json`) | Worker timeline in Perfetto UI or `chrome://tracing`; finds slow fixtures and idle workers |
 
 ### File Output Options
 
@@ -84,6 +88,7 @@ export default defineConfig({
 | `junit` | `includeProjectInTestName: true` | Prefixes each test name with its project |
 | `html` | `outputFolder: 'playwright-report'` | Report directory |
 | `html` | `open: 'never' \| 'on-failure' \| 'always'` | Whether to open the report after the run |
+| `perfetto` | `outputFile: 'perfetto.json.gz'` | A `.gz` name gzips the file; both viewers read it |
 
 ### JUnit Customization
 
@@ -209,7 +214,34 @@ export default defineConfig({
 | `'on'` | Every test | High |
 | `'on-first-retry'` | On first retry after failure | Minimal |
 | `'retain-on-failure'` | Records all, keeps failures | Medium |
-| `'retain-on-first-failure'` | Records all, keeps first failure | Medium |
+| `'retain-on-first-failure'` | Records first run, keeps it if it failed | Medium |
+| `'retain-on-failure-and-retries'` | Records all, keeps failures and every retry | Medium |
+| `'on-all-retries'` | Every retry | Low |
+
+`'retain-on-failure-and-retries'` keeps the failing run next to the passing retry, so a flaky test's two traces can be compared side by side.
+
+### Trace Snapshots
+
+`trace` also takes an object whose `snapshots` picks what each action captures (1.63): `dom` (the default DOM snapshot), `aria` (the aria tree, which makes a trace readable as text by an agent), and `screen` (a screenshot per action). `screen` stays off in CI to keep traces small.
+
+```ts
+// e2e/playwright.config.ts
+import { defineConfig } from '@playwright/test';
+
+const IS_CI = Boolean(process.env.CI);
+
+const snapshots = { aria: true, dom: true, screen: !IS_CI };
+
+const trace = { mode: 'retain-on-failure-and-retries', snapshots } as const;
+
+const use = { trace } as const;
+
+export default defineConfig({
+  retries: IS_CI ? 2 : 0,
+  testMatch: '**/*.@(e2e|test).ts',
+  use
+});
+```
 
 ### Viewing Traces
 
@@ -256,6 +288,11 @@ export default defineConfig({ testMatch: '**/*.@(e2e|test).ts', use });
 | `'on'` | Every test | All | Very high |
 | `'on-first-retry'` | On retry | Retried | Low |
 | `'retain-on-failure'` | Every test | Failed | Medium |
+| `'retain-on-first-failure'` | First run | First run, if failed | Low |
+| `'retain-on-failure-and-retries'` | Every test | Failed runs and retries | Medium |
+| `'on-all-retries'` | Every retry | Retried | Low |
+
+The last three need Playwright 1.61; `video` now takes the same modes as `trace`.
 
 ## Artifact Directory Structure
 
@@ -283,14 +320,14 @@ blob-report/
 ### GitHub Actions
 
 ```yaml
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@v7
   if: ${{ !cancelled() }}
   with:
     name: playwright-report
     path: playwright-report/
     retention-days: 14
 
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@v7
   if: failure()
   with:
     name: test-traces
@@ -309,7 +346,7 @@ blob-report/
 | GitHub Actions | `[['dot'], ['html'], ['github']]` |
 | GitLab CI | `[['dot'], ['html'], ['junit']]` |
 | Azure DevOps / Jenkins | `[['dot'], ['html'], ['junit']]` |
-| Sharded CI | `[['blob'], ['github']]` |
+| Sharded CI | `[['blob']]` per shard; `merge-reports --reporter=html,github` in the merge job |
 | Custom dashboard | `[['json', { outputFile: '...' }]]` + custom reporter |
 
 | Artifact | When to Collect | Retention | Upload Condition |
@@ -332,6 +369,7 @@ blob-report/
 | No retention limits | CI storage fills quickly | Set `retention-days: 7-14` |
 | Only `dot` reporter | Cannot drill into failures | Pair `dot` with `html` |
 | JUnit to stdout | Interferes with console output | Write to file |
+| `github` reporter in every shard of a matrix | Duplicate, noisy annotations; Playwright advises against it | `blob` per shard, `github` in the merge job |
 | Blocking `onEnd` in custom reporter | Slow HTTP calls delay pipeline | Abort the call with `AbortSignal.timeout` |
 | `process.env` read inside a reporter | Config is no longer the single source of environment | Read it in the config, pass it as a reporter option |
 
@@ -371,13 +409,14 @@ export default defineConfig({ reporter, testMatch: '**/*.@(e2e|test).ts' });
 
 ```yaml
 # GitHub Actions
-- uses: dorny/test-reporter@latest
+- uses: dorny/test-reporter@v3
   with:
+    name: Playwright tests
     path: results/junit.xml
     reporter: java-junit
 
 # Azure DevOps
-- task: PublishTestResults@latest
+- task: PublishTestResults@2
   inputs:
     testResultsFiles: 'results/junit.xml'
 
