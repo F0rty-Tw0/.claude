@@ -7,7 +7,7 @@ Risk-gradient code review for AI-assisted changes. It classifies each change by 
 | Mode | Purpose |
 |---|---|
 | `review` (default) | Classify → adversarial reviewer (+ specialists on trunk) → verify findings → risk report + verdict |
-| `proof` | Author side: build the PR proof bundle (tests, base-failure check, runtime log, visual, verified / not verified) |
+| `proof` | Author side: build the PR proof bundle (tests, base-failure check, before/after pair of the change running, verified / not verified) |
 | `babysit <PR#>` | Loop on CI and comments; fix mechanical failures in the local tree only (never commits or pushes); ping on decisions |
 | `attack` | Pre-launch: flow-breaker, profiler and security prober against staging (≤3 agents) |
 | `launch` | Gate plan before coding, merge-ready vs launch-ready checklists, human-polish handoff, canary ramp + rollback |

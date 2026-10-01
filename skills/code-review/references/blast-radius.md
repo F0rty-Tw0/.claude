@@ -58,7 +58,7 @@ For the highest-risk hunk, answer in one line each:
 
 | Class | Human | Agents | Proof bar |
 |---|---|---|---|
-| Leaf (1–3) | Skim; read the gate check | 1 adversarial reviewer | Tests run + before/after screenshot pair or log for visible change |
+| Leaf (1–3) | Skim; read the gate check | 1 adversarial reviewer | Tests run + before/after pair of the change running (screenshot or terminal output) |
 | Branch (4–6) | Read risky hunks | Adversarial reviewer; run tests yourself | + reproduction test that fails on base |
 | Trunk (7–10) | **Deep read, named files/lines** — agent cannot sign off alone | Adversarial reviewer + relevant specialist (`security-reviewer` / `performance-reviewer`) | + invariant assertions, concurrency/boundary tests, rollback plan, telemetry metric |
 
