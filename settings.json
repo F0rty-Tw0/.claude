@@ -2,7 +2,8 @@
   "respectGitignore": false,
   "env": {
     "BASH_MAX_TIMEOUT_MS": "1800000",
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "COLD_CACHE_GUARD": "on"
   },
   "attribution": {
     "commit": "",
@@ -117,10 +118,11 @@
   "autoUpdatesChannel": "latest",
   "autoDreamEnabled": false,
   "skipWorkflowUsageWarning": false,
+  "autoCompactEnabled": true,
   "precomputeCompactionEnabled": false,
+  "switchModelsOnFlag": false,
   "autoContinueAtUsageLimit": true,
   "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true,
-  "defaultMode": "auto",
-  "switchModelsOnFlag": false
+  "defaultMode": "auto"
 }

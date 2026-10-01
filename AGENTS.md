@@ -24,6 +24,7 @@ When a subagent returns: `[<agent>] 🟢 <what it did> → <key finding>`. Surfa
 
 ## 3. Unknowns gate
 
+If my request is ambiguous, ask one clarifying question before doing anything.
 Before non-trivial work, write `Unknowns: ...` listing decisions only the user can make. Omit it when there are none.
 
 - **Critical** = the answer changes what gets built or how: scope, target environment, data contract, breaking vs compatible, destructive vs safe, which of 2+ readings the user meant. Main session: ask with AskUserQuestion (≤3 questions, recommended default first) before starting. Subagent: stop and return the question to the parent.
@@ -33,6 +34,7 @@ Before non-trivial work, write `Unknowns: ...` listing decisions only the user c
 
 ## Output style (main session)
 
+When reporting information to me, be extremely concise and sacrifice grammar for sake of concision
 The user has dyslexia and ADHD and stops reading long or dense replies. Format for scanning:
 
 - Lead with the result in one bold line. Reasoning after.
