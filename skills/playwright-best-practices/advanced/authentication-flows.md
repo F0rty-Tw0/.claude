@@ -7,11 +7,12 @@
 3. [Password Reset](#password-reset)
 4. [Session Timeout](#session-timeout)
 5. [Remember Me Persistence](#remember-me-persistence)
-6. [Logout Patterns](#logout-patterns)
-7. [Tips](#tips)
-8. [Related](#related)
+6. [Passkeys](#passkeys)
+7. [Logout Patterns](#logout-patterns)
+8. [Tips](#tips)
+9. [Related](#related)
 
-> **When to use**: Testing email verification, password reset, session timeout/expiration, or remember-me functionality. For basic auth setup (storage state, OAuth mocking, MFA, role-based access), see [authentication.md](authentication.md).
+> **When to use**: Testing email verification, password reset, session timeout/expiration, remember-me, or passkey sign-in. For basic auth setup (storage state, OAuth mocking, MFA, role-based access), see [authentication.md](authentication.md).
 
 ## Shared Pieces
 
@@ -386,6 +387,37 @@ Session-only login is a second test in the same spec, `'GIVEN a login without ke
 - `openPageWithCookies(browser, cookies)` is `openPageWithState` with `EMPTY_STORAGE_STATE` plus `context.addCookies(cookies)`.
 
 The test's `WHEN` is `sessionOnlyHomePage.goto()`. Its `THEN` is `sessionOnlyHomePage.expectRedirectedToLogin()`, which checks the url on the fixture's own page, not on the spec's blank `page`.
+
+## Passkeys
+
+`context.credentials` is a virtual WebAuthn authenticator for one context. No hardware key, no OS prompt.
+
+| Call | Does |
+|---|---|
+| `install()` | Overrides `navigator.credentials.create()` and `get()` in every current and future page of the context |
+| `create(rpId, options?)` | Seeds a credential for the relying party (the site's domain) and returns it, private key included |
+| `get({ rpId, id }?)` | Every credential the authenticator holds, optionally filtered |
+| `delete(id)` | Removes one credential, seeded or registered by the page |
+
+Register once, in a `setup` project, through the real sign-up UI. `context.storageState({ credentials: true, path })` saves the session cookies and the passkey together. `registerPasskey(signup)` on `SignupPage` clicks "Create a passkey" and waits for `/home`, so the passkey exists before the state is saved.
+
+```ts
+// e2e/auth/passkey.setup.ts
+import { test as setup } from './auth.fixture';
+import { PASSKEY_STATE_PATH } from './common/auth.const';
+import { SIGNUP_STUB } from './test/stubs/auth.stub';
+
+setup('saves the passkey user', async ({ context, signupPage }): Promise<void> => {
+  await context.credentials.install();
+  await signupPage.goto();
+  await signupPage.registerPasskey(SIGNUP_STUB);
+  await context.storageState({ credentials: true, path: PASSKEY_STATE_PATH });
+});
+```
+
+`PASSKEY_STATE_PATH` is `${AUTH_DIR}/passkey.json`. The `passkeyLoginPage` fixture calls `await context.setStorageState(PASSKEY_STATE_PATH)`, which installs the authenticator because the state holds credentials, then `await context.clearCookies()`, so the test starts signed out with the passkey still held. The spec is `'GIVEN a registered passkey, signing in with it opens home'`: `WHEN passkeyLoginPage.goto()`, `AND passkeyLoginPage.signInWithPasskey()`, `THEN passkeyLoginPage.expectHome()`.
+
+The saved file carries the credential's private key: anyone holding it signs in as that user. Treat it like any storage state: under the gitignored `e2e/.auth/`, never uploaded as a CI artifact, regenerated each run by the `setup` project.
 
 ## Logout Patterns
 

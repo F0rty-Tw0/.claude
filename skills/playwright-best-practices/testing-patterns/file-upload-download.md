@@ -346,12 +346,16 @@ test.describe('FEATURE: attachments multiple upload', () => {
 
 ## Drag-and-Drop Zones
 
-Most drop zones wrap an `input[type="file"]`, so a drop is `select()` on that input and the upload spec above covers it; never simulate OS-level drag events (a zone without an input is covered in `file-operations.md`). Drag-over feedback is tested by dispatching `dragenter` and `dragleave` on the zone. The app reads `dataTransfer.types`, so `dragEnter()` builds a real `DataTransfer` in the page with `evaluateHandle` and adds one file, which puts `Files` in its `types`, as `dropFile` in `file-operations.md` does.
+Most drop zones wrap an `input[type="file"]`, so a drop is `select()` on that input and the upload spec above covers it. A zone without an input takes `drop(file)`: `locator.drop({ files })` dispatches `dragenter`, `dragover`, and `drop` with a real `DataTransfer` built in the page, and `UploadFile` already has the `name`, `mimeType`, `buffer` shape it takes ([file-operations.md](file-operations.md#drag-and-drop-upload) has that spec).
+
+`drop()` runs all three events in one call, so drag-over feedback (a highlight while the file hovers) still needs `dragenter` and `dragleave` dispatched by hand. The app reads `dataTransfer.types`, so `dragEnter()` builds a `DataTransfer` in the page with `evaluateHandle` and adds one file, which puts `Files` in its `types`.
 
 ```ts
 // e2e/attachments/helpers/drop-zone.helper.ts
 import type { JSHandle, Locator } from '@playwright/test';
 import { expect } from '@playwright/test';
+
+import type { UploadFile } from '../common/attachments.type';
 
 const ACTIVE_CLASS = /active|highlight|drag-over/;
 
@@ -379,6 +383,10 @@ export class DropZoneHelper {
 
   public async dragLeave(): Promise<void> {
     await this.root.dispatchEvent('dragleave');
+  }
+
+  public async drop(file: UploadFile): Promise<void> {
+    await this.root.drop({ files: file });
   }
 
   public async expectActive(): Promise<void> {

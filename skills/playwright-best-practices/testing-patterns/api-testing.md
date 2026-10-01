@@ -389,6 +389,27 @@ test.describe('FEATURE: item response shape', () => {
 
 For a list body, `THEN the status is 200` comes first, then one `AND` step calls an `expect*` util in `test/utils/items-shape.spec.util.ts` that reads the body, asserts `toHaveLength(10)` on `items`, and loops `toMatchObject(FIELD_TYPES)` over them.
 
+### Typed Requests and Latency
+
+`request.get<Item>('/api/items/101')` (and `post`, `put`, `patch`, `delete`, `fetch`) takes a type argument that types `response.json()` as `Item`. It replaces the `const item: Item = await response.json()` annotation and nothing more: it is compile-time only, so a server that renames a field still compiles and still parses. Keep the runtime contract check in [Schema Validation with Zod](#schema-validation-with-zod).
+
+`response.timing()` returns resource timing for the call, the same shape as `request.timing()`: `startTime` is epoch milliseconds, every other field is milliseconds relative to it, and `-1` means unavailable. `responseEnd` is the full round trip. A latency ceiling reads it inside its own check:
+
+```ts
+// e2e/items/test/utils/item-latency.spec.util.ts
+import type { APIResponse } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+export const expectRespondedWithin = (response: APIResponse, ceilingMs: number): void => {
+  const { responseEnd } = response.timing();
+
+  expect(responseEnd).toBeGreaterThanOrEqual(0);
+  expect(responseEnd).toBeLessThan(ceilingMs);
+};
+```
+
+The spec calls it after the status check: `'AND the widget arrives within 500 ms'` → `(): void => expectRespondedWithin(response, 500)`. The `>= 0` line fails loudly when timing is unavailable (a response replayed from HAR reports `-1` everywhere) instead of passing every ceiling. Set the ceiling for order-of-magnitude regressions, well above CI noise; load and percentile budgets belong in [performance-testing.md](performance-testing.md).
+
 ### API Data Seeding
 
 **Use when**: E2E tests need specific data to exist before running. API seeding is 10-100x faster than UI-based setup.

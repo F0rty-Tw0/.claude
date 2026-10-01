@@ -296,6 +296,10 @@ Flip `update` to `false`. Every matching request is now answered from the file, 
 
 Add `notFound: 'fallback'` when the HAR is partial: recorded requests replay, unrecorded ones reach the network.
 
+### Record One Slice
+
+`update: true` records the whole context lifetime, login and page assets included. `context.tracing.startHar(path, { urlFilter })` and `context.tracing.stopHar()` record only the requests between the two calls. Bracket the one interaction the HAR should hold (placing the order) in a recording util run once by hand, not in a spec. `urlFilter` takes a string or RegExp; `mode: 'minimal'` keeps only what playback routing needs. The file is written on `stopHar()`.
+
 ## Conditional Mocking
 
 ### Mock Based on Request Body
@@ -517,6 +521,9 @@ export { expect } from '@playwright/test';
 | No cleanup of routes     | Routes persist across tests    | Use fixtures with cleanup        |
 | Ignoring request method  | Mock applies to wrong requests | Check `route.request().method()` |
 | Hardcoded mock responses | Brittle, hard to maintain      | Use factories for mock data      |
+| A handler branch that never calls `fulfill`, `continue`, `fallback`, or `abort` | The request hangs; the test times out on an unrelated locator | End every branch in one of the four |
+| `'**/api/users'` for a request with a query string | A glob matches the whole URL, so `/api/users?page=1` is missed | `'**/api/users**'`, or a predicate `(url: URL): boolean => url.pathname === '/api/users'` |
+| `page.on('request')` used as a mock | A listener observes; it cannot change the response | `page.route` with a mock factory |
 
 ## Related References
 

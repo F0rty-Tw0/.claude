@@ -481,7 +481,7 @@ test.describe('FEATURE: native HTML5 drag and drop', () => {
 
 ## File Drop Zone
 
-A file drop zone wraps a hidden `<input type="file">`, so `setInputFiles` on that input fires the same change handler as a real drop, and drag-over styling is exercised with `dispatchEvent('dragenter')` carrying a `dataTransfer` whose `types` include `Files`. The component and spec are in `file-upload-download.md` under "Drag-and-Drop Zones"; the rejected `.exe` payload is under "File Type and Size Restrictions" there.
+A file dropped from the desktop is not a `dragTo()`: the source is outside the page. When the zone wraps a hidden `<input type="file">`, `setInputFiles` on that input fires the same change handler as a real drop. When it has no input, `locator.drop({ files: { name, mimeType, buffer } })` dispatches `dragenter`, `dragover`, and `drop` with a real `DataTransfer`; `{ data: { 'text/plain': … } }` drops text or links the same way. Drag-over styling, which needs `dragenter` without the drop, is still a `dispatchEvent('dragenter')` carrying a `dataTransfer` whose `types` include `Files`. The helper and specs are in [file-upload-download.md](file-upload-download.md#drag-and-drop-zones) and [file-operations.md](file-operations.md#drag-and-drop-upload); the rejected `.exe` payload is under "File Type and Size Restrictions" in the first.
 
 ---
 

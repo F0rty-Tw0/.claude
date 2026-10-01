@@ -316,6 +316,75 @@ test.describe('FEATURE: concurrent session limit', () => {
 });
 ```
 
+### Test Session Cookie Flags and Rotation
+
+The session cookie must be `httpOnly` (no script reads it), `secure` (HTTPS only), and `SameSite` `Strict` or `Lax`. Its value must change at sign-in: an id issued before login and kept after it is session fixation. `context.cookies()` returns every flag, so both checks are utils over it. `SESSION_COOKIE` (`'sid'`) joins `common/security.const.ts`.
+
+```ts
+// e2e/security/test/utils/session-cookie.spec.util.ts
+import type { BrowserContext, Cookie } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import { SESSION_COOKIE } from '../../common/security.const';
+
+const STRICT_OR_LAX = expect.stringMatching(/^(Strict|Lax)$/);
+
+const SECURE_FLAGS = { httpOnly: true, sameSite: STRICT_OR_LAX, secure: true };
+
+const isSessionCookie = (cookie: Cookie): boolean => cookie.name === SESSION_COOKIE;
+
+export const sessionId = async (context: BrowserContext): Promise<string | undefined> => {
+  const cookies = await context.cookies();
+  const session = cookies.find(isSessionCookie);
+
+  return session?.value;
+};
+
+export const expectSecureSessionCookie = async (context: BrowserContext): Promise<void> => {
+  const cookies = await context.cookies();
+  const session = cookies.find(isSessionCookie);
+
+  expect(session).toMatchObject(SECURE_FLAGS);
+};
+
+export const expectSessionRotated = async (context: BrowserContext, before: string): Promise<void> => {
+  const isRotated = async (): Promise<boolean> => {
+    const after = await sessionId(context);
+
+    return after !== undefined && after !== before;
+  };
+
+  await expect.poll(isRotated).toBe(true);
+};
+```
+
+The `anonymousSessionId` fixture opens the login page through `loginPage.goto()`, reads `sessionId(context)`, throws when the app issued no cookie yet (then rotation does not apply), and hands the value to `use`. `LoginPage.submit(credentials)` is the fill-and-click half of `login`.
+
+```ts
+// e2e/security/session-cookie.e2e.ts
+import { expect, test } from './security.fixture';
+import { USER_STUB } from './test/stubs/security.stub';
+import { expectSecureSessionCookie, expectSessionRotated } from './test/utils/session-cookie.spec.util';
+
+test.describe('FEATURE: session cookie', () => {
+  test('GIVEN valid credentials, signing in sets an httpOnly, secure, same-site session cookie', async ({ context, loginPage, page }): Promise<void> => {
+    await test.step('WHEN the user signs in', (): Promise<void> => loginPage.login(USER_STUB));
+
+    await test.step('THEN the dashboard is shown', (): Promise<void> => expect(page).toHaveURL('/dashboard'));
+
+    await test.step('AND the session cookie carries every security flag', (): Promise<void> => expectSecureSessionCookie(context));
+  });
+
+  test('GIVEN an anonymous session on the login page, signing in issues a new session id', async ({ anonymousSessionId, context, loginPage }): Promise<void> => {
+    await test.step('WHEN the credentials are submitted', (): Promise<void> => loginPage.submit(USER_STUB));
+
+    await test.step('THEN the session id differs from the anonymous one', (): Promise<void> => expectSessionRotated(context, anonymousSessionId));
+  });
+});
+```
+
+Run the flags test against the HTTPS environment the app ships to; a plain-HTTP host is where `secure` is most often dropped "for local dev" and forgotten. Logout is the mirror check: the old id must stop working, covered in [authentication-flows.md](../advanced/authentication-flows.md#logout-patterns).
+
 ### Test Password Reset Security
 
 A reset token works once. The test spends the token through the UI, then opens the reset page with it again; the updated notice is asserted before the reuse so a token that never worked cannot pass. In a test environment the token is exposed or captured from an email mock; here it is a constant. `ForgotPasswordPage.request(email)` submits the forgot-password form. `ResetPasswordPage.goto(token)` opens `/reset-password?token=<token>`; `submit(password)` fills the new password and clicks Reset; `expectUpdated` and `expectInvalidToken` assert the success and the invalid-or-expired notices.
@@ -476,6 +545,8 @@ A policy that blocks inline scripts reports each block on the console. `cspViola
 | Hardcoded test credentials | Security risk         | Use environment variables     |
 | Skipping auth tests in dev | Bugs reach production | Test auth in all environments |
 | Not testing authorization  | Access control bugs   | Test all role combinations    |
+| Session id kept across sign-in | Session fixation | Assert the id rotates (`expectSessionRotated`) |
+| Session cookie readable from script | One XSS steals the session | Assert `httpOnly`, `secure`, `SameSite` from `context.cookies()` |
 
 ## Related References
 

@@ -7,6 +7,7 @@
 3. [Email Verification](#email-verification)
 4. [SMS Verification](#sms-verification)
 5. [Analytics & Tracking](#analytics--tracking)
+6. [CAPTCHA](#captcha)
 
 ## OAuth/SSO Mocking
 
@@ -642,6 +643,23 @@ test.describe('FEATURE: checkout analytics', () => {
 });
 ```
 
+## CAPTCHA
+
+A test never solves a CAPTCHA, and never routes Google's script to a fake: that tests the fake. The app takes its site key and secret from config, and the test environment sets Google's documented reCAPTCHA v2 test keys:
+
+| Key | Value |
+|---|---|
+| Site key | `6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI` |
+| Secret key | `6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe` |
+
+With them the widget never shows a challenge and every server-side verification passes; it also renders a warning that it is not for production traffic, so a visual baseline must mask it. The checkbox lives in Google's cross-origin iframe, reached through a `FrameLocator` field ([iframes.md](../browser-apis/iframes.md)). The spec stays `.e2e.ts`: nothing is routed.
+
+| Variant | Test setup |
+|---|---|
+| reCAPTCHA v2 checkbox or invisible | The test keys above |
+| reCAPTCHA v3 (score) | Google's advice: a separate key for the test environment, not the test keys; its scores may be inaccurate because v3 relies on real traffic |
+| Your own `/api/verify-captcha` returning a failure | Route that endpoint through the opening call's failure option; the spec becomes `.test.ts` |
+
 ## Anti-Patterns to Avoid
 
 | Anti-Pattern              | Problem                        | Solution                |
@@ -650,6 +668,7 @@ test.describe('FEATURE: checkout analytics', () => {
 | Real payment processing   | Charges real money, slow       | Use test mode or mock   |
 | Waiting for real emails   | Very slow, unreliable          | Mock email API          |
 | Not mocking analytics     | Pollutes analytics data        | Block or mock analytics |
+| Solving or faking reCAPTCHA | Brittle, or tests a fake | Google's test site key in the test environment |
 
 ## Related References
 

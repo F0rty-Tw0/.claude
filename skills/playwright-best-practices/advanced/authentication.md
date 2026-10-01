@@ -518,6 +518,8 @@ test.describe('FEATURE: admin panel access', () => {
 });
 ```
 
+**Swap in place**: `context.setStorageState(state)` takes a path or a state object, clears the context's cookies, local storage, IndexedDB, and virtual passkeys, and loads the new state. Use it when one page must change role mid-test, such as an admin demoted while the tab stays open. `AdminUsersPage.reopenAs(role)` calls `` await this.page.context().setStorageState(`${AUTH_DIR}/${role}.json`) ``, then `await this.page.reload()`. The spec gives the switch its own phase: `'THEN the remove user button is enabled'`, `'WHEN the session switches to guest'`, `'THEN access denied is shown'`. The reload is what makes the app read the new cookies; in-memory app state from before the swap is still there until then. Two roles side by side still need two contexts (`openUsersAs` above).
+
 ### OAuth/SSO Mocking
 
 **Use when**: Your app authenticates via a third-party OAuth provider and you cannot hit the real provider in tests.
