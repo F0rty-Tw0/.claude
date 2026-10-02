@@ -46,7 +46,8 @@ Read every reference matching the work:
 | Functions, helper extraction, utility placement, or purity | `references/utility-style.md` |
 | New module or feature; writing or placing a smart or presentational component, guard, service, state facade, NGXS state, API client, DB query, handler, provider, or token; Angular decorators (`@Service`, `@Injectable`, `input()`); any import between layers; any `index.ts` | `references/feature-modules.md` |
 | Any source `.ts` file over 150 lines (spec over 300), or splitting a module | `references/module-size.md` |
-| Architecture review, refactoring for testability, a root barrel export, an `InjectionToken` or port, or code shared across feature modules | `references/module-depth.md` |
+| A root barrel export, an `InjectionToken` or port, code shared across feature modules, or refactoring for testability | `references/module-depth.md` |
+| Architecture review or a scan for deepening refactors | `references/architecture-scan.md`, after `references/module-depth.md` |
 | Specs, stubs, mocks, fixtures, spec utils, `test/` folders, or any test-only file | `references/unit-testing.md` |
 | Spec contents: `describe` / `it` tree, case naming, branch coverage, Angular `TestBed` setup | `references/spec-style.md` |
 | Any new behavior or bug fix, before production code | `test-driven-development` skill (cycle), then `references/spec-style.md` (shape) |

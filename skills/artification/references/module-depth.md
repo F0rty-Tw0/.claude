@@ -6,13 +6,14 @@
 - [Vocabulary](#vocabulary)
 - [Quick Reference](#quick-reference)
 - [Dependencies by Layer](#dependencies-by-layer)
-- [Architecture Scan](#architecture-scan)
 - [Rationalizations](#rationalizations)
 - [Red Flags](#red-flags)
 
 ## Core Principle
 
 A feature module is deep when a lot of behavior sits behind a small interface. Small files and a deep feature module are not in tension: depth is measured at the interface, not by file length. The 150-line ceiling in `module-size.md` still holds; deepening shrinks what other feature modules import and how many files a caller or test must know, never by growing a file.
+
+The architecture scan that applies these rules lives in `architecture-scan.md`.
 
 Vocabulary from John Ousterhout's *A Philosophy of Software Design* and Michael Feathers, as used in Matt Pocock's `codebase-design` skill.
 
@@ -53,23 +54,6 @@ Classify what the deepened feature module depends on; the class decides how its 
 | Local-substitutable (a stand-in runs locally: PGlite, in-memory file system) | `data-access/` | Run the stand-in in the spec; the seam stays internal. |
 | Remote but owned (own HTTP service, queue) | `data-access/` `.api.ts` service class | Override the class with a `test/mocks/` double; no token. |
 | True external (third-party SDK, browser platform global) | `data-access/` `.client.ts`, or an `InjectionToken` for a global per `feature-modules.md` | Mock in `test/mocks/` that can also fail or reject. |
-
-## Architecture Scan
-
-Use when asked to review architecture, find refactoring targets, or make a feature module easier to test.
-
-1. **Scope.** A named feature module or pain point wins. Otherwise read `git log --oneline` back far enough to find the files that keep changing, and start there; deepening pays off where change recurs.
-2. **Read decisions.** Any ADRs (`docs/adr/`) and the module's `README` in the area. A candidate that contradicts an ADR is listed only when the friction justifies reopening it, and says so.
-3. **Explore** (an `Explore` subagent for wide trees) and note friction:
-   - Understanding one concept means bouncing across many files or feature modules.
-   - An interface nearly as complex as what it hides.
-   - Pure `utils/` extracted for testability while the bugs live in how `domain-logic` sequences them.
-   - A consumer reaching past a library's root barrel, or importing another feature module's `.api.ts`, `.db.ts`, or `+state/`. Direct file imports between sibling app modules are sanctioned (`feature-modules.md`).
-   - Behavior with no spec reachable through the interface.
-4. **Apply the deletion test** to each suspect.
-5. **Report** candidates, strongest first. Each gets: files; problem; solution in plain words; benefit in locality, leverage, and which specs improve; a before/after file tree or call tree; strength `Strong`, `Worth exploring`, or `Speculative`. End with the one to tackle first and why.
-6. **Stop and ask** which candidate to explore. No interfaces are proposed before the user picks.
-7. **Design the picked one with the user:** constraints, what sits behind the seam, the new barrel exports, and which sibling specs move versus which integration spec proves the result. A rejection with a reason a future scan would need → offer to record it as an ADR.
 
 ## Rationalizations
 
