@@ -1,4 +1,4 @@
-# PR Description Generator
+# Open PR
 
 Write PR titles and descriptions that are concise, honest about impact, and sound like a human wrote them. The analysis is full; the body carries only what a reviewer needs to decide.
 

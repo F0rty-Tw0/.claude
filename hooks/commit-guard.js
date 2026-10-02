@@ -27,7 +27,7 @@ if (fs.existsSync(flag)) {
 }
 process.stderr.write(
   'commit-guard: git commit/push blocked. If the USER explicitly asked for this in the current request, ' +
-  'load the meaningful-commits skill (commit) or pr-description skill (PR), then ' +
+  'load the meaningful-commits skill (commit) or open-pr skill (PR), then ' +
   'run `touch ~/.claude/.allow-commit` and retry (flag is one-shot). If they did not ask, do not commit.'
 );
 process.exit(2);

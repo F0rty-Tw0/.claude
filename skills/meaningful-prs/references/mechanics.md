@@ -70,7 +70,7 @@ git switch <stack>/2-<name> && git merge <stack>/1-<name> && <test>   # repeat u
 git push origin <stack>/1-<name> <stack>/2-<name>                      # normal push, no force
 ```
 
-If the fix changed an API that upper PRs call, fix those call sites during the restack. Re-run `pr-description` Step 0 so each `## Proof` is fresh.
+If the fix changed an API that upper PRs call, fix those call sites during the restack. Re-run `open-pr` Step 0 so each `## Proof` is fresh.
 
 ## Parent merged (new user request needed)
 

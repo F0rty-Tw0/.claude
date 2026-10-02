@@ -10,7 +10,7 @@ Splits a large or mixed branch into small PRs, one reviewable unit each. It spli
 | Slice order | Trunk prep → gated core → leaf; flag flip + cleanup come later as separate PRs |
 | Topology | Independent off `main` by default; stack only on real import/migration dependencies; depth ≤ 3 |
 | Build | Slice by path from a main-synced source branch; each slice builds + tests alone; completeness diff must be empty |
-| Per PR | `pr-description` → `## Proof` + fresh review against the **parent**, with the stack map |
+| Per PR | `open-pr` → `## Proof` + fresh review against the **parent**, with the stack map |
 | Restack (squash) | Merge parent into child, normal push; retarget the child before the parent branch is deleted; force-push only with explicit approval |
 
 Commands: `references/mechanics.md`.

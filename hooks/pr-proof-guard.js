@@ -87,7 +87,7 @@ const hasPair = (text) => {
 const HOW = 'Pass the full body via a heredoc, with the delimiter alone on its line and `)"` on the next:\n' +
   '--body "$(cat <<\'EOF\'\n...\nEOF\n)"\n' +
   'or via --body-file — a `\\n` inside quotes is not a newline. Relative --body-file paths resolve against the session cwd.';
-const NO_PROOF = 'pr-proof-guard: PR body has no `## Proof` section. Load the pr-description skill: its Step 0 builds proof ' +
+const NO_PROOF = 'pr-proof-guard: PR body has no `## Proof` section. Load the open-pr skill: its Step 0 builds proof ' +
   'with the code-review skill (proof mode + fresh review) and appends `## Proof`. ' + HOW;
 const NO_PAIR = 'pr-proof-guard: `## Proof` has no before/after pair. Every PR shows the change running, not the code it adds: ' +
   'a `Before:` line and an `After:` line (screenshot, CLI or console output of the real thing on base vs head), or a ' +
