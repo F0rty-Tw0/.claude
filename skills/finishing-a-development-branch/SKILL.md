@@ -43,7 +43,7 @@ Discard isn't on the menu; it runs only when the user explicitly asks to throw t
 
 **1 — Merge locally.** From the main repo root (`MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)`), with a clean `git status --porcelain` (uncommitted changes leak across or block the checkout): `git checkout <base> && git pull && git merge <feature>`, then run the tests on the merged result. Merged result red → stop. Leave the worktree and branch in place and investigate; nothing is pushed, so the merge is local and recoverable. Only after the merge succeeds: clean up (step 5), then `git branch -d <feature>`.
 
-**2 — Push and PR.** Pushing is outward-facing, and `hooks/commit-guard.js` blocks it unless `~/.claude/.allow-commit` is set, so confirm the user wants the push, then `git push -u origin <feature>`. Load skill:pr-description for the title and body and run `gh pr create`. Keep the worktree; the user iterates on review feedback there.
+**2 — Push and PR.** Pushing is outward-facing, and `hooks/commit-guard.js` blocks it unless `~/.claude/.allow-commit` is set, so confirm the user wants the push, then `git push -u origin <feature>`. Load skill:open-pr for the title and body and run `gh pr create`. Keep the worktree; the user iterates on review feedback there.
 
 **3 — Keep.** Report "Keeping branch `<name>` at `<path>`." No cleanup.
 

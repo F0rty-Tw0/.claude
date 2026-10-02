@@ -1,9 +1,9 @@
 ---
-name: pr-description
+name: open-pr
 description: Writes compact PR titles and descriptions with a blast-radius-scaled Proof section behind a fresh code-review gate. Use when creating or updating a pull request or describing branch changes for one.
 ---
 
-# PR Description Generator
+# Open PR
 
 Write PR titles and descriptions that are concise, honest about impact, and sound like a human wrote them. Analyze fully; write only what a reviewer needs to decide.
 

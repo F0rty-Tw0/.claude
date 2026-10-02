@@ -12,7 +12,7 @@ This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
 - Split by **blast radius** first, then by module or feature. Trunk lines must not hide inside leaf volume, so the review knob can do its job.
 - Every PR stands alone: it builds, its tests pass, it's safe to merge, and it ships dark.
 
-Run skill:pr-description for every PR. It adds `## Proof` and a fresh `code-review`, and a hook blocks PRs without proof.
+Run skill:open-pr for every PR. It adds `## Proof` and a fresh `code-review`, and a hook blocks PRs without proof.
 
 ## Split or not
 
@@ -50,14 +50,14 @@ Run skill:pr-description for every PR. It adds `## Proof` and a fresh `code-revi
    - migration number collisions on `origin/<default>`
    - the real typecheck/test script names
 2. **Split plan** as a table: Slice, Branch, Base, Blast (`code-review` `references/blast-radius.md`), Tasks/Files, ~Lines. If the plan has a **PR Slices** table (`plan`, `references/task-format.md`), start from it and fill Files and ~Lines from `git diff --stat`.
-3. **One approval:** ask with AskUserQuestion, together with `pr-description`'s audience question (for us / for someone else) asked **once for the whole stack**. The approval covers the listed commits, the first push and the PRs. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
+3. **One approval:** ask with AskUserQuestion, together with `open-pr`'s audience question (for us / for someone else) asked **once for the whole stack**. The approval covers the listed commits, the first push and the PRs. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
 4. **Build the slices.** Details and commands: `references/mechanics.md`.
    - Sync the source branch with `origin/<default>` first.
    - Take files **by path** from the source branch (`git restore --source`, which also carries deletions).
    - Partial files (a flag line): Edit, or stage a prepared version into the index.
    - Each slice must pass typecheck and tests before its commits, which follow `meaningful-commits`.
 5. **Completeness check:** the union of all slices must equal the source branch. `git diff --stat` must be empty. If not, stop.
-6. **Open PRs bottom-up**, one `pr-description` run per PR. **Skip its "one PR or several?" routing**: the split is already decided, so don't loop back here. Its review gets:
+6. **Open PRs bottom-up**, one `open-pr` run per PR. **Skip its "one PR or several?" routing**: the split is already decided, so don't loop back here. Its review gets:
    - the diff **against the parent** (`<parent>...<slice>`), not `<default>`; the description's Step 1 `BASE` is the parent too
    - the stack map, so that symbols consumed by a later PR are not flagged as dead code
 
