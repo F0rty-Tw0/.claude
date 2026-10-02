@@ -85,6 +85,7 @@ Load skill:artification too. Its `typescript-style.md` applies to every Playwrig
 | Copying a Playwright docs sample verbatim | Reshape it: `GIVEN <state>, <outcome>` title, Gherkin steps, page object, fixture, return types. |
 | Fixing a flake by retrying | skill:deflaky audit, then the matching category in `debugging/flaky-tests.md`. |
 | `login.spec.ts` for a Playwright file | `login.test.ts` when your own API is routed (directly or via fixture, page object, mock); `login.e2e.ts` otherwise, third-party stubs included. `.spec.ts` is artification's unit-test suffix. |
+| `login.page.ts` for a page object | `login.po.ts`. `.page.ts` collides with routed-page files in Ionic, Analog, and similar frameworks. |
 | `test.describe('Login')` | `test.describe('FEATURE: login')`. |
 | `test.describe('GIVEN …')` grouping tests | Flat: one `FEATURE` describe (plus `JOURNEY` for a user path). The title starts `GIVEN <state>,`, and the opening `WHEN` call or a fixture sets that state up. |
 | `test('WHEN … THEN …')`, `test('SCENARIO: …')`, or `test('<bare title>')` | Title is `GIVEN <state>, <outcome>`; `WHEN` / `THEN` are `test.step` names. |
