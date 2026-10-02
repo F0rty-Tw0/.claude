@@ -69,12 +69,12 @@ my-angular-app/
       signup.e2e.ts
       signup.fixture.ts
       pages/
-        signup.page.ts
+        signup.po.ts
     members/
       members.e2e.ts
       members.fixture.ts
       pages/
-        members.page.ts
+        members.po.ts
   angular.json
 ```
 
@@ -96,7 +96,7 @@ my-angular-app/
 Angular generates internal attributes (`_ngcontent-*`, `_nghost-*`, `ng-reflect-*`) that change every build. Always use semantic locators: roles for Angular Material and native HTML, labels for form fields, test IDs for widgets without a role, and a scoped locator for a row inside a table.
 
 ```ts
-// e2e/projects/pages/projects.page.ts
+// e2e/projects/pages/projects.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -154,7 +154,7 @@ Playwright interacts with the rendered DOM, so reactive forms (`FormGroup`, `For
 `goto(options)` takes `SignupOptions` from `common/signup.type.ts`, the one options type this page object has: `{ readonly failOn?: 'register'; readonly signupDelayMs?: number; readonly usernameCheckDelayMs?: number }`. The sample shows the `usernameCheckDelayMs` branch that the async validator case below passes. `signupDelayMs` ([react.md](react.md#form-libraries-react-hook-form-formik)) and `failOn` ([error-testing.md](../debugging/error-testing.md#test-server-side-validation)) route their mocks the same way before the page opens.
 
 ```ts
-// e2e/signup/pages/signup.page.ts
+// e2e/signup/pages/signup.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -322,7 +322,7 @@ The spec passes data, not a handler: `goto({ usernameCheckDelayMs: 800 })` route
 Angular Material uses proper ARIA attributes. Use role-based locators instead of CSS classes like `.mat-mdc-button`. A `mat-select` is a `combobox` whose options render in the CDK overlay.
 
 ```ts
-// e2e/preferences/pages/preferences.page.ts
+// e2e/preferences/pages/preferences.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -380,7 +380,7 @@ test.describe('FEATURE: material select', () => {
 A router link is a client-side navigation; `waitForURL` after the click keeps the page object honest about where it landed. A route resolver runs before the component renders, so the page object waits for the resolver response as part of `goto`.
 
 ```ts
-// e2e/items/pages/item.page.ts
+// e2e/items/pages/item.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -464,7 +464,7 @@ export const expectNoChunkErrors = (errors: string[]): void => {
 ```
 
 ```ts
-// e2e/analytics/pages/home.page.ts
+// e2e/analytics/pages/home.po.ts
 import type { Locator, Page, Response } from '@playwright/test';
 
 const isChunkResponse = (response: Response): boolean => response.url().includes('.js') && response.status() === 200;
@@ -516,7 +516,7 @@ test.describe('FEATURE: lazy analytics module', () => {
 Playwright cannot subscribe to observables or read signals directly. Test through the rendered output.
 
 ```ts
-// e2e/counter/pages/counter.page.ts
+// e2e/counter/pages/counter.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

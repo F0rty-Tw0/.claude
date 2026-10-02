@@ -71,7 +71,7 @@ One `test.extend` per feature in `<feature>.fixture.ts`. Setup sits above `use`,
 // e2e/todo/todo.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { TodoPage } from './pages/todo.page';
+import { TodoPage } from './pages/todo.po';
 import { ApiClient } from './utils/api-client.util';
 
 type TodoFixtures = {
@@ -104,8 +104,8 @@ An option is a fixture declared as `[default, { option: true }]`. Its type, `Tod
 import { test as base } from '@playwright/test';
 
 import type { TodoFixtureOptions } from './common/todo.type';
-import { LoginPage } from './pages/login.page';
-import { TodoPage } from './pages/todo.page';
+import { LoginPage } from './pages/login.po';
+import { TodoPage } from './pages/todo.po';
 import { USER_STUB } from './test/stubs/todo.stub';
 
 type TodoFixtures = {
@@ -226,7 +226,7 @@ Shared across tests in the same worker; each worker gets its own instance and te
 import { test as base } from '@playwright/test';
 
 import type { Account } from './common/account.type';
-import { AccountPage } from './pages/account.page';
+import { AccountPage } from './pages/account.po';
 import { createTestAccount, deleteTestAccount } from './test/utils/account.spec.util';
 
 type AccountFixtures = {
@@ -409,7 +409,7 @@ When one test needs two roles at once, each role is a fixture that opens its own
 import type { Browser, Page } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
-import { DashboardPage } from '../dashboard/pages/dashboard.page';
+import { DashboardPage } from '../dashboard/pages/dashboard.po';
 
 type AuthFixtures = {
   readonly adminDashboard: DashboardPage;

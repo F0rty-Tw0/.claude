@@ -263,7 +263,7 @@ export const readJsCoverageEntries = async (dir: string): Promise<JsCoverageEntr
 A targeted test starts coverage through the opening call, drives the page object, and asserts on one module. `checkoutPage.goto({ coverage: 'js' })` starts JS coverage before it navigates, and `{ coverage: 'css' }` starts CSS coverage; `CheckoutOptions`, the checkout page's one options type in `common/checkout.type.ts`, gains `coverage?: 'css' | 'js'` here. `resetOnNavigation: false` keeps entries across `goto`. Stopping coverage is an action after the page check, so it is a new `WHEN` that returns the entries; the `THEN` computes the percent inside its one `expect`, so no step only reads a value. `checkout.fixture.ts` follows the standard fixture shape and exposes `checkoutPage`.
 
 ```ts
-// e2e/checkout/pages/checkout.page.ts
+// e2e/checkout/pages/checkout.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

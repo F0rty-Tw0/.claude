@@ -271,7 +271,7 @@ test.describe('FEATURE: dashboard', () => {
 When debugging network-dependent issues, wait for the specific API response instead of an arbitrary timeout. The page object starts waiting before it clicks and returns the response.
 
 ```ts
-// e2e/dashboard/pages/dashboard.page.ts
+// e2e/dashboard/pages/dashboard.po.ts
 import type { Locator, Page, Response } from '@playwright/test';
 
 const isDataResponse = (response: Response): boolean => response.url().includes('/api/data') && response.status() === 200;
@@ -477,7 +477,7 @@ test.describe('FEATURE: dashboard', () => {
 A page object owns the problem element. One method screenshots the element alone; the other paints a border so the element stands out in a full-page screenshot.
 
 ```ts
-// e2e/dashboard/pages/dashboard.page.ts
+// e2e/dashboard/pages/dashboard.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 const highlight = (element: HTMLElement): void => {

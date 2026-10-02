@@ -432,8 +432,8 @@ import { test as base } from '@playwright/test';
 
 import { readJson } from '../utils/read-json.util';
 import type { Account, SeededAccount, SeededWorkspace } from './common/workspace.type';
-import { DashboardPage } from './pages/dashboard.page';
-import { LoginPage } from './pages/login.page';
+import { DashboardPage } from './pages/dashboard.po';
+import { LoginPage } from './pages/login.po';
 import { uniqueEmail, uniqueWorkspaceName } from './test/utils/workspace-builder.spec.util';
 
 type WorkspaceFixtures = {

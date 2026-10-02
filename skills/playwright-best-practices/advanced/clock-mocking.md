@@ -17,12 +17,12 @@ The clock can change at runtime, so an instant is an option on the opening call.
 
 | Page object | File | Members used in this file |
 |---|---|---|
-| `DashboardPage` | `e2e/dashboard/pages/dashboard.page.ts` | `goto(options?)`, `expectDate(text)`, `expectSessionNotice(text)` |
-| `PostPage` | `e2e/posts/pages/post.page.ts` | `goto({ post, time })`, `expectPostedAgo(text)` |
-| `BillingPage` | `e2e/billing/pages/billing.page.ts` | `goto(options?)`, `expectDue(text)` |
-| `SearchPage` | `e2e/search/pages/search.page.ts` | shown below |
-| `SchedulePage` | `e2e/schedule/pages/schedule.page.ts` | `goto(options?)`, `expectTime(text)` |
-| `LiveDataPage` | `e2e/live-data/pages/live-data.page.ts` | `goto()` |
+| `DashboardPage` | `e2e/dashboard/pages/dashboard.po.ts` | `goto(options?)`, `expectDate(text)`, `expectSessionNotice(text)` |
+| `PostPage` | `e2e/posts/pages/post.po.ts` | `goto({ post, time })`, `expectPostedAgo(text)` |
+| `BillingPage` | `e2e/billing/pages/billing.po.ts` | `goto(options?)`, `expectDue(text)` |
+| `SearchPage` | `e2e/search/pages/search.po.ts` | shown below |
+| `SchedulePage` | `e2e/schedule/pages/schedule.po.ts` | `goto(options?)`, `expectTime(text)` |
+| `LiveDataPage` | `e2e/live-data/pages/live-data.po.ts` | `goto()` |
 
 ## Clock API Basics
 
@@ -71,7 +71,7 @@ export { expect } from '@playwright/test';
 import { mergeTests, test as base } from '@playwright/test';
 
 import { test as clockTest } from '../clock/clock.fixture';
-import { BillingPage } from './pages/billing.page';
+import { BillingPage } from './pages/billing.po';
 
 type BillingFixtures = {
   readonly billingPage: BillingPage;
@@ -192,7 +192,7 @@ test.describe('FEATURE: session timeout notice', () => {
 On a paused clock, a 300 ms debounce does not fire until the clock moves past it. `SearchOptions` is `{ readonly pausedAt?: string }` in `common/search.type.ts`.
 
 ```ts
-// e2e/search/pages/search.page.ts
+// e2e/search/pages/search.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -281,7 +281,7 @@ import { mergeTests, test as base } from '@playwright/test';
 
 import { test as clockTest } from '../clock/clock.fixture';
 import type { ScheduleOptions } from './common/schedule.type';
-import { SchedulePage } from './pages/schedule.page';
+import { SchedulePage } from './pages/schedule.po';
 
 type OpenScheduleIn = (timezoneId: string, options: ScheduleOptions) => Promise<SchedulePage>;
 

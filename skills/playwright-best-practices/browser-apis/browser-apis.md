@@ -147,7 +147,7 @@ export type ClipboardAccess = {
 import { test as base } from '@playwright/test';
 
 import type { ClipboardAccess } from './common/share.type';
-import { SharePage } from './pages/share.page';
+import { SharePage } from './pages/share.po';
 
 type ShareFixtures = {
   readonly clipboard: ClipboardAccess;
@@ -264,7 +264,7 @@ import type { Page } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
 import type { FakeNotificationApi, NotificationRecord } from './common/alerts.type';
-import { AlertsPage } from './pages/alerts.page';
+import { AlertsPage } from './pages/alerts.po';
 import { notificationMock } from './test/mocks/notification.mock';
 
 type AlertsFixtures = {
@@ -383,7 +383,7 @@ export const mediaDevicesMock = (): MediaDevicesInstaller => installFakeMediaDev
 import { test as base } from '@playwright/test';
 
 import type { MediaDevicesConfig } from './common/video-call.type';
-import { VideoCallPage } from './pages/video-call.page';
+import { VideoCallPage } from './pages/video-call.po';
 import { mediaDevicesMock } from './test/mocks/media-devices.mock';
 import { MEDIA_DEVICES_STUB } from './test/stubs/media-devices.stub';
 

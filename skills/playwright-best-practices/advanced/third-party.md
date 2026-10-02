@@ -77,7 +77,7 @@ export const currentUserMock = (user: OAuthUser): RouteHandler => {
 The opening call installs all three routes for one provider and one user, then navigates: `loginPage.goto({ oauthLogin })`. The spec never routes, and its `WHEN` only says the login page is opened; the title names the mocked provider. `LoginOptions` from authentication.md keeps `oauthCallback` and gains `oauthLogin?: OAuthLogin`, so `goto` applies whichever option it is given. The sample shows the members this file uses; the form members of [Login Page Object](authentication.md#login-page-object) are left out.
 
 ```ts
-// e2e/auth/pages/login.page.ts
+// e2e/auth/pages/login.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -336,7 +336,7 @@ export const paypalOrderMock = (order: PayPalOrder = PAYPAL_ORDER_STUB): RouteHa
 import { test as base } from '@playwright/test';
 
 import type { AnalyticsCapture } from './common/checkout.type';
-import { CheckoutPage } from './pages/checkout.page';
+import { CheckoutPage } from './pages/checkout.po';
 import { analyticsCaptureMock, analyticsSdkMock } from './test/mocks/analytics.mock';
 
 type CheckoutFixtures = {

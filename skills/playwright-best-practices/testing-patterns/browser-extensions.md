@@ -81,8 +81,8 @@ import type { BrowserContext, Worker } from '@playwright/test';
 import { chromium, test as base } from '@playwright/test';
 
 import { EXTENSION_PATH } from './common/extension.const';
-import { ContentPage } from './pages/content.page';
-import { PopupPage } from './pages/popup.page';
+import { ContentPage } from './pages/content.po';
+import { PopupPage } from './pages/popup.po';
 import { activeServiceWorker, extensionIdOf } from './test/utils/extension-context.spec.util';
 
 type OpenPopup = () => Promise<PopupPage>;
@@ -181,7 +181,7 @@ Load several extensions from one persistent context by joining their paths with 
 `PopupPage` owns the popup URL and its locators; the spec asserts on its public locators. `fetchData()` registers the runtime-message listener before the click that triggers the round trip.
 
 ```ts
-// e2e/extension/pages/popup.page.ts
+// e2e/extension/pages/popup.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 import { nextRuntimeMessage } from '../test/utils/runtime-message.spec.util';
@@ -282,7 +282,7 @@ export const sendRuntimeMessage = (page: Page, request: RuntimeRequest): Promise
 
 ```ts
 // e2e/extension/popup.e2e.ts
-import type { PopupPage } from './pages/popup.page';
+import type { PopupPage } from './pages/popup.po';
 import { expect, test } from './extension.fixture';
 
 test.describe('FEATURE: extension popup', () => {
@@ -380,7 +380,7 @@ test.describe('FEATURE: extension alarms', () => {
 `ContentPage` opens the host page and owns the elements the content script injects. `expect(widget).toBeVisible()` waits for the script to inject its UI; no `waitForSelector` is needed. A `<style>` element has no role, so `injectedStyles` is a CSS locator on the extension's `data-extension` attribute.
 
 ```ts
-// e2e/extension/pages/content.page.ts
+// e2e/extension/pages/content.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

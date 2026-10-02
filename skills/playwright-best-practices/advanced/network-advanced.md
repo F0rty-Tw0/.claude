@@ -101,7 +101,7 @@ export const discountMock = (): RouteHandler => {
 
 Every GraphQL call hits one URL, so the handler dispatches on `operationName` from the POST body. One factory takes a list of mocks; a mock matches on operation name and, when it declares `variables`, on a JSON-equal variables object. Unmatched operations continue to the real server.
 
-`DashboardOptions` below is the options type of `DashboardPage` (`e2e/dashboard/pages/dashboard.page.ts`). A reference that needs another field adds it in prose instead of declaring the type again: it gains `time?: string` in [clock-mocking.md](clock-mocking.md) and `viewport?: ViewportSize` in [mobile-testing.md](mobile-testing.md).
+`DashboardOptions` below is the options type of `DashboardPage` (`e2e/dashboard/pages/dashboard.po.ts`). A reference that needs another field adds it in prose instead of declaring the type again: it gains `time?: string` in [clock-mocking.md](clock-mocking.md) and `viewport?: ViewportSize` in [mobile-testing.md](mobile-testing.md).
 
 ```ts
 // e2e/dashboard/common/dashboard.type.ts
@@ -252,7 +252,7 @@ export const createOrderMock = (): RouteHandler => {
 // e2e/checkout/checkout.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { CheckoutPage } from './pages/checkout.page';
+import { CheckoutPage } from './pages/checkout.po';
 
 type CheckoutFixtures = {
   readonly checkoutPage: CheckoutPage;
@@ -476,7 +476,7 @@ The fixture opens one CDP session, exposes `setNetworkCondition(condition)`, and
 import { test as base } from '@playwright/test';
 
 import type { NetworkCondition, NetworkProfile } from './common/home.type';
-import { HomePage } from './pages/home.page';
+import { HomePage } from './pages/home.po';
 
 type SetNetworkCondition = (condition: NetworkCondition) => Promise<void>;
 

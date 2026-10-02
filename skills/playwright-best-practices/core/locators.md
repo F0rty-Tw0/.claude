@@ -26,7 +26,7 @@ Every locator is a `public readonly` field of a page object or helper object, as
 One page object shows each user-facing query in its house position. The tables below list the variants.
 
 ```ts
-// e2e/signup/pages/signup.page.ts
+// e2e/signup/pages/signup.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 export class SignupPage {
@@ -147,7 +147,7 @@ For `<button data-testid="submit-btn">Submit</button>` the field is `page.getByT
 A filtered or chained locator is still a page-object field. A chain starts on a name, so the shared base is a local const and each filtered field derives from it. A method that needs an index returns a `Locator`.
 
 ```ts
-// e2e/products/pages/products.page.ts
+// e2e/products/pages/products.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 export class ProductsPage {
@@ -220,7 +220,7 @@ export class ProductsPage {
 Locators auto-wait for actionability by default. Explicit state waits are web-first assertions inside a page-object `expect*` method, never `waitFor` in a spec.
 
 ```ts
-// e2e/products/pages/products.page.ts
+// e2e/products/pages/products.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -276,7 +276,7 @@ Every `getBy*` and CSS locator pierces open shadow roots, so `page.getByRole('bu
 A frame is a `FrameLocator` field; locators inside it chain from that field.
 
 ```ts
-// e2e/editor/pages/editor.page.ts
+// e2e/editor/pages/editor.po.ts
 import type { FrameLocator, Locator, Page } from '@playwright/test';
 
 export class EditorPage {

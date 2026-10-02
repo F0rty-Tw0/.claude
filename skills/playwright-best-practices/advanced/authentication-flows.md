@@ -22,17 +22,17 @@ Opening options are data, never handlers. Each page object below that takes them
 
 | Page object | File | Members used in this file |
 |---|---|---|
-| `SignupPage` | `e2e/auth/pages/signup.page.ts` | gains `expectInboxPrompt()` ("Check your inbox"), `register(signup): Promise<string>` (`submit(signup)`, then the `verificationToken` of the register response, read the way `requestLink` reads its token), and `goto({ verificationToken })`: when given the option, it routes `**/api/auth/register` to `registerMock(verificationToken)` and the verify call to `verifyMock()` before it navigates |
-| `VerifyPage` | `e2e/auth/pages/verify.page.ts` | `goto(token)` opens `/verify?token=`, `expectConfirmed()` ("Email confirmed") |
-| `ForgotPasswordPage` | `e2e/auth/pages/forgot-password.page.ts` | `goto()`, `requestLink(email): Promise<string>` (starts `waitForResponse('**/api/auth/forgot-password')`, sends the form, returns `readToken(response, 'resetToken')`), `expectEmailSent()` ("Reset email sent") |
-| `ResetPasswordPage` | `e2e/auth/pages/reset-password.page.ts` | shown below; also gains `expectStrengthHint()`, a plain `toBeVisible()` on `getByText(/at least 8 characters/i)` |
-| `LoginPage` | `e2e/auth/pages/login.page.ts` | gains `rememberMeCheckbox` ("Keep me signed in"), `expectSessionExpired()` (`/session.*expired\|sign in again/i`) |
-| `HomePage` | `e2e/auth/pages/home.page.ts` | gains `goto({ sessionExpiresIn })`: when given the option, it routes `**/api/auth/session` to `sessionMock(sessionExpiresIn)` and `**/api/auth/refresh` to the recorded `refreshMock()` it creates in its constructor, before it navigates. Also `expectRefreshCalls(count)` (`expect.poll` on that record), `expectOpen()` (url is `/home`), `expectRedirectedToLogin()` (url is `/login`), `expectWelcome()`, `expectSessionWarning()` (`/session.*expir/i` plus the extend button, 10 s timeout because the warning fires on a timer), `extendSession()`, `expectSessionWarningHidden()`, `signOut()` (account menu, then "Sign out") |
-| `ProfilePage` | `e2e/auth/pages/profile.page.ts` | `goto({ withoutSessionCookie })` opens the protected `/profile` route, first calling `clearSessionCookie(page.context())` when the option is set |
-| `SecuritySettingsPage` | `e2e/auth/pages/security-settings.page.ts` | `goto({ stubLogoutAll })`: when given the flag, it routes `**/api/auth/logout-all` to the recorded `logoutAllMock()` it creates in its constructor, before it navigates. Also `expectLogoutAllCalls(count)` (`expect.poll` on that record), `signOutEverywhere()` (button, then dialog "Confirm") |
+| `SignupPage` | `e2e/auth/pages/signup.po.ts` | gains `expectInboxPrompt()` ("Check your inbox"), `register(signup): Promise<string>` (`submit(signup)`, then the `verificationToken` of the register response, read the way `requestLink` reads its token), and `goto({ verificationToken })`: when given the option, it routes `**/api/auth/register` to `registerMock(verificationToken)` and the verify call to `verifyMock()` before it navigates |
+| `VerifyPage` | `e2e/auth/pages/verify.po.ts` | `goto(token)` opens `/verify?token=`, `expectConfirmed()` ("Email confirmed") |
+| `ForgotPasswordPage` | `e2e/auth/pages/forgot-password.po.ts` | `goto()`, `requestLink(email): Promise<string>` (starts `waitForResponse('**/api/auth/forgot-password')`, sends the form, returns `readToken(response, 'resetToken')`), `expectEmailSent()` ("Reset email sent") |
+| `ResetPasswordPage` | `e2e/auth/pages/reset-password.po.ts` | shown below; also gains `expectStrengthHint()`, a plain `toBeVisible()` on `getByText(/at least 8 characters/i)` |
+| `LoginPage` | `e2e/auth/pages/login.po.ts` | gains `rememberMeCheckbox` ("Keep me signed in"), `expectSessionExpired()` (`/session.*expired\|sign in again/i`) |
+| `HomePage` | `e2e/auth/pages/home.po.ts` | gains `goto({ sessionExpiresIn })`: when given the option, it routes `**/api/auth/session` to `sessionMock(sessionExpiresIn)` and `**/api/auth/refresh` to the recorded `refreshMock()` it creates in its constructor, before it navigates. Also `expectRefreshCalls(count)` (`expect.poll` on that record), `expectOpen()` (url is `/home`), `expectRedirectedToLogin()` (url is `/login`), `expectWelcome()`, `expectSessionWarning()` (`/session.*expir/i` plus the extend button, 10 s timeout because the warning fires on a timer), `extendSession()`, `expectSessionWarningHidden()`, `signOut()` (account menu, then "Sign out") |
+| `ProfilePage` | `e2e/auth/pages/profile.po.ts` | `goto({ withoutSessionCookie })` opens the protected `/profile` route, first calling `clearSessionCookie(page.context())` when the option is set |
+| `SecuritySettingsPage` | `e2e/auth/pages/security-settings.po.ts` | `goto({ stubLogoutAll })`: when given the flag, it routes `**/api/auth/logout-all` to the recorded `logoutAllMock()` it creates in its constructor, before it navigates. Also `expectLogoutAllCalls(count)` (`expect.poll` on that record), `signOutEverywhere()` (button, then dialog "Confirm") |
 
 ```ts
-// e2e/auth/pages/reset-password.page.ts
+// e2e/auth/pages/reset-password.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -80,11 +80,11 @@ The fixture lists every page object a spec below destructures; `signupPage`, `ve
 // e2e/auth/auth.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { ForgotPasswordPage } from './pages/forgot-password.page';
-import { HomePage } from './pages/home.page';
-import { LoginPage } from './pages/login.page';
-import { ProfilePage } from './pages/profile.page';
-import { ResetPasswordPage } from './pages/reset-password.page';
+import { ForgotPasswordPage } from './pages/forgot-password.po';
+import { HomePage } from './pages/home.po';
+import { LoginPage } from './pages/login.po';
+import { ProfilePage } from './pages/profile.po';
+import { ResetPasswordPage } from './pages/reset-password.po';
 import { loginWithRememberMe, openPageWithCookies, openPageWithState, persistentCookiesAfterLogin } from './test/utils/remember-me.spec.util';
 
 type AuthFixtures = {
@@ -344,7 +344,7 @@ Two contexts stand in for two browser launches. The first logs in with "Keep me 
 import type { Browser, Page } from '@playwright/test';
 
 import { EMPTY_STORAGE_STATE, TEST_USER } from '../../common/auth.const';
-import { LoginPage } from '../../pages/login.page';
+import { LoginPage } from '../../pages/login.po';
 import { saveSessionState } from './session.spec.util';
 
 export const loginWithRememberMe = async (browser: Browser, statePath: string): Promise<void> => {

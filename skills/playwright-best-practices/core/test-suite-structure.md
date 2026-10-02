@@ -245,7 +245,7 @@ test.describe('FEATURE: dashboard visuals', () => {
 Options that need a locator (`mask`) belong in a page-object `expect*` method. Static options are a typed module const, spread and extended per call. `DashboardOptions` ([network-advanced.md](../advanced/network-advanced.md)) gains `hideDynamic?: boolean`: `goto` adds a style tag that hides the dynamic regions. It runs after the navigation, because a style tag added to `about:blank` is lost.
 
 ```ts
-// e2e/dashboard/pages/dashboard.page.ts
+// e2e/dashboard/pages/dashboard.po.ts
 import type { Locator, Page, PageAssertionsToHaveScreenshotOptions } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -344,8 +344,8 @@ e2e/
     checkout.e2e.ts                real backend
     checkout.fixture.ts
     pages/
-      cart.page.ts
-      checkout.page.ts
+      cart.po.ts
+      checkout.po.ts
     test/
       stubs/
         checkout.stub.ts
@@ -360,7 +360,7 @@ e2e/
     dashboard-visual.e2e.ts        visual cases
     dashboard.fixture.ts
     pages/
-      dashboard.page.ts
+      dashboard.po.ts
   button/
     button.test.tsx                 component cases
 ```

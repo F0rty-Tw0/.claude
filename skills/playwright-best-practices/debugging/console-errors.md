@@ -45,7 +45,7 @@ export type NoErrorsAssertion = (allowed?: RegExp[]) => void;
 ```
 
 ```ts
-// e2e/console/pages/dashboard.page.ts
+// e2e/console/pages/dashboard.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -90,7 +90,7 @@ export class DashboardPage {
 import type { ConsoleMessage } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
-import { DashboardPage } from './pages/dashboard.page';
+import { DashboardPage } from './pages/dashboard.po';
 import { collectErrorText } from './test/utils/console-error.spec.util';
 
 type ConsoleFixtures = {

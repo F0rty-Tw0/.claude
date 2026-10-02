@@ -21,7 +21,7 @@
 The page object exposes `<html>` as a locator so the theme class is asserted where it lands.
 
 ```ts
-// e2e/preferences/pages/preferences.page.ts
+// e2e/preferences/pages/preferences.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -99,7 +99,7 @@ test.describe('FEATURE: theme context', () => {
 A client-side navigation keeps the document. Marking the document is not a user action, so it is an option on the opening call: `goto({ spaMarker: true })` stamps an attribute on `<html>` once the page has loaded, and the page object asserts the stamp survives the click. `HomeOptions` in `common/navigation.type.ts` is `{ readonly spaMarker?: boolean }`.
 
 ```ts
-// e2e/navigation/pages/home.page.ts
+// e2e/navigation/pages/home.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -234,7 +234,7 @@ export const searchCallsMock = (calls: string[]): RouteHandler => {
 // e2e/search/search.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { SearchPage } from './pages/search.page';
+import { SearchPage } from './pages/search.po';
 import { searchCallsMock } from './test/mocks/search-calls.mock';
 
 type SearchFixtures = {
@@ -283,7 +283,7 @@ test.describe('FEATURE: useDebounce via SearchBox', () => {
 The page object takes a typed `SignupUser` from `common/signup.type.ts`; the stub in `test/stubs/signup.stub.ts` is the valid base each case overrides. `goto(options)` takes `SignupOptions` from the same file, the one options type [angular.md](angular.md#reactive-forms) declares for this page object; the sample shows the `signupDelayMs` branch the slow-response case passes.
 
 ```ts
-// e2e/signup/pages/signup.page.ts
+// e2e/signup/pages/signup.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -692,7 +692,7 @@ A fixture collects console warnings that mention `unmounted` and the spec assert
 import type { ConsoleMessage } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
-import { PanelPage } from './pages/panel.page';
+import { PanelPage } from './pages/panel.po';
 
 type PanelFixtures = {
   readonly panelPage: PanelPage;

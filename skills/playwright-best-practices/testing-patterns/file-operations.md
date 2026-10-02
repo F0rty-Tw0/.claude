@@ -68,7 +68,7 @@ A spec calls `saveDownload(download, testInfo)` in an `AND` step typed `(): Prom
 `downloadSelected()` subscribes to `page.on('download')` before the click and returns the array it fills. The spec polls the array length with `expect.poll`, then counts PDFs through a util.
 
 ```ts
-// e2e/exports/pages/batch-export.page.ts
+// e2e/exports/pages/batch-export.po.ts
 import type { Download, Locator, Page } from '@playwright/test';
 
 export class BatchExportPage {
@@ -145,9 +145,9 @@ import { mkdirSync } from 'node:fs';
 
 import { test as base } from '@playwright/test';
 
-import { AnalyticsPage } from './pages/analytics.page';
-import { BatchExportPage } from './pages/batch-export.page';
-import { ExportsPage } from './pages/exports.page';
+import { AnalyticsPage } from './pages/analytics.po';
+import { BatchExportPage } from './pages/batch-export.po';
+import { ExportsPage } from './pages/exports.po';
 
 type ExportsFixtures = {
   readonly analyticsPage: AnalyticsPage;

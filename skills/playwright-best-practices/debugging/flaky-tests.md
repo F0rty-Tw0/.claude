@@ -176,7 +176,7 @@ await page.click('div.container > div:nth-child(2) > button.btn-primary');
 Prefer semantic locators on a page object. Locator actions auto-wait for actionability; a web-first `expect` after the action confirms the outcome and retries until it holds.
 
 ```ts
-// e2e/checkout/pages/checkout.page.ts
+// e2e/checkout/pages/checkout.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -228,7 +228,7 @@ await page.waitForTimeout(3000);
 Prefer waiting for the response the action triggers, then asserting. `waitForResponse` starts before the click so the response cannot be missed.
 
 ```ts
-// e2e/dashboard/pages/dashboard.page.ts
+// e2e/dashboard/pages/dashboard.po.ts
 import type { Locator, Page, Response } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -303,7 +303,7 @@ Prefer a worker-scoped fixture that creates a unique user per worker and deletes
 import { test as base } from '@playwright/test';
 
 import type { TestUser } from './common/profile.type';
-import { ProfilePage } from './pages/profile.page';
+import { ProfilePage } from './pages/profile.po';
 import { createTestUser, deleteTestUser } from './test/utils/test-user.spec.util';
 
 type ProfileFixtures = {
@@ -681,7 +681,7 @@ await expect(page.locator('.items')).toHaveCount(5);
 Prefer a page-object `expect*` method that asserts the container rendered, loading finished, then the count. The first failing line names the stage that broke.
 
 ```ts
-// e2e/catalog/pages/catalog.page.ts
+// e2e/catalog/pages/catalog.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

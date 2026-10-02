@@ -60,11 +60,11 @@ One fixture per page object. `ChartPage` and `MapPage` are shown below; `Whitebo
 // e2e/canvas/canvas.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { ChartPage } from './pages/chart.page';
-import { GamePage } from './pages/game.page';
-import { MapPage } from './pages/map.page';
-import { ViewerPage } from './pages/viewer.page';
-import { WhiteboardPage } from './pages/whiteboard.page';
+import { ChartPage } from './pages/chart.po';
+import { GamePage } from './pages/game.po';
+import { MapPage } from './pages/map.po';
+import { ViewerPage } from './pages/viewer.po';
+import { WhiteboardPage } from './pages/whiteboard.po';
 
 type CanvasFixtures = {
   readonly chartPage: ChartPage;
@@ -102,7 +102,7 @@ export { expect } from '@playwright/test';
 A canvas is located like any element: `page.locator('canvas')` for the only one on the page, `canvas#game` by id, `canvas.chart-canvas` by class. The page object owns the locator; `bars` and `tooltip` serve the SVG chart under [Chart Libraries](#chart-libraries).
 
 ```ts
-// e2e/canvas/pages/chart.page.ts
+// e2e/canvas/pages/chart.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 import type { Point } from '../common/canvas.type';
@@ -354,7 +354,7 @@ export const pinchOut = (canvas: Locator, spread: number): Promise<void> => canv
 `MapPage` owns the info panel and the zoom indicator the map updates. `canvas.click({ position })` clicks at a canvas-relative offset. Touch events need `hasTouch: true` in the project `use`; a single tap is `locator.tap()`, see [mobile-testing.md](../advanced/mobile-testing.md).
 
 ```ts
-// e2e/canvas/pages/map.page.ts
+// e2e/canvas/pages/map.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 import type { Point } from '../common/canvas.type';

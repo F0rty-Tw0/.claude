@@ -18,7 +18,7 @@ Auto-retry until condition is met or timeout. Always prefer these over generic a
 A locator assertion lives in a page-object `expect*` method as a plain `await expect(…)` line; the spec's `THEN` step is the only step around it. The page object shows the shape; the table lists every matcher.
 
 ```ts
-// e2e/profile/pages/profile.page.ts
+// e2e/profile/pages/profile.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -168,7 +168,7 @@ test.describe('FEATURE: users api', () => {
 Continue test execution after failure, report all failures at end. The `expect.soft` calls sit as plain lines in one page-object method; the report lists every failed check under the spec's one `THEN` step.
 
 ```ts
-// e2e/dashboard/pages/dashboard.page.ts
+// e2e/dashboard/pages/dashboard.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -210,7 +210,7 @@ Soft failures accumulate in `test.info().errors`. When a later check is pointles
 // e2e/signup/test/utils/signup-form.spec.util.ts
 import { expect, test } from '@playwright/test';
 
-import type { SignupPage } from '../../pages/signup.page';
+import type { SignupPage } from '../../pages/signup.po';
 
 export const expectFormFieldsSoft = async (signupPage: SignupPage): Promise<void> => {
   await expect.soft(signupPage.form).toBeVisible();
@@ -243,7 +243,7 @@ Every action on a locator field (`click`, `fill`, `check`, `selectOption`) auto-
 A navigation that follows a click is asserted with `expect(page).toHaveURL` in the spec. When the page object must block on the navigation itself, it starts `waitForURL` before the click and awaits it after.
 
 ```ts
-// e2e/nav/pages/nav.page.ts
+// e2e/nav/pages/nav.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 export class NavPage {
@@ -276,7 +276,7 @@ export class NavPage {
 Start the wait before the action, then return the typed result so the spec asserts on it in its own step.
 
 ```ts
-// e2e/users/pages/users.page.ts
+// e2e/users/pages/users.po.ts
 import type { Locator, Page, Response } from '@playwright/test';
 
 export class UsersPage {
@@ -342,7 +342,7 @@ A web-first assertion covers every element state, so a spec never calls `locator
 `locator.waitForFunction(fn, arg?)` calls `fn` with the matched element until it returns truthy. The locator is re-resolved on every retry, so a re-render does not break the wait. Reach for it only when no web-first assertion expresses the condition: `toHaveText`, `toHaveAttribute`, and `toHaveJSProperty` cover most of them. An image finishing decode has no matcher:
 
 ```ts
-// e2e/report/pages/report.page.ts
+// e2e/report/pages/report.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 const isDecoded = (element: Element): boolean => element instanceof HTMLImageElement && element.complete && element.naturalWidth > 0;
@@ -435,7 +435,7 @@ Polling a DOM value (`expect.poll((): Promise<string | null> => counter.textCont
 import type { MatcherReturnType } from '@playwright/test';
 import { expect as baseExpect, test as base } from '@playwright/test';
 
-import { DashboardPage } from './pages/dashboard.page';
+import { DashboardPage } from './pages/dashboard.po';
 
 type DashboardFixtures = {
   readonly dashboardPage: DashboardPage;

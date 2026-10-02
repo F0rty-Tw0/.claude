@@ -170,7 +170,7 @@ export type Ticket = {
 ```
 
 ```ts
-// e2e/board/pages/board.page.ts
+// e2e/board/pages/board.po.ts
 import type { Locator, Page, Response } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -246,7 +246,7 @@ export const expectSavedColumn = async (response: Response, column: string): Pro
 // e2e/board/board.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { BoardPage } from './pages/board.page';
+import { BoardPage } from './pages/board.po';
 
 type BoardFixtures = {
   readonly boardPage: BoardPage;
@@ -312,7 +312,7 @@ test.describe('FEATURE: kanban board', () => {
 The list page object exposes `items` and an `item(name)` filter. `expectOrder` asserts the whole list with a web-first `toContainText` array so it retries until the DOM settles; no `allTextContents()` snapshot. Persistence is the same `waitForResponse` plus reload pattern as the board.
 
 ```ts
-// e2e/priorities/pages/priorities.page.ts
+// e2e/priorities/pages/priorities.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -406,7 +406,7 @@ export class DropArea {
 ```
 
 ```ts
-// e2e/drag-example/pages/drag-example.page.ts
+// e2e/drag-example/pages/drag-example.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 import { boundingBoxOf, centerOf } from '../../test/utils/bounding-box.spec.util';
@@ -528,7 +528,7 @@ export class Shape {
 ```
 
 ```ts
-// e2e/design-tool/pages/design-tool.page.ts
+// e2e/design-tool/pages/design-tool.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 import type { BoundingBox, Point } from '../../common/drag.type';
@@ -685,7 +685,7 @@ export const moveUpWithKeyboard = async (page: Page, item: Locator, rows: number
 `dragTo()` cannot cross a frame boundary. The page object reads the iframe element's bounding box and drags to a point inside it, then asserts through a `frameLocator`. The spec is `WHEN composerPage.goto()`, then `AND composerPage.dragWidgetIntoPreview()`, then `THEN composerPage.expectPreviewShows('Component A')`.
 
 ```ts
-// e2e/composer/pages/composer.page.ts
+// e2e/composer/pages/composer.po.ts
 import type { FrameLocator, Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

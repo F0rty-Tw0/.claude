@@ -95,7 +95,7 @@ export const readWebVitals = (): Promise<WebVitals> => {
 The page object hands each reader (the others are under [Performance Metrics](#performance-metrics)) to `page.evaluate` and waits for `networkidle` after navigation so the metrics are settled. `expectVital` and `expectTiming` read the metric they assert and take its name, so one method serves every field; `recordLoadTime` reads the load time for the [CI reporter](#ci-performance-monitoring). `BudgetPage` composes the plain readers.
 
 ```ts
-// e2e/performance/pages/performance.page.ts
+// e2e/performance/pages/performance.po.ts
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -233,7 +233,7 @@ export const subscribeWebVitals = (): void => {
 The page object collects reports into a map and asserts with `expect.poll`, which retries until the metric has arrived and clears the ceiling. That replaces the fixed `waitForTimeout` an upstream sample would use.
 
 ```ts
-// e2e/performance/pages/web-vitals.page.ts
+// e2e/performance/pages/web-vitals.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -431,13 +431,13 @@ export const summarizeResources = (resources: ResourceEntry[]): ResourceSummary 
 Upstream shape is an `assertBudget` function fixture. The house shape is a page object the fixture injects: it composes `PerformancePage`, reads every metric once, and asserts each budget line as a plain `expect.soft` with no step. The message argument names the metric, so a failure reads `LCP` rather than a bare number, and the soft assertion lets one run report every line over budget. The stack names the spec line. The spec is then one `WHEN` step and one `THEN` step.
 
 ```ts
-// e2e/performance/pages/budget.page.ts
+// e2e/performance/pages/budget.po.ts
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import type { PerformanceBudget } from '../common/performance.type';
 import { summarizeResources } from '../test/utils/resource-summary.spec.util';
-import { PerformancePage } from './performance.page';
+import { PerformancePage } from './performance.po';
 
 export class BudgetPage {
   public readonly performancePage: PerformancePage;
@@ -512,7 +512,7 @@ export const PERFORMANCE_ONLY_THRESHOLDS: LighthouseThresholds = { performance: 
 ```
 
 ```ts
-// e2e/lighthouse/pages/lighthouse.page.ts
+// e2e/lighthouse/pages/lighthouse.po.ts
 import type { Page } from '@playwright/test';
 import { test } from '@playwright/test';
 import type { Config } from 'lighthouse';
@@ -574,9 +574,9 @@ One `test.extend` per feature. Specs import `test` and `expect` from here, never
 // e2e/performance/performance.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { BudgetPage } from './pages/budget.page';
-import { PerformancePage } from './pages/performance.page';
-import { WebVitalsPage } from './pages/web-vitals.page';
+import { BudgetPage } from './pages/budget.po';
+import { PerformancePage } from './pages/performance.po';
+import { WebVitalsPage } from './pages/web-vitals.po';
 
 type PerformanceFixtures = {
   readonly budgetPage: BudgetPage;

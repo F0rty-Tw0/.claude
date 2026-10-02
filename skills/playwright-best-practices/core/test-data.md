@@ -269,7 +269,7 @@ import type { Faker } from '@faker-js/faker';
 import { faker } from '@faker-js/faker';
 import { test as base } from '@playwright/test';
 
-import { SignupPage } from './pages/signup.page';
+import { SignupPage } from './pages/signup.po';
 
 type SignupFixtures = {
   readonly fake: Faker;
@@ -420,7 +420,7 @@ import { test as base } from '@playwright/test';
 import type { User } from '../users/common/users.type';
 import { buildUser } from '../users/test/utils/user-builder.spec.util';
 import type { Product } from './common/catalog.type';
-import { CatalogPage } from './pages/catalog.page';
+import { CatalogPage } from './pages/catalog.po';
 import { productsMock } from './test/mocks/products.mock';
 import { userMock } from './test/mocks/user.mock';
 import { buildProduct } from './test/utils/product-builder.spec.util';
@@ -482,7 +482,7 @@ test.describe('FEATURE: catalog', () => {
 import { test as base } from '@playwright/test';
 
 import type { User } from './common/users.type';
-import { ProfilePage } from './pages/profile.page';
+import { ProfilePage } from './pages/profile.po';
 import { deleteUser } from './test/utils/delete-user.spec.util';
 import { buildUser } from './test/utils/user-builder.spec.util';
 
@@ -646,7 +646,7 @@ import { test as base } from '@playwright/test';
 
 import { BASE_URL } from '../common/playwright.const';
 import type { Tenant } from './common/billing.type';
-import { BillingPage } from './pages/billing.page';
+import { BillingPage } from './pages/billing.po';
 import { buildTenant } from './test/utils/tenant-builder.spec.util';
 
 type BillingFixtures = {
