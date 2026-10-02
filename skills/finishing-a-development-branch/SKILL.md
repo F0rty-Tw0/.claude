@@ -65,4 +65,4 @@ Order matters: merge, then remove the worktree, then delete the branch — `git 
 
 ## 6. Retro
 
-After options 1 and 3, offer skill:wrap-up in one line: "Run a retro to turn this branch's mistakes into checks or rules?" Run it on a yes. After option 2 skip the offer: the human review hasn't happened yet, and `code-review-receiving` offers the retro once it is addressed.
+After Merge or Keep, offer skill:wrap-up in one line: "Run a retro to turn this branch's mistakes into checks or rules?" Run it on a yes. After Push and PR skip the offer: the human review hasn't happened yet, and `code-review-receiving` offers the retro once it is addressed.

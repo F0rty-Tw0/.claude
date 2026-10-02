@@ -30,9 +30,12 @@ Save what was learned, once, in the right place:
 Sources: this conversation, and the human review comments on the branch's PR when one exists:
 
 ```bash
-N=$(gh pr view --json number -q .number)
-gh api --paginate "repos/{owner}/{repo}/pulls/$N/comments" --jq '.[] | select(.user.type != "Bot") | {path, line, body}'
-gh pr view "$N" --comments
+N=$(gh pr view --json number -q .number 2>/dev/null) || N=
+if [ -n "$N" ]; then
+  HUMAN='.[] | select(.user.type != "Bot")'
+  gh api --paginate "repos/{owner}/{repo}/pulls/$N/comments" --jq "$HUMAN | {path, line, body}"
+  gh api --paginate "repos/{owner}/{repo}/issues/$N/comments" --jq "$HUMAN | .body"
+fi
 ```
 
 A human comment that would recur is a missing check or rule; the goal is never writing the same review comment twice. A one-off judgement stays a comment.
