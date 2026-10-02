@@ -35,3 +35,7 @@ Push back when a suggestion breaks behavior, lacks context, adds unused features
 - Correct feedback: state the fix ("Fixed — null guard in `parse.ts:42`") or show it in the code; skip praise and thanks.
 - Your pushback was wrong: "Checked X — you're right, it does Y. Fixing." No long apology.
 - GitHub inline comments: reply in the thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
+
+## After the round
+
+A human reviewer's comments are fixed and replied to → offer skill:wrap-up in one line so each comment becomes a lint rule, hook, or written rule, and the same comment is never written twice. Bot or agent comments don't trigger the offer.
