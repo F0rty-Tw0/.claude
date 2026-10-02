@@ -1,6 +1,6 @@
 ---
 name: wrap-up
-description: Runs an end-of-session retro - file cleanup, saving what was learned to the right memory location, and turning mistakes and review comments into checks or rules, applied after confirmation. Use when the user says "wrap up", "retro", "retrospective", "close session", "end session", or "close out this task", runs /wrap-up, or when finishing a branch or a round of PR review.
+description: Runs an end-of-session retro - file cleanup, saving what was learned to the right memory location, and turning mistakes and review comments into checks or rules, applied after confirmation. Use when the user says "wrap up", "retro", "retrospective", "close session", "end session", or "close out this task", runs /wrap-up, or when offered after finishing a branch or a round of PR review.
 ---
 
 # Session Wrap-Up
@@ -27,7 +27,15 @@ Save what was learned, once, in the right place:
 
 ## Phase 3: Review and apply
 
-Sources: this conversation, and the human review comments on the branch's PR when one exists (`gh api repos/{owner}/{repo}/pulls/<n>/comments`, plus `gh pr view <n> --comments`). A comment a human had to write is a check or rule that was missing; the goal is never writing the same review comment twice.
+Sources: this conversation, and the human review comments on the branch's PR when one exists:
+
+```bash
+N=$(gh pr view --json number -q .number)
+gh api --paginate "repos/{owner}/{repo}/pulls/$N/comments" --jq '.[] | select(.user.type != "Bot") | {path, line, body}'
+gh pr view "$N" --comments
+```
+
+A human comment that would recur is a missing check or rule; the goal is never writing the same review comment twice. A one-off judgement stays a comment.
 
 Scan for:
 
@@ -38,7 +46,7 @@ Scan for:
 - **Navigation**: a file or fact that took long to find. A one-line pointer in the project `CLAUDE.md` fixes it.
 - **Tool economy**: an expensive or repeated tool call that a script, flag, or narrower query would replace.
 - **Information access**: a log, service, or doc the agent needed and could not reach (dev server output, read-only third-party access).
-- **No-ops**: steering lines in `CLAUDE.md`, `AGENTS.md`, or a skill that did not change behavior this session. Propose deleting them.
+- **No-ops**: steering lines in `CLAUDE.md`, `AGENTS.md`, or a skill that the agent ignored when their trigger occurred, or that restate default behavior. Never propose deleting a rule only because its trigger did not occur this session.
 
 Route each mistake or review comment by kind:
 
