@@ -19,7 +19,7 @@ Adapted from Matt Pocock's `improve-codebase-architecture`, `codebase-design`, a
 
 Use when asked to review architecture, find refactoring targets, or make a feature module easier to test.
 
-1. **Scope.** A named feature module or pain point wins. Otherwise read `git log --oneline` back far enough to find the files that keep changing, and start there; deepening pays off where change recurs. Scattered history with no hot spot → widen the net.
+1. **Scope.** A named feature module or pain point wins. Otherwise list the files that keep changing (`git log --since=6.months --name-only --format= | sort | uniq -c | sort -rn | head -30`) and start there; deepening pays off where change recurs. Scattered history with no hot spot → widen the net.
 2. **Read decisions.** Any ADRs (`docs/adr/`), a `GLOSSARY.md`, and the module's `README` in the area. A candidate that contradicts an ADR is listed only when the friction justifies reopening it, and the card says so.
 3. **Explore** (an `Explore` subagent for wide trees) and note friction:
    - Understanding one concept means bouncing across many files or feature modules.
@@ -38,7 +38,7 @@ Use when asked to review architecture, find refactoring targets, or make a featu
 
 The diagrams carry the report; prose is a line or two per card. If a diagram needs a paragraph to be understood, redraw the diagram.
 
-**Where it goes.** Publish it as a private Artifact (load `artifact-design` first). No Artifact tool in this environment → write one self-contained HTML file to the OS temp directory (`$TMPDIR`, `/tmp`, or `%TEMP%`) as `architecture-review-<timestamp>.html`, open it (`start`, `open`, or `xdg-open`), and give the absolute path. Nothing lands in the repo. Mermaid loads from `cdn.jsdelivr.net/npm/mermaid@11`.
+**Where it goes.** The report exposes the repo's structure and file paths. For the user's own repos, publish it as a private Artifact (load `artifact-design` first). For an employer's or client's repo, or when unsure whose it is, ask once; the default is local. Local, or no Artifact tool in this environment → write one self-contained HTML file to the OS temp directory (`$TMPDIR`, `/tmp`, or `%TEMP%`) as `architecture-review-<timestamp>.html`, open it (`start`, `open`, or `xdg-open`), and give the absolute path. Nothing lands in the repo. Mermaid loads as an ES module: `import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs"`.
 
 **Header.** Repo name, date, and a legend: solid box = file, thick dark box = deep feature module, dashed line = seam, red arrow = leak. No introduction.
 
@@ -85,14 +85,8 @@ The first interface idea is rarely the best (Ousterhout). For the picked candida
 
 Walk the design as a tree of decisions until nothing is silently assumed.
 
-- **Frontier.** Each round asks every decision whose prerequisites are settled. A question that depends on another still open waits for a later round.
-- **Format.** Number each question and give a recommendation:
-
-  ```markdown
-  **Q1 — Where does retry policy live?** In the facade, or the caller decides per call.
-
-  Recommended: the facade; every caller retries the same way today.
-  ```
+- **Frontier.** The open decisions whose prerequisites are settled. A question that depends on another still open waits for a later round.
+- **Round.** Up to three frontier questions per round with AskUserQuestion, the recommended option first with a one-line reason. The rest of the frontier waits for the next round.
 
 - **Facts are yours, decisions are theirs.** A question that needs a fact from the code goes to an `Explore` subagent, never to the user. Only the questions downstream of a running lookup wait; ask the rest now.
 - **Usual branches:** constraints, what sits behind the seam, the new interface and its error modes, which sibling specs move, and which integration spec proves the result.
