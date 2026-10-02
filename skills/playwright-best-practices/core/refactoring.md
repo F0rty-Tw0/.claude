@@ -17,7 +17,7 @@ A suite written before this house style usually has nested `describe` groups, `s
 3. **Page objects and helpers.** Remove every `test.step` and `{ box: true }`; each `expect*` method becomes plain `await expect(…)` lines. For each route a spec registers before opening the page, give `goto` an option (`goto({ failOn: 'delete' })`) typed by one `<Page>Options`.
 4. **Fixtures.** Move API seeding into fixtures; a fixture may hand over the page already seeded and open. Delete steps from hooks; a hook that only opened the page goes away, and each test opens it in its `WHEN`.
 5. **Specs.** One `FEATURE` per spec, with a `JOURNEY` only for tests that follow one user path. Titles become `GIVEN <start state>, <outcome>`. Steps become `WHEN` → `AND` → `THEN` → `AND`, with a new `WHEN` for each action after a check. A `test.use` group with a context-fixed option moves to its own spec.
-6. **Names.** A `.spec.ts` file becomes `.test.ts` when a test run routes your own origin (its own route, a routing fixture, or a routing option it passes), and `.e2e.ts` otherwise. The config's `testMatch` is `'**/*.@(e2e|test).ts'`.
+6. **Names.** A `.spec.ts` file becomes `.test.ts` when a test run routes your own origin (its own route, a routing fixture, or a routing option it passes), and `.e2e.ts` otherwise. The config's `testMatch` is `'**/*.@(e2e|test).ts'`. A `<name>.page.ts` page object becomes `<name>.po.ts`; update its imports.
 7. **Verify.** Lint clean, `npx tsc --noEmit` clean, the same pass count, `--repeat-each=3` green, and every test still runs the checks listed in step 1. Open one trace (`npx playwright show-trace`) and check that no step sits inside another.
 
 ## Old Shape to New Shape
