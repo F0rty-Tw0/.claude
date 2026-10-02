@@ -27,7 +27,7 @@ Use these terms exactly in architecture findings. Elsewhere in artification, "mo
 | Interface | Everything a caller must know: what other feature modules import, plus method order, error modes, required providers, and invariants. Not only the TypeScript signatures. For a library this is its root barrel; for an app-internal feature module without one, it is the set of files siblings import directly (`feature-modules.md`, Cross-module, relative). |
 | Depth | Behavior a caller or test reaches per symbol it must learn. Deep: few exports, much behavior. Shallow: the interface is nearly as complex as what it hides. |
 | Seam | Where behavior can change without editing the caller. The external seam is the interface above; layer files are internal seams. |
-| Adapter | What fills a seam: a `data-access` file in production, a `test/mocks/` double swapped in by `TestBed.overrideProvider` in specs. |
+| Adapter | What fills a seam: a `data-access` file in production; in specs, a `test/mocks/` double swapped in by `TestBed.overrideProvider` (frontend) or `vi.mock` of the `data-access` module (backend). |
 | Leverage | What callers get: one implementation pays back across every call site and spec. |
 | Locality | What maintainers get: a change, a bug, and its proof land in one feature module. |
 
@@ -40,7 +40,7 @@ Use these terms exactly in architecture findings. Elsewhere in artification, "mo
 | Call order leak | A caller that must call several exports in a fixed order is reading the implementation. Give the feature module one entry that owns the order. |
 | Test surface | Sibling specs test each file through its exported function and may stub same-feature collaborators (`unit-testing.md`, `spec-style.md`). The feature-root integration spec (add one when deepening a feature that has none) tests through the interface or entry with the `feature`, `ui`, `domain-logic`, and `utils` files real; only a `data-access` adapter at a remote or true-external seam is doubled. It is the spec that must survive an internal refactor unchanged. Moving code between internal files moves its sibling spec with it; it never edits the integration spec. |
 | Testing past the interface | A spec that needs an internal exported just for it means the file has no reachable boundary; the split is wrong (`unit-testing.md`). |
-| Seam count | One adapter is a hypothetical seam. Frontend: a class provider is already a seam, swapped in specs with `TestBed.overrideProvider`, so it needs no `InjectionToken` or interface; add a token only for what has no class to override (a function, a value, a platform global) or when two production implementations exist. Backend (functions, no DI): a dependency passed as a parameter is the seam; never `vi.mock('./module')` when it can be passed in (`unit-testing.md`). |
+| Seam count | One adapter is a hypothetical seam. Frontend: a class provider is already a seam, swapped in specs with `TestBed.overrideProvider`, so it needs no `InjectionToken` or interface; add a token only for what has no class to override (a function, a value, a platform global) or when two production implementations exist. Backend (functions, no DI, primitives in per `feature-modules.md`): the `data-access` module is the seam. Specs replace it with `vi.mock('../data-access/<name>.api.ts', () => <name>ApiMock())`, the factory from `test/mocks/`; `unit-testing.md` allows `vi.mock` because no factory can be injected. A parameter seam that already exists (the `.db.ts` `client`) is used instead. |
 | Testable shape | Accept dependencies through `inject()` or parameters instead of constructing them; return results instead of mutating arguments. |
 
 ## Dependencies by Layer
@@ -52,8 +52,8 @@ Classify what the deepened feature module depends on; the class decides how its 
 | Pure computation | `utils/` | Call it for real; no adapter. |
 | In-memory state | `domain-logic/` (view-only `signal()`) or `data-access/` (`.store.ts`, `.cache.ts`) | Use a real instance in the spec. |
 | Local-substitutable (a stand-in runs locally: PGlite, in-memory file system) | `data-access/` | Run the stand-in in the spec; the seam stays internal. |
-| Remote but owned (own HTTP service, queue) | Frontend: `data-access/` `.api.ts` service class. Backend: a client function the caller passes in | Frontend: override the class with a `test/mocks/` double, no token. Backend: pass a `test/mocks/` double as the parameter. |
-| True external (third-party REST or SDK, browser platform global) | Backend: `data-access/` `.api.ts` or `.client.ts`. Frontend: `.client.ts`, or an `InjectionToken` for a global per `feature-modules.md` | Mock in `test/mocks/` that can also fail or reject, passed in or overridden as above. |
+| Remote but owned (own HTTP service, queue) | Frontend: `data-access/` `.api.ts` service class. Backend: `data-access/` functions | Frontend: override the class with a `test/mocks/` double, no token. Backend: `vi.mock` the module with a `test/mocks/` factory. |
+| True external (third-party REST or SDK, browser platform global) | Backend: `data-access/` `.api.ts` or `.client.ts`. Frontend: a `data-access/` service class, or an `InjectionToken` for a platform global per `feature-modules.md` | A `test/mocks/` double that can also fail or reject, swapped in as above. |
 
 ## Rationalizations
 
