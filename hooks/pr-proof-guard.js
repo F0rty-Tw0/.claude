@@ -62,7 +62,8 @@ const unquote = (s) => {
   }
   return out;
 };
-const expandHome = (p) => p.replace(/^~(?=\/|$)/, os.homedir());
+// Bash expands ~ from $HOME; os.homedir() reads USERPROFILE on Windows, which can differ.
+const expandHome = (p) => p.replace(/^~(?=\/|$)/, process.env.HOME || os.homedir());
 
 const cd = masked.match(/^[ \t]*cd[ \t]+([^\s;&]+)[ \t]*(?:&&|;)/d);
 const baseDir = path.resolve(cwd, cd ? expandHome(unquote(cmd.slice(...cd.indices[1]))) : '.');
