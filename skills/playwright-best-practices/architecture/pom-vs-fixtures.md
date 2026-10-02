@@ -81,7 +81,7 @@ export type Member = MemberDraft & {
 ```
 
 ```ts
-// e2e/booking/pages/booking.page.ts
+// e2e/booking/pages/booking.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -172,9 +172,9 @@ Best for resources needing setup before and teardown after tests: auth state, da
 import { test as base } from '@playwright/test';
 
 import type { Member } from './common/booking.type';
-import { AccountPage } from './pages/account.page';
-import { BookingPage } from './pages/booking.page';
-import { DashboardPage } from './pages/dashboard.page';
+import { AccountPage } from './pages/account.po';
+import { BookingPage } from './pages/booking.po';
+import { DashboardPage } from './pages/dashboard.po';
 import { memberDraft } from './test/utils/member-builder.spec.util';
 
 type BookingFixtures = {
@@ -334,10 +334,10 @@ e2e/
     helpers/
       notification.helper.ts
     pages/
-      account.page.ts
-      booking.page.ts
-      dashboard.page.ts
-      login.page.ts
+      account.po.ts
+      booking.po.ts
+      dashboard.po.ts
+      login.po.ts
     test/
       stubs/
         booking.stub.ts

@@ -89,7 +89,7 @@ export const waitForFirstFrame = async (socket: WebSocket): Promise<void> => {
 import { test as base } from '@playwright/test';
 
 import type { ChatSocket, FrameLog } from './common/chat.type';
-import { ChatPage } from './pages/chat.page';
+import { ChatPage } from './pages/chat.po';
 import { chatSocketMock } from './test/mocks/chat-socket.mock';
 import { recordFrames } from './test/utils/frame-log.spec.util';
 
@@ -118,7 +118,7 @@ export { expect } from '@playwright/test';
 ```
 
 ```ts
-// e2e/chat/pages/chat.page.ts
+// e2e/chat/pages/chat.po.ts
 import type { Locator, Page, WebSocket } from '@playwright/test';
 import { expect } from '@playwright/test';
 

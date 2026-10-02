@@ -35,7 +35,7 @@ Every call below lives in a page-object method. Specs never touch `page.getBy*`.
 `pressSequentially` fires a keystroke per character so the suggestion list reacts. `fill` sets the value in one event and skips the typeahead.
 
 ```ts
-// e2e/product-search/pages/product-search.page.ts
+// e2e/product-search/pages/product-search.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 export class ProductSearchPage {
@@ -95,7 +95,7 @@ test.describe('FEATURE: product typeahead', () => {
 `expectBusinessFieldsVisible` and `expectBusinessFieldsHidden` group the two related assertions as plain `await expect(…)` lines; the spec's `THEN` step is the only step around them. `BusinessDetails` is a named type in `common/loan.type.ts`.
 
 ```ts
-// e2e/loan/pages/loan-application.page.ts
+// e2e/loan/pages/loan-application.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -180,7 +180,7 @@ test.describe('FEATURE: loan application', () => {
 Each wizard step is a page-object method that fills the fields and clicks Next. The spec reads as one step per wizard page. `Guest` and `Room` are named types in `common/booking.type.ts`; `GUEST_STUB` and `ROOM_STUB` in `test/stubs/booking.stub.ts`.
 
 ```ts
-// e2e/booking/pages/booking-wizard.page.ts
+// e2e/booking/pages/booking-wizard.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -298,7 +298,7 @@ When the error is plain text rather than an accessible description, assert it wi
 `submit()` registers `waitForResponse` before the click and returns the `Response`. The submit button's name is matched with `/Submit feedback|Submitting/` so the same locator resolves in both states. `Feedback` is a named type in `common/feedback.type.ts`.
 
 ```ts
-// e2e/feedback/pages/feedback.page.ts
+// e2e/feedback/pages/feedback.po.ts
 import type { Locator, Page, Response } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -415,7 +415,7 @@ export type SignupForm = {
 ```
 
 ```ts
-// e2e/signup/pages/signup.page.ts
+// e2e/signup/pages/signup.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 import type { SignupForm } from '../common/signup.type';

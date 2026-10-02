@@ -114,15 +114,15 @@ Page objects referenced below. `LoginPage` is shown under [Login Page Object](#l
 
 | Page object | File | Members used in this file |
 |---|---|---|
-| `HomePage` | `e2e/auth/pages/home.page.ts` | `goto()`, `expectHeading()` |
-| `MfaPage` | `e2e/auth/pages/mfa.page.ts` | `expectPrompt()`, `submitCode(code)` |
-| `LandingPage` | `e2e/auth/pages/landing.page.ts` | `goto()`, `expectWelcome()` (heading plus "Log in" link) |
-| `SignupPage` | `e2e/auth/pages/signup.page.ts` | `goto()`, `submit(signup)`, `expectOnboardingWelcome(name)` |
-| `SettingsPage` | `e2e/settings/pages/settings.page.ts` | `goto()`, `saveDisplayName(name)`, `expectSaved()` |
-| `AdminUsersPage` | `e2e/admin/pages/admin-users.page.ts` | `goto()`, `expectRemoveEnabled()`, `expectAccessDenied()` |
+| `HomePage` | `e2e/auth/pages/home.po.ts` | `goto()`, `expectHeading()` |
+| `MfaPage` | `e2e/auth/pages/mfa.po.ts` | `expectPrompt()`, `submitCode(code)` |
+| `LandingPage` | `e2e/auth/pages/landing.po.ts` | `goto()`, `expectWelcome()` (heading plus "Log in" link) |
+| `SignupPage` | `e2e/auth/pages/signup.po.ts` | `goto()`, `submit(signup)`, `expectOnboardingWelcome(name)` |
+| `SettingsPage` | `e2e/settings/pages/settings.po.ts` | `goto()`, `saveDisplayName(name)`, `expectSaved()` |
+| `AdminUsersPage` | `e2e/admin/pages/admin-users.po.ts` | `goto()`, `expectRemoveEnabled()`, `expectAccessDenied()` |
 
 ```ts
-// e2e/auth/pages/home.page.ts
+// e2e/auth/pages/home.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -150,11 +150,11 @@ export class HomePage {
 // e2e/auth/auth.fixture.ts
 import { expect, test as base } from '@playwright/test';
 
-import { HomePage } from './pages/home.page';
-import { LandingPage } from './pages/landing.page';
-import { LoginPage } from './pages/login.page';
-import { MfaPage } from './pages/mfa.page';
-import { SignupPage } from './pages/signup.page';
+import { HomePage } from './pages/home.po';
+import { LandingPage } from './pages/landing.po';
+import { LoginPage } from './pages/login.po';
+import { MfaPage } from './pages/mfa.po';
+import { SignupPage } from './pages/signup.po';
 import { OAUTH_SESSION_STUB } from './test/stubs/auth.stub';
 
 type AuthFixtures = {
@@ -281,7 +281,7 @@ import type { FullConfig } from '@playwright/test';
 import { chromium } from '@playwright/test';
 
 import { SESSION_STATE_PATH, TEST_USER } from './auth/common/auth.const';
-import { LoginPage } from './auth/pages/login.page';
+import { LoginPage } from './auth/pages/login.po';
 import { saveSessionState } from './auth/test/utils/session.spec.util';
 
 const globalSetup = async (config: FullConfig): Promise<void> => {
@@ -332,9 +332,9 @@ import type { BrowserContext } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
 import type { Credentials } from '../auth/common/auth.type';
-import { LoginPage } from '../auth/pages/login.page';
+import { LoginPage } from '../auth/pages/login.po';
 import { USER_STUB } from '../auth/test/stubs/auth.stub';
-import { SettingsPage } from './pages/settings.page';
+import { SettingsPage } from './pages/settings.po';
 
 type SettingsFixtures = {
   readonly settingsPage: SettingsPage;
@@ -463,7 +463,7 @@ import { test as base } from '@playwright/test';
 
 import { AUTH_DIR } from '../auth/common/auth.const';
 import type { Role } from '../auth/common/auth.type';
-import { AdminUsersPage } from './pages/admin-users.page';
+import { AdminUsersPage } from './pages/admin-users.po';
 
 type OpenUsersAs = (role: Role) => Promise<AdminUsersPage>;
 
@@ -502,7 +502,7 @@ export { expect } from '@playwright/test';
 
 ```ts
 // e2e/admin/role-comparison.e2e.ts
-import type { AdminUsersPage } from './pages/admin-users.page';
+import type { AdminUsersPage } from './pages/admin-users.po';
 import { test } from './role.fixture';
 
 test.describe('FEATURE: admin panel access', () => {
@@ -704,7 +704,7 @@ The fixture reuses the saved state when it exists, probes `/api/auth/me`, and lo
 import type { Page } from '@playwright/test';
 
 import { SESSION_STATE_PATH, TEST_USER } from '../../common/auth.const';
-import { LoginPage } from '../../pages/login.page';
+import { LoginPage } from '../../pages/login.po';
 import { saveSessionState } from './session.spec.util';
 
 export const sessionIsValid = async (page: Page): Promise<boolean> => {
@@ -729,7 +729,7 @@ import { existsSync } from 'node:fs';
 import { test as base } from '@playwright/test';
 
 import { SESSION_STATE_PATH } from './common/auth.const';
-import { HomePage } from './pages/home.page';
+import { HomePage } from './pages/home.po';
 import { renewSession, sessionIsValid } from './test/utils/session-refresh.spec.util';
 
 type AuthFixtures = {
@@ -762,7 +762,7 @@ export { expect } from '@playwright/test';
 The OAuth section's `signInWithProvider()` clicks a `providerButton` field (`getByRole('button', { name: 'Sign in with Provider' })`) declared the same way; it is left out below to keep the sample short. Action methods never assert; `goto` no longer checks the button, the spec's first assertion step does. `goto({ oauthCallback })` routes the provider redirect before it navigates, so the OAuth spec opens with one call and no route step. `expect*` methods hold plain `await expect(…)` lines and open no step; the spec's `THEN` step is the only step around them. Field errors are checked through `toHaveAccessibleDescription`, which follows `aria-describedby` without a branch.
 
 ```ts
-// e2e/auth/pages/login.page.ts
+// e2e/auth/pages/login.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -903,7 +903,7 @@ The fixture form logs in per test through `playwright.request` and hands the sta
 import { test as base } from '@playwright/test';
 
 import { TEST_USER } from './common/auth.const';
-import { HomePage } from './pages/home.page';
+import { HomePage } from './pages/home.po';
 
 type AuthFixtures = {
   readonly homePage: HomePage;
@@ -1051,7 +1051,7 @@ Need to test the login page itself?
 import type { Page } from '@playwright/test';
 
 import type { Credentials } from '../../common/auth.type';
-import type { LoginPage } from '../../pages/login.page';
+import type { LoginPage } from '../../pages/login.po';
 
 export const submitAndAwaitAuth = async (loginPage: LoginPage, page: Page, credentials: Credentials): Promise<void> => {
   const [response] = await Promise.all([page.waitForResponse('**/api/auth/**'), loginPage.submit(credentials)]);

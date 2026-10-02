@@ -16,25 +16,25 @@ The mechanic every popup and new-tab sample shares: start waiting for the event,
 
 | Page object | File | Members used in this file |
 |---|---|---|
-| `HomePage` | `e2e/support/pages/home.page.ts` | shown below |
-| `SupportChatPage` | `e2e/support/pages/support-chat.page.ts` | `send(message)` (fill "Message", click "Send"), `expectSent()` ("Message sent") |
-| `DashboardPage` | `e2e/integrations/pages/dashboard.page.ts` | `goto()`, `openConnectAccount(): Promise<ProviderLoginPage>`, `expectAccountConnected()` |
-| `ProviderLoginPage` | `e2e/integrations/pages/provider-login.page.ts` | `submit(credentials)` (email, password, "Log In"), `expectClosed()` (`expect.poll` on `page.isClosed()`) |
-| `SharePage` | `e2e/share/pages/share.page.ts` | `goto(options?)` (`{ popups: 'blocked' }` calls `blockPopups(this.page)` before navigating), `openTwitterShare(): Promise<Page>`, `shareToTwitter()`, `expectCopyLinkFallback()` ("Copy share link instead") |
-| `ResourcesPage` | `e2e/resources/pages/resources.page.ts` | `goto()`, `openDocumentation(): Promise<DocsPage>` (waits on `context().waitForEvent('page')`) |
-| `DocsPage` | `e2e/resources/pages/docs.page.ts` | `expectHeading()` (level 1 heading visible), `expectUrl(url)` (`toHaveURL` on its tab) |
-| `LinksPage` | `e2e/links/pages/links.page.ts` | `goto(options?)` (`{ blankTargets: 'dropped' }` calls `keepLinksInTab(this.page)` after navigating), `openExternalSite()` |
-| `LoginPage` | `e2e/auth/pages/login.page.ts` | `goto({ oauthLogin })` from [third-party.md](third-party.md#oauth-on-the-opening-call), `expectWelcome(name)`, `signInWithGoogle()`; gains `openGoogleSignIn(): Promise<GoogleLoginPage>` |
-| `GoogleLoginPage` | `e2e/auth/pages/google-login.page.ts` | `submit(credentials)` (email, "Next", password, "Next"), `expectClosed()` (as `ProviderLoginPage`) |
-| `SyncDashboardPage` | `e2e/dashboard/pages/sync-dashboard.page.ts` | `goto()`, `addItem(name)` ("Add Item", fill "Name", "Save"), `expectItem(name)` (10 s timeout for the sync) |
-| `EditorPage` | `e2e/editor/pages/editor.page.ts` | `goto()`, `bringToFront()`, `fillContent(text)` |
-| `PreviewPage` | `e2e/editor/pages/preview.page.ts` | `goto()`, `bringToFront()`, `reload()`, `expectContent(text)` |
+| `HomePage` | `e2e/support/pages/home.po.ts` | shown below |
+| `SupportChatPage` | `e2e/support/pages/support-chat.po.ts` | `send(message)` (fill "Message", click "Send"), `expectSent()` ("Message sent") |
+| `DashboardPage` | `e2e/integrations/pages/dashboard.po.ts` | `goto()`, `openConnectAccount(): Promise<ProviderLoginPage>`, `expectAccountConnected()` |
+| `ProviderLoginPage` | `e2e/integrations/pages/provider-login.po.ts` | `submit(credentials)` (email, password, "Log In"), `expectClosed()` (`expect.poll` on `page.isClosed()`) |
+| `SharePage` | `e2e/share/pages/share.po.ts` | `goto(options?)` (`{ popups: 'blocked' }` calls `blockPopups(this.page)` before navigating), `openTwitterShare(): Promise<Page>`, `shareToTwitter()`, `expectCopyLinkFallback()` ("Copy share link instead") |
+| `ResourcesPage` | `e2e/resources/pages/resources.po.ts` | `goto()`, `openDocumentation(): Promise<DocsPage>` (waits on `context().waitForEvent('page')`) |
+| `DocsPage` | `e2e/resources/pages/docs.po.ts` | `expectHeading()` (level 1 heading visible), `expectUrl(url)` (`toHaveURL` on its tab) |
+| `LinksPage` | `e2e/links/pages/links.po.ts` | `goto(options?)` (`{ blankTargets: 'dropped' }` calls `keepLinksInTab(this.page)` after navigating), `openExternalSite()` |
+| `LoginPage` | `e2e/auth/pages/login.po.ts` | `goto({ oauthLogin })` from [third-party.md](third-party.md#oauth-on-the-opening-call), `expectWelcome(name)`, `signInWithGoogle()`; gains `openGoogleSignIn(): Promise<GoogleLoginPage>` |
+| `GoogleLoginPage` | `e2e/auth/pages/google-login.po.ts` | `submit(credentials)` (email, "Next", password, "Next"), `expectClosed()` (as `ProviderLoginPage`) |
+| `SyncDashboardPage` | `e2e/dashboard/pages/sync-dashboard.po.ts` | `goto()`, `addItem(name)` ("Add Item", fill "Name", "Save"), `expectItem(name)` (10 s timeout for the sync) |
+| `EditorPage` | `e2e/editor/pages/editor.po.ts` | `goto()`, `bringToFront()`, `fillContent(text)` |
+| `PreviewPage` | `e2e/editor/pages/preview.po.ts` | `goto()`, `bringToFront()`, `reload()`, `expectContent(text)` |
 
 ```ts
-// e2e/support/pages/home.page.ts
+// e2e/support/pages/home.po.ts
 import type { Locator, Page } from '@playwright/test';
 
-import { SupportChatPage } from './support-chat.page';
+import { SupportChatPage } from './support-chat.po';
 
 export class HomePage {
   public readonly supportChatButton: Locator;
@@ -70,7 +70,7 @@ export class HomePage {
 
 ```ts
 // e2e/support/support-chat.e2e.ts
-import type { SupportChatPage } from './pages/support-chat.page';
+import type { SupportChatPage } from './pages/support-chat.po';
 import { test } from './support.fixture';
 
 test.describe('FEATURE: support chat popup', () => {
@@ -94,7 +94,7 @@ The popup closes itself after login. `ProviderLoginPage.expectClosed()` checks i
 // e2e/integrations/connect-account.e2e.ts
 import { TEST_USER } from '../auth/common/auth.const';
 import { test } from './integrations.fixture';
-import type { ProviderLoginPage } from './pages/provider-login.page';
+import type { ProviderLoginPage } from './pages/provider-login.po';
 
 test.describe('FEATURE: connect account', () => {
   test('GIVEN an unconnected account, logging in through the provider popup connects it', async ({ dashboardPage }): Promise<void> => {
@@ -153,7 +153,7 @@ test.describe('FEATURE: share to twitter', () => {
 
 ```ts
 // e2e/resources/documentation-link.e2e.ts
-import type { DocsPage } from './pages/docs.page';
+import type { DocsPage } from './pages/docs.po';
 import { expect, test } from './resources.fixture';
 
 test.describe('FEATURE: documentation link', () => {

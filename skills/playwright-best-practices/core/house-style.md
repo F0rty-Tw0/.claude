@@ -45,7 +45,7 @@ A spec is a list of named steps. A step is one call. The call lives in a page ob
 | Imports | `import type { Locator, Page } from '@playwright/test';` on its own line above `import { expect, test } from '@playwright/test';`. Groups and members alphabetical. |
 | Quotes | Single quotes. Template literals only with interpolation. |
 | Casts | No `as` except `as const`. A `page.evaluate` result gets a generic argument, not a cast. |
-| Comments | None inside samples except a first-line path comment `// e2e/login/pages/login.page.ts`. Explanation lives in the prose above the block. |
+| Comments | None inside samples except a first-line path comment `// e2e/login/pages/login.po.ts`. Explanation lives in the prose above the block. |
 | Waits | No `waitForTimeout`. No `waitForSelector` when a web-first `expect` covers it. No manual retry loops around `expect`. |
 | Data | Base values are typed stubs in `test/stubs/`, spread and overridden per case. Route handlers are factories in `test/mocks/`. Builders and utils are functions in `test/utils/*.spec.util.ts`. |
 | Intercepted payload | Every body a mock fulfills is a typed stub imported from `test/stubs/`. A mock declares no payload of its own: no inline literal in `route.fulfill`, no `const <X>_BODY` in the mock file. |
@@ -74,7 +74,7 @@ e2e/
     helpers/
       <name>.helper.ts                  reusable widget scoped to a Locator
     pages/
-      <name>.page.ts                    one page object
+      <name>.po.ts                      one page object
     test/
       fixtures/                         on-disk files the subject reads or uploads
       mocks/
@@ -193,7 +193,7 @@ test.describe('FEATURE: login', () => {
 ## Page Objects
 
 ```ts
-// e2e/login/pages/login.page.ts
+// e2e/login/pages/login.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -249,8 +249,8 @@ export class LoginPage {
 // e2e/login/login.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { DashboardPage } from './pages/dashboard.page';
-import { LoginPage } from './pages/login.page';
+import { DashboardPage } from './pages/dashboard.po';
+import { LoginPage } from './pages/login.po';
 
 type LoginFixtures = {
   readonly dashboardPage: DashboardPage;

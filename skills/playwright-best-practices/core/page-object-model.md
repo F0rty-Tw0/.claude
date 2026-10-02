@@ -24,7 +24,7 @@ Page Object Model encapsulates page structure and interactions, providing:
 Locators are `public readonly` fields, alphabetical, assigned in the constructor. `page` is `private readonly` and declared after them. Action methods never assert; assertions live in `expect*` methods as plain `await expect(…)` lines. A page object never opens a step; the spec's `THEN` step wraps the call. The only method that may branch is the opening call: `goto(options)` takes the page's one `<Page>Options` type and applies each option (a route, a viewport, a clock) before it navigates; see [house-style.md](house-style.md#page-objects).
 
 ```ts
-// e2e/login/pages/login.page.ts
+// e2e/login/pages/login.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -143,7 +143,7 @@ A `NavbarHelper` is built the same way from `page.getByRole('navigation')`: `log
 A page object holds helper objects as `public readonly` fields and passes each one its root locator in the constructor. A page never extends another page.
 
 ```ts
-// e2e/dashboard/pages/dashboard.page.ts
+// e2e/dashboard/pages/dashboard.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 import { ModalHelper } from '../helpers/modal.helper';
@@ -214,7 +214,7 @@ e2e/
     login.e2e.ts
     login.fixture.ts
     pages/
-      login.page.ts
+      login.po.ts
   dashboard/
     dashboard.e2e.ts
     dashboard.fixture.ts
@@ -223,8 +223,8 @@ e2e/
       navbar.helper.ts
       table.helper.ts
     pages/
-      dashboard.page.ts
-      settings.page.ts
+      dashboard.po.ts
+      settings.po.ts
 ```
 
 ### Using with Fixtures
@@ -233,8 +233,8 @@ e2e/
 // e2e/login/login.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { DashboardPage } from '../dashboard/pages/dashboard.page';
-import { LoginPage } from './pages/login.page';
+import { DashboardPage } from '../dashboard/pages/dashboard.po';
+import { LoginPage } from './pages/login.po';
 
 type LoginFixtures = {
   readonly dashboardPage: DashboardPage;

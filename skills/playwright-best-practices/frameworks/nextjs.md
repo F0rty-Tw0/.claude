@@ -92,7 +92,7 @@ test.describe('FEATURE: server components', () => {
 });
 ```
 
-`HomePage` (`e2e/home/pages/home.page.ts`) is shared by every `home-*.e2e.ts` spec below. `goto(options?)` opens `/`. `HomeOptions` gains `headers?: RequestHeaders`, which `goto` applies with `page.setExtraHTTPHeaders` before it navigates. `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
+`HomePage` (`e2e/home/pages/home.po.ts`) is shared by every `home-*.e2e.ts` spec below. `goto(options?)` opens `/`. `HomeOptions` gains `headers?: RequestHeaders`, which `goto` applies with `page.setExtraHTTPHeaders` before it navigates. `expectHeading(name)` asserts the level-1 heading; `expectNavigation(name)` asserts `getByRole('navigation', { name })`; `expectText(text)` asserts `getByText(text)` visible; `getStarted()` clicks the `Get started` button.
 
 ### Loading States with Streaming
 
@@ -152,7 +152,7 @@ Same shape: `aboutPage.goto()`, `expectHeading('About Us')`, `expectText('Founde
 `page.goto` returns the navigation response, so a `[slug]` page object returns it and the spec asserts the status. `Response | null` is the declared type; a `null` response means the navigation was a same-document change.
 
 ```ts
-// e2e/blog/pages/post.page.ts
+// e2e/blog/pages/post.po.ts
 import type { Locator, Page, Response } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -457,7 +457,7 @@ A click that changes state proves hydration finished. `counterPage.goto()`, `cou
 `next/image` emits a `srcset` with `w=` descriptors and sets `loading="lazy"` on everything but priority images. Web-first attribute assertions cover both; `expect.poll` on `naturalWidth` proves a lazy image actually loaded after scrolling, and the `expect*` method reads the width itself.
 
 ```ts
-// e2e/gallery/pages/gallery.page.ts
+// e2e/gallery/pages/gallery.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

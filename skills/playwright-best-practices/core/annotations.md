@@ -314,7 +314,7 @@ test.describe('FEATURE: orders', () => {
 The page object behind the registration spec. `fillForm` is two plain awaits of private methods, with no step of its own. `expectWelcome` is a plain `await expect(…)`; the spec's `THEN` step is the only step around it.
 
 ```ts
-// e2e/register/pages/register.page.ts
+// e2e/register/pages/register.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

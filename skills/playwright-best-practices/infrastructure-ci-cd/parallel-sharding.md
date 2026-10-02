@@ -186,7 +186,7 @@ Worker fixtures go in a separate `type <Feature>WorkerFixtures` and are passed a
 import { test as base } from '@playwright/test';
 
 import { DB_URL } from './common/settings.const';
-import { SettingsPage } from './pages/settings.page';
+import { SettingsPage } from './pages/settings.po';
 import { fetchApiToken } from './test/utils/api-token.spec.util';
 import { DatabaseClient } from './utils/database-client.util';
 
@@ -269,7 +269,7 @@ Prefer a `user` fixture that seeds a unique user through `request` and deletes i
 import { test as base } from '@playwright/test';
 
 import type { User } from './common/profile.type';
-import { SettingsPage } from './pages/settings.page';
+import { SettingsPage } from './pages/settings.po';
 import { uniqueUser } from './test/utils/user-builder.spec.util';
 
 type ProfileFixtures = {

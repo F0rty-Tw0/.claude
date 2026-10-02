@@ -59,10 +59,10 @@ test.describe('FEATURE: accessibility', () => {
 import AxeBuilder from '@axe-core/playwright';
 import { test as base } from '@playwright/test';
 
-import { DashboardPage } from './pages/dashboard.page';
-import { HomePage } from './pages/home.page';
-import { ItemsPage } from './pages/items.page';
-import { SignupPage } from './pages/signup.page';
+import { DashboardPage } from './pages/dashboard.po';
+import { HomePage } from './pages/home.po';
+import { ItemsPage } from './pages/items.po';
+import { SignupPage } from './pages/signup.po';
 
 type AxeBuilderFactory = () => AxeBuilder;
 
@@ -141,7 +141,7 @@ The spec calls it as its assertion step: `await test.step('THEN no violations ar
 Pressing Tab is the user's action, so `tabThrough(stops)` presses it once per stop and returns what each press focused: the `ariaSnapshot()` of the `:focus` locator, which names the element by role and accessible name (`- textbox "Email"`). The spec's `THEN` compares that list with the expected order, so a failure prints the order a keyboard user actually met.
 
 ```ts
-// e2e/accessibility/pages/signup.page.ts
+// e2e/accessibility/pages/signup.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 export class SignupPage {
@@ -206,7 +206,7 @@ export type HomeOptions = {
 ```
 
 ```ts
-// e2e/accessibility/pages/home.page.ts
+// e2e/accessibility/pages/home.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 import type { HomeOptions } from '../common/accessibility.type';
@@ -266,7 +266,7 @@ test.describe('FEATURE: skip link', () => {
 `DashboardPage` also owns the landmark locators used under [ARIA Validation](#aria-validation).
 
 ```ts
-// e2e/accessibility/pages/dashboard.page.ts
+// e2e/accessibility/pages/dashboard.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -347,7 +347,7 @@ Every ARIA check is one phase: the `WHEN` step opens the page, an `AND` step cal
 `toMatchAriaSnapshot` compares the accessibility tree (roles, names, states) with a YAML baseline. It works on a locator and on the whole page. Called with `{ name }` it reads `<name>` from the test's snapshot folder; `--update-snapshots` writes it on the first run. The assertion lives in an `expect*` page-object method like any other; `accessibility.fixture.ts` registers `settingsPage` beside the other page objects.
 
 ```ts
-// e2e/accessibility/pages/settings.page.ts
+// e2e/accessibility/pages/settings.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

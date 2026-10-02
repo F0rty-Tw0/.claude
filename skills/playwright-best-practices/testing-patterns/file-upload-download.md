@@ -24,7 +24,7 @@
 The page object registers `page.waitForEvent('download')` before the click that triggers the download, then returns the `Download`. Reading the content through `createReadStream()` avoids disk I/O and temp-file cleanup. Each check reads the content inside `expect.poll`, so no step only reads the file.
 
 ```ts
-// e2e/exports/pages/exports.page.ts
+// e2e/exports/pages/exports.po.ts
 import type { Download, Page } from '@playwright/test';
 
 export class ExportsPage {
@@ -96,7 +96,7 @@ test.describe('FEATURE: exports', () => {
 `exportPdf()` waits for the download and the API response together so one method serves both the filename and the header checks. `ExportResult` is a named type in `common/exports.type.ts` with `readonly download: Download` and `readonly response: Response`. The spec opens the page in its `WHEN` step, returns the result from an `AND` step that calls `exportPdf()`, then asserts `result.download.suggestedFilename()` matches `/^analytics-\d{4}-\d{2}-\d{2}\.pdf$/`, `result.response.headers()['content-type']` contains `application/pdf`, and `['content-disposition']` contains `attachment`. A format picker is `formatSelect.selectOption(format)` before the click, asserted with `suggestedFilename()` against `/\.csv$/`, `/\.xlsx$/` or `/\.pdf$/`.
 
 ```ts
-// e2e/exports/pages/analytics.page.ts
+// e2e/exports/pages/analytics.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 import type { AnalyticsOptions, ExportResult } from '../common/exports.type';
@@ -158,7 +158,7 @@ export type UploadSelection = string | string[] | UploadFile | UploadFile[];
 ```
 
 ```ts
-// e2e/attachments/pages/attachments.page.ts
+// e2e/attachments/pages/attachments.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -221,7 +221,7 @@ export class AttachmentsPage {
 // e2e/attachments/attachments.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { AttachmentsPage } from './pages/attachments.page';
+import { AttachmentsPage } from './pages/attachments.po';
 
 type AttachmentsFixtures = {
   readonly attachmentsPage: AttachmentsPage;
@@ -434,7 +434,7 @@ test.describe('FEATURE: attachments drop zone', () => {
 `openFileChooser()` registers `waitForEvent('filechooser')` before the click and returns the `FileChooser`. The spec inspects `isMultiple()` and calls `setFiles()` on it. Image preview is `expectPreviewRendered()`: the preview is visible and its `src` starts with `blob:` or `data:image`.
 
 ```ts
-// e2e/avatar/pages/avatar.page.ts
+// e2e/avatar/pages/avatar.po.ts
 import type { FileChooser, Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

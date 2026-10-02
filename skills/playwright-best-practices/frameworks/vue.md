@@ -244,7 +244,7 @@ test.describe('FEATURE: stepper', () => {
 The page object owns every locator, including the list-item filter that finds a product row.
 
 ```ts
-// e2e/shop/pages/shop.page.ts
+// e2e/shop/pages/shop.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -289,8 +289,8 @@ export class ShopPage {
 // e2e/shop/shop.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { CartPage } from './pages/cart.page';
-import { ShopPage } from './pages/shop.page';
+import { CartPage } from './pages/cart.po';
+import { ShopPage } from './pages/shop.po';
 
 type ShopFixtures = {
   readonly cartPage: CartPage;
@@ -361,7 +361,7 @@ test.describe('FEATURE: shopping cart store', () => {
 A client-side navigation keeps the document; a full load replaces it. Marking the document is not a user action, so it is an option on the opening call: `goto({ spaMarker: true })` stamps an attribute on `<html>` once the page has loaded, and the page object asserts it is still there after the click, which proves the router handled the link. `HomeOptions` in `common/navigation.type.ts` is `{ readonly spaMarker?: boolean }`.
 
 ```ts
-// e2e/navigation/pages/home.page.ts
+// e2e/navigation/pages/home.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -479,7 +479,7 @@ The remaining router cases follow the same shape with one page object each:
 Teleported nodes land elsewhere in the document but are ordinary DOM. A page object exposes the overlay as a locator and scopes its buttons to it.
 
 ```ts
-// e2e/items/pages/items.page.ts
+// e2e/items/pages/items.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -731,7 +731,7 @@ Pinia and Vue Router are installed by the gallery, not per spec. Its `window.mou
 `v-model` listens to standard DOM events. Playwright's `fill`, `check`, and `selectOption` dispatch them, so a page object talks to the inputs and never to the binding.
 
 ```ts
-// e2e/subscribe/pages/subscribe.page.ts
+// e2e/subscribe/pages/subscribe.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 export class SubscribePage {
@@ -769,7 +769,7 @@ A fixture attaches the console listener before the test runs and hands the colle
 import type { ConsoleMessage } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
-import { HomePage } from './pages/home.page';
+import { HomePage } from './pages/home.po';
 
 type HomeFixtures = {
   readonly homePage: HomePage;

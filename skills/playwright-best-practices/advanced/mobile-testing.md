@@ -154,7 +154,7 @@ import { test as base } from '@playwright/test';
 
 import type { SwipeDirection } from '../carousel/common/carousel.type';
 import { swipe } from '../carousel/test/utils/swipe.spec.util';
-import { InboxPage } from './pages/inbox.page';
+import { InboxPage } from './pages/inbox.po';
 
 type Swipe = (element: Locator, direction: SwipeDirection) => Promise<void>;
 
@@ -197,7 +197,7 @@ test.describe('FEATURE: inbox', () => {
 A long press is a pointer held down for a duration. `locator.click({ delay })` holds the button down for `delay` milliseconds before releasing, which is the native way to express the hold without `waitForTimeout`. Apps that listen for `touchstart` rather than pointer events need `dispatchEvent('touchstart')` followed by the delayed release instead.
 
 ```ts
-// e2e/files/pages/files.page.ts
+// e2e/files/pages/files.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -234,7 +234,7 @@ export class FilesPage {
 Playwright has no native pinch. Most map and image widgets treat ctrl+wheel as pinch, so the page object dispatches a `wheel` event with `ctrlKey: true` and a negative `deltaY` on the zoomable element; `locator.dispatchEvent` builds the `WheelEvent` for the given init. When the widget exposes a zoom API on `window`, calling it through `page.evaluate` is the other route.
 
 ```ts
-// e2e/map/pages/map.page.ts
+// e2e/map/pages/map.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -365,7 +365,7 @@ test.describe('FEATURE: mobile navigation', () => {
 The sheet is a `dialog`; its controls are locators scoped to it. Choosing a size and confirming is one user intent, so one method. `ProductOptions` is `{ readonly viewport?: ViewportSize }` in `common/product.type.ts`.
 
 ```ts
-// e2e/product/pages/product.page.ts
+// e2e/product/pages/product.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -421,7 +421,7 @@ The spec's title is `'GIVEN a mobile viewport, confirming a size in the sheet ad
 A pull is a drag from near the top of the feed downwards. The refresh indicator appearing and then disappearing is the observable outcome, so the page object asserts both in sequence.
 
 ```ts
-// e2e/feed/pages/feed.page.ts
+// e2e/feed/pages/feed.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

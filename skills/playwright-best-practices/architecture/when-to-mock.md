@@ -97,8 +97,8 @@ export const trackingBlockMock = (): RouteHandler => {
 // e2e/checkout/checkout.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { DashboardPage } from './pages/dashboard.page';
-import { OrderPage } from './pages/order.page';
+import { DashboardPage } from './pages/dashboard.po';
+import { OrderPage } from './pages/order.po';
 import { trackingBlockMock } from './test/mocks/tracking.mock';
 
 type CheckoutFixtures = {
@@ -346,7 +346,7 @@ Option fixtures let a spec opt out of a mock with a file-level `test.use`. The `
 // e2e/billing/billing.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { BillingPage } from './pages/billing.page';
+import { BillingPage } from './pages/billing.po';
 import { analyticsBlockMock } from './test/mocks/analytics.mock';
 import { invoiceMock } from './test/mocks/invoice.mock';
 import { notifyMock } from './test/mocks/notify.mock';

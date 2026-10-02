@@ -34,7 +34,7 @@ Every sample belongs to the `projects` feature. `Project` (`id`, `name`) is in `
 import { test as base } from '@playwright/test';
 
 import type { Project } from './common/projects.type';
-import { ProjectsPage } from './pages/projects.page';
+import { ProjectsPage } from './pages/projects.po';
 import { deleteProject, seedProject } from './test/utils/projects-api.spec.util';
 
 type ProjectsFixtures = {
@@ -64,7 +64,7 @@ The create test has nothing to seed, so its fixture is `newProjectName`: it yiel
 Rows are found by name, never by index: a parallel worker's row can land anywhere in the list. The confirm dialog's buttons are scoped to the dialog, so the row's own Delete button never matches.
 
 ```ts
-// e2e/projects/pages/projects.page.ts
+// e2e/projects/pages/projects.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

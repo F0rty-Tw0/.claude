@@ -14,16 +14,16 @@ Every user is a separate browser context, opened through the `openUser` fixture 
 
 | Page object | File | Members used in this file |
 |---|---|---|
-| `DocumentPage` | `e2e/collaboration/pages/document.page.ts` | `goto(id)`, `fillContent(text)` (label "Content"), `expectText(text)` |
-| `SupportPage` | `e2e/collaboration/pages/support.page.ts` | `goto()`, `submit(message)` (label "Message", "Submit"), `expectReply(text)` |
-| `TicketsPage` | `e2e/collaboration/pages/tickets.page.ts` | `goto()`, `expectTicket(text)`, `reply(text)` ("Reply", label "Response", "Send") |
-| `EditorPage` | `e2e/collaboration/pages/editor.page.ts` | `goto()`, `typeAtStart(text)`, `typeAtEnd(text)` (click textbox, `Home`/`End`, `pressSequentially`), `expectContains(text)` |
-| `WhiteboardPage` | `e2e/collaboration/pages/whiteboard.page.ts` | `goto(id, { identity })` (routes `**/api/me` to `meMock(identity)` before it navigates), `moveCursor(x, y)`, `expectCursor(identity)` (test id `cursor-<id>` plus name) |
-| `DocumentAccessPage` | `e2e/documents/pages/document-access.page.ts` | `goto(id)`, `expectContentVisible(visible)`, `expectEditEnabled(enabled)`, `expectDeleteVisible(visible)` |
-| `AdminUsersPage` | `e2e/admin/pages/admin-users.page.ts` | `goto()`, `expectRedirected()` (url is not `/admin/users`), `expectAccessDenied()` |
-| `ItemPage` | `e2e/collaboration/pages/item.page.ts` | `conflictMessage`, `goto(id)`, `edit()`, `fillName(text)`, `save()` |
-| `RecordPage` | `e2e/collaboration/pages/record.page.ts` | shown below |
-| `ChatPage` | `e2e/collaboration/pages/chat.page.ts` | `goto(room, { identity })` (routes `**/api/me` to `meMock(identity)` before it navigates), `send(text)`, `expectMessage(text)` |
+| `DocumentPage` | `e2e/collaboration/pages/document.po.ts` | `goto(id)`, `fillContent(text)` (label "Content"), `expectText(text)` |
+| `SupportPage` | `e2e/collaboration/pages/support.po.ts` | `goto()`, `submit(message)` (label "Message", "Submit"), `expectReply(text)` |
+| `TicketsPage` | `e2e/collaboration/pages/tickets.po.ts` | `goto()`, `expectTicket(text)`, `reply(text)` ("Reply", label "Response", "Send") |
+| `EditorPage` | `e2e/collaboration/pages/editor.po.ts` | `goto()`, `typeAtStart(text)`, `typeAtEnd(text)` (click textbox, `Home`/`End`, `pressSequentially`), `expectContains(text)` |
+| `WhiteboardPage` | `e2e/collaboration/pages/whiteboard.po.ts` | `goto(id, { identity })` (routes `**/api/me` to `meMock(identity)` before it navigates), `moveCursor(x, y)`, `expectCursor(identity)` (test id `cursor-<id>` plus name) |
+| `DocumentAccessPage` | `e2e/documents/pages/document-access.po.ts` | `goto(id)`, `expectContentVisible(visible)`, `expectEditEnabled(enabled)`, `expectDeleteVisible(visible)` |
+| `AdminUsersPage` | `e2e/admin/pages/admin-users.po.ts` | `goto()`, `expectRedirected()` (url is not `/admin/users`), `expectAccessDenied()` |
+| `ItemPage` | `e2e/collaboration/pages/item.po.ts` | `conflictMessage`, `goto(id)`, `edit()`, `fillName(text)`, `save()` |
+| `RecordPage` | `e2e/collaboration/pages/record.po.ts` | shown below |
+| `ChatPage` | `e2e/collaboration/pages/chat.po.ts` | `goto(room, { identity })` (routes `**/api/me` to `meMock(identity)` before it navigates), `send(text)`, `expectMessage(text)` |
 
 ## Multiple Browser Contexts
 
@@ -77,7 +77,7 @@ Three users are three `openUser` calls; nothing else changes. The first user ope
 ```ts
 // e2e/collaboration/shared-document.e2e.ts
 import { test } from './collaboration.fixture';
-import { DocumentPage } from './pages/document.page';
+import { DocumentPage } from './pages/document.po';
 
 test.describe('FEATURE: shared document', () => {
   test('GIVEN two users on one document, text typed by one is seen by the other', async ({ openUser }): Promise<void> => {
@@ -100,8 +100,8 @@ Each user starts from a different saved session, so the admin sees the admin UI 
 // e2e/collaboration/support-ticket.e2e.ts
 import { AUTH_DIR } from '../auth/common/auth.const';
 import { test } from './collaboration.fixture';
-import { SupportPage } from './pages/support.page';
-import { TicketsPage } from './pages/tickets.page';
+import { SupportPage } from './pages/support.po';
+import { TicketsPage } from './pages/tickets.po';
 
 const ADMIN_STATE = `${AUTH_DIR}/admin.json`;
 const MEMBER_STATE = `${AUTH_DIR}/member.json`;
@@ -132,7 +132,7 @@ test.describe('FEATURE: support tickets', () => {
 ```ts
 // e2e/collaboration/collaborative-editing.e2e.ts
 import { test } from './collaboration.fixture';
-import { EditorPage } from './pages/editor.page';
+import { EditorPage } from './pages/editor.po';
 
 test.describe('FEATURE: collaborative editing', () => {
   test('GIVEN two users on one editor, text typed at both ends shows both the combined text', async ({ openUser }): Promise<void> => {
@@ -184,7 +184,7 @@ export const meMock = (identity: Identity = ALICE_STUB): RouteHandler => {
 ```ts
 // e2e/collaboration/cursor-presence.test.ts
 import { test } from './collaboration.fixture';
-import { WhiteboardPage } from './pages/whiteboard.page';
+import { WhiteboardPage } from './pages/whiteboard.po';
 import { ALICE_STUB, BOB_STUB } from './test/stubs/identity.stub';
 
 test.describe('FEATURE: cursor presence', () => {
@@ -229,7 +229,7 @@ export const ROLE_PERMISSIONS: RolePermissions[] = [
 import { AUTH_DIR } from '../auth/common/auth.const';
 import { test } from '../collaboration/collaboration.fixture';
 import { ROLE_PERMISSIONS } from './common/document.const';
-import { DocumentAccessPage } from './pages/document-access.page';
+import { DocumentAccessPage } from './pages/document-access.po';
 
 test.describe('FEATURE: document access by role', () => {
   for (const permissions of ROLE_PERMISSIONS) {
@@ -254,7 +254,7 @@ A member opening an admin route must be bounced. `openUser` hands over the page 
 
 ```ts
 // e2e/documents/admin-route.e2e.ts
-import { AdminUsersPage } from '../admin/pages/admin-users.page';
+import { AdminUsersPage } from '../admin/pages/admin-users.po';
 import { AUTH_DIR } from '../auth/common/auth.const';
 import { test } from '../collaboration/collaboration.fixture';
 
@@ -279,7 +279,7 @@ Both clicks go through one `Promise.all`, which is one call and therefore one st
 
 ```ts
 // e2e/collaboration/test/utils/conflict.spec.util.ts
-import type { ItemPage } from '../../pages/item.page';
+import type { ItemPage } from '../../pages/item.po';
 
 const isConflictVisible = (item: ItemPage): Promise<boolean> => item.conflictMessage.isVisible();
 
@@ -293,7 +293,7 @@ export const countConflicts = async (items: ItemPage[]): Promise<number> => {
 ```ts
 // e2e/collaboration/concurrent-edit.e2e.ts
 import { expect, test } from './collaboration.fixture';
-import { ItemPage } from './pages/item.page';
+import { ItemPage } from './pages/item.po';
 import { countConflicts } from './test/utils/conflict.spec.util';
 
 test.describe('FEATURE: concurrent item edit', () => {
@@ -320,7 +320,7 @@ test.describe('FEATURE: concurrent item edit', () => {
 Sequential saves against the same version: the second must be rejected. `expectStaleConflict` checks the message and the reload button together, as two plain `expect` lines in one method; the spec's `THEN` step is the only step around them.
 
 ```ts
-// e2e/collaboration/pages/record.page.ts
+// e2e/collaboration/pages/record.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -371,7 +371,7 @@ export class RecordPage {
 ```ts
 // e2e/collaboration/optimistic-locking.e2e.ts
 import { test } from './collaboration.fixture';
-import { RecordPage } from './pages/record.page';
+import { RecordPage } from './pages/record.po';
 
 test.describe('FEATURE: optimistic locking', () => {
   test('GIVEN two users on one record, the second save of the same version is rejected', async ({ openUser }): Promise<void> => {
@@ -403,7 +403,7 @@ Identity is routed by the opening call, as in the cursor sample. Bob's reply is 
 ```ts
 // e2e/collaboration/chat.test.ts
 import { test } from './collaboration.fixture';
-import { ChatPage } from './pages/chat.page';
+import { ChatPage } from './pages/chat.po';
 import { ALICE_STUB, BOB_STUB } from './test/stubs/identity.stub';
 
 test.describe('FEATURE: chat room', () => {

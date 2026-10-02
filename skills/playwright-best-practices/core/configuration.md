@@ -412,7 +412,7 @@ await page.goto('http://localhost:4000/dashboard');
 Prefer a relative path in the page object's `goto`:
 
 ```ts
-// e2e/dashboard/pages/dashboard.page.ts
+// e2e/dashboard/pages/dashboard.po.ts
 import type { Page } from '@playwright/test';
 
 export class DashboardPage {

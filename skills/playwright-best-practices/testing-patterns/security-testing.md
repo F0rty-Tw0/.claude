@@ -37,8 +37,8 @@ import type { ConsoleMessage, Dialog } from '@playwright/test';
 import { test as base } from '@playwright/test';
 
 import { SettingsApi } from './api/settings.api';
-import { LoginPage } from './pages/login.page';
-import { SearchPage } from './pages/search.page';
+import { LoginPage } from './pages/login.po';
+import { SearchPage } from './pages/search.po';
 
 type SecurityFixtures = {
   readonly cspViolations: string[];
@@ -98,7 +98,7 @@ Every page object below follows `SearchPage`: `public readonly` locators set in 
 A reflected payload arrives through the query string. `SearchPage.gotoQuery` encodes it; `expectPayloadEscaped` reads the served HTML and checks that no raw script tag or event handler survived. Escaping checks read the HTML; execution checks watch the browser: Playwright raises a `dialog` event for every `alert`, `confirm`, and `prompt`, so the `dialogs` fixture sees an executed payload without patching `window`. The same fixture covers a payload typed into the form through `submitSearch`.
 
 ```ts
-// e2e/security/pages/search.page.ts
+// e2e/security/pages/search.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -473,7 +473,7 @@ A 10 000-character bio must be refused or truncated to the field's limit. `Profi
 | `strict-transport-security` | `toBeTruthy()` (not on localhost) | Protocol downgrade |
 
 ```ts
-// e2e/security/pages/home.page.ts
+// e2e/security/pages/home.po.ts
 import type { Page, Response } from '@playwright/test';
 
 export class HomePage {

@@ -264,7 +264,7 @@ export const analyticsMock = (analytics: Analytics = ANALYTICS_STUB): RouteHandl
 // e2e/dashboard/dashboard.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { DashboardPage } from './pages/dashboard.page';
+import { DashboardPage } from './pages/dashboard.po';
 import { analyticsMock } from './test/mocks/analytics.mock';
 import { recommendationsMock } from './test/mocks/recommendations.mock';
 
@@ -394,7 +394,7 @@ The default `page` fixture is a fresh context per test. When a test needs a seco
 // e2e/chat/chat.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { ChatPage } from './pages/chat.page';
+import { ChatPage } from './pages/chat.po';
 
 type ChatFixtures = {
   readonly chatPage: ChatPage;
@@ -463,7 +463,7 @@ export default defineConfig({
 The page object times its own navigation and returns the milliseconds; a `test/utils` util pushes the number onto `testInfo.annotations` so it appears in the report, and the `THEN` holds the number to a budget. `expectLoadTimeUnder(budgetMs)` reads the navigation timing inside the check, so no step only reads it.
 
 ```ts
-// e2e/home/pages/home.page.ts
+// e2e/home/pages/home.po.ts
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

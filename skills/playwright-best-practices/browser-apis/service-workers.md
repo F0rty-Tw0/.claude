@@ -55,7 +55,7 @@ export type PwaOptions = {
 // e2e/pwa/pwa.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { PwaPage } from './pages/pwa.page';
+import { PwaPage } from './pages/pwa.po';
 
 type PwaFixtures = {
   readonly cachedPwaPage: PwaPage;
@@ -79,7 +79,7 @@ export { expect } from '@playwright/test';
 `goto(options)` grants notifications before it navigates when `notifications: 'granted'` is set, then opens `path` (default `/pwa-app`); that option check is the page object's only branch. `expectAppCached()` polls the `app-cache-v1` URLs until the list is not empty. The other `expect*` methods hold one plain assertion each: `expectDashboard()` on the heading, `expectOfflineBadge()` and `expectOnline()` on the badge visible or hidden, and `expectStatus(text)` on the status text.
 
 ```ts
-// e2e/pwa/pages/pwa.page.ts
+// e2e/pwa/pages/pwa.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

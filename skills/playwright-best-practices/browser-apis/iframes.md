@@ -26,7 +26,7 @@ Every sample belongs to the `checkout` feature. A `FrameLocator` is a page-objec
 | By src (partial match) | `page.frameLocator('iframe[src*="stripe.com"]')` |
 
 ```ts
-// e2e/checkout/pages/checkout.page.ts
+// e2e/checkout/pages/checkout.po.ts
 import type { FrameLocator, Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -201,7 +201,7 @@ When a provider renders its form in an iframe instead of a popup, the login page
 `FrameLocator.frameLocator()` chains, one call per nesting level. Each intermediate frame is its own field so the chain reads top-down. The `widget*` members serve [Dynamic iFrames](#dynamic-iframes).
 
 ```ts
-// e2e/checkout/pages/widget.page.ts
+// e2e/checkout/pages/widget.po.ts
 import type { FrameLocator, Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -325,7 +325,7 @@ Scrolling triggers the load. `LazyFramePage` owns `lazyFrame = page.frameLocator
 Navigation and URL waits need a `Frame`, not a `FrameLocator`. `namedFrame` (from `frame.spec.util.ts` above) resolves it; the page object wraps the navigation so the spec step stays one call.
 
 ```ts
-// e2e/checkout/pages/content-frame.page.ts
+// e2e/checkout/pages/content-frame.po.ts
 import type { Frame, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -438,9 +438,9 @@ The fixture navigates, asserts readiness through the page object, and hands the 
 // e2e/checkout/checkout.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { CheckoutPage } from './pages/checkout.page';
-import { ContentFramePage } from './pages/content-frame.page';
-import { WidgetPage } from './pages/widget.page';
+import { CheckoutPage } from './pages/checkout.po';
+import { ContentFramePage } from './pages/content-frame.po';
+import { WidgetPage } from './pages/widget.po';
 import { recordFrameNavigations } from './test/utils/frame-navigations.spec.util';
 
 type CheckoutFixtures = {

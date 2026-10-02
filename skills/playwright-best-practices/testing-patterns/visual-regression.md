@@ -35,7 +35,7 @@ npx playwright test --update-snapshots
 The `mask` option overlays a solid box over specified locators before capturing. The page object owns the volatile locators and a `freezeTimestamps` method for the alternative below.
 
 ```ts
-// e2e/visual/pages/analytics.page.ts
+// e2e/visual/pages/analytics.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 export class AnalyticsPage {
@@ -142,7 +142,7 @@ When `animations: 'disabled'` is set, Playwright injects CSS forcing animation/t
 For JavaScript-driven animations (GSAP, Framer Motion), the page object asserts the settled state before the spec captures. `expectSettled` waits for the banner to be visible and for the `animating` class to drop.
 
 ```ts
-// e2e/visual/pages/hero.page.ts
+// e2e/visual/pages/hero.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -411,7 +411,7 @@ export default defineConfig({ projects });
 A Storybook iframe is a page like any other. `StoryPage.goto` takes the story id; `button` is the only locator the button stories need.
 
 ```ts
-// e2e/visual/pages/story.page.ts
+// e2e/visual/pages/story.po.ts
 import type { Locator, Page } from '@playwright/test';
 
 export class StoryPage {

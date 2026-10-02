@@ -79,7 +79,7 @@ test.describe('FEATURE: price alerts', () => {
 After, the page object's opening call and checks. `AlertsOptions` is `{ readonly failOn?: 'delete' | 'list' }` in `common/price-alerts.type.ts`; `alertsMock` serves `ALERTS_STUB` and fails the method the option names.
 
 ```ts
-// e2e/price-alerts/pages/alerts.page.ts
+// e2e/price-alerts/pages/alerts.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

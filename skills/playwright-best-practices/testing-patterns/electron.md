@@ -75,8 +75,8 @@ export type RendererGlobals = {
 import type { ElectronApplication } from '@playwright/test';
 import { _electron as electron, test as base } from '@playwright/test';
 
-import { MainWindowPage } from './pages/main-window.page';
-import { RendererPage } from './pages/renderer.page';
+import { MainWindowPage } from './pages/main-window.po';
+import { RendererPage } from './pages/renderer.po';
 import { FETCH_DATA_STUB } from './test/stubs/ipc.stub';
 import { installOpenDialogMock } from './test/utils/dialog.spec.util';
 import { installIpcMock } from './test/utils/ipc.spec.util';
@@ -146,14 +146,14 @@ export { expect } from '@playwright/test';
 
 ### Development Mode
 
-The fixture above is development mode: `electron.launch({ args: ['.'] })` runs the source tree. `MainWindowPage` owns the first window's locators; `openSettings()` clicks the button and waits for `electronApp.waitForEvent('window')` so the new window is captured, then returns it as `SettingsWindowPage`. `SettingsWindowPage` (`e2e/desktop/pages/settings-window.page.ts`) follows the same shape with one locator, `heading = page.locator('h1')`, and a `close()` method that calls `page.close()`.
+The fixture above is development mode: `electron.launch({ args: ['.'] })` runs the source tree. `MainWindowPage` owns the first window's locators; `openSettings()` clicks the button and waits for `electronApp.waitForEvent('window')` so the new window is captured, then returns it as `SettingsWindowPage`. `SettingsWindowPage` (`e2e/desktop/pages/settings-window.po.ts`) follows the same shape with one locator, `heading = page.locator('h1')`, and a `close()` method that calls `page.close()`.
 
 ```ts
-// e2e/desktop/pages/main-window.page.ts
+// e2e/desktop/pages/main-window.po.ts
 import type { ElectronApplication, Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-import { SettingsWindowPage } from './settings-window.page';
+import { SettingsWindowPage } from './settings-window.po';
 
 export class MainWindowPage {
   public readonly notifyButton: Locator;
@@ -203,7 +203,7 @@ The launch has no user action before its check, so the app-start test's `WHEN` i
 // e2e/desktop/windows.e2e.ts
 import type { Page } from '@playwright/test';
 
-import type { SettingsWindowPage } from './pages/settings-window.page';
+import type { SettingsWindowPage } from './pages/settings-window.po';
 import { expect, test } from './desktop.fixture';
 
 test.describe('FEATURE: desktop windows', () => {
@@ -294,7 +294,7 @@ test.describe('FEATURE: desktop main process', () => {
 The first window is a `Page`; every Playwright interaction and web-first assertion applies. `RendererPage` wraps the `evaluate` calls into the renderer's globals so a spec never touches `window.*` directly. Each read declares `const scope: RendererGlobals = window` instead of a cast, and stays a standalone function because `page.evaluate` serialises it and cannot close over module functions.
 
 ```ts
-// e2e/desktop/pages/renderer.page.ts
+// e2e/desktop/pages/renderer.po.ts
 import type { Page } from '@playwright/test';
 
 import type { FetchData, RendererGlobals, UserSettings } from '../common/desktop.type';
@@ -384,7 +384,7 @@ test.describe('FEATURE: desktop renderer', () => {
 import type { ElectronApplication } from '@playwright/test';
 
 import type { ElectronModule, FetchData, IpcMock } from '../../common/desktop.type';
-import type { RendererPage } from '../../pages/renderer.page';
+import type { RendererPage } from '../../pages/renderer.po';
 
 const sendMessage = ({ BrowserWindow }: ElectronModule, text: string): void => {
   const [window] = BrowserWindow.getAllWindows();

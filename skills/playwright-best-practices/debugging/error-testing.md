@@ -11,7 +11,7 @@
 The samples below share one dashboard page object. `expect*` methods hold plain `await expect(…)` lines and never open a step; action methods never assert. `goto(options: DashboardOptions = {})` routes the failure a case asks for before it navigates. `DashboardOptions`, the dashboard's one options type in `common/dashboard.type.ts`, gains `crashOn?: 'user'` (the endpoint whose payload crashes its widget, as in [console-errors.md](console-errors.md#test-error-boundary-triggers)) and `dataFault?: DataFault` here, with `type DataFault = 'fail-once' | 'hang' | 'reset' | number` in the same file. Without an option `goto` routes nothing.
 
 ```ts
-// e2e/dashboard/pages/dashboard.page.ts
+// e2e/dashboard/pages/dashboard.po.ts
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -74,7 +74,7 @@ The fixture exposes the page object and a `pageErrors` list fed by the `pageerro
 // e2e/dashboard/dashboard.fixture.ts
 import { test as base } from '@playwright/test';
 
-import { DashboardPage } from './pages/dashboard.page';
+import { DashboardPage } from './pages/dashboard.po';
 
 type DashboardFixtures = {
   readonly dashboardPage: DashboardPage;
