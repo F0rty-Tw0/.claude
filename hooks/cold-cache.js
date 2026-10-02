@@ -12,7 +12,7 @@
 //   with context telling the model to act on the stored one).
 // - /compact pays the same re-cache (it's a request at full context); only /clear skips it.
 //
-// Registered in the f42 plugin's hooks.json, so it's on by default. Env: COLD_CACHE_GUARD=off
+// Registered in settings.json for local sessions and in the f42 plugin's hooks.json for cloud. Env: COLD_CACHE_GUARD=off
 // disables (set it in settings.json `env`, or a project's .claude/settings.local.json for one repo);
 // COLD_CACHE_MIN_TOKENS (default 50000) skips small re-caches.
 // ponytail: thresholds in tokens, not dollars — no price table to rot. Add one if $ matters.

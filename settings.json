@@ -85,6 +85,16 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/cold-cache.js"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
@@ -96,7 +106,8 @@
     "marksman-lsp": true,
     "lua-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
-    "claude-hud@claude-hud": true
+    "claude-hud@claude-hud": true,
+    "f42@synced": false
   },
   "extraKnownMarketplaces": {
     "claude-hud": {
