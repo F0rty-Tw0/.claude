@@ -19,7 +19,7 @@ DEFAULT=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's
 git merge-base HEAD "origin/$DEFAULT"   # base branch; confirm with the user if empty or unsure
 ```
 
-Uncommitted work (`git status --porcelain` not empty — the default when commits weren't authorized): say so first. Merge and PR need commits, so offer to commit via skill:meaningful-commits (only with the user's go-ahead) before options 1–2.
+Uncommitted work (`git status --porcelain` not empty — the default when commits weren't authorized): say so first. Merge and PR need commits, so offer to commit via skill:meaningful-commits (only with the user's go-ahead) before Merge or Push and PR.
 
 | State | Menu |
 |---|---|
