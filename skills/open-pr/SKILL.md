@@ -212,11 +212,11 @@ Output the title and description as two separate markdown code blocks so the use
 <title>
 ```
 
-**Description:**
+**Description** (four-backtick fence, so a sketch or fenced output inside the body doesn't close it):
 
-```
+````
 <description>
-```
+````
 
 If the user wants to create the PR directly, use:
 
