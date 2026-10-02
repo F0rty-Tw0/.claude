@@ -35,6 +35,7 @@ if [ -n "$N" ]; then
   HUMAN='.[] | select(.user.type != "Bot")'
   gh api --paginate "repos/{owner}/{repo}/pulls/$N/comments" --jq "$HUMAN | {path, line, body}"
   gh api --paginate "repos/{owner}/{repo}/issues/$N/comments" --jq "$HUMAN | .body"
+  gh api --paginate "repos/{owner}/{repo}/pulls/$N/reviews" --jq "$HUMAN | select(.body != \"\") | .body"
 fi
 ```
 
