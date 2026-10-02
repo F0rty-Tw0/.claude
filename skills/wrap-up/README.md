@@ -8,7 +8,7 @@ Guides a structured session close-out:
 
 1. **Clean Up** - Verify file placement, fix naming violations, resolve stale tasks
 2. **Remember It** - Route session learnings to the right memory layer (auto memory, CLAUDE.md, rules, local)
-3. **Review & Apply** - Identify skill gaps, friction, and automation opportunities; apply approved improvements
+3. **Review & Apply** - Retro over the session and the PR's human review comments: route mechanical mistakes to lint rules, hooks, or CI, judgement calls to the owning skill or a scoped rule; apply approved improvements
 
 ---
 
@@ -16,9 +16,10 @@ Guides a structured session close-out:
 
 Triggers when you:
 
-- Say "wrap up", "close session", "end session", or "wrap things up"
+- Say "wrap up", "retro", "close session", "end session", or "wrap things up"
 - Invoke `/wrap-up` directly
 - Finish a task and want a clean close-out
+- Finish a branch (`finishing-a-development-branch`) or a round of PR review (`code-review-receiving`); both offer it
 
 ---
 

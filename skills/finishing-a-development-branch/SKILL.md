@@ -62,3 +62,7 @@ Remove only worktrees this workflow created:
 Removal refused (modified or untracked files): those files exist only there. Show `git -C "$WORKTREE_PATH" status --porcelain -uall` and ask: commit them, move them to the main checkout, or delete them. Never `--force` on your own.
 
 Order matters: merge, then remove the worktree, then delete the branch — `git branch -d` fails while a worktree still references it.
+
+## 6. Retro
+
+After any option, offer skill:wrap-up in one line: "Run a retro to turn this branch's mistakes and review comments into checks or rules?" Run it on a yes. On option 2 the human review hasn't happened yet, so make the offer again once the review is addressed (`code-review-receiving` does this).
