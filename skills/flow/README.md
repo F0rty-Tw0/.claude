@@ -11,7 +11,7 @@ brainstorm    plan        auto | supervised     code-review      finish-branch
 
 | Stage | Routes to |
 | --- | --- |
-| Ideate | `brainstorming` (short pass for small scoped changes; skipped for typos, config, bumps, bug fixes) |
+| Ideate | `brainstorming` (short pass for small scoped changes; skipped for typos, config, bumps, formatting, bug fixes) |
 | Plan | `plan` — produces a plan file under `.claude/local/plans/` |
 | Execute | `ralph` + `dispatching-parallel-agents` (autonomous) or `subagent-driven-development` (supervised) |
 | Review | `code-review` (proof bundle + acceptance criteria), triaged with `code-review-receiving` |

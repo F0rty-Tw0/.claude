@@ -18,7 +18,7 @@ Plan creates actionable work plans. It interviews the user on broad requests, pl
 <Do_Not_Use_When>
 
 - User wants autonomous end-to-end execution -- use `flow --auto` instead
-- User wants to start coding immediately with a clear task -- use `ralph` or delegate to executor
+- User wants to start coding immediately with a clear task -- use `ralph` or delegate to executor (a behavior change gets a skill:brainstorming short pass first)
 - User asks a simple question that can be answered directly -- just answer it
 - Task is a single focused fix with obvious scope -- skip planning, just do it (a skill:brainstorming short-pass spec still gets a plan of 1-3 tasks) </Do_Not_Use_When>
 

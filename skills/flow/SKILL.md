@@ -27,7 +27,7 @@ flow --plan-only "<idea>"      # stop after a plan is produced
 
 ## Stage Routing
 
-1. **IDEATE** — If the request is a vague idea, an open design question, or "build me X" with unclear shape, invoke `Skill("brainstorming")` to explore approaches and write a spec. A concrete, scoped behavior change gets brainstorming's short pass; only typos, config tweaks, version bumps, formatter-only diffs, and bug fixes skip this stage. Under `--auto`, brainstorming's cold-reader and critic checks still run, but the spec goes to PLAN without the user-review pause, as the PLAN gate already does.
+1. **IDEATE** — If the request is a vague idea, an open design question, or "build me X" with unclear shape, invoke `Skill("brainstorming")` to explore approaches and write a spec. A concrete, scoped behavior change gets brainstorming's short pass; only typos, config tweaks, version bumps, formatter-only diffs, and bug fixes skip this stage. Under `--auto`, brainstorming's cold-reader and critic checks still run, but step 5's write-back doesn't wait for a reply (only critical unknowns ask) and the spec goes to PLAN without the user-review pause, as the PLAN gate already does.
 2. **PLAN** — `Skill("plan")` turns the idea/spec into a work plan (interview by default, or `--consensus` for a Planner -> Architect -> Critic loop on high-stakes work). Produces a plan file under `.claude/local/plans/`.
 3. **EXECUTE** — Branch on mode (see Mode Selection):
    - **Autonomous** -> `Skill("ralph")` with the plan path. Independent components run in parallel via `dispatching-parallel-agents`.
