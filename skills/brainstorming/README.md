@@ -11,7 +11,8 @@ Guides a structured ideation process:
 3. **Presenting** - Break design into 200-300 word sections, validate each incrementally
 4. **Documenting** - Write validated design to `docs/specs/YYYY-MM-DD-<topic>-design.md`
 5. **Cold-reader check** - A fresh reviewer sees only the spec and paraphrases it; a wrong paraphrase means a spec gap
-6. **Handoff** - Hand the spec to `plan`
+6. **Critic check** - The `critic` agent checks the spec's claims against the code
+7. **Handoff** - Hand the spec to `plan`, which runs `critic` again on the plan
 
 ---
 
@@ -19,8 +20,9 @@ Guides a structured ideation process:
 
 Triggers when you:
 
-- Have an open-ended idea or design question, not a concrete, scoped change
-- Want to turn a vague idea into a concrete design
+- Have an open-ended idea or design question
+- Add a feature or change existing behavior, even a small scoped one (short pass)
+- Not for typos, config tweaks, version bumps, or bug fixes
 
 ---
 

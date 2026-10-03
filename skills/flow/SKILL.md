@@ -27,7 +27,7 @@ flow --plan-only "<idea>"      # stop after a plan is produced
 
 ## Stage Routing
 
-1. **IDEATE** — If the request is a vague idea, an open design question, or "build me X" with unclear shape, invoke `Skill("brainstorming")` to explore approaches and write a spec. Skip when the task is already concrete and scoped.
+1. **IDEATE** — If the request is a vague idea, an open design question, or "build me X" with unclear shape, invoke `Skill("brainstorming")` to explore approaches and write a spec. A concrete, scoped behavior change gets brainstorming's short pass; only typos, config tweaks, version bumps, and bug fixes skip this stage.
 2. **PLAN** — `Skill("plan")` turns the idea/spec into a work plan (interview by default, or `--consensus` for a Planner -> Architect -> Critic loop on high-stakes work). Produces a plan file under `.claude/local/plans/`.
 3. **EXECUTE** — Branch on mode (see Mode Selection):
    - **Autonomous** -> `Skill("ralph")` with the plan path. Independent components run in parallel via `dispatching-parallel-agents`.
@@ -51,7 +51,7 @@ Do not advance a stage until its gate holds; if a gate can't be met, stop and re
 
 | Stage    | Gate before moving on                                                      |
 | -------- | -------------------------------------------------------------------------- |
-| IDEATE   | A written spec/approach exists (or task was already concrete -> skip)      |
+| IDEATE   | A spec that passed brainstorming's cold-reader and critic checks exists (typo, config, bump, or bug fix -> skip) |
 | PLAN     | Plan file under `.claude/local/plans/` with testable acceptance criteria; interactive mode links the saved plan and waits for the user to review it (approving the idea or scope doesn't approve an unseen plan); `--auto` continues without the pause |
 | EXECUTE  | All plan tasks done; `build` exit 0 and the full project test suite passes (real output) |
 | REVIEW   | `code-review` verdict is not BLOCK; findings fixed or dismissed; every acceptance criterion mapped to the proof bundle; a TRUNK verdict stops for human sign-off, even in `--auto` |

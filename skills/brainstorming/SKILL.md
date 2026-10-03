@@ -1,13 +1,13 @@
 ---
 name: brainstorming
-description: Turns a vague idea into an approved design spec through context exploration, focused questions, and 2-3 approaches. Use when the request is an open-ended idea or design question, not a concrete, scoped change.
+description: Turns an idea or a requested behavior change into an approved, reviewed design spec, scaled to the change's size. Use for any new feature or change to existing behavior, from an open-ended idea to a small scoped tweak; not for typos, config tweaks, version bumps, or bug fixes.
 ---
 
 # Brainstorming Ideas Into Designs
 
-Turn an idea into an approved design and a written spec. No code, scaffolding, or implementation skill until the user has approved the design, because unexamined assumptions are where the rework comes from. A reply approves only the stage you presented. Agreeing to an idea or scope doesn't approve a design or spec that doesn't exist yet. After any approval, resume at the earliest stage not yet done. A concrete, scoped change skips this skill.
+Turn an idea into an approved design and a written spec. No code, scaffolding, or implementation skill until the user has approved the design, because unexamined assumptions are where the rework comes from. A reply approves only the stage you presented. Agreeing to an idea or scope doesn't approve a design or spec that doesn't exist yet. After any approval, resume at the earliest stage not yet done.
 
-**Scale.** A spike (a "can we…" feasibility question) gets a 2-3 sentence probe plan and a nod, no spec. Label anything built as throwaway; keeping it is a new request. Complexity discovered mid-task escalates to the full process: stop and say so. Nothing de-escalates.
+**Scale.** A small, scoped behavior change (one surface, intent already clear) gets a short pass: steps 1, 5, and 8-13, with questions only where the write-back exposes a real gap, one approach unless a real alternative exists, and a spec of a few lines. Typos, config tweaks, version bumps, and formatter-only diffs skip this skill; bug fixes go to skill:systematic-debugging. A spike (a "can we…" feasibility question) gets a 2-3 sentence probe plan and a nod, no spec. Label anything built as throwaway; keeping it is a new request. Complexity discovered mid-task escalates to the full process: stop and say so. Nothing de-escalates.
 
 ## Steps
 
@@ -21,8 +21,9 @@ Turn an idea into an approved design and a written spec. No code, scaffolding, o
 8. **Write the spec** to `docs/specs/YYYY-MM-DD-<topic>-design.md` (a user-preferred location wins).
 9. **Self-review the spec** and fix inline: placeholders ("TBD", vague requirements), contradictions between sections, scope too big for one plan, requirements that read two ways (pick one, make it explicit).
 10. **Cold-reader check.** Dispatch a fresh reviewer with `spec-document-reviewer-prompt.md`, giving it only the spec path — no chat history, no intent. You hold context the spec doesn't, so you can't see its gaps yourself. Compare the reviewer's paraphrase with what the user approved: anything it got wrong or couldn't restate is a spec gap, even when it approves. Fix gaps and issues, then re-dispatch; after 3 rounds, take the remaining open points to the user.
-11. **User reviews the spec:** "Spec written to `<path>`. Review it and tell me any changes before I write the implementation plan." Revise until approved.
-12. **Hand off** to skill:plan with the spec path. The plan comes before any implementation.
+11. **Critic check.** Dispatch the `critic` agent on the spec path. It opens the files the spec cites and catches wrong claims about existing code, which the cold reader is kept from seeing. Fix every REJECT gap and re-dispatch; after 3 rounds, take the remaining gaps to the user.
+12. **User reviews the spec:** "Spec written to `<path>`. Review it and tell me any changes before I write the implementation plan." Revise until approved.
+13. **Hand off** to skill:plan with the spec path. The plan comes before any implementation.
 
 ## Design guidance
 
