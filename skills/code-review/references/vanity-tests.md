@@ -9,6 +9,9 @@ AI authors default to tests that raise coverage while proving almost nothing. Gr
 | **Mocking the subject** | The function under test, or the exact collaborator whose behavior is the point, is stubbed | You are testing the mock |
 | **Mock-echo** | Mock configured to return X, test asserts result is X (or is "derived" from X by trivial math) | Asserts the setup, not the logic |
 | **Tautology** | `assert.ok(result)`, `toBeDefined()`, `toBeTruthy()`, `not.toThrow()` as the only check | Almost any output passes |
+| **Constant echo** | `expect(MAX_LENGTH).toBe(280)` against `const MAX_LENGTH = 280` | Restates the source; a wrong limit gets the test "fixed" with it. Assert the behavior the constant drives (281 chars rejected) |
+| **Source reading** | Test reads the module's source text or AST (`readFileSync('./x.ts')`, regex over code, declaration order) instead of running it | Breaks on harmless refactors, passes on broken logic |
+| **Faked platform** | The browser or runtime API whose behavior is at risk (`AudioContext`, `IntersectionObserver`, `fs`) replaced by a do-nothing object | Its failure modes (rejected permission, suspended state, missing support) can never surface; use the real API or a fake that can fail |
 | **Call-count only** | `expect(save).toHaveBeenCalledTimes(1)` with no check of **what** was saved | Wrong data saved once still passes |
 | **Happy path only** | One valid input per function | Bugs live at boundaries |
 | **Snapshot as oracle** | Large snapshot written on first run, never reviewed | Freezes current bugs as "expected" |

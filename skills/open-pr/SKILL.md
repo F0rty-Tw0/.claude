@@ -1,9 +1,9 @@
 ---
-name: pr-description
+name: open-pr
 description: Writes compact PR titles and descriptions with a blast-radius-scaled Proof section behind a fresh code-review gate. Use when creating or updating a pull request or describing branch changes for one.
 ---
 
-# PR Description Generator
+# Open PR
 
 Write PR titles and descriptions that are concise, honest about impact, and sound like a human wrote them. Analyze fully; write only what a reviewer needs to decide.
 
@@ -95,6 +95,8 @@ Mention impact only when it's real and non-obvious. Don't manufacture significan
 
 <1–3 sentences: what changed, and why if not obvious>
 
+<optional sketch: one fenced block, Step 5>
+
 ## Stack            ← only if stacked, 1–3 lines
 ## Proof
 - Blast radius: <Leaf|Branch|Trunk> <n>/10 — rollback: <flag off | revert | …>
@@ -154,6 +156,28 @@ Every existing endpoint now sits behind the auth middleware; cart and order call
 
 Keep it plain: factual words, motivation only when it isn't self-evident, "no behavior changes" once if it applies. Red Flags below lists the tells to rewrite.
 
+**Sketch.** When the change has a shape a reviewer would otherwise rebuild from the diff (new control flow, moved files, a component added to a tree), add one fenced block under the summary. Pick the smallest view that shows it, keeping only the calls, files, or states the change touches:
+
+| Change | View |
+|---|---|
+| Logic or algorithm | `text` pseudocode |
+| Runtime control flow | `text` call tree (indented callee under caller) |
+| UI structure | `text` component tree with the file path on the boundary that matters |
+| File layout or broad refactor | `text` shallow file tree with one-line roles |
+| Interaction across processes or services | `mermaid` `sequenceDiagram` |
+| Edit to an existing shape | `diff` of the tree, call tree, or pseudocode, `+`/`-` on the changed lines |
+
+```diff
+ on(save)
+-  write content
++  if content is unchanged
++    return cached result
++  write new content
++  invalidate cache
+```
+
+A one-line fix, a rename, or a config bump gets no sketch; the summary already says it.
+
 ### Step 6: Add Ticket Link
 
 Extract the ticket number from the current branch name and append a closing reference at the end of the description.
@@ -188,11 +212,11 @@ Output the title and description as two separate markdown code blocks so the use
 <title>
 ```
 
-**Description:**
+**Description** (four-backtick fence, so a sketch or fenced output inside the body doesn't close it):
 
-```
+````
 <description>
-```
+````
 
 If the user wants to create the PR directly, use:
 
@@ -219,6 +243,7 @@ If your PR description has any of these, rewrite it:
 
 - Any section besides `## Stack` and `## Proof`, or more than one `<details>` block
 - A summary over 3 sentences
+- More than one sketch block, or a sketch that restates the diff line by line
 - No `## Proof` section, or proof claims ("tests pass", "verified") with no command and counts
 - No `Before:`/`After:` pair, or one showing test output or code added instead of the change running
 - Any bullet starting with a bold header followed by a colon

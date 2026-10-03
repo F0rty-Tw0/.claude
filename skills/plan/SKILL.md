@@ -18,9 +18,9 @@ Plan creates actionable work plans. It interviews the user on broad requests, pl
 <Do_Not_Use_When>
 
 - User wants autonomous end-to-end execution -- use `flow --auto` instead
-- User wants to start coding immediately with a clear task -- use `ralph` or delegate to executor
+- User wants to start coding immediately with a clear task -- use `ralph` or delegate to executor (a behavior change gets a skill:brainstorming short pass first)
 - User asks a simple question that can be answered directly -- just answer it
-- Task is a single focused fix with obvious scope -- skip planning, just do it </Do_Not_Use_When>
+- Task is a single focused fix with obvious scope -- skip planning, just do it (a skill:brainstorming short-pass spec still gets a plan of 1-3 tasks) </Do_Not_Use_When>
 
 <Execution_Policy>
 
@@ -55,7 +55,7 @@ Plan creates actionable work plans. It interviews the user on broad requests, pl
 
 1. **Quick Analysis**: note hidden requirements and risks
 2. **Create plan**: Generate the work plan immediately
-3. **Review** (optional): Critic review if requested
+3. **Review**: Critic review when requested, and always when the input is a skill:brainstorming spec
 
 ### Consensus Mode (`--consensus` / "ralplan")
 
@@ -101,6 +101,8 @@ Every plan includes:
 - PR Slices — when the work will exceed ~400 changed lines or mixes blast-radius classes: slice table (Slice, Branch, Base, Blast, Tasks — see `references/task-format.md`) per skill:meaningful-prs. Slicing at plan time is cheap; splitting a finished branch is not.
 
 Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
+
+In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan file before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
 
 After saving in interview or direct mode, link the plan and ask the user to review it before execution; approving the idea or scope doesn't approve a plan they haven't seen. Consensus mode gets this approval in step 7.
 

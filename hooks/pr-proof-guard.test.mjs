@@ -5,12 +5,15 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const hook = new URL('./pr-proof-guard.js', import.meta.url).pathname;
+const hook = fileURLToPath(new URL('./pr-proof-guard.js', import.meta.url));
 const dir = mkdtempSync(join(tmpdir(), 'pr-proof-guard-'));
 const PROOF = '# t\n\n## Proof\nBefore: a\nAfter: b\n$ node --test\nok\n';
-const okBody = join(dir, 'ok.md');
-const badBody = join(dir, 'bad.md');
+// Commands are bash, where a backslash escapes, so paths spliced into them use forward slashes (Windows accepts both).
+const toShellPath = (path) => path.replaceAll('\\', '/');
+const okBody = toShellPath(join(dir, 'ok.md'));
+const badBody = toShellPath(join(dir, 'bad.md'));
 writeFileSync(okBody, PROOF);
 writeFileSync(badBody, '# t\nno proof here\n');
 writeFileSync(join(dir, 'my ok.md'), PROOF);

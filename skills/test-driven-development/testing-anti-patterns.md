@@ -32,7 +32,7 @@ expect(buildSearchQuery({ tag: 'urgent' })).toBe(expected);
 expect(buildSearchQuery({ tag: 'urgent' })).toBe('tag:"urgent"');
 ```
 
-Test scripts and configs by running them and asserting outputs, never by matching their text. Test the contract at your boundary (the route you register, the query you emit, the payload you produce), not the framework's mechanics.
+Test modules, scripts, and configs by running them and asserting outputs, never by reading their source text, AST, or declaration order. Test the contract at your boundary (the route you register, the query you emit, the payload you produce), not the framework's mechanics.
 
 Before finishing, mentally mutate the code: wrong constant, wrong branch, missing side effect, empty return, missing validation. Each realistic mutation should fail at least one test; one that fails none marks an unprotected behavior or a tautological test.
 
@@ -325,6 +325,7 @@ TDD cycle:
 - Test fails when you remove mock
 - Can't explain why mock is needed
 - Mocking "just to be safe"
+- A platform API (`AudioContext`, `IntersectionObserver`, `fs`) stubbed with an object that can never fail or reject
 
 ## The Bottom Line
 

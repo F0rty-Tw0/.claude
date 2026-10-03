@@ -1,4 +1,4 @@
-# PR Description Generator
+# Open PR
 
 Write PR titles and descriptions that are concise, honest about impact, and sound like a human wrote them. The analysis is full; the body carries only what a reviewer needs to decide.
 
@@ -9,6 +9,7 @@ Every PR gets the same compact body:
 | Part | Contents |
 | ---- | -------- |
 | Summary | 1–3 sentences: what changed, why if not obvious, one non-obvious impact |
+| Sketch | Optional single fenced block: pseudocode, call tree, file tree, Mermaid, or a `diff` of one of those |
 | `## Stack` | Only for stacked PRs, 1–3 lines |
 | `## Proof` | Blast radius + rollback, test command + counts, before/after pair of the change running (screenshot or CLI/console output), verified / not verified |
 | `<details>` | For our own PRs only: runtime logs, base-failure output, Trunk gate/invariants/deep-read list |

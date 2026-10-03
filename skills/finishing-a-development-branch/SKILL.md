@@ -19,7 +19,7 @@ DEFAULT=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's
 git merge-base HEAD "origin/$DEFAULT"   # base branch; confirm with the user if empty or unsure
 ```
 
-Uncommitted work (`git status --porcelain` not empty — the default when commits weren't authorized): say so first. Merge and PR need commits, so offer to commit via skill:meaningful-commits (only with the user's go-ahead) before options 1–2.
+Uncommitted work (`git status --porcelain` not empty — the default when commits weren't authorized): say so first. Merge and PR need commits, so offer to commit via skill:meaningful-commits (only with the user's go-ahead) before Merge or Push and PR.
 
 | State | Menu |
 |---|---|
@@ -43,7 +43,7 @@ Discard isn't on the menu; it runs only when the user explicitly asks to throw t
 
 **1 — Merge locally.** From the main repo root (`MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)`), with a clean `git status --porcelain` (uncommitted changes leak across or block the checkout): `git checkout <base> && git pull && git merge <feature>`, then run the tests on the merged result. Merged result red → stop. Leave the worktree and branch in place and investigate; nothing is pushed, so the merge is local and recoverable. Only after the merge succeeds: clean up (step 5), then `git branch -d <feature>`.
 
-**2 — Push and PR.** Pushing is outward-facing, and `hooks/commit-guard.js` blocks it unless `~/.claude/.allow-commit` is set, so confirm the user wants the push, then `git push -u origin <feature>`. Load skill:pr-description for the title and body and run `gh pr create`. Keep the worktree; the user iterates on review feedback there.
+**2 — Push and PR.** Pushing is outward-facing, and `hooks/commit-guard.js` blocks it unless `~/.claude/.allow-commit` is set, so confirm the user wants the push, then `git push -u origin <feature>`. Load skill:open-pr for the title and body and run `gh pr create`. Keep the worktree; the user iterates on review feedback there.
 
 **3 — Keep.** Report "Keeping branch `<name>` at `<path>`." No cleanup.
 
@@ -62,3 +62,7 @@ Remove only worktrees this workflow created:
 Removal refused (modified or untracked files): those files exist only there. Show `git -C "$WORKTREE_PATH" status --porcelain -uall` and ask: commit them, move them to the main checkout, or delete them. Never `--force` on your own.
 
 Order matters: merge, then remove the worktree, then delete the branch — `git branch -d` fails while a worktree still references it.
+
+## 6. Retro
+
+After Merge or Keep, offer skill:wrap-up in one line: "Run a retro to turn this branch's mistakes into checks or rules?" Run it on a yes. After Push and PR skip the offer: the human review hasn't happened yet, and `code-review-receiving` offers the retro once it is addressed.

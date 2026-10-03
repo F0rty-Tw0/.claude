@@ -11,6 +11,8 @@ Personal coding rules for TypeScript creation and refactoring. Types expose arch
 | `references/utility-style.md` | Defines pure function extraction, `utils/` placement, `.util.ts` naming, and testing boundaries. |
 | `references/feature-modules.md` | Lays out every feature module as `feature` / `ui` / `domain-logic` / `data-access` / `utils` / `common`, with one-way imports (lint-suite `boundaries`), storage-role file names, and one root barrel. |
 | `references/module-size.md` | Caps source `.ts` files at 150 lines and specs at 300 and defines how to split by concern, routing chunks through the type and utility rules. |
+| `references/module-depth.md` | Measures depth at the feature module's root barrel (deletion test, seam count, interface as test surface) for feature modules. |
+| `references/architecture-scan.md` | Scans for deepening refactors: hot spots from git history, a visual before/after report, design-it-twice with three agents, and grilling rounds to a shared design. |
 | `references/unit-testing.md` | Puts every test-only file under the owning feature's `test/`: `test/stubs/`, `test/mocks/`, `test/fixtures/`, `test/utils/*.spec.util.ts`. Keeps `common/` and `utils/` production-only. Bans support-file suffixes. |
 
 ---

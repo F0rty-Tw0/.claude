@@ -7,10 +7,12 @@ Turn ideas into fully formed designs and specs through natural collaborative dia
 Guides a structured ideation process:
 
 1. **Understanding** - Check project state, ask up to 3 questions per round (prefer multiple choice), then write back your understanding for the user to correct
-2. **Exploring** - Propose 2-3 approaches with trade-offs, lead with recommendation
+2. **Exploring** - Propose 2-3 approaches with trade-offs, lead with recommendation. Wide mode (`lens-brainstorm.md`) runs parallel lens agents first, on request
 3. **Presenting** - Break design into 200-300 word sections, validate each incrementally
 4. **Documenting** - Write validated design to `docs/specs/YYYY-MM-DD-<topic>-design.md`
-5. **Handoff** - Hand the spec to `plan`
+5. **Cold-reader check** - A fresh reviewer sees only the spec and paraphrases it; a wrong paraphrase means a spec gap
+6. **Critic check** - The `critic` agent checks the spec's claims against the code
+7. **Handoff** - Hand the spec to `plan`, which runs `critic` again on the plan
 
 ---
 
@@ -18,8 +20,9 @@ Guides a structured ideation process:
 
 Triggers when you:
 
-- Have an open-ended idea or design question, not a concrete, scoped change
-- Want to turn a vague idea into a concrete design
+- Have an open-ended idea or design question
+- Add a feature or change existing behavior, even a small scoped one (short pass)
+- Not for typos, config tweaks, version bumps, formatter-only diffs, or bug fixes
 
 ---
 

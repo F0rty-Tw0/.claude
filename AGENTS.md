@@ -53,12 +53,13 @@ Ponytail governs implementation choices. Also:
 - Validate at boundaries (user input, external APIs, I/O, deserialization); trust internal code.
 - Root-cause fixes by default; a workaround needs a tracked ticket and expiry.
 - New production behavior needs tests; throwaway scripts don't.
+- **(main session)** A new feature or a change to existing behavior goes through skill:brainstorming before any code, at the short pass when it is small and scoped. Typos, config tweaks, version bumps, formatter-only diffs, and bug fixes skip it.
 
 ## Git and PRs
 
 - Commit or push only when the user explicitly asks in the current request; skill steps that say "commit" don't count. `hooks/commit-guard.js` blocks commits in local sessions — when the user has asked, `touch ~/.claude/.allow-commit` (one-shot) before each commit.
 - Commits: load `/meaningful-commits` first. When delegating, pass "user authorized commits" and the skill name; subagents can't see the user's message.
-- PRs: load `/pr-description` first. Its Step 0 builds `## Proof` and runs `code-review`; a BLOCK verdict means stop and ask. `hooks/pr-proof-guard.js` rejects a PR body without `## Proof` (local sessions only; cloud and plugin sessions aren't guarded, so follow the rule yourself). Big or mixed branch → `/meaningful-prs` first. No attribution lines.
+- PRs: load `/open-pr` first. Its Step 0 builds `## Proof` and runs `code-review`; a BLOCK verdict means stop and ask. `hooks/pr-proof-guard.js` rejects a PR body without `## Proof` (local sessions only; cloud and plugin sessions aren't guarded, so follow the rule yourself). Big or mixed branch → `/meaningful-prs` first. No attribution lines.
 - Stage named files only, never `git add <dir>`. Unrelated bug found → one-line follow-up note, move on.
 
 ## Evidence
