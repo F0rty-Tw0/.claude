@@ -16,7 +16,7 @@ Turn an idea into an approved design and a written spec. No code, scaffolding, o
 3. **Offer the visual companion when it's needed**, not upfront: the first time a question would be clearer shown than told. A UI topic alone doesn't justify it. See `visual-companion.md`.
 4. **Ask questions** on purpose, constraints, and success criteria: up to 3 per `AskUserQuestion` round, each building on earlier answers, multiple choice where it fits.
 5. **Write back your understanding** in a short note: the intended outcome, who it's for, constraints, success criteria. Mark what the user said apart from what you assumed. Take their correction before proposing approaches.
-6. **Propose 2-3 approaches** with trade-offs, leading with your recommendation and why.
+6. **Propose 2-3 approaches** with trade-offs, leading with your recommendation and why. Run wide mode (`lens-brainstorm.md`) first only when the user asks for a wide or divergent brainstorm, or your step 5 note has no candidate direction yet: one session converges on its first idea, and parallel fresh agents with different lenses don't. It costs 4-6 agent runs.
 7. **Present the design** in sections scaled to their complexity (a few sentences when straightforward), covering architecture, components, data flow, error handling, and testing. Confirm each section before the next.
 8. **Write the spec** to `docs/specs/YYYY-MM-DD-<topic>-design.md` (a user-preferred location wins).
 9. **Self-review the spec** and fix inline: placeholders ("TBD", vague requirements), contradictions between sections, scope too big for one plan, requirements that read two ways (pick one, make it explicit).
