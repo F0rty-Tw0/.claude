@@ -26,7 +26,7 @@ Every fix needs Phase 1 and Phase 4's failing test. Use Phases 2 and 3 when Phas
 ## Phase 3: Hypothesis and testing
 
 1. State one hypothesis: "X is the root cause because Y."
-   **Blind second diagnosis.** Before testing your first hypothesis, dispatch the `debugger` agent with only the symptom, the error output, and the repro steps. Leave out your hypothesis and suspect files: naming them anchors it on your guess. Ask for the top 1-3 candidate causes with `file:line`, the evidence for each, and what would falsify it. Its top candidate matches yours → test yours. It differs → read its evidence before testing anything, and note why the losing diagnosis was wrong.
+   **Blind second diagnosis.** Unless you are yourself a dispatched subagent, before testing your first hypothesis, dispatch the `debugger` agent with only the symptom, the error output, and the repro steps. Leave out your hypothesis and suspect files: naming them anchors it on your guess. Ask for the top 1-3 candidate causes with `file:line`, the evidence for each, and what would falsify it. Its top candidate matches yours → test yours. It differs → read its evidence before testing anything, and note why the losing diagnosis was wrong.
 2. Test it with the smallest change, one variable at a time.
 3. Worked → Phase 4. Didn't → form a new hypothesis; don't stack fixes.
 4. Don't understand something? Say so, and research or ask.
