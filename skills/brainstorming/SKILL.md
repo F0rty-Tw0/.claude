@@ -20,8 +20,9 @@ Turn an idea into an approved design and a written spec. No code, scaffolding, o
 7. **Present the design** in sections scaled to their complexity (a few sentences when straightforward), covering architecture, components, data flow, error handling, and testing. Confirm each section before the next.
 8. **Write the spec** to `docs/specs/YYYY-MM-DD-<topic>-design.md` (a user-preferred location wins).
 9. **Self-review the spec** and fix inline: placeholders ("TBD", vague requirements), contradictions between sections, scope too big for one plan, requirements that read two ways (pick one, make it explicit).
-10. **User reviews the spec:** "Spec written to `<path>`. Review it and tell me any changes before I write the implementation plan." Revise until approved.
-11. **Hand off** to skill:plan with the spec path. The plan comes before any implementation.
+10. **Cold-reader check.** Dispatch a fresh reviewer with `spec-document-reviewer-prompt.md`, giving it only the spec path — no chat history, no intent. You hold context the spec doesn't, so you can't see its gaps yourself. Compare the reviewer's paraphrase with what the user approved: anything it got wrong or couldn't restate is a spec gap, even when it approves. Fix gaps and issues, then re-dispatch; after 3 rounds, take the remaining open points to the user.
+11. **User reviews the spec:** "Spec written to `<path>`. Review it and tell me any changes before I write the implementation plan." Revise until approved.
+12. **Hand off** to skill:plan with the spec path. The plan comes before any implementation.
 
 ## Design guidance
 
