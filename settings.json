@@ -130,6 +130,7 @@
   "autoDreamEnabled": false,
   "skipWorkflowUsageWarning": false,
   "autoCompactEnabled": true,
+  "autoCompactWindow": 300000,
   "precomputeCompactionEnabled": false,
   "switchModelsOnFlag": false,
   "autoContinueAtUsageLimit": true,
