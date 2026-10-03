@@ -42,7 +42,7 @@ Never re-dispatch the same prompt to the same agent without changing something.
 
 ## Fix rounds
 
-Don't patch gaps yourself, however small: controller fixes skip review. Resume the same implementer with `SendMessage`, sending the findings verbatim; its context is intact. After 3 rounds, dispatch a fresh `deep-executor` with the report file, noting a prior implementer tried N times. After 5, decide each open finding yourself and record it as a `Decision:`.
+Don't patch gaps yourself, however small: controller fixes skip review. Resume the same implementer with `SendMessage`, sending the findings verbatim; its context is intact. After 3 rounds, dispatch a fresh `deep-executor` with the report file, noting a prior implementer tried N times. Escalate the same way at once when a new finding lands in a function an earlier round already fixed: the fixes are chasing each other, and another round on the same approach won't converge. After 5, decide each open finding yourself and record it as a `Decision:`.
 
 ## After all tasks
 
