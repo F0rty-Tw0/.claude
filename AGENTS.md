@@ -53,7 +53,7 @@ Ponytail governs implementation choices. Also:
 - Validate at boundaries (user input, external APIs, I/O, deserialization); trust internal code.
 - Root-cause fixes by default; a workaround needs a tracked ticket and expiry.
 - New production behavior needs tests; throwaway scripts don't.
-- **(main session)** A new feature or a change to existing behavior goes through skill:brainstorming before any code, at the short pass when it is small and scoped. Typos, config tweaks, version bumps, and bug fixes skip it.
+- **(main session)** A new feature or a change to existing behavior goes through skill:brainstorming before any code, at the short pass when it is small and scoped. Typos, config tweaks, version bumps, formatter-only diffs, and bug fixes skip it.
 
 ## Git and PRs
 

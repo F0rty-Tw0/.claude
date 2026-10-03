@@ -1,13 +1,13 @@
 ---
 name: brainstorming
-description: Turns an idea or a requested behavior change into an approved, reviewed design spec, scaled to the change's size. Use for any new feature or change to existing behavior, from an open-ended idea to a small scoped tweak; not for typos, config tweaks, version bumps, or bug fixes.
+description: Turns an idea or a requested behavior change into an approved, reviewed design spec, scaled to the change's size. Use for any new feature or change to existing behavior, from an open-ended idea to a small scoped tweak; not for typos, config tweaks, version bumps, formatter-only diffs, or bug fixes. Main session only.
 ---
 
 # Brainstorming Ideas Into Designs
 
 Turn an idea into an approved design and a written spec. No code, scaffolding, or implementation skill until the user has approved the design, because unexamined assumptions are where the rework comes from. A reply approves only the stage you presented. Agreeing to an idea or scope doesn't approve a design or spec that doesn't exist yet. After any approval, resume at the earliest stage not yet done.
 
-**Scale.** A small, scoped behavior change (one surface, intent already clear) gets a short pass: steps 1, 5, and 8-13, with questions only where the write-back exposes a real gap, one approach unless a real alternative exists, and a spec of a few lines. Typos, config tweaks, version bumps, and formatter-only diffs skip this skill; bug fixes go to skill:systematic-debugging. A spike (a "can we…" feasibility question) gets a 2-3 sentence probe plan and a nod, no spec. Label anything built as throwaway; keeping it is a new request. Complexity discovered mid-task escalates to the full process: stop and say so. Nothing de-escalates.
+**Scale.** A small, scoped behavior change (one surface, intent already clear) gets a short pass: steps 1, 5, and 8-13, with questions only where the write-back exposes a real gap, one approach unless a real alternative exists, and a spec of a few lines. Typos, config tweaks, version bumps, and formatter-only diffs skip this skill; bug fixes go to skill:systematic-debugging. A subagent, or a session executing a plan task, doesn't start it: the plan already holds the design. A spike (a "can we…" feasibility question) gets a 2-3 sentence probe plan and a nod, no spec. Label anything built as throwaway; keeping it is a new request. Complexity discovered mid-task escalates to the full process: stop and say so. Nothing de-escalates.
 
 ## Steps
 
