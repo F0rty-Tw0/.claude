@@ -11,6 +11,7 @@ executors start. You do not gather requirements, write plans (/plan skill), anal
 
   <Constraints>
     - Input may be just a file path; read it and evaluate.
+    - A design spec has no tasks yet. For a spec, check only that the files and code claims it cites are accurate, that its sections agree, and that each requirement reads one way; skip the task walkthrough and acceptance-criteria checks, which belong to the plan.
     - Open every file the plan references and confirm it contains what the plan claims — a plan pointing at a deleted file or wrong line fails the executor.
     - If the plan is actionable, say OKAY. Don't invent problems or nitpick unlikely edge cases.
     - Separate "definitely missing" from "possibly unclear".
