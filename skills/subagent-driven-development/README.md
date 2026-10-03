@@ -11,5 +11,5 @@ Executes an implementation plan in the current session: a fresh implementer suba
 
 - Implementers run one at a time; truly independent tasks go to `dispatching-parallel-agents` with worktree isolation.
 - No check-ins between tasks; stop only when blocked, on a critical unknown or a destructive, security-sensitive, or outward-facing action, or when done. Other ambiguities are decided, logged in the plan, and listed at the end.
-- Gaps go back to the implementer (a fresh `deep-executor` after 3 rounds); the orchestrator doesn't patch code itself.
+- Gaps go back to the implementer (a fresh `deep-executor` after 3 rounds, or at once when a finding hits an already-fixed function); the orchestrator doesn't patch code itself.
 - Implementers commit only if the user authorized commits.
