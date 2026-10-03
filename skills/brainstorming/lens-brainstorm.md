@@ -17,7 +17,7 @@ SEED
 
 ## 2. Lens agents
 
-Pick 3-5 lenses that fit the seed and dispatch them in one message (`general-purpose`, so they can use WebSearch):
+Pick 3-5 lenses that fit the seed and dispatch them in waves of at most 3 (`general-purpose`, so they can use WebSearch); larger waves hit the session rate limit.
 
 | Lens | Asks |
 |---|---|
