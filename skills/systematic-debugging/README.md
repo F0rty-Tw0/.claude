@@ -10,7 +10,7 @@ Guides debugging through four phases:
 | ---------------------- | --------------------------------------------------- | --------------------------- |
 | **1. Root Cause**      | Read errors, reproduce, check changes, trace data   | Understand WHAT and WHY     |
 | **2. Pattern Analysis**| Find working examples, compare differences           | Identify what's different   |
-| **3. Hypothesis**      | Form theory, test minimally (one variable)           | Confirmed or new hypothesis |
+| **3. Hypothesis**      | Form theory, blind second diagnosis, test minimally  | Confirmed or new hypothesis |
 | **4. Implementation**  | Create failing test, single fix, verify              | Bug resolved, tests pass    |
 
 If 3+ fixes fail, stops to question the architecture rather than continuing to fix symptoms.
