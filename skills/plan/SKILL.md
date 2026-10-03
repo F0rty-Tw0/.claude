@@ -20,7 +20,7 @@ Plan creates actionable work plans. It interviews the user on broad requests, pl
 - User wants autonomous end-to-end execution -- use `flow --auto` instead
 - User wants to start coding immediately with a clear task -- use `ralph` or delegate to executor
 - User asks a simple question that can be answered directly -- just answer it
-- Task is a single focused fix with obvious scope -- skip planning, just do it </Do_Not_Use_When>
+- Task is a single focused fix with obvious scope -- skip planning, just do it (a skill:brainstorming short-pass spec still gets a plan of 1-3 tasks) </Do_Not_Use_When>
 
 <Execution_Policy>
 
@@ -102,7 +102,7 @@ Every plan includes:
 
 Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
 
-When the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan file before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. The spec's critic pass checked the design, not the task breakdown.
+In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan file before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
 
 After saving in interview or direct mode, link the plan and ask the user to review it before execution; approving the idea or scope doesn't approve a plan they haven't seen. Consensus mode gets this approval in step 7.
 
