@@ -10,7 +10,8 @@ Guides a structured ideation process:
 2. **Exploring** - Propose 2-3 approaches with trade-offs, lead with recommendation
 3. **Presenting** - Break design into 200-300 word sections, validate each incrementally
 4. **Documenting** - Write validated design to `docs/specs/YYYY-MM-DD-<topic>-design.md`
-5. **Handoff** - Hand the spec to `plan`
+5. **Cold-reader check** - A fresh reviewer sees only the spec and paraphrases it; a wrong paraphrase means a spec gap
+6. **Handoff** - Hand the spec to `plan`
 
 ---
 
