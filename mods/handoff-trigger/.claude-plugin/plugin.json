@@ -1,0 +1,1 @@
+{ "name": "handoff-trigger", "version": "0.1.0", "description": "Nudges /handoff at 70% of the compaction limit and runs it at 90%." }

@@ -30,6 +30,8 @@
 !copilot/**
 !linux/
 !linux/**
+!mods/
+!mods/**
 !settings.json
 !settings.local.json
 !.ignore
@@ -45,3 +47,5 @@
 skills/orbit-*/
 skills/azure-devops-*/
 skills/synced
+# Mod API types the engine writes on load
+mods/*/.claude-plugin/types/
