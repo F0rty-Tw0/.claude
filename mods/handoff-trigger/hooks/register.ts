@@ -1,6 +1,7 @@
 import type { Register } from 'claude-code'
 
-// Shares of the auto-compaction limit (autoCompactWindow), not of the model's window.
+// Shares of autoCompactThreshold (autoCompactWindow minus the compaction buffer),
+// not of the model's window. With auto-compaction off it falls back to the window.
 // ponytail: constants, not userConfig; promote them if they need tuning per machine.
 const NUDGE_AT = 70
 const RUN_AT = 90
