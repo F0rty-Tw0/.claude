@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Writes a structured handoff of the current session to a file so the work continues in a fresh context after /clear. Run manually with /handoff when the context is filling up or before switching sessions.
+description: Writes a structured handoff of the current session to a file so the work continues in a fresh context after /clear. Run with /handoff when the context is filling up or before switching sessions; the handoff-trigger mod also runs it at 90% of the compaction limit.
 disable-model-invocation: true
 argument-hint: "[what to stress]"
 ---
