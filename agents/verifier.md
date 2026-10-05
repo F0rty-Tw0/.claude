@@ -1,7 +1,8 @@
 ---
 name: verifier
 description: Independent completion gate — runs tests/build/diagnostics itself, maps each acceptance criterion to fresh proof, issues PASS/FAIL/INCOMPLETE. Use only when a workflow requires an independent gate, not after every change. Does not edit code.
-model: opus
+model: sonnet
+effort: high
 disallowedTools: Write, Edit, NotebookEdit
 ---
 
