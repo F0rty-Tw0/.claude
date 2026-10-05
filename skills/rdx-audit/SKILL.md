@@ -2,6 +2,7 @@
 name: rdx-audit
 description: Read-only sweep of a diff, PR, file, or repo for over-engineered code and verbose prose (code-only on request), returning a ranked cut list. Use for bloat audits, pre-merge YAGNI review, or "what can I cut".
 ---
+
 # RDX Audit
 
 Scan the target and report what to cut. Read-only: never edit or apply fixes.
@@ -18,6 +19,7 @@ Two axes by default: code and prose. The prose axis is what a code-only reviewer
 ## What to flag
 
 **Code (YAGNI axis):**
+
 - Reinvented stdlib (hand-rolled debounce, deep-clone, groupBy, retry loop, date math)
 - Abstraction with one implementation (interface/factory/wrapper for a single case), once a caller search shows nothing else depends on it
 - New dependency for what a few lines or an installed dep already covers
@@ -26,6 +28,7 @@ Two axes by default: code and prose. The prose axis is what a code-only reviewer
 - Code where a native platform feature (CSS, DB constraint, `<input type>`) does the job
 
 **Prose (compression axis):**
+
 - Comments that restate the code (`i += 1  // increment i`)
 - Docstrings/READMEs padded with filler, hedging, or duplicated content
 - Multi-paragraph explanations where one sentence carries the meaning
@@ -34,7 +37,7 @@ Two axes by default: code and prose. The prose axis is what a code-only reviewer
 
 ## What not to flag
 
-Input validation at trust boundaries, error handling that prevents data loss, security, accessibility, documented `// ponytail:` shortcuts, and comments that explain *why*.
+Input validation at trust boundaries, error handling that prevents data loss, security, accessibility, and comments that explain _why_.
 When callers or public contracts are unknown, mark the finding `(check)` instead of ordering the deletion.
 
 ## Output
@@ -54,3 +57,4 @@ End with:
 N findings: X code, Y prose. Est. removable: ~A lines code, ~B lines prose (Z unverified).
 Biggest win: <the single highest-impact cut>.
 ```
+
