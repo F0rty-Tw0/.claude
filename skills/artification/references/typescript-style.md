@@ -22,43 +22,43 @@ Types expose architecture. Make ownership, mutability, and nested concepts expli
 
 ## Quick Reference
 
-| Concern | Rule |
-|---|---|
-| Shared placement | Put any project-authored type exported from its declaring module or imported by another project file in the nearest owning domain or package's `common/` folder. Never use a global dumping ground. |
-| Feature type file | Group every type meeting the placement rule in one `<feature>.type.ts` file. |
-| Runtime constants | Add at most one `<feature>.const.ts` only when the feature has shared runtime constants. Omit it otherwise. |
+| Concern             | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared placement    | Put any project-authored type exported from its declaring module or imported by another project file in the nearest owning domain or package's `common/` folder. Never use a global dumping ground.                                                                                                                                                                                                                                                  |
+| Feature type file   | Group every type meeting the placement rule in one `<feature>.type.ts` file.                                                                                                                                                                                                                                                                                                                                                                         |
+| Runtime constants   | Add at most one `<feature>.const.ts` only when the feature has shared runtime constants. Omit it otherwise.                                                                                                                                                                                                                                                                                                                                          |
 | Const file contents | A `.const.ts` file, and a shared `common/` folder or lib, export only constants and types; a feature `common/` folder or a shared `common` lib may also hold `<name>.exception.ts` classes: a constructor and `public readonly` fields (`statusCode`), no methods or getters. A function, even a one-line predicate over a constant (`isProTier`), goes to `utils/<behavior>.util.ts` or the shared `utils` lib and imports the type from `common/`. |
-| Object syntax | Use `type`, never `interface`, for authored shapes. Do not rewrite dependency declarations. |
-| Properties | Mark every object property `readonly`. |
-| Arrays | Keep arrays mutable as `T[]`; never use `readonly T[]` or `ReadonlyArray<T>`. |
-| Inline object types | No object type literal anywhere except as the body of a `type` alias: not as a property type, parameter type, return type, generic argument, or inside a `declare module` block. Name it. Reuse is not required. |
-| Local types | Keep a non-exported type in the only file that uses it. Naming a nested shape does not require exporting it. |
-| Imports | Import `<feature>.type.ts` and optional `<feature>.const.ts` directly. Do not create an index barrel for this pair. |
-| Type imports | A type-only import is `import type { X }` on its own line, separate from value imports of the same module. |
-| Import order | Groups in order, one blank line between: builtin, external, internal, parent + sibling, index. Alphabetical inside a group, case-insensitive. Named members alphabetical inside the braces. One import per module. |
-| Return types | Every function, arrow, and method declares its return type, test code included. |
-| Derived types | Never `ReturnType<typeof fn>`, `Parameters<typeof fn>`, or `typeof value` as a type. Name the type: import the library's exported type, or export the alias the function already returns. |
-| Generics | A meaningful parameter gets a `T`-prefixed name (`TData`, `TContext`); bare `T` only for a trivial one-parameter helper. Constrain by default (`<TData extends RowData>`). A public generic gets a default (`= RowData`). Thread a context type through callbacks instead of `unknown`. An assert-and-narrow helper returns the narrowed value, not `void`. No type parameter with one concrete call site: inline the type. |
-| Class members | Every member carries `public`, `private`, or `protected`. Fields assigned only in the constructor are `readonly`. No parameter properties. Methods that do not use `this` become functions outside the class. |
-| Naming | `camelCase` for variables, functions, parameters, and members; `PascalCase` for types and classes; `UPPER_CASE` allowed for module-level consts; `PascalCase` allowed for object keys and methods that mirror an external key (AST node kinds, HTTP headers). Keys that need quotes are exempt. No leading or trailing `_`. |
-| Blank lines | One blank line after a `const`/`let` group before anything that is not another declaration; before every `if`, `for`, `switch`, `try`, `return`, `throw`, `class`, and `function`; between exports. |
-| Dead conditions | Never test what the type already guarantees. If the compiler says a check is always true or the types have no overlap, delete the check or fix the type at the boundary. |
-| Switches | A `switch` over a union lists every member or has a `default`. |
-| Node-native syntax | Only erasable TypeScript: no parameter properties, no `enum`, no `namespace`. Relative imports carry the `.ts` extension with `rewriteRelativeImportExtensions`. |
-| Return spacing | Put one blank line before every `return` that follows another statement in the same block. A `return` that opens a block gets no blank line. |
-| Lone guards | An `if` with no `else` whose only body is `return`, `continue`, `break`, or `throw` goes on one line without braces when the whole line, indentation included, fits the project `printWidth`. Otherwise keep braces with the body on its own line. |
-| Condition size | An `if` condition holds at most 3 operands joined by `&&` or `\|\|`. Four or more: move the whole condition into a named `const` boolean above the `if`. |
-| Calls in conditions | No function call inside an `if` condition or a boolean const feeding one. Assign each call result to a named `const` first. Type-predicate calls the body needs for narrowing stay inline. |
-| Grouped operands | A parenthesized `(a \|\| b)` group inside a condition becomes its own named `const`. |
-| Spread expressions | Never `...(expr)`. Assign the expression to a `const`, then spread the name. |
-| Ternaries | A branch holds a name, literal, or plain member access; anything else moves to a `const` or a guard. Never nest a ternary. |
-| Chains | A member chain starts on a name, never `(expr).method()`. A chain Prettier wraps gets named intermediates. |
-| Callbacks | Inline arrow callbacks hold one short expression. Longer bodies become a named function above the call. |
-| Arrow bodies | Expression body only when the whole arrow fits one line; otherwise block body with named steps. |
-| Casts | No `as` casts except `as const`. Narrow with type predicates, fix declared types, never `as unknown as`. |
-| Nested values | A property value that is an object literal, an array of objects, a call chain, or a ternary moves to a `const` and is referenced by name. Empty `{}`/`[]` stay inline. |
-| Comments | Only comments that carry a fact the code cannot: external-bug workaround with link, directive with reason, invariant the types cannot state, JSDoc on a public export. Delete restatements, narration, and `// ponytail:` markers. Not lint-enforced; judged per comment. |
-| Returned objects | Never return an object literal inline. Assign it to a named `const`, blank line, then `return` the name. Applies to `return` statements and to arrow expression bodies `() => ({ ... })`. |
+| Object syntax       | Use `type`, never `interface`, for authored shapes. Do not rewrite dependency declarations.                                                                                                                                                                                                                                                                                                                                                          |
+| Properties          | Mark every object property `readonly`.                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Arrays              | Keep arrays mutable as `T[]`; never use `readonly T[]` or `ReadonlyArray<T>`.                                                                                                                                                                                                                                                                                                                                                                        |
+| Inline object types | No object type literal anywhere except as the body of a `type` alias: not as a property type, parameter type, return type, generic argument, or inside a `declare module` block. Name it. Reuse is not required.                                                                                                                                                                                                                                     |
+| Local types         | Keep a non-exported type in the only file that uses it. Naming a nested shape does not require exporting it.                                                                                                                                                                                                                                                                                                                                         |
+| Imports             | Import `<feature>.type.ts` and optional `<feature>.const.ts` directly. Do not create an index barrel for this pair.                                                                                                                                                                                                                                                                                                                                  |
+| Type imports        | A type-only import is `import type { X }` on its own line, separate from value imports of the same module.                                                                                                                                                                                                                                                                                                                                           |
+| Import order        | Groups in order, one blank line between: builtin, external, internal, parent + sibling, index. Alphabetical inside a group, case-insensitive. Named members alphabetical inside the braces. One import per module.                                                                                                                                                                                                                                   |
+| Return types        | Every function, arrow, and method declares its return type, test code included.                                                                                                                                                                                                                                                                                                                                                                      |
+| Derived types       | Never `ReturnType<typeof fn>`, `Parameters<typeof fn>`, or `typeof value` as a type. Name the type: import the library's exported type, or export the alias the function already returns.                                                                                                                                                                                                                                                            |
+| Generics            | A meaningful parameter gets a `T`-prefixed name (`TData`, `TContext`); bare `T` only for a trivial one-parameter helper. Constrain by default (`<TData extends RowData>`). A public generic gets a default (`= RowData`). Thread a context type through callbacks instead of `unknown`. An assert-and-narrow helper returns the narrowed value, not `void`. No type parameter with one concrete call site: inline the type.                          |
+| Class members       | Every member carries `public`, `private`, or `protected`. Fields assigned only in the constructor are `readonly`. No parameter properties. Methods that do not use `this` become functions outside the class.                                                                                                                                                                                                                                        |
+| Naming              | `camelCase` for variables, functions, parameters, and members; `PascalCase` for types and classes; `UPPER_CASE` allowed for module-level consts; `PascalCase` allowed for object keys and methods that mirror an external key (AST node kinds, HTTP headers). Keys that need quotes are exempt. No leading or trailing `_`.                                                                                                                          |
+| Blank lines         | One blank line after a `const`/`let` group before anything that is not another declaration; before every `if`, `for`, `switch`, `try`, `return`, `throw`, `class`, and `function`; between exports.                                                                                                                                                                                                                                                  |
+| Dead conditions     | Never test what the type already guarantees. If the compiler says a check is always true or the types have no overlap, delete the check or fix the type at the boundary.                                                                                                                                                                                                                                                                             |
+| Switches            | A `switch` over a union lists every member or has a `default`.                                                                                                                                                                                                                                                                                                                                                                                       |
+| Node-native syntax  | Only erasable TypeScript: no parameter properties, no `enum`, no `namespace`. Relative imports carry the `.ts` extension with `rewriteRelativeImportExtensions`.                                                                                                                                                                                                                                                                                     |
+| Return spacing      | Put one blank line before every `return` that follows another statement in the same block. A `return` that opens a block gets no blank line.                                                                                                                                                                                                                                                                                                         |
+| Lone guards         | An `if` with no `else` whose only body is `return`, `continue`, `break`, or `throw` goes on one line without braces when the whole line, indentation included, fits the project `printWidth`. Otherwise keep braces with the body on its own line.                                                                                                                                                                                                   |
+| Condition size      | An `if` condition holds at most 3 operands joined by `&&` or `\|\|`. Four or more: move the whole condition into a named `const` boolean above the `if`.                                                                                                                                                                                                                                                                                             |
+| Calls in conditions | No function call inside an `if` condition or a boolean const feeding one. Assign each call result to a named `const` first. Type-predicate calls the body needs for narrowing stay inline.                                                                                                                                                                                                                                                           |
+| Grouped operands    | A parenthesized `(a \|\| b)` group inside a condition becomes its own named `const`.                                                                                                                                                                                                                                                                                                                                                                 |
+| Spread expressions  | Never `...(expr)`. Assign the expression to a `const`, then spread the name.                                                                                                                                                                                                                                                                                                                                                                         |
+| Ternaries           | A branch holds a name, literal, or plain member access; anything else moves to a `const` or a guard. Never nest a ternary.                                                                                                                                                                                                                                                                                                                           |
+| Chains              | A member chain starts on a name, never `(expr).method()`. A chain Prettier wraps gets named intermediates.                                                                                                                                                                                                                                                                                                                                           |
+| Callbacks           | Inline arrow callbacks hold one short expression. Longer bodies become a named function above the call.                                                                                                                                                                                                                                                                                                                                              |
+| Arrow bodies        | Expression body only when the whole arrow fits one line; otherwise block body with named steps.                                                                                                                                                                                                                                                                                                                                                      |
+| Casts               | No `as` casts except `as const`. Narrow with type predicates, fix declared types, never `as unknown as`.                                                                                                                                                                                                                                                                                                                                             |
+| Nested values       | A property value that is an object literal, an array of objects, a call chain, or a ternary moves to a `const` and is referenced by name. Empty `{}`/`[]` stay inline.                                                                                                                                                                                                                                                                               |
+| Comments            | Only comments that carry a fact the code cannot: external-bug workaround with link, directive with reason, invariant the types cannot state, JSDoc on a public export. Delete restatements, narration. Not lint-enforced; judged per comment.                                                                                                                                                                                                        |
+| Returned objects    | Never return an object literal inline. Assign it to a named `const`, blank line, then `return` the name. Applies to `return` statements and to arrow expression bodies `() => ({ ... })`.                                                                                                                                                                                                                                                            |
 
 `readonly items: Item[]` means the property reference cannot be replaced while array contents remain mutable. This is intentional.
 
@@ -189,7 +189,7 @@ type EditorDraft = {
 
 const initialDraft: EditorDraft = {
   title: '',
-  selection: { start: 0, end: 0 }
+  selection: { start: 0, end: 0 },
 };
 ```
 
@@ -215,7 +215,7 @@ import type { WorkspacePreferences } from './workspace.type';
 
 export const DEFAULT_WORKSPACE_PREFERENCES: WorkspacePreferences = {
   accent: 'blue',
-  shortcuts: []
+  shortcuts: [],
 };
 ```
 
@@ -226,7 +226,7 @@ import type { WorkspacePreferences } from './common/workspace.type';
 
 export const initialPreferences: WorkspacePreferences = {
   ...DEFAULT_WORKSPACE_PREFERENCES,
-  shortcuts: [...DEFAULT_WORKSPACE_PREFERENCES.shortcuts]
+  shortcuts: [...DEFAULT_WORKSPACE_PREFERENCES.shortcuts],
 };
 ```
 
@@ -281,12 +281,12 @@ Never derive a type from a value: no `ReturnType<typeof fn>`, `Parameters<typeof
 
 The type already exists. Every function declares its return type (rule above), so name that type and import it:
 
-| Instead of | Use |
-|---|---|
-| `ReturnType<typeof parseTemplate>` on a library function | The library's exported type: `import type { ParsedTemplate } from '@angular/compiler'` |
+| Instead of                                               | Use                                                                                                                                      |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `ReturnType<typeof parseTemplate>` on a library function | The library's exported type: `import type { ParsedTemplate } from '@angular/compiler'`                                                   |
 | `ReturnType<typeof createProject>` on a project function | `export type Project = { ... }` in `common/<feature>.type.ts`, then `import type { Project }` in both the function's file and the caller |
-| `Parameters<typeof fn>[0]` | The parameter's declared type, exported |
-| `typeof CONFIG` | A `type Config = { ... }` alias, and annotate `CONFIG: Config` |
+| `Parameters<typeof fn>[0]`                               | The parameter's declared type, exported                                                                                                  |
+| `typeof CONFIG`                                          | A `type Config = { ... }` alias, and annotate `CONFIG: Config`                                                                           |
 
 Before:
 
@@ -306,13 +306,13 @@ Placement follows the shared-type rule with no exception: a type imported by ano
 
 ### Naming
 
-| Thing | Format |
-|---|---|
-| variable, function, parameter, member | `camelCase` |
-| module-level constant | `camelCase` or `UPPER_CASE` |
-| type, class, type parameter | `PascalCase` |
+| Thing                                           | Format                                                                                                            |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| variable, function, parameter, member           | `camelCase`                                                                                                       |
+| module-level constant                           | `camelCase` or `UPPER_CASE`                                                                                       |
+| type, class, type parameter                     | `PascalCase`                                                                                                      |
 | object key or method mirroring an external name | `camelCase` or `PascalCase` (`TSTypeLiteral`, `ContentType`); keys that need quotes (`'Program:exit'`) are exempt |
-| anything with a leading or trailing `_` | not allowed |
+| anything with a leading or trailing `_`         | not allowed                                                                                                       |
 
 ### Blank Lines
 
@@ -349,7 +349,10 @@ Width limit is the project `printWidth` (Prettier default 80; read the project's
 Before:
 
 ```ts
-const resolveAccount = (key: string | null, seen: Set<string>): Account | null => {
+const resolveAccount = (
+  key: string | null,
+  seen: Set<string>,
+): Account | null => {
   if (!key) {
     return null;
   }
@@ -364,7 +367,10 @@ const resolveAccount = (key: string | null, seen: Set<string>): Account | null =
 After:
 
 ```ts
-const resolveAccount = (key: string | null, seen: Set<string>): Account | null => {
+const resolveAccount = (
+  key: string | null,
+  seen: Set<string>,
+): Account | null => {
   if (!key) return null;
 
   const isDuplicate = seen.has(key);
@@ -381,7 +387,9 @@ A guard that does not fit keeps braces; never split a brace-less guard across tw
 
 ```ts
 if (hasNoBillingAddress) {
-  throw new CheckoutError(order, 'missing-billing-address', { cause: previousError });
+  throw new CheckoutError(order, 'missing-billing-address', {
+    cause: previousError,
+  });
 }
 ```
 
@@ -408,11 +416,11 @@ Name the const as the question it answers (`isShippable`, `hasUnpaidItems`). Nes
 
 An `if` condition, and any boolean const that feeds one, holds only names, literals, comparisons, and `!`. Three things leave it:
 
-| Shape | Move to |
-|---|---|
-| Function call `f(x)` | `const <answer> = f(x);` above, then use the name |
-| Parenthesized group `(a \|\| b)` | `const <answer> = a \|\| b;` above, then use the name |
-| Spread of an expression `...(cond ? a : b)`, `...(await x)` | `const <items> = ...;` above, then `...items` |
+| Shape                                                       | Move to                                               |
+| ----------------------------------------------------------- | ----------------------------------------------------- |
+| Function call `f(x)`                                        | `const <answer> = f(x);` above, then use the name     |
+| Parenthesized group `(a \|\| b)`                            | `const <answer> = a \|\| b;` above, then use the name |
+| Spread of an expression `...(cond ? a : b)`, `...(await x)` | `const <items> = ...;` above, then `...items`         |
 
 Before:
 
@@ -443,7 +451,9 @@ if (!hasBillingCredit) return null;
 
 if (!isGift) return stock;
 
-const hasRecipientStock = recipients.every((recipient) => stock.has(recipient.sku));
+const hasRecipientStock = recipients.every((recipient) =>
+  stock.has(recipient.sku),
+);
 
 if (hasRecipientStock) return stock;
 
@@ -476,7 +486,7 @@ When the condition narrows a type the body relies on (`instanceof`, `.kind ===`,
 
 ```ts
 export const isPaidLine = (
-  line: Line
+  line: Line,
 ): line is CardLine | TransferLine | VoucherLine | CreditLine => {
   const isCard = line instanceof CardLine;
   const isTransfer = line instanceof TransferLine;
@@ -499,14 +509,14 @@ The body is not an exit, so braces stay even though the line would fit.
 
 One expression does one thing. Each of these gets a name or a guard of its own:
 
-| Shape | Rule |
-|---|---|
+| Shape          | Rule                                                                                                                                                                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Ternary branch | Holds a name, a literal, `undefined`/`null`, or a plain member access. An object literal, a call, or an arrow inside a branch moves to a `const` above. When the branch is only valid under the condition, split into a guard and a const instead. |
-| Nested ternary | Never. Use guards, or one `const` per level. |
-| Chain receiver | A member chain starts on a name: `(a ?? b).split()` → `const value = a ?? b;` then `value.split()`. Never on a parenthesized expression or an object literal. |
-| Chain length | A chain Prettier wraps across lines gets its intermediate results named. |
-| Callback body | An inline arrow callback holds one short expression, no `&&`/`\|\|`, no wrapped chain. Anything longer becomes a named function above the call. |
-| Arrow body | Expression body only when the whole arrow fits on one line. Otherwise a block body with named steps and a `return`. |
+| Nested ternary | Never. Use guards, or one `const` per level.                                                                                                                                                                                                       |
+| Chain receiver | A member chain starts on a name: `(a ?? b).split()` → `const value = a ?? b;` then `value.split()`. Never on a parenthesized expression or an object literal.                                                                                      |
+| Chain length   | A chain Prettier wraps across lines gets its intermediate results named.                                                                                                                                                                           |
+| Callback body  | An inline arrow callback holds one short expression, no `&&`/`\|\|`, no wrapped chain. Anything longer becomes a named function above the call.                                                                                                    |
+| Arrow body     | Expression body only when the whole arrow fits on one line. Otherwise a block body with named steps and a `return`.                                                                                                                                |
 
 Before:
 
@@ -518,7 +528,7 @@ const attachmentSource = (path: string | null, baseDir: string) =>
 
 export const tagsOf = (
   record: Record<string, unknown>,
-  defaults: Defaults
+  defaults: Defaults,
 ): string[] =>
   (stringField(fieldOf(record, 'tags'), defaults) ?? '')
     .split(',')
@@ -538,7 +548,7 @@ const isVendorHandler = (route: Route): boolean =>
       handler
         .module()
         .path.replaceAll('\\', '/')
-        .includes('/node_modules/@vendor/')
+        .includes('/node_modules/@vendor/'),
   );
 ```
 
@@ -547,7 +557,7 @@ After:
 ```ts
 const attachmentSource = (
   path: string | null,
-  baseDir: string
+  baseDir: string,
 ): AttachmentSource | undefined => {
   if (path === null) return undefined;
 
@@ -559,7 +569,7 @@ const attachmentSource = (
 
 export const tagsOf = (
   record: Record<string, unknown>,
-  defaults: Defaults
+  defaults: Defaults,
 ): string[] => {
   const tagsField = fieldOf(record, 'tags');
   const tags = stringField(tagsField, defaults) ?? '';
@@ -603,15 +613,15 @@ const isVendorHandler = (route: Route): boolean => {
 
 No `as` casts. A cast silences the compiler instead of informing it. Fix the typing:
 
-| Instead of | Use |
-|---|---|
-| `value as Narrow` after a check | A type predicate `(value: Wide): value is Narrow` that holds the check |
-| `x as SomeLibraryType` | The library's own guard, or a predicate on its discriminant flags |
-| `as unknown as T` | Never. Fix the source type or the target type. |
-| `{} as T`, `[] as T[]` | `const value: T = { ... }`, `const items: T[] = []` |
-| `obj as Record<string, X>` | An index signature on the declared type |
-| Test double `{ a, b } as Wide` | Narrow the parameter type to what the function reads (`Pick<Wide, 'a' \| 'b'>`), or a typed stub |
-| `as const` | Allowed. It narrows, it does not lie. |
+| Instead of                      | Use                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `value as Narrow` after a check | A type predicate `(value: Wide): value is Narrow` that holds the check                           |
+| `x as SomeLibraryType`          | The library's own guard, or a predicate on its discriminant flags                                |
+| `as unknown as T`               | Never. Fix the source type or the target type.                                                   |
+| `{} as T`, `[] as T[]`          | `const value: T = { ... }`, `const items: T[] = []`                                              |
+| `obj as Record<string, X>`      | An index signature on the declared type                                                          |
+| Test double `{ a, b } as Wide`  | Narrow the parameter type to what the function reads (`Pick<Wide, 'a' \| 'b'>`), or a typed stub |
+| `as const`                      | Allowed. It narrows, it does not lie.                                                            |
 
 Before:
 
@@ -664,11 +674,11 @@ notifier.send({
       const action: NotificationAction = {
         template: 'switch-channel',
         data: { channel },
-        run: switchChannel(recipient, channel, locale)
+        run: switchChannel(recipient, channel, locale),
       };
 
       return action;
-    })
+    }),
 });
 ```
 
@@ -695,7 +705,7 @@ const notification: Notification = {
   template: 'order-delayed',
   data,
   ...retryPolicy,
-  actions
+  actions,
 };
 
 notifier.send(notification);
@@ -716,7 +726,7 @@ Code carries its intent in names. A useless comment is one the reader could rege
 - A non-obvious invariant the type system cannot state (array order that is load-bearing, an empty object a library requires).
 - A `/** JSDoc */` on a public export that documents the contract, not the implementation.
 
-Everything else is deleted: `// ponytail:` markers, restatements of what the next line does, `// TODO` without a ticket, and narrative about why an approach was chosen. If a comment explains a block, the block wants a named function. There is no lint rule for this; the test is whether deleting the comment loses a fact.
+Everything else is deleted: restatements of what the next line does, `// TODO` without a ticket, and narrative about why an approach was chosen. If a comment explains a block, the block wants a named function. There is no lint rule for this; the test is whether deleting the comment loses a fact.
 
 ### Returned Objects
 
@@ -727,7 +737,7 @@ Before:
 ```ts
 const describeField = (field: Field): FieldSummary => ({
   name: field.name,
-  read: field.reads > 0
+  read: field.reads > 0,
 });
 ```
 
@@ -737,7 +747,7 @@ After:
 const describeField = (field: Field): FieldSummary => {
   const summary: FieldSummary = {
     name: field.name,
-    read: field.reads > 0
+    read: field.reads > 0,
   };
 
   return summary;
@@ -750,55 +760,54 @@ Same for `return { ... }` inside a block body, including `return {};` (name it, 
 
 ESLint enforces these. The `lint-suite` plugin ships every row in its `base` and `typescript` presets; a project on those presets adds nothing. Any other project sets them by hand:
 
-| Rule | Setting |
-|---|---|
-| `@stylistic/padding-line-between-statements` | the Blank Lines list above |
-| `curly` | `multi-line` |
-| `import-x/order` | groups builtin, external, internal, parent+sibling, index; `newlines-between: always`; alphabetize case-insensitive |
-| `sort-imports` | members only (`ignoreDeclarationSort: true`) |
-| `@typescript-eslint/consistent-type-imports` | `prefer: type-imports`, `fixStyle: separate-type-imports` |
-| `@typescript-eslint/consistent-type-definitions` | `type` |
-| `@typescript-eslint/explicit-function-return-type`, `explicit-module-boundary-types` | error |
-| `@typescript-eslint/explicit-member-accessibility` or an equivalent | error |
-| `@typescript-eslint/prefer-readonly` | error |
-| `@typescript-eslint/naming-convention` | the Naming table above |
-| `@typescript-eslint/no-unnecessary-condition`, `switch-exhaustiveness-check` | error |
-| `@typescript-eslint/no-unsafe-*`, `no-explicit-any`, `no-non-null-assertion` | error |
-| `no-nested-ternary`, `no-else-return`, `no-lonely-if`, `class-methods-use-this`, `no-underscore-dangle` | error |
-| `max-lines` 150 (300 for specs), `max-lines-per-function` 50, `complexity` 10, `max-depth` 4, `max-params` 4 | see module-size.md |
-| `import-x/no-anonymous-default-export` | error |
+| Rule                                                                                                         | Setting                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `@stylistic/padding-line-between-statements`                                                                 | the Blank Lines list above                                                                                          |
+| `curly`                                                                                                      | `multi-line`                                                                                                        |
+| `import-x/order`                                                                                             | groups builtin, external, internal, parent+sibling, index; `newlines-between: always`; alphabetize case-insensitive |
+| `sort-imports`                                                                                               | members only (`ignoreDeclarationSort: true`)                                                                        |
+| `@typescript-eslint/consistent-type-imports`                                                                 | `prefer: type-imports`, `fixStyle: separate-type-imports`                                                           |
+| `@typescript-eslint/consistent-type-definitions`                                                             | `type`                                                                                                              |
+| `@typescript-eslint/explicit-function-return-type`, `explicit-module-boundary-types`                         | error                                                                                                               |
+| `@typescript-eslint/explicit-member-accessibility` or an equivalent                                          | error                                                                                                               |
+| `@typescript-eslint/prefer-readonly`                                                                         | error                                                                                                               |
+| `@typescript-eslint/naming-convention`                                                                       | the Naming table above                                                                                              |
+| `@typescript-eslint/no-unnecessary-condition`, `switch-exhaustiveness-check`                                 | error                                                                                                               |
+| `@typescript-eslint/no-unsafe-*`, `no-explicit-any`, `no-non-null-assertion`                                 | error                                                                                                               |
+| `no-nested-ternary`, `no-else-return`, `no-lonely-if`, `class-methods-use-this`, `no-underscore-dangle`      | error                                                                                                               |
+| `max-lines` 150 (300 for specs), `max-lines-per-function` 50, `complexity` 10, `max-depth` 4, `max-params` 4 | see module-size.md                                                                                                  |
+| `import-x/no-anonymous-default-export`                                                                       | error                                                                                                               |
 
 Everything else in this reference is applied by hand, by codemod over the TypeScript AST, or by review. `tsc` is the judge for every narrowing question: try the extraction, typecheck, and keep the call inline only when the compiler proves it must stay.
 
-
 ## Rationalizations
 
-| Excuse | Counter |
-|---|---|
-| “A type alias adds no capability here.” | Consistent authored object syntax is the capability. Use `type`. |
-| “Do not create a folder solely for one declaration.” | Export from its declaring module or import from another project file establishes the boundary immediately. Use the nearest owning `common/`. |
-| “Readonly would forbid replacing the policy.” | Replacement is intentionally explicit: create a new containing value. |
-| “Readonly arrays are safer at read-only boundaries.” | This style keeps arrays mutable. Do not substitute another immutability policy. |
-| “The nested shape is only used once.” | Nesting, not reuse count, requires a name. |
-| “`common/` becomes a dumping ground.” | Only types meeting the placement rule belong in the nearest owning domain or package's `common/`. |
-| “One exported type per file is more discoverable.” | The feature is the discovery unit. Group its exported and cross-file types in `<feature>.type.ts`. |
-| “The one-file cap conflicts with the skill.” | The corrected rule requires one feature type file; no conflict remains. |
-| “A barrel centralizes type imports.” | Import the feature type file directly. Another file adds no ownership boundary. |
-| “The blank line before `return` is noise in a short function.” | The blank line is the exit marker. Length does not change that. |
-| “Braces on every `if` are safer.” | A one-line guard that fits is the rule. Braces return only when width forces them. |
-| “Prettier decides layout.” | Prettier wraps; it does not add blank lines or drop braces. These rules sit above it. |
-| “The four-operand condition is still readable.” | Three is the ceiling. The const name is the explanation the reader would otherwise reconstruct. |
-| “Naming the returned object is an extra line.” | The name is the function's output in one word. An inline literal has no name. |
-| “The call in the `if` is self-explanatory.” | A call in a condition mixes doing with deciding. The const name states what was decided. |
-| “The parentheses already group it.” | Parentheses group for the parser. A name groups for the reader. |
-| “`...(cond ? a : b)` is idiomatic.” | The spread says what is merged. Name it first. |
-| “A nested ternary is compact.” | Compact is not readable. Two guards say the same thing in order. |
-| “The chain reads top to bottom.” | A chain on `(a ?? b)` reads inside-out. Name the receiver first. |
-| “Inlining the callback avoids a one-use function.” | A named callback is the only place its behavior has a name. |
-| “Expression-bodied arrows are more functional.” | A wrapped expression body hides its steps. Name them in a block. |
-| “The cast is safe here, I checked the flag.” | Then the check is a predicate. Write it once and the compiler checks it everywhere. |
-| “The nested object is small.” | Size is not the point. The name is. `data`, `errors`, `suggest` each say what they are. |
-| “The comment explains the trade-off.” | A trade-off the code cannot show (an external constraint, a bug link) stays. A trade-off between two ways of writing the same code belongs in the commit message or a named function. |
+| Excuse                                                         | Counter                                                                                                                                                                               |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| “A type alias adds no capability here.”                        | Consistent authored object syntax is the capability. Use `type`.                                                                                                                      |
+| “Do not create a folder solely for one declaration.”           | Export from its declaring module or import from another project file establishes the boundary immediately. Use the nearest owning `common/`.                                          |
+| “Readonly would forbid replacing the policy.”                  | Replacement is intentionally explicit: create a new containing value.                                                                                                                 |
+| “Readonly arrays are safer at read-only boundaries.”           | This style keeps arrays mutable. Do not substitute another immutability policy.                                                                                                       |
+| “The nested shape is only used once.”                          | Nesting, not reuse count, requires a name.                                                                                                                                            |
+| “`common/` becomes a dumping ground.”                          | Only types meeting the placement rule belong in the nearest owning domain or package's `common/`.                                                                                     |
+| “One exported type per file is more discoverable.”             | The feature is the discovery unit. Group its exported and cross-file types in `<feature>.type.ts`.                                                                                    |
+| “The one-file cap conflicts with the skill.”                   | The corrected rule requires one feature type file; no conflict remains.                                                                                                               |
+| “A barrel centralizes type imports.”                           | Import the feature type file directly. Another file adds no ownership boundary.                                                                                                       |
+| “The blank line before `return` is noise in a short function.” | The blank line is the exit marker. Length does not change that.                                                                                                                       |
+| “Braces on every `if` are safer.”                              | A one-line guard that fits is the rule. Braces return only when width forces them.                                                                                                    |
+| “Prettier decides layout.”                                     | Prettier wraps; it does not add blank lines or drop braces. These rules sit above it.                                                                                                 |
+| “The four-operand condition is still readable.”                | Three is the ceiling. The const name is the explanation the reader would otherwise reconstruct.                                                                                       |
+| “Naming the returned object is an extra line.”                 | The name is the function's output in one word. An inline literal has no name.                                                                                                         |
+| “The call in the `if` is self-explanatory.”                    | A call in a condition mixes doing with deciding. The const name states what was decided.                                                                                              |
+| “The parentheses already group it.”                            | Parentheses group for the parser. A name groups for the reader.                                                                                                                       |
+| “`...(cond ? a : b)` is idiomatic.”                            | The spread says what is merged. Name it first.                                                                                                                                        |
+| “A nested ternary is compact.”                                 | Compact is not readable. Two guards say the same thing in order.                                                                                                                      |
+| “The chain reads top to bottom.”                               | A chain on `(a ?? b)` reads inside-out. Name the receiver first.                                                                                                                      |
+| “Inlining the callback avoids a one-use function.”             | A named callback is the only place its behavior has a name.                                                                                                                           |
+| “Expression-bodied arrows are more functional.”                | A wrapped expression body hides its steps. Name them in a block.                                                                                                                      |
+| “The cast is safe here, I checked the flag.”                   | Then the check is a predicate. Write it once and the compiler checks it everywhere.                                                                                                   |
+| “The nested object is small.”                                  | Size is not the point. The name is. `data`, `errors`, `suggest` each say what they are.                                                                                               |
+| “The comment explains the trade-off.”                          | A trade-off the code cannot show (an external constraint, a bug link) stays. A trade-off between two ways of writing the same code belongs in the commit message or a named function. |
 
 ## Red Flags
 
@@ -815,29 +824,29 @@ Stop and re-check this reference when reasoning includes:
 
 ## Common Mistakes
 
-| Mistake | Fix |
-|---|---|
-| Moving every private helper type to `common/` | Move only exported or cross-file types. |
-| Splitting each exported type into its own file | Group feature-owned shared types in `<feature>.type.ts`. |
-| Naming the file only `types.ts` | Name ownership explicitly: `<feature>.type.ts`. |
-| Adding a const file without shared runtime values | Omit `<feature>.const.ts`. |
-| Adding an index barrel for the type/const pair | Import the feature files directly. |
-| Marking properties readonly and arrays readonly | Use `readonly items: Item[]`. |
-| Leaving a one-off nested property object inline | Name it and type the property with that name. |
-| `return` glued to the statement above it | Insert one blank line before the `return`. |
-| Braced three-line guard that fits in one line | Collapse to `if (cond) return x;`. |
-| Brace-less guard wrapped onto a second line | Restore braces; the body goes on its own line. |
-| `if (a && b && c && d)` | Move the condition into `const isX = ...;` and test `isX`. |
-| `return { ... }` or `=> ({ ... })` | Assign to a typed `const`, blank line, `return` the name. |
-| `if (!check(a, b))` | `const isChecked = check(a, b);` then `if (!isChecked)`. |
-| `a && (b \|\| c)` inside a condition | `const isBOrC = b \|\| c;` then `a && isBOrC`. |
-| `{ ...(x ? y : z) }` | `const base = x ? y : z;` then `{ ...base }`. |
-| `cond ? undefined : { ... }` | Guard on `cond`, then build and name the object, then return it. |
-| `a ? b : c ? d : e` | Two guards, or one const per level. |
-| `(a ?? []).some(...)` | `const items = a ?? [];` then `items.some(...)`. |
-| Multi-line arrow passed to `.some`/`.map`/`.filter` | Name it above the call and pass the name. |
-| `=> expr` wrapped over several lines | Block body: name the steps, then `return`. |
-| `value as Narrow` | A `(value: Wide): value is Narrow` predicate, then `if (isNarrow(value))`. |
+| Mistake                                             | Fix                                                                           |
+| --------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Moving every private helper type to `common/`       | Move only exported or cross-file types.                                       |
+| Splitting each exported type into its own file      | Group feature-owned shared types in `<feature>.type.ts`.                      |
+| Naming the file only `types.ts`                     | Name ownership explicitly: `<feature>.type.ts`.                               |
+| Adding a const file without shared runtime values   | Omit `<feature>.const.ts`.                                                    |
+| Adding an index barrel for the type/const pair      | Import the feature files directly.                                            |
+| Marking properties readonly and arrays readonly     | Use `readonly items: Item[]`.                                                 |
+| Leaving a one-off nested property object inline     | Name it and type the property with that name.                                 |
+| `return` glued to the statement above it            | Insert one blank line before the `return`.                                    |
+| Braced three-line guard that fits in one line       | Collapse to `if (cond) return x;`.                                            |
+| Brace-less guard wrapped onto a second line         | Restore braces; the body goes on its own line.                                |
+| `if (a && b && c && d)`                             | Move the condition into `const isX = ...;` and test `isX`.                    |
+| `return { ... }` or `=> ({ ... })`                  | Assign to a typed `const`, blank line, `return` the name.                     |
+| `if (!check(a, b))`                                 | `const isChecked = check(a, b);` then `if (!isChecked)`.                      |
+| `a && (b \|\| c)` inside a condition                | `const isBOrC = b \|\| c;` then `a && isBOrC`.                                |
+| `{ ...(x ? y : z) }`                                | `const base = x ? y : z;` then `{ ...base }`.                                 |
+| `cond ? undefined : { ... }`                        | Guard on `cond`, then build and name the object, then return it.              |
+| `a ? b : c ? d : e`                                 | Two guards, or one const per level.                                           |
+| `(a ?? []).some(...)`                               | `const items = a ?? [];` then `items.some(...)`.                              |
+| Multi-line arrow passed to `.some`/`.map`/`.filter` | Name it above the call and pass the name.                                     |
+| `=> expr` wrapped over several lines                | Block body: name the steps, then `return`.                                    |
+| `value as Narrow`                                   | A `(value: Wide): value is Narrow` predicate, then `if (isNarrow(value))`.    |
 | `ReturnType<typeof fn>` or `typeof value` as a type | Import the library's exported type, or export the alias `fn` already returns. |
-| `report({ data: { name }, errors: [{ ... }] })` | `const data = { name }; const errors = [error];` then reference by name. |
-| `// ponytail: ...` or a comment restating the next line | Delete it. Name the const or function instead. Keep a comment only if deleting it loses a fact. |
+| `report({ data: { name }, errors: [{ ... }] })`     | `const data = { name }; const errors = [error];` then reference by name.      |
+
