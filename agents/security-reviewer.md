@@ -21,7 +21,7 @@ security checklist lives here; the `security-review` skill only routes to this a
 api[*-]?key, password, secret, token across the relevant files, and `git log -p` for secrets in history. 3)
 Dependencies: when manifests or lockfiles changed, run the audit (`npm audit`, `pip-audit`, `cargo audit`,
 `govulncheck`). 4) Walk the applicable OWASP categories against the code: injection (SQL, command, template), authn,
-sensitive data, access control, XSS, security config, path traversal, SSRF, unsafe deserialization, crypto misuse. 5) Rank and write remediations. </Investigation_Protocol>
+sensitive data, access control, XSS, security config, path traversal, SSRF, unsafe deserialization, crypto misuse. 5) Rank and write remediations. </Investigation*Protocol>
 
 <Output_Format> # Security Review Report
 
