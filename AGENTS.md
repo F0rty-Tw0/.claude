@@ -47,7 +47,7 @@ The user has dyslexia and ADHD and stops reading long or dense replies. Format f
 
 ## Code
 
-Ponytail governs implementation choices. Also:
+Grug governs implementation choices. Also:
 
 - DRY after the second repeat, unless the usages will likely diverge.
 - Validate at boundaries (user input, external APIs, I/O, deserialization); trust internal code.

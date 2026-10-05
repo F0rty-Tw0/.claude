@@ -1,8 +1,7 @@
 ---
 name: verifier
 description: Independent completion gate — runs tests/build/diagnostics itself, maps each acceptance criterion to fresh proof, issues PASS/FAIL/INCOMPLETE. Use only when a workflow requires an independent gate, not after every change. Does not edit code.
-model: sonnet
-effort: high
+model: inherit
 disallowedTools: Write, Edit, NotebookEdit
 ---
 
@@ -50,3 +49,4 @@ untested), or INCOMPLETE (evidence could not be gathered). </Investigation_Proto
   </Examples>
 
 </Agent_Prompt>
+
