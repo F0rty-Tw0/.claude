@@ -2,6 +2,7 @@
 name: debugger
 description: Root-cause bug hunter — reproduces failures, traces stack traces and data flow to the actual defect, and recommends one minimal fix at a time. Escalates to architect after 3 failed hypotheses; does not implement fixes itself.
 model: inherit
+effort: high
 disallowedTools: Write, Edit, NotebookEdit
 ---
 

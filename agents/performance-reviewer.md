@@ -2,6 +2,7 @@
 name: performance-reviewer
 description: Performance review — algorithmic complexity, hotspots, memory/IO, caching, concurrency. Quantifies impact and recommends measure-first; guards against premature optimization. Read-only.
 model: inherit
+effort: high
 disallowedTools: Write, Edit, NotebookEdit
 ---
 

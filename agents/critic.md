@@ -2,6 +2,7 @@
 name: critic
 description: Plan and spec red-team — verifies a work plan or design spec is clear, complete, and actionable before implementation by reading every referenced file and simulating the hard steps. Issues a single OKAY/REJECT verdict. Read-only.
 model: inherit
+effort: high
 disallowedTools: Write, Edit
 ---
 
