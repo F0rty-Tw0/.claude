@@ -19,7 +19,7 @@ Engineer has dyslexia and ADHD and reads code by scanning its shape, not word by
 - A ternary branch, a chain receiver, a callback body, and a wrapped arrow body each get a name, so no expression has to be read inside-out.
 - A nested object, array of objects, or call chain inside an object literal gets a name, so the literal is a list of names.
 - No `as` casts. A cast hides a typing gap; a predicate or a corrected type closes it.
-- No useless comments. A comment restating the code, narrating a choice, or marking a shortcut (`// ponytail:`) is deleted; a comment that carries a fact the code cannot (external bug link, directive reason, invariant) stays.
+- No useless comments. A comment restating the code or narrating a choice is deleted; a comment that carries a fact the code cannot (external bug link, directive reason, invariant) stays.
 - Every function states its return type and every class member its accessibility, so a signature is read without opening the body.
 - Imports are grouped and alphabetical with `import type` on its own line, so the dependency list is scanned, not searched.
 - A condition the compiler proves constant is deleted or the type is fixed, so no check lies about the data.
@@ -38,19 +38,19 @@ Apply the engineer's rules consistently. Existing conventions, minimal-diff pres
 
 Read every reference matching the work:
 
-| Work | Required reference |
-|---|---|
-| Types, object shapes, properties, or arrays | `references/typescript-style.md` |
-| Function bodies: returns, guard clauses, condition size, calls or groups in conditions, spreads, ternaries, chains, callbacks, arrow bodies, nested object values, casts, comments, returned objects | `references/typescript-style.md` |
-| Imports, return types, derived types, class members, naming, blank lines, dead conditions, switches, erasable syntax | `references/typescript-style.md` |
-| Functions, helper extraction, utility placement, or purity | `references/utility-style.md` |
-| New module or feature; writing or placing a smart or presentational component, guard, service, state facade, NGXS state, API client, DB query, handler, provider, or token; Angular decorators (`@Service`, `@Injectable`, `input()`); any import between layers; any `index.ts` | `references/feature-modules.md` |
-| Any source `.ts` file over 150 lines (spec over 300), or splitting a module | `references/module-size.md` |
-| A root barrel export, an `InjectionToken` or port, code shared across feature modules, or refactoring for testability | `references/module-depth.md` |
-| Architecture review or a scan for deepening refactors | `references/architecture-scan.md`, after `references/module-depth.md` |
-| Specs, stubs, mocks, fixtures, spec utils, `test/` folders, or any test-only file | `references/unit-testing.md` |
-| Spec contents: `describe` / `it` tree, case naming, branch coverage, Angular `TestBed` setup | `references/spec-style.md` |
-| Any new behavior or bug fix, before production code | `test-driven-development` skill (cycle), then `references/spec-style.md` (shape) |
+| Work                                                                                                                                                                                                                                                                             | Required reference                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Types, object shapes, properties, or arrays                                                                                                                                                                                                                                      | `references/typescript-style.md`                                                 |
+| Function bodies: returns, guard clauses, condition size, calls or groups in conditions, spreads, ternaries, chains, callbacks, arrow bodies, nested object values, casts, comments, returned objects                                                                             | `references/typescript-style.md`                                                 |
+| Imports, return types, derived types, class members, naming, blank lines, dead conditions, switches, erasable syntax                                                                                                                                                             | `references/typescript-style.md`                                                 |
+| Functions, helper extraction, utility placement, or purity                                                                                                                                                                                                                       | `references/utility-style.md`                                                    |
+| New module or feature; writing or placing a smart or presentational component, guard, service, state facade, NGXS state, API client, DB query, handler, provider, or token; Angular decorators (`@Service`, `@Injectable`, `input()`); any import between layers; any `index.ts` | `references/feature-modules.md`                                                  |
+| Any source `.ts` file over 150 lines (spec over 300), or splitting a module                                                                                                                                                                                                      | `references/module-size.md`                                                      |
+| A root barrel export, an `InjectionToken` or port, code shared across feature modules, or refactoring for testability                                                                                                                                                            | `references/module-depth.md`                                                     |
+| Architecture review or a scan for deepening refactors                                                                                                                                                                                                                            | `references/architecture-scan.md`, after `references/module-depth.md`            |
+| Specs, stubs, mocks, fixtures, spec utils, `test/` folders, or any test-only file                                                                                                                                                                                                | `references/unit-testing.md`                                                     |
+| Spec contents: `describe` / `it` tree, case naming, branch coverage, Angular `TestBed` setup                                                                                                                                                                                     | `references/spec-style.md`                                                       |
+| Any new behavior or bug fix, before production code                                                                                                                                                                                                                              | `test-driven-development` skill (cycle), then `references/spec-style.md` (shape) |
 
 ## When to Use
 
@@ -70,3 +70,4 @@ Read every reference matching the work:
 - Reviewing architecture or looking for deepening refactors
 
 Keep growing rules and examples in `references/`, not this file.
+
