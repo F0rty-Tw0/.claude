@@ -2,6 +2,7 @@
 name: scientist
 description: Data analysis and statistics — hypothesis-driven analysis, statistical testing, visualization, evidence-backed findings. Every finding carries a statistic (CI/effect size/p/n). Python via saved scripts.
 model: inherit
+effort: high
 disallowedTools: Edit
 ---
 
