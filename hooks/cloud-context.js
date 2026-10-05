@@ -11,7 +11,7 @@ if (process.env.CLAUDE_CODE_REMOTE !== 'true') process.exit(0);
 
 const MAX = 9000;
 const root = path.join(__dirname, '..');
-const files = ['AGENTS.md', 'skills/caveman/SKILL.md', 'skills/ponytail/SKILL.md'];
+const files = ['AGENTS.md', 'skills/grug/SKILL.md'];
 const text = files
   .map(f => {
     try {
