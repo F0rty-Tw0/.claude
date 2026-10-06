@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auth refactor report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;600;800&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --canvas: #E8EDF1;
+  --surface: #F6F8FA;
+  --ink: #16222D;
+  --muted: #475665;
+  --line: #C1CBD4;
+  --accent: #275A87;
+  --ok: #17703F;
+  --ok-bg: #DCEFE3;
+  --bad: #B3261E;
+  --bad-bg: #F8E0DD;
+  --warn: #835300;
+  --warn-bg: #F6EACB;
+  --code-bg: #EDF1F4;
+  --add-bg: #DDF0E4;
+  --del-bg: #F8E3E0;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+  --measure: 68ch;
+  --radius: 6px;
+  --text: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", Verdana, sans-serif;
+  --mono: "Atkinson Hyperlegible Mono", "Cascadia Mono", Consolas, monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --glyph-ok: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.2 3L13 4.5'/%3E%3C/svg%3E");
+  --glyph-bad: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M4 4l8 8M12 4l-8 8'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --canvas: #10181F;
+    --surface: #18232D;
+    --ink: #E2E8ED;
+    --muted: #A2B0BC;
+    --line: #33434F;
+    --accent: #8EBBE3;
+    --ok: #6CCB92;
+    --ok-bg: #173826;
+    --bad: #FF8F85;
+    --bad-bg: #401E1C;
+    --warn: #EDBE55;
+    --warn-bg: #3A2D10;
+    --code-bg: #131D26;
+    --add-bg: #16301F;
+    --del-bg: #3A1D1C;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #10181F;
+  --surface: #18232D;
+  --ink: #E2E8ED;
+  --muted: #A2B0BC;
+  --line: #33434F;
+  --accent: #8EBBE3;
+  --ok: #6CCB92;
+  --ok-bg: #173826;
+  --bad: #FF8F85;
+  --bad-bg: #401E1C;
+  --warn: #EDBE55;
+  --warn-bg: #3A2D10;
+  --code-bg: #131D26;
+  --add-bg: #16301F;
+  --del-bg: #3A1D1C;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font: 400 1.0625rem/1.6 var(--text);
+  letter-spacing: 0.01em;
+  word-spacing: 0.04em;
+}
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent); text-underline-offset: 3px; }
+p { margin: 0; }
+p + p { margin-top: var(--s3); }
+code, pre { font-family: var(--mono); font-size: 0.9375rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Page layout */
+.page { max-width: 76rem; margin: 0 auto; padding: var(--s5) var(--s4) var(--s8); }
+.page main { min-width: 0; }
+.head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s4) var(--s6); margin-bottom: var(--s6); }
+.head > div { flex: 1 1 20rem; max-width: var(--measure); }
+h1 { margin: 0 0 var(--s2); font-size: clamp(1.6rem, 5vw, 2.25rem); line-height: 1.2; font-weight: 800; }
+.meta { color: var(--muted); }
+@media (min-width: 1100px) {
+  .page { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 0 var(--s7); }
+  .head { grid-column: 1 / -1; }
+  .toc { position: sticky; top: var(--s4); align-self: start; }
+}
+
+/* Theme toggle */
+.theme { display: flex; margin: 0 0 0 auto; padding: 0; border: 0; }
+.theme label { position: relative; padding: var(--s1) var(--s3); border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 0.9375rem; }
+.theme label:first-of-type { border-radius: var(--radius) 0 0 var(--radius); }
+.theme label:last-of-type { border-radius: 0 var(--radius) var(--radius) 0; }
+.theme label + label { border-left: 0; }
+.theme input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.theme label:has(input:checked) { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
+.theme label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; z-index: 1; }
+
+/* Table of contents */
+.toc { margin-bottom: var(--s6); }
+.toc h2 { margin: 0 0 var(--s2); font-size: 1rem; font-weight: 800; }
+.toc ol { margin: 0; padding: 0; list-style: none; }
+.toc li + li { margin-top: var(--s1); }
+
+/* Status spine */
+.spine { position: relative; }
+.spine::before { content: ""; position: absolute; left: 13px; top: var(--s4); bottom: var(--s4); width: 3px; border-radius: 2px; background: var(--line); }
+.step { position: relative; padding-left: 44px; max-width: calc(var(--measure) + 44px); scroll-margin-top: var(--s4); }
+.step.wide { max-width: none; }
+.step + .step { margin-top: var(--s7); }
+.step.tight + .step.tight, .result + .step.tight, .result + .result { margin-top: var(--s3); }
+.node { position: absolute; left: 2px; top: 3px; width: 25px; height: 25px; border-radius: 50%; background: var(--canvas); border: 3px solid var(--line); }
+.is-ok > .node { background: var(--ok); border-color: var(--ok); color: var(--canvas); }
+.is-bad > .node { background: var(--bad); border-color: var(--bad); color: var(--canvas); }
+.is-warn > .node { border-color: var(--warn); }
+.is-ok > .node::after, .is-bad > .node::after { content: ""; position: absolute; inset: 3px; background: currentColor; -webkit-mask: var(--glyph-ok) center / contain no-repeat; mask: var(--glyph-ok) center / contain no-repeat; }
+.is-bad > .node::after { -webkit-mask-image: var(--glyph-bad); mask-image: var(--glyph-bad); }
+.is-warn > .node::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--warn); }
+.step h2 { margin: 0 0 var(--s3); font-size: 1.25rem; line-height: 1.35; font-weight: 800; }
+.step h3 { margin: var(--s5) 0 var(--s2); font-size: 1.0625rem; font-weight: 800; }
+
+/* Result banner */
+.result > .node { top: 15px; }
+.banner { margin: 0; padding: var(--s3) var(--s4); border-radius: var(--radius); font-size: clamp(1.25rem, 3.6vw, 1.625rem); line-height: 1.3; font-weight: 800; }
+.is-ok > .banner { background: var(--ok-bg); }
+.is-bad > .banner { background: var(--bad-bg); }
+.is-warn > .banner { background: var(--warn-bg); }
+
+/* Flags and evidence */
+.flag { padding: var(--s1) 0; }
+.flag strong { font-weight: 800; }
+.is-bad > .flag strong { color: var(--bad); }
+.is-warn > .flag strong { color: var(--warn); }
+.ev { font-weight: 600; text-decoration: underline 2px; text-underline-offset: 4px; }
+.ev.is-confirmed { text-decoration-color: var(--ok); text-decoration-style: solid; }
+.ev.is-inferred { text-decoration-color: var(--warn); text-decoration-style: dashed; }
+.claims { margin: 0; padding-left: var(--s5); }
+.claims li + li { margin-top: var(--s2); }
+
+/* Scroll container, table, code, diff */
+.scroll { overflow-x: auto; max-width: 100%; border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; min-width: 34rem; background: var(--surface); }
+th, td { text-align: left; vertical-align: top; padding: var(--s2) var(--s3); border-bottom: 1px solid var(--line); }
+th { font-weight: 800; }
+td code { white-space: nowrap; }
+caption { caption-side: bottom; text-align: left; padding-top: var(--s2); color: var(--muted); font-size: 0.9375rem; }
+pre.code { margin: 0; padding: var(--s3) var(--s4); background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); overflow-x: auto; line-height: 1.6; }
+.diff-layout { display: grid; gap: var(--s3); }
+@media (min-width: 900px) { .diff-layout { grid-template-columns: minmax(0, 1fr) 15rem; align-items: start; } }
+.diff { background: var(--code-bg); border: 1px solid var(--line); }
+.diff-rows { min-width: max-content; padding: var(--s2) 0; font-family: var(--mono); font-size: 0.9375rem; line-height: 1.75; }
+.diff-row { display: grid; grid-template-columns: 3ch 3ch 2ch auto; gap: 0 var(--s2); padding: 0 var(--s3); white-space: pre; }
+.diff-row .n { text-align: right; color: var(--muted); }
+.diff-row .hunk { grid-column: 1 / -1; color: var(--muted); }
+.diff-row.add { background: var(--add-bg); }
+.diff-row.del { background: var(--del-bg); }
+.diff-row.add .s { color: var(--ok); font-weight: 600; }
+.diff-row.del .s { color: var(--bad); font-weight: 600; }
+.diff-row.noted { box-shadow: inset 4px 0 0 var(--accent); }
+.note { padding: var(--s3) var(--s4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.note strong { color: var(--accent); }
+
+/* Details and tabs */
+details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+summary { padding: var(--s3) var(--s4); font-weight: 800; cursor: pointer; }
+details > :not(summary) { margin: 0 var(--s4) var(--s4); }
+[role="tablist"] { display: flex; flex-wrap: wrap; border-bottom: 2px solid var(--line); }
+[role="tab"] { margin-bottom: -2px; padding: var(--s2) var(--s4); font: inherit; color: var(--muted); background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; }
+[role="tab"][aria-selected="true"] { color: var(--ink); font-weight: 800; border-bottom-color: var(--accent); }
+[role="tabpanel"] { padding-top: var(--s4); }
+[role="tabpanel"] > * + * { margin-top: var(--s2); }
+.pass { color: var(--ok); font-weight: 800; }
+.fail { color: var(--bad); font-weight: 800; }
+
+/* Forms: options, triage, export */
+fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+legend { padding: 0; margin-bottom: var(--s3); font-weight: 800; font-size: 1.0625rem; }
+.option { display: grid; grid-template-columns: auto 1fr; gap: var(--s3); padding: var(--s3) var(--s4); background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+.option + .option { margin-top: var(--s2); }
+.option:has(input:checked) { border-color: var(--accent); }
+.option input, .choice input { width: 1.1em; height: 1.1em; margin-top: 0.35em; accent-color: var(--accent); }
+.option small, .triage small { display: block; color: var(--muted); font-size: 0.9375rem; }
+.rec { color: var(--accent); font-weight: 800; }
+.triage { margin: 0; padding: 0; list-style: none; }
+.triage li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s3); align-items: start; padding: var(--s3) 0; border-bottom: 1px solid var(--line); }
+.triage label { font-weight: 600; }
+select, textarea { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--s2) var(--s3); }
+textarea { display: block; width: 100%; resize: vertical; }
+.field { display: block; margin-top: var(--s4); font-weight: 600; }
+.field textarea { margin-top: var(--s1); font-weight: 400; }
+.export { display: grid; gap: var(--s2); margin-top: var(--s4); }
+.export button { justify-self: start; padding: var(--s2) var(--s4); font: inherit; font-weight: 800; color: var(--canvas); background: var(--accent); border: 2px solid var(--accent); border-radius: var(--radius); cursor: pointer; }
+.export output { color: var(--muted); font-size: 0.9375rem; min-height: 1.6em; }
+
+/* Diagram */
+.diagram { margin: 0; }
+.diagram svg { display: block; width: 100%; min-width: 560px; height: auto; font-family: var(--text); font-size: 15px; }
+.diagram .box { fill: var(--surface); stroke: var(--line); stroke-width: 2; }
+.diagram .box.is-new { stroke: var(--accent); stroke-width: 3; }
+.diagram .label { fill: var(--ink); font-weight: 600; }
+.diagram .edge { stroke: var(--muted); stroke-width: 2; fill: none; }
+.diagram .head { fill: var(--muted); }
+.diagram .edge-label { fill: var(--muted); font-size: 13px; }
+figcaption { margin-top: var(--s2); color: var(--muted); font-size: 0.9375rem; }
+
+/* Next footer */
+.next { font-size: 1.125rem; }
+.next strong { font-weight: 800; }
+
+button, .option, .theme label { transition: background-color 180ms var(--ease-out), border-color 180ms var(--ease-out), color 180ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- component: title + meta line — every report; title states the subject, meta says report type, branch or scope, date -->
+  <header class="head">
+    <div>
+      <h1>Auth refactor: sessions moved to Redis</h1>
+      <p class="meta">Done-task report for <code>feat/redis-sessions</code>, <time datetime="2026-10-06">6 Oct 2026</time>.</p>
+    </div>
+    <!-- component: theme toggle — every report; keep as is -->
+    <fieldset class="theme">
+      <legend class="sr-only">Theme</legend>
+      <label><input type="radio" name="theme" value="light">Light</label>
+      <label><input type="radio" name="theme" value="dark">Dark</label>
+      <label><input type="radio" name="theme" value="system" checked>System</label>
+    </fieldset>
+  </header>
+
+  <!-- component: table of contents — 4+ sections; one link per section id, sticky sidebar on wide screens -->
+  <nav class="toc" aria-labelledby="toc-title">
+    <h2 id="toc-title">Contents</h2>
+    <ol>
+      <li><a href="#files">Files changed</a></li>
+      <li><a href="#diff">Key diff</a></li>
+      <li><a href="#flow">How a request flows</a></li>
+      <li><a href="#proof">Proof</a></li>
+      <li><a href="#evidence">Claims</a></li>
+      <li><a href="#decide">Decide</a></li>
+      <li><a href="#triage">Follow-ups</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <!-- component: status spine — wraps every section; each .step gets is-ok / is-bad / is-warn or no class (neutral); .wide for tables, diffs, diagrams; .tight for consecutive one-line flags -->
+    <div class="spine">
+
+      <!-- component: result banner — first step of every report, exactly one; is-ok when done and green, is-bad when failed or blocked, is-warn when done but unverified -->
+      <section class="step result is-ok" aria-label="Result">
+        <span class="node" role="img" aria-label="Passed"></span>
+        <p class="banner">Auth refactor done — 6 files, tests 142/142 (baseline 140/142)</p>
+      </section>
+      <!-- result banner variants: delete the ones you don't use -->
+      <section class="step result is-bad" aria-label="Result, failed variant">
+        <span class="node" role="img" aria-label="Failed"></span>
+        <p class="banner">Auth refactor blocked — 3 of 142 tests fail on the new store</p>
+      </section>
+      <section class="step result is-warn" aria-label="Result, unconfirmed variant">
+        <span class="node" role="img" aria-label="Unconfirmed"></span>
+        <p class="banner">Auth refactor done, not yet run against staging Redis</p>
+      </section>
+
+      <!-- component: blocker line — one per failure or unimplemented scope, right after the banner, before anything else -->
+      <section class="step tight is-bad" aria-label="Blocker">
+        <span class="node" role="img" aria-label="Blocker"></span>
+        <p class="flag"><strong>Blocker:</strong> logout leaves the Redis key alive, so a session stays valid for up to 24 h.</p>
+      </section>
+
+      <!-- component: unconfirmed line — one per claim you could not verify; say what would confirm it -->
+      <section class="step tight is-warn" aria-label="Unconfirmed">
+        <span class="node" role="img" aria-label="Unconfirmed"></span>
+        <p class="flag"><strong>Unconfirmed:</strong> login under 50 concurrent requests was not load-tested.</p>
+      </section>
+
+      <!-- component: table — file lists and any multi-column data; keep the .scroll wrapper so wide tables scroll inside it -->
+      <section class="step wide" id="files">
+        <span class="node" aria-hidden="true"></span>
+        <h2 id="files-title">Files changed</h2>
+        <div class="scroll" role="region" aria-labelledby="files-title" tabindex="0">
+          <table>
+            <caption>5 of 6 shown; <code>pnpm-lock.yaml</code> omitted.</caption>
+            <thead><tr><th scope="col">Path</th><th scope="col">Change</th></tr></thead>
+            <tbody>
+              <tr><td><code>src/auth/store.ts</code></td><td>New SessionStore over Redis with a 24 h TTL</td></tr>
+              <tr><td><code>src/auth/session.ts</code></td><td>Reads sessions through the store; expiry checked on lookup</td></tr>
+              <tr><td><code>src/auth/middleware.ts</code></td><td>Drops the in-memory Map, calls <code>store.lookup</code></td></tr>
+              <tr><td><code>src/routes/login.ts</code></td><td>Creates sessions with <code>store.create</code></td></tr>
+              <tr><td><code>test/auth/session.spec.ts</code></td><td>2 expiry tests that failed on main now pass</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- component: diff block + margin note — real git diff only, HTML-escaped (&lt; &gt; &amp;); columns are old line, new line, sign, code; mark the noted row with .noted -->
+      <section class="step wide" id="diff">
+        <span class="node" aria-hidden="true"></span>
+        <h2 id="diff-title">Key diff: <code>src/auth/session.ts</code></h2>
+        <div class="diff-layout">
+          <div class="diff scroll" role="region" aria-labelledby="diff-title" tabindex="0">
+            <div class="diff-rows">
+              <div class="diff-row"><span class="hunk">@@ -18,7 +18,6 @@ export function readSession(req: Request): Session | null {</span></div>
+              <div class="diff-row"><span class="n">18</span><span class="n">18</span><span class="s"> </span><span>  const raw = req.headers.get('cookie') ?? '';</span></div>
+              <div class="diff-row del"><span class="n">19</span><span class="n"></span><span class="s">-</span><span>  const token = parseCookie(raw)['sid'];</span></div>
+              <div class="diff-row del"><span class="n">20</span><span class="n"></span><span class="s">-</span><span>  if (!token) return null;</span></div>
+              <div class="diff-row del"><span class="n">21</span><span class="n"></span><span class="s">-</span><span>  return sessions.get(token) ?? null;</span></div>
+              <div class="diff-row add"><span class="n"></span><span class="n">19</span><span class="s">+</span><span>  const token = parseCookie(raw).get('sid');</span></div>
+              <div class="diff-row add noted"><span class="n"></span><span class="n">20</span><span class="s">+</span><span>  return token ? store.lookup(token) : null;</span></div>
+              <div class="diff-row"><span class="n">22</span><span class="n">21</span><span class="s"> </span><span>}</span></div>
+            </div>
+          </div>
+          <aside class="note" aria-label="Note on line 20">
+            <p><strong>Line 20.</strong> <code>store.lookup</code> rejects expired tokens. The old <code>Map.get</code> returned them, which broke the 2 expiry tests.</p>
+          </aside>
+        </div>
+
+        <!-- component: code block — a snippet that is not a diff; escape &lt; &gt; &amp; -->
+        <h3>New lookup</h3>
+        <pre class="code"><code>async lookup(token: string): Promise&lt;Session | null&gt; {
+  const raw = await this.redis.get(`session:${token}`);
+
+  return raw ? parseSession(raw) : null;
+}</code></pre>
+      </section>
+
+      <!-- component: diagram — box-and-arrow flow; boxes .box (.is-new for what changed), text .label, arrows .edge with marker; keep .scroll so it stays legible at phone width -->
+      <section class="step wide" id="flow">
+        <span class="node" aria-hidden="true"></span>
+        <h2 id="flow-title">How a request flows</h2>
+        <figure class="diagram">
+          <div class="scroll" role="region" aria-labelledby="flow-title" tabindex="0">
+            <svg viewBox="0 0 640 110" role="img" aria-labelledby="flow-desc">
+              <desc id="flow-desc">Request goes to middleware, which calls SessionStore.lookup, which reads Redis.</desc>
+              <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker></defs>
+              <rect class="box" x="10" y="40" width="120" height="50" rx="6"/>
+              <text class="label" x="70" y="70" text-anchor="middle">Request</text>
+              <rect class="box" x="175" y="40" width="130" height="50" rx="6"/>
+              <text class="label" x="240" y="70" text-anchor="middle">middleware</text>
+              <rect class="box is-new" x="350" y="40" width="130" height="50" rx="6"/>
+              <text class="label" x="415" y="70" text-anchor="middle">SessionStore</text>
+              <rect class="box" x="525" y="40" width="105" height="50" rx="6"/>
+              <text class="label" x="577" y="70" text-anchor="middle">Redis</text>
+              <path class="edge" d="M130 65H171" marker-end="url(#arrow)"/>
+              <path class="edge" d="M305 65H346" marker-end="url(#arrow)"/>
+              <path class="edge" d="M480 65H521" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="327" y="30" text-anchor="middle">lookup(token)</text>
+            </svg>
+          </div>
+          <figcaption>SessionStore is new; it replaces the in-memory Map.</figcaption>
+        </figure>
+      </section>
+
+      <!-- component: ARIA tabs — 2-5 parallel views of one thing (commands, environments); arrows, Home, End move between tabs -->
+      <section class="step is-ok" id="proof">
+        <span class="node" role="img" aria-label="Passed"></span>
+        <h2 id="proof-title">Proof</h2>
+        <div data-tabs>
+          <div role="tablist" aria-labelledby="proof-title">
+            <button type="button" role="tab" id="tab-tests" aria-controls="panel-tests" aria-selected="true">Tests</button>
+            <button type="button" role="tab" id="tab-types" aria-controls="panel-types" aria-selected="false" tabindex="-1">Types</button>
+            <button type="button" role="tab" id="tab-lint" aria-controls="panel-lint" aria-selected="false" tabindex="-1">Lint</button>
+          </div>
+          <div role="tabpanel" id="panel-tests" aria-labelledby="tab-tests" tabindex="0">
+            <pre class="code"><code>pnpm test</code></pre>
+            <p><span class="pass">142 passed</span>, 0 failed. Main: 140 passed, 2 failed.</p>
+          </div>
+          <div role="tabpanel" id="panel-types" aria-labelledby="tab-types" tabindex="0" hidden>
+            <pre class="code"><code>pnpm tsc --noEmit</code></pre>
+            <p><span class="pass">Exit 0</span>, no type errors.</p>
+          </div>
+          <div role="tabpanel" id="panel-lint" aria-labelledby="tab-lint" tabindex="0" hidden>
+            <pre class="code"><code>pnpm lint</code></pre>
+            <p><span class="pass">0 errors</span>, 3 warnings, the same 3 as main.</p>
+          </div>
+        </div>
+
+        <!-- component: details — depth most readers skip (full logs, background, long rationale); summary says what is inside -->
+        <h3>Depth</h3>
+        <details>
+          <summary>Why 2 tests failed on main</summary>
+          <p>The in-memory Map never evicted entries, so a token past its expiry still resolved to a session. Both failing tests assert that an expired token returns null.</p>
+        </details>
+      </section>
+
+      <!-- component: evidence labels — inline on every load-bearing claim; confirmed names the file:line or command, inferred says what would confirm it -->
+      <section class="step" id="evidence">
+        <span class="node" aria-hidden="true"></span>
+        <h2>Claims</h2>
+        <ul class="claims">
+          <li><span class="ev is-confirmed">Confirmed</span>: expired tokens return null (<code>src/auth/store.ts:42</code>, tested in <code>session.spec.ts</code>).</li>
+          <li><span class="ev is-inferred">Inferred</span>: no other caller reads the old Map; a repo-wide search for <code>sessions.get</code> would confirm it.</li>
+        </ul>
+      </section>
+
+      <!-- component: decision card — any choice the user must make; 2-3 .option labels, recommended one first and checked; data-prompt on each input feeds the export -->
+      <section class="step" id="decide">
+        <span class="node" aria-hidden="true"></span>
+        <h2>Decide</h2>
+        <form data-export>
+          <fieldset>
+            <legend>Fix the logout gap before merge?</legend>
+            <label class="option">
+              <input type="radio" name="logout" checked data-prompt="Logout gap: option A. Clear the Redis key on logout before merge.">
+              <span><span class="rec">Recommended.</span> Clear the Redis key on logout now<small>About 10 lines plus 1 test. Merge waits about 20 minutes.</small></span>
+            </label>
+            <label class="option">
+              <input type="radio" name="logout" data-prompt="Logout gap: option B. Merge now and track the logout fix as a follow-up.">
+              <span>Merge now, fix logout in a follow-up<small>Sessions stay valid up to 24 h after logout until then.</small></span>
+            </label>
+          </fieldset>
+          <label class="field">Notes, optional<textarea rows="2" data-prompt="Notes"></textarea></label>
+
+          <!-- component: copy-as-prompt export — inside any form[data-export]; serializes every [data-prompt] field (checked radio/checkbox: its data-prompt; select/text: "data-prompt: value"); data-export="..." adds a first line -->
+          <div class="export">
+            <button type="button" data-copy>Copy as prompt</button>
+            <label class="sr-only" for="decide-out">Prompt text</label>
+            <textarea id="decide-out" rows="3" readonly data-output></textarea>
+            <output data-status></output>
+          </div>
+        </form>
+      </section>
+
+      <!-- component: triage list — todo, backlog, follow-ups; pre-sort each item with a one-line reason; data-prompt is the item name -->
+      <section class="step" id="triage">
+        <span class="node" aria-hidden="true"></span>
+        <h2>Follow-ups</h2>
+        <form data-export="Triage:">
+          <ul class="triage">
+            <li><div><label for="t1">Clear the Redis key on logout</label><small>Blocks merge: sessions outlive logout.</small></div>
+              <select id="t1" data-prompt="Clear the Redis key on logout"><option selected>Now</option><option>Next</option><option>Later</option><option>Cut</option></select></li>
+            <li><div><label for="t2">Load-test login at 50 concurrent requests</label><small>Unconfirmed claim above; needs staging Redis.</small></div>
+              <select id="t2" data-prompt="Load-test login at 50 concurrent requests"><option>Now</option><option selected>Next</option><option>Later</option><option>Cut</option></select></li>
+            <li><div><label for="t3">Move the 24 h TTL into config</label><small>Hard-coded today; no one has asked to change it.</small></div>
+              <select id="t3" data-prompt="Move the 24 h TTL into config"><option>Now</option><option>Next</option><option selected>Later</option><option>Cut</option></select></li>
+            <li><div><label for="t4">Rewrite the cookie parser</label><small>Works, no bug reports; churn without payoff.</small></div>
+              <select id="t4" data-prompt="Rewrite the cookie parser"><option>Now</option><option>Next</option><option>Later</option><option selected>Cut</option></select></li>
+          </ul>
+          <div class="export">
+            <button type="button" data-copy>Copy as prompt</button>
+            <label class="sr-only" for="triage-out">Prompt text</label>
+            <textarea id="triage-out" rows="5" readonly data-output></textarea>
+            <output data-status></output>
+          </div>
+        </form>
+      </section>
+
+      <!-- component: Next footer — last step of every report; one line on what happens next or what you need -->
+      <footer class="step">
+        <span class="node" aria-hidden="true"></span>
+        <p class="next"><strong>Next:</strong> pick A or B above; with A, I fix logout and open the PR.</p>
+      </footer>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const THEME_KEY = 'report-theme';
+const COPIED = 'Copied. Paste it into the chat.';
+const BLOCKED = 'Clipboard blocked here. Select the text in the box and copy it.';
+
+function readTheme() {
+  try {
+    return localStorage.getItem(THEME_KEY) || 'system';
+  } catch {
+    return 'system';
+  }
+}
+
+function applyTheme(value) {
+  const root = document.documentElement;
+
+  if (value === 'system') {
+    delete root.dataset.theme;
+
+    return;
+  }
+
+  root.dataset.theme = value;
+}
+
+function onThemeChange(event) {
+  const value = event.target.value;
+
+  applyTheme(value);
+  try {
+    localStorage.setItem(THEME_KEY, value);
+  } catch {
+    // Storage throws in private windows; the theme still applies for this visit.
+  }
+}
+
+function initTheme() {
+  const saved = readTheme();
+
+  applyTheme(saved);
+  document.querySelectorAll('input[name="theme"]').forEach((radio) => {
+    radio.checked = radio.value === saved;
+    radio.addEventListener('change', onThemeChange);
+  });
+}
+
+function fieldLine(field) {
+  const prompt = field.dataset.prompt;
+  const isToggle = field.type === 'radio' || field.type === 'checkbox';
+
+  if (isToggle) return field.checked ? prompt : '';
+
+  const value = field.value.trim();
+
+  return value ? `${prompt}: ${value}` : '';
+}
+
+function serialize(form) {
+  const fields = Array.from(form.querySelectorAll('[data-prompt]'));
+  const lines = fields.map(fieldLine).filter(Boolean);
+  const header = form.dataset.export;
+
+  if (header) lines.unshift(header);
+
+  return lines.join('\n');
+}
+
+async function copyText(text, status) {
+  try {
+    await navigator.clipboard.writeText(text);
+    status.textContent = COPIED;
+  } catch {
+    status.textContent = BLOCKED;
+  }
+}
+
+function initExport(form) {
+  const output = form.querySelector('[data-output]');
+  const status = form.querySelector('[data-status]');
+  const update = () => { output.value = serialize(form); };
+
+  form.addEventListener('input', update);
+  form.addEventListener('change', update);
+  form.addEventListener('submit', (event) => event.preventDefault());
+  form.querySelector('[data-copy]').addEventListener('click', () => copyText(output.value, status));
+  update();
+}
+
+function selectTab(tabs, next) {
+  tabs.forEach((tab) => {
+    const isNext = tab === next;
+    const panel = document.getElementById(tab.getAttribute('aria-controls'));
+
+    tab.setAttribute('aria-selected', String(isNext));
+    tab.tabIndex = isNext ? 0 : -1;
+    panel.hidden = !isNext;
+  });
+  next.focus();
+}
+
+function initTabs(group) {
+  const tabs = Array.from(group.querySelectorAll('[role="tab"]'));
+
+  function onKey(event) {
+    const count = tabs.length;
+    const index = tabs.indexOf(event.currentTarget);
+    const forward = (index + 1) % count;
+    const backward = (index - 1 + count) % count;
+    const targets = { ArrowRight: forward, ArrowLeft: backward, Home: 0, End: count - 1 };
+    const nextIndex = targets[event.key];
+
+    if (nextIndex === undefined) return;
+
+    event.preventDefault();
+    selectTab(tabs, tabs[nextIndex]);
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => selectTab(tabs, tab));
+    tab.addEventListener('keydown', onKey);
+  });
+}
+
+initTheme();
+document.querySelectorAll('form[data-export]').forEach(initExport);
+document.querySelectorAll('[data-tabs]').forEach(initTabs);
+</script>
+</body>
+</html>
