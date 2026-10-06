@@ -24,17 +24,21 @@ Re-run these after any change to SKILL.md or the AGENTS.md routing line. Give a 
 | E | HTML file with buckets and Copy as prompt | `$HOME/html-reports/...`, browser | `18-editor-triage-board.html` |
 | F | Artifact | private claude.ai link | `11-status-report.html` |
 
-The terminal reply in A, B, D, E, F holds only the result line, failures, the path or link, and `Next:`.
+The terminal reply in A, B, D, E, F holds only the result line, failures, git state in one line, the path or link, and `Next:`.
+
+A third arm checks discovery: the same prompt with no mention of the skill, plus "say which skill you would invoke first and which loaded instruction told you to". It passes when it names `html-output` for A, B, D, E, F from the AGENTS.md routing line. Run it from a session started after the last AGENTS.md change; subagents get the session-start snapshot.
 
 ## Last run, 2026-10-06 (answers trimmed)
 
-| | Baseline, no skill | With skill |
-|---|---|---|
-| A | Terminal markdown with the closing-status sections | HTML file, `~/html-reports/acme-web/2026-10-06-auth-refactor.html`, `start ""`, read `11-status-report.html` |
-| B | Markdown plan file from `/plan` plus a terminal summary; offers an artifact only if others review it | HTML view of the `/plan` file, `16-implementation-plan.html` + `unknowns/08-implementation-plan.html`, decision controls with Copy as prompt |
-| C | Terminal, one line | Terminal, one line |
-| D | Terminal for a small PR, Artifact for a large one | HTML file, `17-pr-writeup.html`, diff from real `gh pr diff` |
-| E | Top 5 in terminal plus an Artifact with a sortable table, no way to send choices back | HTML file, `18-editor-triage-board.html`, Now / Next / Later / Cut with Copy as prompt |
-| F | Terminal markdown, shorter than A | Artifact with the private link, no `~/html-reports`, no `start` |
+| | Baseline, no skill | Told to read SKILL.md | Discovery, not told |
+|---|---|---|---|
+| A | Terminal markdown with the closing-status sections | HTML file, `$HOME/html-reports/acme-web/2026-10-06-auth-refactor.html`, `start ""`, `11-status-report.html` | `html-output`; HTML file, path unknown until SKILL.md is read |
+| B | Markdown plan file from `/plan` plus a terminal summary; offers an artifact only if others review it | HTML view of the `/plan` file, `16-implementation-plan.html` + `unknowns/08-implementation-plan.html`, approval through AskUserQuestion, no page in plan mode | `/plan`, then `html-output` to render it |
+| C | Terminal, one line | Terminal, one line | Terminal, no skill |
+| D | Terminal for a small PR, Artifact for a large one | HTML view of the PR body, `17-pr-writeup.html`, diff from real `git diff` | `html-output`; HTML file |
+| E | Top 5 in terminal plus an Artifact with a sortable table, no way to send choices back | HTML file, `18-editor-triage-board.html`, Now / Next / Later / Cut with Copy as prompt and textarea, `node --check` | `html-output`; HTML file |
+| F | Terminal markdown, shorter than A | Artifact, not Docs; source in scratchpad, `sed` strip, secrets redacted, house style over artifact-design | `html-output`; Artifact link |
 
-Baseline 1 of 6 matched the expected routing (C). With the skill, 6 of 6.
+Baseline 1 of 6 matched the expected routing (C). Told, 6 of 6. Discovery, 6 of 6 on routing, quoting the AGENTS.md Output style line. The baseline ran before any skill file or AGENTS.md line existed. Told and discovery ran at the SKILL.md that added the scratchpad, house-style and local-file rules; the git-state wording changed after and does not touch routing.
+
+Open gaps the told arm named: D fits both the PR writeup and pre-merge rows; E overlaps the `triage` skill; plan mode blocks the plan page for decisions AGENTS.md sends to plan mode.
