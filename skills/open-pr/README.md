@@ -11,10 +11,11 @@ Every PR gets the same compact body:
 | Summary | 1–3 sentences: what changed, why if not obvious, one non-obvious impact |
 | Sketch | Optional single fenced block: pseudocode, call tree, file tree, Mermaid, or a `diff` of one of those |
 | `## Stack` | Only for stacked PRs, 1–3 lines |
-| `## Proof` | Blast radius + rollback, test command + counts, before/after pair of the change running (screenshot or CLI/console output), verified / not verified |
-| `<details>` | For our own PRs only: runtime logs, base-failure output, Trunk gate/invariants/deep-read list |
+| `## Proof` | Before/after pair of the change running (screenshot or CLI/console output), verified / not verified, review verdict |
 
-Process: Proof gate (code-review) > Gather changes > Scan repo context > Ask audience > Write title (<60 chars, lowercase) > Write summary > Add ticket link > Polish (Red Flags) > Present.
+Blast radius, test counts, ticket numbers, and branch details orient the agent while it builds proof; they stay out of the body.
+
+Process: Proof gate (code-review) > Gather changes > Scan repo context > Write body > Write title (<60 chars, lowercase) > Write summary > Polish (Red Flags) > Present.
 
 ---
 

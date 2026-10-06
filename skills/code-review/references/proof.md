@@ -33,7 +33,7 @@ Proof = an artifact a reviewer can inspect or re-run. No artifact → no proof.
 
 ## Author side — building the proof bundle
 
-When **you** wrote the change and are preparing the PR, produce this bundle (template: `templates/pr-proof.md`). Every line needs output, not adjectives. `open-pr` decides what reaches the PR body: compact lines there, the rest collapsed.
+When **you** wrote the change and are preparing the PR, produce this bundle (template: `templates/pr-proof.md`). Every line needs output, not adjectives. `open-pr` decides what reaches the PR body: before/after, verified, not verified, and review there; the rest stays with you.
 
 ```markdown
 ## Proof
