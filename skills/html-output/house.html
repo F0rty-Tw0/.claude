@@ -8,6 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;600;800&display=swap">
 <style>
+/* House style for html-output reports ("Status spine"). One look on purpose, so the user
+   recognizes every report at a glance; frontend-design's "vary across generations" rule
+   does not apply here. Change it deliberately, with frontend-design. */
 :root {
   color-scheme: light;
   --canvas: #E8EDF1;
@@ -103,7 +106,7 @@ h1 { margin: 0 0 var(--s2); font-size: clamp(1.6rem, 5vw, 2.25rem); line-height:
 @media (min-width: 1100px) {
   .page { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 0 var(--s7); }
   .head { grid-column: 1 / -1; }
-  .toc { position: sticky; top: var(--s4); align-self: start; }
+  .toc { position: sticky; top: calc(var(--s4) + env(safe-area-inset-top, 0px)); align-self: start; }
 }
 
 /* Theme toggle */
@@ -169,7 +172,7 @@ pre.code { margin: 0; padding: var(--s3) var(--s4); background: var(--code-bg); 
 @media (min-width: 900px) { .diff-layout { grid-template-columns: minmax(0, 1fr) 15rem; align-items: start; } }
 .diff { background: var(--code-bg); border: 1px solid var(--line); }
 .diff-rows { min-width: max-content; padding: var(--s2) 0; font-family: var(--mono); font-size: 0.9375rem; line-height: 1.75; }
-.diff-row { display: grid; grid-template-columns: 3ch 3ch 2ch auto; gap: 0 var(--s2); padding: 0 var(--s3); white-space: pre; }
+.diff-row { display: grid; grid-template-columns: var(--ln, 4ch) var(--ln, 4ch) 2ch auto; gap: 0 var(--s2); padding: 0 var(--s3); white-space: pre; }
 .diff-row .n { text-align: right; color: var(--muted); }
 .diff-row .hunk { grid-column: 1 / -1; color: var(--muted); }
 .diff-row.add { background: var(--add-bg); }
@@ -316,7 +319,7 @@ button, .option, .theme label { transition: background-color 180ms var(--ease-ou
         </div>
       </section>
 
-      <!-- component: diff block + margin note — real git diff only, HTML-escaped (&lt; &gt; &amp;); columns are old line, new line, sign, code; mark the noted row with .noted -->
+      <!-- component: diff block + margin note — real git diff only, HTML-escaped (&lt; &gt; &amp;); columns are old line, new line, sign, code; mark the noted row with .noted; line numbers past 9999 need style="--ln: 6ch" on .diff -->
       <section class="step wide" id="diff">
         <span class="node" aria-hidden="true"></span>
         <h2 id="diff-title">Key diff: <code>src/auth/session.ts</code></h2>
@@ -517,7 +520,8 @@ function onThemeChange(event) {
 function initTheme() {
   const saved = readTheme();
 
-  applyTheme(saved);
+  // Nothing saved: leave data-theme alone, a host (Artifact viewer) may have set it.
+  if (saved !== 'system') applyTheme(saved);
   document.querySelectorAll('input[name="theme"]').forEach((radio) => {
     radio.checked = radio.value === saved;
     radio.addEventListener('change', onThemeChange);
@@ -557,12 +561,16 @@ async function copyText(text, status) {
 function initExport(form) {
   const output = form.querySelector('[data-output]');
   const status = form.querySelector('[data-status]');
+  const copy = form.querySelector('[data-copy]');
   const update = () => { output.value = serialize(form); };
+
+  // A trimmed form must not abort the script for every later form and tab group.
+  if (!output || !status || !copy) return;
 
   form.addEventListener('input', update);
   form.addEventListener('change', update);
   form.addEventListener('submit', (event) => event.preventDefault());
-  form.querySelector('[data-copy]').addEventListener('click', () => copyText(output.value, status));
+  copy.addEventListener('click', () => copyText(output.value, status));
   update();
 }
 
@@ -573,7 +581,7 @@ function selectTab(tabs, next) {
 
     tab.setAttribute('aria-selected', String(isNext));
     tab.tabIndex = isNext ? 0 : -1;
-    panel.hidden = !isNext;
+    if (panel) panel.hidden = !isNext;
   });
   next.focus();
 }
