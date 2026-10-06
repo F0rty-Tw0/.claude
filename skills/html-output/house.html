@@ -104,7 +104,8 @@ code, pre { font-family: var(--mono); font-size: 0.9375rem; }
 h1 { margin: 0 0 var(--s2); font-size: clamp(1.6rem, 5vw, 2.25rem); line-height: 1.2; font-weight: 800; }
 .meta { color: var(--muted); }
 @media (min-width: 1100px) {
-  .page { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 0 var(--s7); }
+  /* Sidebar grid only when the page has a table of contents; without one, main keeps the full width. */
+  .page:has(> .toc) { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 0 var(--s7); }
   .head { grid-column: 1 / -1; }
   .toc { position: sticky; top: calc(var(--s4) + env(safe-area-inset-top, 0px)); align-self: start; }
 }
@@ -249,9 +250,9 @@ button, .option, .theme label { transition: background-color 180ms var(--ease-ou
     <!-- component: theme toggle — every report; keep as is -->
     <fieldset class="theme">
       <legend class="sr-only">Theme</legend>
-      <label><input type="radio" name="theme" value="light">Light</label>
-      <label><input type="radio" name="theme" value="dark">Dark</label>
-      <label><input type="radio" name="theme" value="system" checked>System</label>
+      <label><input type="radio" name="theme" id="theme-light" value="light">Light</label>
+      <label><input type="radio" name="theme" id="theme-dark" value="dark">Dark</label>
+      <label><input type="radio" name="theme" id="theme-system" value="system" checked>System</label>
     </fieldset>
   </header>
 
@@ -427,15 +428,15 @@ button, .option, .theme label { transition: background-color 180ms var(--ease-ou
           <fieldset>
             <legend>Fix the logout gap before merge?</legend>
             <label class="option">
-              <input type="radio" name="logout" checked data-prompt="Logout gap: option A. Clear the Redis key on logout before merge.">
+              <input type="radio" name="logout" id="logout-a" checked data-prompt="Logout gap: option A. Clear the Redis key on logout before merge.">
               <span><span class="rec">Recommended.</span> Clear the Redis key on logout now<small>About 10 lines plus 1 test. Merge waits about 20 minutes.</small></span>
             </label>
             <label class="option">
-              <input type="radio" name="logout" data-prompt="Logout gap: option B. Merge now and track the logout fix as a follow-up.">
+              <input type="radio" name="logout" id="logout-b" data-prompt="Logout gap: option B. Merge now and track the logout fix as a follow-up.">
               <span>Merge now, fix logout in a follow-up<small>Sessions stay valid up to 24 h after logout until then.</small></span>
             </label>
           </fieldset>
-          <label class="field">Notes, optional<textarea rows="2" data-prompt="Notes"></textarea></label>
+          <label class="field">Notes, optional<textarea id="decide-notes" rows="2" data-prompt="Notes"></textarea></label>
 
           <!-- component: copy-as-prompt export — inside any form[data-export]; serializes every [data-prompt] field (checked radio/checkbox: its data-prompt; select/text: "data-prompt: value"); data-export="..." adds a first line -->
           <div class="export">
@@ -483,6 +484,8 @@ button, .option, .theme label { transition: background-color 180ms var(--ease-ou
 
 <script>
 const THEME_KEY = 'report-theme';
+// Theme a host (the Artifact viewer) set before this script ran; "System" returns to it.
+const HOST_THEME = document.documentElement.dataset.theme;
 const COPIED = 'Copied. Paste it into the chat.';
 const BLOCKED = 'Clipboard blocked here. Select the text in the box and copy it.';
 
@@ -496,6 +499,12 @@ function readTheme() {
 
 function applyTheme(value) {
   const root = document.documentElement;
+
+  if (value === 'system' && HOST_THEME) {
+    root.dataset.theme = HOST_THEME;
+
+    return;
+  }
 
   if (value === 'system') {
     delete root.dataset.theme;
