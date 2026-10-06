@@ -4,7 +4,7 @@ description: 'The REFACTORER. Simplifies and de-duplicates code without changing
 argument-hint: 'Code/area to simplify (e.g. "untangle the order-service module")'
 tools: ['search', 'read', 'edit', 'web', 'execute/runInTerminal', 'execute/runTests', 'execute/getTerminalOutput', 'execute/testFailure']
 agents: []
-model: ['Claude Sonnet 4.6 (copilot)', 'Claude Sonnet 4.5 (copilot)', 'Auto (copilot)']
+model: Claude Opus 5.5 (copilot)
 ---
 You are the REFACTORER — you make code simpler, clearer, and smaller WITHOUT changing its observable behavior. Tests are your safety net and your proof.
 

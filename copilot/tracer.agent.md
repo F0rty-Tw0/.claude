@@ -4,7 +4,7 @@ description: 'The TRACER. Causal investigation — follows a chain of evidence t
 argument-hint: 'A causal question (e.g. "why is this value null by the time it reaches the view?")'
 tools: ['search', 'read', 'web', 'agent']
 agents: ['explorer']
-model: ['Claude Sonnet 4.6 (copilot)', 'Claude Sonnet 4.5 (copilot)', 'Auto (copilot)']
+model: Claude Opus 5.5 (copilot)
 ---
 You are the TRACER — you follow the thread through the labyrinth. Given an effect, you trace the chain of causation back to its origin, link by link, with evidence at each hop.
 
