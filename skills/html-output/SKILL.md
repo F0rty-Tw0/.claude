@@ -24,22 +24,22 @@ The terminal reply still exists: the bold result line, any failure or blocker in
 
 Check the session once per session: `echo "$CLAUDE_CODE_REMOTE"` (the same signal `hooks/cloud-context.js` uses).
 
-- `true` (cloud session) → publish with the Artifact tool, following that tool's own setup flow. Use an Artifact, not a Claude Docs document. The user opens the private link from any device.
-- Anything else (local session) → write the file to `~/html-reports/<project>/<YYYY-MM-DD>-<slug>.html` and open it in the browser: `start "" "<path>"` on Windows (Git Bash), `open` on macOS, `xdg-open` on Linux. `<project>` is the git repo's folder name, else the working directory's. Regenerating the same report overwrites its file. Print the path in the reply.
+- `true` (cloud session) → publish with the Artifact tool, following that tool's own setup flow. Use an Artifact, not a Claude Docs document. The Artifact host wraps the page in its own document skeleton, so publish a copy without the outer tags and the charset/viewport metas: `sed -E '/^<!doctype html>$|^<\/?html( [^>]*)?>$|^<\/?head>$|^<\/?body>$|^<meta (charset|name="viewport")/d' report.html > report-artifact.html`. The user opens the private link from any device.
+- Anything else (local session) → write the file to `$HOME/html-reports/<project>/<YYYY-MM-DD>-<slug>.html` and open it in the browser: `start "" "$HOME/html-reports/..."` on Windows (Git Bash), `open` on macOS, `xdg-open` on Linux. Spell the path with `$HOME`, never `~`: a quoted `~` is not expanded, and the browser gets a path it cannot find. `<project>` is the git repo's folder name, else the working directory's. Regenerating the same report overwrites its file. Print the path in the reply.
 - Local session, but the user says they are away or on another device → publish as an Artifact too.
 
 Reports live outside the project repo because HTML diffs are noisy; commit one only when the user asks. When another skill needs its own file (`/plan` writes a markdown plan, `open-pr` puts `## Proof` in the PR body), keep that file as the source of truth and make the page a view of it, not a replacement.
 
 ## How to build it
 
-1. Start from [house.html](house.html): copy it, keep its `<head>` and `<style>` as they are, and replace the sample body with your content using its components. Every report shares this look so the user recognizes the layout at a glance; don't restyle per report. Its tokens meet the Artifact tool's theme contract, so the same file publishes unchanged. Changing the house style means editing `house.html` with `skill:frontend-design`.
+1. Start from [house.html](house.html): copy it, keep its `<head>` and `<style>` as they are, and replace the sample body with your content using its components. Every report shares this look so the user recognizes the layout at a glance; don't restyle per report. Its tokens meet the Artifact tool's theme contract, so after the outer-tag strip above the same content publishes as an Artifact. Changing the house style means editing `house.html` with `skill:frontend-design`.
 2. For layout ideas, read the matching example in [examples/](examples/) (table below) from `<body>` down: `grep -n '<body'`, then Read from that line. Take its structure and techniques only. Ignore its CSS: the gallery's look (cream background, serif with terracotta accent, pills, monospace labels) is what `skill:frontend-design` bans. All 31 are catalogued in [catalog.md](catalog.md).
-3. One self-contained file: inline CSS and JS, no build step. Inline SVG for diagrams; load `skill:artifact-diagramming` for anything beyond a simple box-and-arrow.
+3. One file: inline CSS and JS, no build step, nothing external except the Google Fonts link (offline it falls back to Verdana). Inline SVG for diagrams; load `skill:artifact-diagramming` for anything beyond a simple box-and-arrow.
 4. Top of the page: the result banner, one line, colored by outcome. The rest is for scanning: short sections, one idea per line, tabs or `<details>` for depth, a table of contents when there are 4+ sections.
 5. If the user must decide anything, add controls and a **Copy as prompt** button that serializes their choices into text they paste back here. Also show that text in a read-only `<textarea>`, because clipboard access can be blocked on `file://` pages. Without the export, the page is a dead end.
 6. Real data only. Render diffs from actual `git diff`, numbers from actual command output, and label claims **confirmed** (with the file:line or command) or **inferred**, same as in the terminal. A pretty page with an invented number is worse than none.
 7. HTML-escape every code snippet, diff, and command output (`&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`). One unescaped `<` in a diff silently swallows the rest of the page.
-8. Before opening: if the page has a `<script>`, copy it to a scratch file and run `node --check` on it. A syntax error kills every button without any visible sign.
+8. Before opening: if the page has a `<script>`, copy it to a scratch file and run `node --check` on it. A syntax error kills every button without any visible sign. This catches syntax only; keep each export form's button, status, and output together, since the template skips a form missing any of them.
 
 | Output | Read first | Required sections |
 |---|---|---|
@@ -55,3 +55,5 @@ Reports live outside the project repo because HTML diffs are noisy; commit one o
 | Pre-merge understanding | `unknowns/11-change-quiz.html`, `unknowns/10-pitch-doc.html` | What changed and why; quiz or objection-answer list |
 | Incident / postmortem | `12-incident-report.html` | Timeline; root cause; impact; action items |
 | Flow or pipeline | `13-flowchart-diagram.html` | Annotated SVG flowchart |
+
+After changing this skill or the AGENTS.md routing line, re-run the routing check in [evals.md](evals.md).

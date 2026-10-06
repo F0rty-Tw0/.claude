@@ -14,6 +14,7 @@ Based on Thariq's "unreasonable effectiveness of HTML" post and its example gall
 | **Copy as prompt** | Every page that asks for a decision exports the user's choices back as pasteable text |
 | `house.html` | House style ("Status spine", built with frontend-design): the starter every report copies, plus a gallery of its components |
 | `catalog.md` | All 31 examples with use case and techniques |
+| `evals.md` | Six routing scenarios with expected answers and the last baseline vs with-skill run |
 | `examples/` | The 31 example pages plus the two gallery indexes, used for structure only (their visual style is not ours) |
 
 ---
