@@ -91,4 +91,4 @@ Grug governs implementation choices. Also:
 
 ## Closing status (main session)
 
-Close substantive turns with: what you ran and its result (versus baseline); what is inferred but unconfirmed; what only the user can verify; committed vs pushed vs dirty. Lead with failures and unimplemented scope. On irreversible or unconfirmed work, name the claim you'd most expect to be wrong.
+Close substantive turns with: what you ran and its result (versus baseline); what is inferred but unconfirmed; what only the user can verify; committed vs pushed vs dirty. Lead with failures and unimplemented scope. On irreversible or unconfirmed work, name the claim you'd most expect to be wrong. When the turn produced an HTML page (skill:html-output), this detail goes on the page; the terminal keeps failures and git state in one line each.
