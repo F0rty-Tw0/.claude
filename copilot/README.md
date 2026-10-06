@@ -12,8 +12,8 @@ A multi-agent orchestration system for **VS Code GitHub Copilot** (custom `.agen
 - **Expanded roster:** 7 → 18 agents, adding the roles the original lacked (analyst, architect, critic, debugger, refactorer, test-engineer, security-reviewer, git-master, tracer, technical-writer, scientist).
 - **OMC prompt structure** in every agent: a memorable **Core Principle**, **Task Classification**, **Success Criteria**, **Failure Prevention** anti-patterns, explicit **Handoffs**, and evidence-based output.
 - **Operating Laws** (this repo's standards) baked into every agent: Critical Honesty + 🟢🟡🔴 Narrate-Intent + right-sized/DRY-after-2 + evidence-over-assertion.
-- **Latest models** via ordered fallback lists (`Claude Opus 4.8` → `Claude Opus 4.5` → `Sonnet 4.6` → `Auto`), so an agent always resolves to the best available model.
-- **Correct VS Code frontmatter:** `name`, `tools` (namespaced groups), `model` (array), `agents` (delegation whitelist), `handoffs` with `send`.
+- **Pinned models:** one model per agent, tiered like `~/.claude/agents` — `Claude Opus 5.5` by default, `Claude Sonnet 5.5` for git-master and technical-writer, `GPT-6 Luna` for explorer.
+- **Correct VS Code frontmatter:** `name`, `tools` (namespaced groups), `model` (single string), `agents` (delegation whitelist), `handoffs` with `send`.
 
 ---
 
@@ -21,26 +21,26 @@ A multi-agent orchestration system for **VS Code GitHub Copilot** (custom `.agen
 
 | Agent | Role | Tier (model) | Edits? |
 |---|---|---|---|
-| **orchestrator** | Conductor — runs Plan→Implement→Review→Commit, delegates everything | Opus | via subagents |
-| **planner** | Autonomous TDD planner; hands off to orchestrator | Opus | plans only |
-| **analyst** | Pre-planning requirements validation → testable acceptance criteria | Opus | read-only |
-| **architect** | System design & complex-refactor strategy (ADR-style options) | Opus | read-only |
-| **critic** | Adversarial review of plans/designs *before* implementation | Opus | read-only |
-| **researcher** | Deep subsystem analysis → high-signal structured findings | Sonnet | read-only |
-| **explorer** | Fast parallel file/usage discovery | Haiku | read-only |
-| **tracer** | Causal investigation — symptom → origin, link by link | Sonnet | read-only |
-| **executor** | Strict-TDD implementer; smallest correct diff | Sonnet | ✅ |
-| **frontend-engineer** | UI/UX, styling, responsive, accessible (component-test-first) | Gemini Pro | ✅ |
-| **debugger** | Root-cause diagnosis & fix of failing builds/tests | Sonnet | ✅ |
-| **refactorer** | Behavior-preserving simplification & de-duplication | Sonnet | ✅ |
-| **test-engineer** | Comprehensive behavior-focused test suites (+ QA) | Sonnet | ✅ |
-| **code-reviewer** | Correctness/quality/coverage verdict (APPROVED/NEEDS_REVISION/FAILED) | Opus | read-only |
-| **security-reviewer** | Vulnerability & auth/secret/crypto audit | Opus | read-only |
-| **git-master** | Atomic commits, branches, PRs; history as documentation | Sonnet | git only |
-| **technical-writer** | Docs/READMEs/API refs grounded in real code | Gemini Pro | docs only |
-| **scientist** | Data/ML, hypothesis-driven reproducible experiments | Opus | ✅ |
+| **orchestrator** | Conductor — runs Plan→Implement→Review→Commit, delegates everything | Opus 5.5 | via subagents |
+| **planner** | Autonomous TDD planner; hands off to orchestrator | Opus 5.5 | plans only |
+| **analyst** | Pre-planning requirements validation → testable acceptance criteria | Opus 5.5 | read-only |
+| **architect** | System design & complex-refactor strategy (ADR-style options) | Opus 5.5 | read-only |
+| **critic** | Adversarial review of plans/designs *before* implementation | Opus 5.5 | read-only |
+| **researcher** | Deep subsystem analysis → high-signal structured findings | Opus 5.5 | read-only |
+| **explorer** | Fast parallel file/usage discovery | GPT-6 Luna | read-only |
+| **tracer** | Causal investigation — symptom → origin, link by link | Opus 5.5 | read-only |
+| **executor** | Strict-TDD implementer; smallest correct diff | Opus 5.5 | ✅ |
+| **frontend-engineer** | UI/UX, styling, responsive, accessible (component-test-first) | Opus 5.5 | ✅ |
+| **debugger** | Root-cause diagnosis & fix of failing builds/tests | Opus 5.5 | ✅ |
+| **refactorer** | Behavior-preserving simplification & de-duplication | Opus 5.5 | ✅ |
+| **test-engineer** | Comprehensive behavior-focused test suites (+ QA) | Opus 5.5 | ✅ |
+| **code-reviewer** | Correctness/quality/coverage verdict (APPROVED/NEEDS_REVISION/FAILED) | Opus 5.5 | read-only |
+| **security-reviewer** | Vulnerability & auth/secret/crypto audit | Opus 5.5 | read-only |
+| **git-master** | Atomic commits, branches, PRs; history as documentation | Sonnet 5.5 | git only |
+| **technical-writer** | Docs/READMEs/API refs grounded in real code | Sonnet 5.5 | docs only |
+| **scientist** | Data/ML, hypothesis-driven reproducible experiments | Opus 5.5 | ✅ |
 
-Models are **fallback lists** — e.g. `['Claude Opus 4.8 (copilot)', 'Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']`. VS Code tries each in order, so the agent works regardless of which models your Copilot plan exposes.
+Each agent pins **one model** (no fallback list): `Claude Opus 5.5 (copilot)` by default, `Claude Sonnet 5.5 (copilot)` for git-master and technical-writer, `GPT-6 Luna (copilot)` for explorer. If your Copilot plan doesn't expose that name, the agent won't resolve — check the model picker.
 
 ---
 
@@ -116,7 +116,7 @@ description: 'One line — what it does and when to use it.'
 argument-hint: 'What to pass it'
 tools: ['search', 'read', 'web', 'edit', 'agent']   # namespaced groups; 'agent' enables delegation
 agents: ['explorer']                                  # delegation whitelist (requires 'agent' tool); omit for none
-model: ['Claude Opus 4.8 (copilot)', 'Claude Opus 4.5 (copilot)', 'Claude Sonnet 4.6 (copilot)', 'Auto (copilot)']
+model: Claude Opus 5.5 (copilot)
 ---
 You are the YOUR-AGENT — …
 

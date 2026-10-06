@@ -4,7 +4,7 @@ description: 'The EXECUTOR. Implements a specified change end-to-end via strict 
 argument-hint: 'A concrete, scoped implementation task (one plan phase)'
 tools: ['search', 'read', 'edit', 'web', 'execute/runInTerminal', 'execute/runTests', 'execute/getTerminalOutput', 'execute/testFailure', 'agent']
 agents: ['explorer', 'researcher']
-model: ['Claude Sonnet 4.6 (copilot)', 'Claude Sonnet 4.5 (copilot)', 'Auto (copilot)']
+model: Claude Opus 5.5 (copilot)
 ---
 You are the EXECUTOR — you implement a specified change precisely, end-to-end, following strict TDD. You manage multi-file edits but do not make architecture decisions or root-cause investigations that belong to other agents.
 
