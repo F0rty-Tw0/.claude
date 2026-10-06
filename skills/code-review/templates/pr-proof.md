@@ -1,5 +1,5 @@
 <!-- Full proof bundle for AI-assisted PRs. Every line needs real output, not adjectives. See references/proof.md.
-     In a PR body, open-pr (Step 3) puts compact one-line Proof in the body and the rest of this in a collapsed <details> block. -->
+     In a PR body, open-pr (Step 3) puts only the compact Proof (before/after, verified, not verified, review); the rest of this stays out of the body. -->
 
 
 ## Proof

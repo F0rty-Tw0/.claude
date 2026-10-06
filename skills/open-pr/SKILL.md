@@ -1,6 +1,6 @@
 ---
 name: open-pr
-description: Writes compact PR titles and descriptions with a blast-radius-scaled Proof section behind a fresh code-review gate. Use when creating or updating a pull request or describing branch changes for one.
+description: Writes compact PR titles and descriptions with a before/after Proof section behind a fresh code-review gate. Use when creating or updating a pull request or describing branch changes for one.
 ---
 
 # Open PR
@@ -19,13 +19,14 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 0. Proof gate        → proof bundle + fresh adversarial review (code-review skill); BLOCK → stop and ask
 1. Gather changes    → git diff, git log against base branch
 2. Scan repo context → understand what areas the changes touch and what depends on them
-3. Audience          → ask: for us or for someone else? Same compact body; for us may add a collapsed details block
+3. Write body        → compact template, same for every PR
 4. Write title       → short, specific, lowercase
 5. Write summary     → 1–3 sentences, whatever the size
-6. Add ticket link   → extract ticket number from branch name, append "Closes #<number>"
-7. Polish            → check Red Flags
-8. Present           → show to user, ready for gh pr create
+6. Polish            → check Red Flags
+7. Present           → show to user, ready for gh pr create
 ```
+
+Blast radius, test counts, ticket numbers, and branch details are for your own orientation while building proof. They never go in the body.
 
 ### Before Step 0: One PR or Several?
 
@@ -41,13 +42,7 @@ Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`h
    - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
    - `APPROVE — …` → continue.
    - No before/after pair (the reviewer reports it as a proof gap) → same as BLOCK: say why it's missing and ask *capture first (Recommended)* / *open as draft with `Before: not captured — <why>` and the gap in Not verified*. PRs used to ship with proof that code was written, not that it worked.
-4. **Scale proof to blast radius** — the body always gets the compact `## Proof` from Step 3. For us, the class decides what goes in the collapsed block under it:
-
-| Class | `<details>` block contains |
-|---|---|
-| Leaf | no block |
-| Branch | base-failure output (bug fix), full runtime output behind the trimmed pair |
-| Trunk | the rest of `templates/pr-proof.md`: gate, invariants, canary metric, raw test output |
+4. **Trim for the body** — the full proof bundle (blast radius, test counts, gate, invariants) stays with you. Only the compact `## Proof` from Step 3 goes in the body.
 
 Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
 
@@ -83,12 +78,9 @@ Before writing, understand the blast radius:
 
 Mention impact only when it's real and non-obvious. Don't manufacture significance.
 
-### Step 3: Audience
+### Step 3: Write Body
 
-**Ask first** with AskUserQuestion: *Who is this PR for?* Ask once per PR, or once for a whole `meaningful-prs` stack. Both get the same compact body, because long bodies go unread and bury the proof.
-
-- **For us (Recommended in own repos)** — our repo or team. Compact body, plus one collapsed block after `## Proof` when the class adds detail (Step 0 table): `<details><summary>Proof details</summary>` … `</details>`, with a blank line after `</summary>` or GitHub renders the markdown inside as plain text.
-- **For someone else** — upstream, OSS, another team, a reviewer without our context. Compact body only.
+Every PR gets the same compact body, because long bodies go unread and bury the proof.
 
 ```
 <title>
@@ -99,22 +91,17 @@ Mention impact only when it's real and non-obvious. Don't manufacture significan
 
 ## Stack            ← only if stacked, 1–3 lines
 ## Proof
-- Blast radius: <Leaf|Branch|Trunk> <n>/10 — rollback: <flag off | revert | …>
-- Tests: `<cmd>` → <pass/fail counts>
 - Before: `<same cmd / steps on base>` → <old output or behavior>   ← screenshot table below for UI
 - After: `<same cmd / steps on head>` → <new output or behavior>
 - Verified: <one line>
 - Not verified: <one line>
 - Review: <verdict> @ <short sha>
-- Deep-read: <file:line ranges>   ← Trunk only
 - Blockers: <one line each>   ← only on a draft opened despite BLOCK
 
 <before/after screenshot table for UI changes, or fenced output when one line can't show it; the blank line above keeps GitHub from rendering it as text inside the last bullet>
-
-Closes #<n>         ← only if the branch has a ticket
 ```
 
-No `What changed` / `Impact` / `Test plan` sections and no review history. A non-obvious impact from Step 2 (callers, config, deploy order) gets one sentence in the summary; anything longer goes in the details block, for us only (a Leaf PR may add one just for that).
+No `What changed` / `Impact` / `Test plan` sections, no review history, no blast radius, test counts, `Closes #`, or `<details>` block. A non-obvious impact from Step 2 (callers, config, deploy order) gets one sentence in the summary.
 
 ### Step 4: Write the Title
 
@@ -178,31 +165,13 @@ Keep it plain: factual words, motivation only when it isn't self-evident, "no be
 
 A one-line fix, a rename, or a config bump gets no sketch; the summary already says it.
 
-### Step 6: Add Ticket Link
-
-Extract the ticket number from the current branch name and append a closing reference at the end of the description.
-
-```bash
-# Get current branch name
-git branch --show-current
-# Example: story/28543/add-description-to-tar → ticket is 28543
-```
-
-Parse the ticket number from the branch name (typically the numeric segment after `story/`, `bug/`, `feature/`, or similar prefixes). Append to the very end of the description:
-
-```
-Closes #<ticket_number>
-```
-
-If the branch has no recognizable ticket number, skip this step silently — don't ask the user.
-
-### Step 7: Polish
+### Step 6: Polish
 
 Check the title and description against Red Flags. Edit prose only; leave the `## Proof` section's commands, output, and verdict verbatim.
 
-Append the compact `## Proof` from Step 3 at the end of the body, then the details block (for us, Branch and Trunk), then `Closes #…`.
+Append the compact `## Proof` from Step 3 at the end of the body.
 
-### Step 8: Present
+### Step 7: Present
 
 Output the title and description as two separate markdown code blocks so the user can easily copy each one:
 
@@ -241,10 +210,11 @@ Using "enhances", "fosters", "ensures", "leveraging". Write like a person.
 
 If your PR description has any of these, rewrite it:
 
-- Any section besides `## Stack` and `## Proof`, or more than one `<details>` block
+- Any section besides `## Stack` and `## Proof`, or any `<details>` block
+- A blast radius, test count, deep-read list, or `Closes #` line
 - A summary over 3 sentences
 - More than one sketch block, or a sketch that restates the diff line by line
-- No `## Proof` section, or proof claims ("tests pass", "verified") with no command and counts
+- No `## Proof` section, or a `Verified:` claim with nothing observable behind it
 - No `Before:`/`After:` pair, or one showing test output or code added instead of the change running
 - Any bullet starting with a bold header followed by a colon
 - The word "comprehensive", "robust", "seamless", or "leverage"
