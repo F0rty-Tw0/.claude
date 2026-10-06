@@ -40,7 +40,7 @@ A multi-agent orchestration system for **VS Code GitHub Copilot** (custom `.agen
 | **technical-writer** | Docs/READMEs/API refs grounded in real code | Sonnet 5.5 | docs only |
 | **scientist** | Data/ML, hypothesis-driven reproducible experiments | Opus 5.5 | ✅ |
 
-Each agent pins **one model** (no fallback list): `Claude Opus 5.5 (copilot)` by default, `Claude Sonnet 5.5 (copilot)` for git-master and technical-writer, `GPT-6 Luna (copilot)` for explorer. If your Copilot plan doesn't expose that name, the agent won't resolve — check the model picker.
+Each agent pins **one model** (no fallback list): `Claude Opus 5.5 (copilot)` by default, `Claude Sonnet 5.5 (copilot)` for git-master and technical-writer, `GPT-6 Luna (copilot)` for explorer. If your Copilot plan doesn't expose that name, behavior is undocumented (it may fail or fall back to the picker model) — check the model picker.
 
 ---
 
