@@ -50,7 +50,7 @@ Run skill:open-pr for every PR. It adds `## Proof` and a fresh `code-review`, an
    - migration number collisions on `origin/<default>`
    - the real typecheck/test script names
 2. **Split plan** as a table: Slice, Branch, Base, Blast (`code-review` `references/blast-radius.md`), Tasks/Files, ~Lines. If the plan has a **PR Slices** table (`plan`, `references/task-format.md`), start from it and fill Files and ~Lines from `git diff --stat`.
-3. **One approval:** ask with AskUserQuestion, together with `open-pr`'s audience question (for us / for someone else) asked **once for the whole stack**. The approval covers the listed commits, the first push and the PRs. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
+3. **One approval:** ask with AskUserQuestion, **once for the whole stack**. The approval covers the listed commits, the first push and the PRs. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
 4. **Build the slices.** Details and commands: `references/mechanics.md`.
    - Sync the source branch with `origin/<default>` first.
    - Take files **by path** from the source branch (`git restore --source`, which also carries deletions).
