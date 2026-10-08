@@ -1,1 +1,1 @@
-{ "name": "handoff-trigger", "version": "0.1.0", "description": "Nudges /handoff at 70% of the compaction limit and runs it at 90%." }
+{ "name": "handoff-trigger", "version": "0.1.0", "description": "Nudges /handoff at 70% of the compaction limit and runs it at 90%; keeps an idle session's cache warm with 2 pings, then hands off, and continues from the handoff on a cold return." }
