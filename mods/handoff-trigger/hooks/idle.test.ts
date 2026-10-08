@@ -25,7 +25,8 @@ type Submit = {
 // (`clear` set to 'stuck' keeps the id, 'rejected' throws). Records submits,
 // commands (and their args) and toasts; a plugin's submit is dropped with
 // `drop` when it is set, rejects when `isRejecting` is, and an `asUser` one
-// stays in flight for `holdMs`, as does a /clear after its session.end.
+// stays in flight for `holdMs`, as does a /clear after its session.end, and a
+// ping for `pingHoldMs`.
 // /handoff rejects when `isHandoffRejecting` is; holdUsage() parks every
 // session.usage call until the function it returns is called.
 function world($: Engine, on: On) {
@@ -42,6 +43,7 @@ function world($: Engine, on: On) {
     isHandoffRejecting: false,
     clear: 'new' as 'new' | 'stuck' | 'rejected',
     holdMs: 0,
+    pingHoldMs: 0,
   }
   let isInTurn = false
   let sessions = 0
@@ -94,6 +96,7 @@ function world($: Engine, on: On) {
     const asUser = e.origin.kind === 'plugin' ? e.origin.asUser : undefined
     seen.submits.push({ text: e.text, origin: e.origin.kind, asUser })
     if (asUser && seen.holdMs > 0) await clock.sleep(seen.holdMs)
+    if (isPlugin && !asUser && seen.pingHoldMs > 0) await clock.sleep(seen.pingHoldMs)
     if (isPlugin && seen.isRejecting) throw new Error('submit rejected')
     if (isPlugin && seen.drop !== undefined) return { drop: seen.drop }
 
@@ -704,6 +707,61 @@ test('a ping turn ending in refusal runs /handoff on the next tick', async ($, o
   await idle()
   await endTurn({ reason: 'refusal', refusal: { category: null, explanation: null } }) // the ping's own turn
   expect(seen.commands).toEqual(['handoff'])
+})
+
+test('a prompt typed into a turn past the TTL since a handoff passes: no /clear mid-turn', async ($, on) => {
+  const { clock, seen, write, startTurn, endTurn, type, passed, resubmits } = world($, on)
+
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  await clock.advance(50 * 60_000)
+  await type('implement the parser')
+  await startTurn()
+  await clock.advance(11 * 60_000)
+  const result = await type('also add a test', 't')
+  await clock.settle()
+  expect(result.drop).toBeUndefined()
+  expect(passed()).toEqual(['implement the parser', 'also add a test'])
+  expect(seen.commands).toEqual([])
+  expect(resubmits()).toEqual([])
+})
+
+test('the same prompt sent again after the resubmitted turn ended in error or aborted passes', async ($, on) => {
+  const { clock, type, goCold, endTurn, passed } = world($, on)
+
+  for (const reason of ['error', 'aborted'] as const) {
+    await goCold()
+    await type('fix the bug')
+    await clock.settle()
+    await endTurn({ reason }) // the resubmit's turn
+    expect((await type('fix the bug')).drop).toBeUndefined()
+  }
+  expect(passed()).toEqual(['fix the bug', 'fix the bug'])
+})
+
+test('a person prompt while the ping is in flight: a ping dropped for another reason runs no /handoff', async ($, on) => {
+  const { clock, seen, endTurn, type, idle, pings } = world($, on)
+
+  seen.drop = 'other'
+  seen.pingHoldMs = 1_000
+  await endTurn()
+  await idle()
+  await type('back again')
+  await clock.advance(1_000)
+  expect(pings()).toBe(1)
+  expect(seen.commands).toEqual([])
+})
+
+test('a cold Remote Control (bridge) prompt with a handoff takes the cold path', async ($, on) => {
+  const { clock, seen, goCold, passed, resubmits } = world($, on)
+
+  await goCold()
+  const result = await $.prompt.submit({ text: 'from phone', wait: false, origin: { kind: 'bridge' } })
+  await clock.settle()
+  expect(result).toEqual({ drop: COLD_DROP })
+  expect(seen.commands).toEqual(['clear'])
+  expect(resubmits()).toEqual([resubmit('from phone')])
+  expect(passed()).toEqual([])
 })
 
 test('two completions parked together with no turn.start between arm one wake', async ($, on) => {
