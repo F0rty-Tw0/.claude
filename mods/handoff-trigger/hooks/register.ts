@@ -1,5 +1,7 @@
 import type { Register } from 'claude-code'
 
+import { idle } from './idle'
+
 // Shares of autoCompactThreshold (autoCompactWindow minus the compaction buffer),
 // not of the model's window. With auto-compaction off it falls back to the window.
 // ponytail: constants, not userConfig; promote them if they need tuning per machine.
@@ -7,6 +9,8 @@ const NUDGE_AT = 70
 const RUN_AT = 90
 
 export const register: Register = on => {
+  idle(on)
+
   // One nudge and one run per fill cycle; a cycle ends when the context drops
   // below NUDGE_AT again (after /clear or a compaction).
   let isNudged = false
@@ -14,10 +18,11 @@ export const register: Register = on => {
 
   // turn.complete, not session.measure: measure also fires mid-turn, where a
   // command can't run. A subagent's turn, an interrupt or an error is not the
-  // end of the person's turn.
-  on('turn.complete', async ($, e, next) => {
+  // end of the person's turn. The matcher also lets idle.ts hook every turn:
+  // the engine takes one unmatched hook per event per plugin.
+  on('turn.complete', { reason: 'answer' }, async ($, e, next) => {
     const result = await next(e)
-    if (e.agentId || e.reason !== 'answer') {
+    if (e.agentId) {
       return result
     }
 
