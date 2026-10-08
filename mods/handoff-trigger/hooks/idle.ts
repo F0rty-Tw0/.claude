@@ -84,6 +84,10 @@ export function idle(on: On): void {
     const result = await next(e)
     if (e.agentId) return result
 
+    // Any end of a turn closes check 3's window: a later same text is a new
+    // prompt, also a retry after the resubmitted turn failed.
+    resent = undefined
+
     // A person prompt resets pings, so pings > 0 means this is the ping's own
     // turn. It refreshed nothing: lastResponseAt stays, the handoff runs now.
     const isFailed = e.reason === 'error' || e.reason === 'refusal'
@@ -123,7 +127,9 @@ export function idle(on: On): void {
     const path = handoffPath
     const isCommand = e.text.startsWith('/')
     const hasAttachments = (e.attachments?.length ?? 0) > 0
-    const isWarm = lastResponseAt === undefined || now - lastResponseAt < TTL_MS
+    // A prompt typed into a running turn: that turn keeps the cache warm.
+    const isInTurn = e.turnId !== undefined
+    const isWarm = isInTurn || lastResponseAt === undefined || now - lastResponseAt < TTL_MS
     const isPassing = isCommand || hasAttachments || path === undefined || isWarm
     if (isPassing) {
       hasFired = false
@@ -178,9 +184,7 @@ async function continueFresh($: EngineInterface): Promise<void> {
 }
 
 // turn.complete steps 1-4: record a handoff written this turn, or arm the wake.
-// An answer ends check 3's window: a later same text is a new prompt.
 async function settleTurn($: EngineInterface, answer: string, reason: TurnCompleteReason, turnSpell: number): Promise<void> {
-  if (reason === 'answer') resent = undefined
   const path = await freshHandoff($, answer)
   handoffPath = path
   lastResponseAt = await $.clock.now()
@@ -250,6 +254,8 @@ async function fire($: EngineInterface, armedSpell: number): Promise<void> {
     pings += 1
     $.ui.toast(`Keeping the prompt cache warm (${pings}/${PINGS})`)
     const { drop } = await $.prompt.submit({ text: PING_TEXT }).catch(() => ({ drop: 'rejected' }))
+    // A person prompt during the submit owns the spell now.
+    if (spell !== armedSpell) return
     if (!drop) return
 
     // cold-cache's block reason, maybe behind an engine prefix: the cache is
