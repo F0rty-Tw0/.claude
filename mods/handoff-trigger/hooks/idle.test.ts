@@ -64,7 +64,8 @@ function world($: Engine, on: On) {
   })
   on('session.id', () => ({ value: `session-${sessions}` }))
   on('fs.stat', (_$, e) => {
-    const mtimeMs = seen.files.get(slashed(e.path))
+    // The engine resolves a path that isn't absolute on this host against the cwd; on Linux, C:\… is one.
+    const mtimeMs = seen.files.get(slashed(e.path).replace(/^.*?(?=[A-Za-z]:\/)/, ''))
     if (mtimeMs === undefined) return { deny: `ENOENT: ${e.path}` }
 
     const stat: FsStat = { kind: 'file', size: 1, mtimeMs, isLink: false }
