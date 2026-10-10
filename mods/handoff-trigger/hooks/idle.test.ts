@@ -265,12 +265,12 @@ test('a prompt typed into the handoff turn: no handoff recorded, the turn arms',
   expect(pings()).toBe(1)
 })
 
-test('a 90% /handoff turn naming a fresh path does not arm', async ($, on) => {
+test('a /handoff turn naming a fresh path does not arm', async ($, on) => {
   const { seen, write, endTurn, idle, pings } = world($, on)
 
-  seen.tokens = 273_000 // 91%: register.ts runs /handoff
+  seen.tokens = 273_000 // 91%: register.ts only nudges now
   await endTurn()
-  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.commands).toEqual([])
 
   write(HANDOFF)
   await endTurn({ answer: `Handoff written to ${HANDOFF}` })
