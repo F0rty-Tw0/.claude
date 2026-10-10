@@ -44,7 +44,7 @@ function world($: Engine, on: On) {
   return { seen, endTurn }
 }
 
-test('quiet below 70%, one nudge at 70%, one run at 90%', async ($, on) => {
+test('quiet below 70%, one nudge at 70%, nothing run at 90%', async ($, on) => {
   const { seen, endTurn } = world($, on)
 
   seen.tokens = 150_000 // 50%
@@ -60,20 +60,21 @@ test('quiet below 70%, one nudge at 70%, one run at 90%', async ($, on) => {
   seen.tokens = 273_000 // 91%
   await endTurn()
   await endTurn()
-  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.toasts.length).toBe(1)
+  expect(seen.commands).toEqual([])
 })
 
-test('a first look at 90% or more runs once, with no nudge after it', async ($, on) => {
+test('a first look at 90% nudges once, runs nothing', async ($, on) => {
   const { seen, endTurn } = world($, on)
 
   seen.tokens = 273_000 // 91%
   await endTurn()
   await endTurn()
-  expect(seen.toasts.length).toBe(1)
-  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.toasts).toEqual(['Context at 91% of the compaction limit: consider /handoff (runs itself before auto-compaction)'])
+  expect(seen.commands).toEqual([])
 })
 
-test('a new fill cycle after /clear nudges and runs again', async ($, on) => {
+test('a new fill cycle after /clear nudges again, runs nothing', async ($, on) => {
   const { seen, endTurn } = world($, on)
 
   seen.tokens = 273_000
@@ -82,7 +83,8 @@ test('a new fill cycle after /clear nudges and runs again', async ($, on) => {
   await endTurn()
   seen.tokens = 273_000
   await endTurn()
-  expect(seen.commands).toEqual(['handoff', 'handoff'])
+  expect(seen.toasts.length).toBe(2)
+  expect(seen.commands).toEqual([])
 })
 
 test("a subagent's turn never triggers", async ($, on) => {
