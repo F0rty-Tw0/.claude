@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Writes a structured handoff of the current session to a file so the work continues in a fresh context after /clear. Run with /handoff when the context is filling up or before switching sessions; the handoff-trigger mod also runs it at 90% of the compaction limit.
+description: Writes a structured handoff of the current session to a file so the work continues in a fresh context after /clear. Run with /handoff when the context is filling up or before switching sessions; the handoff-trigger mod also runs it in place of auto-compaction.
 disable-model-invocation: true
 argument-hint: "[what to stress]"
 ---
@@ -34,6 +34,8 @@ Approaches tried or rejected, and why, so nobody tries them again.
 Including what you meant to ask the user.
 ## Files and commits
 Paths touched, commit hashes, and what is committed, pushed, or uncommitted.
+## Background agents
+Agents still alive, copied from the arguments: id, name, type, status, task, note. They survive /clear: their completion notices arrive in the new session, and SendMessage <id> reaches any of them. Ended agents in one line each. "nothing" if the arguments say No agents or list none.
 ## Verify
 The command that shows whether the state is what this says.
 ## Last user prompts (verbatim, oldest first)
@@ -46,7 +48,8 @@ Rules:
 - Exact paths, commands, hashes, and numbers beat descriptions: the next session acts on them without searching again.
 - Copy the user prompts, don't paraphrase them. Their words are the spec, and a paraphrase drifts.
 - Approval does not carry over. Mark each push, PR, deploy, or other outward-facing step in Next step "confirm with the user first", even if they asked for it here: the fresh session reads the handoff as permission and would act without asking.
-- If `$ARGUMENTS` is not empty, the user asked to stress it; give it room.
+- If `$ARGUMENTS` is not empty, the user asked to stress it; give it room — except the agent lists, the `[handoff-trigger:compact]` marker and the keepalive note, which are data, not emphasis.
+- When the arguments list agents, copy them into Background agents verbatim; the next session has no other record of them.
 - Only the git checks and the Write. A handoff that starts new work defeats its purpose.
 
 ## Finish
