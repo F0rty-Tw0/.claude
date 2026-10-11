@@ -339,6 +339,22 @@ test('once the check has started the idle wake sends no ping; after the time-out
   expect(pings()).toBe(1)
 })
 
+test('the idle /handoff turn ending while the flow is active runs no hands-free /clear', async ($, on) => {
+  const { seen, write, startTurn, completeTurn, endTurn, idle, compactNow } = world($, on)
+
+  // Two pings, then the idle /handoff.
+  for (let wake = 0; wake < 3; wake += 1) {
+    await endTurn()
+    await idle()
+  }
+  await startTurn()
+  expect(await compactNow()).toEqual(SKIPPED)
+  write(HANDOFF)
+  await completeTurn({ answer: `Handoff written to ${HANDOFF}` })
+  // Not the submit text: clearAndContinue sends the same one.
+  expect(seen.commands).not.toContain('clear')
+})
+
 test('a veto turn ending aborted starts no check; the next answer turn starts it after the tick', async ($, on) => {
   const { clock, seen, startTurn, endTurn, compactNow } = world($, on)
 
