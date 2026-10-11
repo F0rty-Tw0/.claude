@@ -424,6 +424,41 @@ test('a warm person prompt or a / command after the idle /handoff turn, before t
   expect(seen.commands).toEqual(['handoff', 'handoff'])
 })
 
+test('a queued turn starting after the idle /handoff turn, before the tick: no hands-free /clear', async ($, on) => {
+  const { clock, seen, write, startTurn, idleUntilHandoff } = world($, on)
+
+  await idleUntilHandoff()
+  await startTurn()
+  write(HANDOFF)
+  await $.turn.complete({ answer: `Handoff written to ${HANDOFF}`, durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  await startTurn()
+  await clock.settle()
+  expect(seen.commands).toEqual(['handoff'])
+})
+
+test('a person prompt landing during the idle /clear: no continue behind it, a toast with the paste line, and the cap stays unused', async ($, on) => {
+  const { clock, seen, write, startTurn, endTurn, type, idleUntilHandoff, passed, resubmits } = world($, on)
+
+  await idleUntilHandoff()
+  await startTurn()
+  write(HANDOFF)
+  seen.holdMs = 1000
+  await $.turn.complete({ answer: `Handoff written to ${HANDOFF}`, durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  await clock.advance(1)
+  await type('hello')
+  await clock.advance(2000)
+  expect(passed()).toEqual(['hello'])
+  expect(resubmits()).toEqual([])
+  expect(seen.toasts.at(-1)).toBe(CONTINUE_FAILED)
+
+  seen.holdMs = 0
+  await idleUntilHandoff()
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear', 'handoff', 'clear'])
+  expect(resubmits()).toEqual([CONTINUE])
+})
+
 test('an idle /handoff that rejects: a later turn naming a fresh handoff runs no /clear', async ($, on) => {
   const { seen, write, endTurn, idleUntilHandoff } = world($, on)
 

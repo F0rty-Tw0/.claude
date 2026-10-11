@@ -283,13 +283,16 @@ async function continueFresh($: EngineInterface): Promise<void> {
 // The idle return: /clear, then the handoff's Next step as the user's own.
 // Leaves handoffPath alone: a kept session still has it for the cold path, and
 // a good clear's session.end has wiped it.
-async function continueIdle($: EngineInterface, path: string): Promise<void> {
+async function continueIdle($: EngineInterface, path: string, seenAtSettle: number): Promise<void> {
   const request = `Continue from the handoff in ${path}: read it, run its Verify command, then do its Next step.`
   try {
     const sessionId = await $.session.id()
     await $.command.run({ command: 'clear' })
     const clearedId = await $.session.id()
     if (clearedId === sessionId) throw new Error('/clear kept the session')
+    // A person prompt during the /clear is in the new session already: no
+    // unattended Next step behind it, and the cap stays theirs.
+    if (personSeen !== seenAtSettle) throw new Error('a person prompt came first')
 
     const { drop } = await $.prompt.submit({ asUser: true, text: request })
     if (drop) throw new Error(drop)
@@ -321,7 +324,7 @@ async function settleTurn($: EngineInterface, answer: string, reason: TurnComple
       const isStale = spell !== turnSpell || handoffPath !== path || personSeen !== seenAtSettle || isFlowActive()
       if (isStale) return
 
-      await continueIdle($, path)
+      await continueIdle($, path, seenAtSettle)
     }
     // A command can't run inside a hook the turn is waiting on.
     $.clock.after(0, continueIfCurrent)
