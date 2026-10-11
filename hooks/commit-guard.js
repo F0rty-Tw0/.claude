@@ -15,7 +15,7 @@ const os = require('os');
 let raw = '';
 try { raw = fs.readFileSync(0, 'utf8'); } catch { process.exit(0); }
 let input;
-try { input = JSON.parse(raw); } catch { process.exit(0); }
+try { input = JSON.parse(raw) || {}; } catch { process.exit(0); }
 const cmd = (input.tool_input || {}).command || '';
 
 // matches `git commit`, `git push`, `rtk git commit`, `/usr/bin/git commit`, `git -c k=v commit`, `git -C x push`, etc.
@@ -23,10 +23,13 @@ const cmd = (input.tool_input || {}).command || '';
 const isGuarded = /(^|[;&|]\s*|\s)(rtk\s+)?(\S*\/)?git(\s+-[Cc]\s+\S+|\s+-[A-Za-z]\S*|\s+--\S+)*\s+(commit|push)\b/.test(cmd);
 if (!isGuarded) process.exit(0);
 
-const flag = path.join(os.homedir(), '.claude', `.allow-commit-${input.session_id}`);
-if (input.session_id && fs.existsSync(flag)) {
-  try { fs.unlinkSync(flag); } catch {}
-  process.exit(0); // authorized — flag consumed
+const session = input.session_id || '';
+if (/^[\w-]+$/.test(session)) { // also keeps the flag path inside ~/.claude
+  // the unlink is the check: a directory or a flag a parallel call already took stays blocked
+  try {
+    fs.unlinkSync(path.join(os.homedir(), '.claude', `.allow-commit-${session}`));
+    process.exit(0); // authorized — flag consumed
+  } catch {}
 }
 process.stderr.write(
   'commit-guard: git commit/push blocked. If the USER explicitly asked for this in the current request, ' +
