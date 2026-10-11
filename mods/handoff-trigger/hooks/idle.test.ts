@@ -12,6 +12,8 @@ const HANDOFF = `${HOME}\\.claude\\handoffs\\2026-10-08-1200-task.md`
 const COLD_DROP = 'Cache cold: clearing and continuing from the handoff with your prompt.'
 const PENDING_DROP = 'Added to your prompt that is being continued from the handoff.'
 const RESENT_DROP = 'Already sent after clearing.'
+const CONTINUE = `Continue from the handoff in ${HANDOFF}: read it, run its Verify command, then do its Next step.`
+const CONTINUE_FAILED = `Couldn't continue from the handoff. To continue, paste: ${CONTINUE}`
 
 type Submit = {
   readonly text: string
@@ -294,8 +296,8 @@ test('a path in **…**, (…) or a markdown link is found without the markup', 
   expect(pings()).toBe(0)
 })
 
-test('idle wakes ping, ping, then run /handoff once; each ping turn re-arms, the handoff turn does not', async ($, on) => {
-  const { seen, write, endTurn, idle, pings } = world($, on)
+test('idle wakes ping, ping, then run /handoff once; each ping turn re-arms, the handoff turn clears and continues hands-free', async ($, on) => {
+  const { seen, write, endTurn, idle, pings, resubmits } = world($, on)
 
   await endTurn()
   await idle()
@@ -314,6 +316,156 @@ test('idle wakes ping, ping, then run /handoff once; each ping turn re-arms, the
   await endTurn({ answer: `Handoff written to ${HANDOFF}` })
   await idle()
   expect(pings()).toBe(2)
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+  expect(resubmits()).toEqual([CONTINUE])
+})
+
+test('a prompt typed into the idle /handoff turn: no hands-free /clear', async ($, on) => {
+  const { seen, write, startTurn, completeTurn, type, idleUntilHandoff } = world($, on)
+
+  await idleUntilHandoff()
+  await startTurn()
+  write(HANDOFF)
+  await type('x', 't')
+  await completeTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff'])
+})
+
+test('the idle /handoff turn ending aborted or in error: no hands-free /clear', async ($, on) => {
+  const { seen, write, endTurn, type, idleUntilHandoff } = world($, on)
+
+  for (const reason of ['aborted', 'error'] as const) {
+    await type('back again')
+    await idleUntilHandoff()
+    write(HANDOFF)
+    await endTurn({ answer: `Handoff written to ${HANDOFF}`, reason })
+  }
+  expect(seen.commands).toEqual(['handoff', 'handoff'])
+})
+
+test('an idle /clear that keeps the session: toast with the paste line, no submit; a cold prompt then takes the cold path', async ($, on) => {
+  const { clock, seen, write, endTurn, type, idleUntilHandoff, resubmits } = world($, on)
+
+  seen.clear = 'stuck'
+  await idleUntilHandoff()
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+  expect(seen.toasts.at(-1)).toBe(CONTINUE_FAILED)
+  expect(resubmits()).toEqual([])
+
+  seen.clear = 'new'
+  await clock.advance(TTL_MS)
+  await type('next')
+  await clock.settle()
+  expect(resubmits()).toEqual([resubmit('next')])
+})
+
+test('a continue prompt dropped after a good clear: toast with the paste line, and the cap stays unused', async ($, on) => {
+  const { seen, write, endTurn, idleUntilHandoff, resubmits } = world($, on)
+
+  await idleUntilHandoff()
+  seen.drop = 'nope'
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+  expect(seen.toasts.at(-1)).toBe(CONTINUE_FAILED)
+
+  // Set, it drops the pings too.
+  seen.drop = undefined
+  await idleUntilHandoff()
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear', 'handoff', 'clear'])
+  expect(resubmits()).toEqual([CONTINUE, CONTINUE])
+})
+
+test('the cap: a second idle cycle after a hands-free continue stops at /handoff; a cold prompt then takes the cold path', async ($, on) => {
+  const { clock, seen, write, endTurn, type, idleUntilHandoff, resubmits } = world($, on)
+
+  for (let cycle = 0; cycle < 2; cycle += 1) {
+    await idleUntilHandoff()
+    write(HANDOFF)
+    await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  }
+  expect(seen.commands).toEqual(['handoff', 'clear', 'handoff'])
+
+  await clock.advance(TTL_MS)
+  await type('back')
+  await clock.settle()
+  expect(resubmits().at(-1)).toBe(resubmit('back'))
+})
+
+test('a person prompt between idle cycles resets the cap: the next idle /handoff continues hands-free again', async ($, on) => {
+  const { seen, write, endTurn, type, idleUntilHandoff } = world($, on)
+
+  for (let cycle = 0; cycle < 2; cycle += 1) {
+    await idleUntilHandoff()
+    write(HANDOFF)
+    await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+    await type('hi')
+  }
+  expect(seen.commands).toEqual(['handoff', 'clear', 'handoff', 'clear'])
+})
+
+test('a warm person prompt or a / command after the idle /handoff turn, before the tick: no hands-free /clear', async ($, on) => {
+  const { clock, seen, write, startTurn, type, idleUntilHandoff } = world($, on)
+
+  for (const text of ['wait', '/cost']) {
+    await type('back again')
+    await idleUntilHandoff()
+    await startTurn()
+    write(HANDOFF)
+    // Not completeTurn: it settles the clock, and the tick must wait.
+    await $.turn.complete({ answer: `Handoff written to ${HANDOFF}`, durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+    await type(text)
+    await clock.settle()
+  }
+  expect(seen.commands).toEqual(['handoff', 'handoff'])
+})
+
+test('a queued turn starting after the idle /handoff turn, before the tick: no hands-free /clear', async ($, on) => {
+  const { clock, seen, write, startTurn, idleUntilHandoff } = world($, on)
+
+  await idleUntilHandoff()
+  await startTurn()
+  write(HANDOFF)
+  await $.turn.complete({ answer: `Handoff written to ${HANDOFF}`, durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  await startTurn()
+  await clock.settle()
+  expect(seen.commands).toEqual(['handoff'])
+})
+
+test('a person prompt landing during the idle /clear: no continue behind it, a toast with the paste line, and the cap stays unused', async ($, on) => {
+  const { clock, seen, write, startTurn, endTurn, type, idleUntilHandoff, passed, resubmits } = world($, on)
+
+  await idleUntilHandoff()
+  await startTurn()
+  write(HANDOFF)
+  seen.holdMs = 1000
+  await $.turn.complete({ answer: `Handoff written to ${HANDOFF}`, durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  await clock.advance(1)
+  await type('hello')
+  await clock.advance(2000)
+  expect(passed()).toEqual(['hello'])
+  expect(resubmits()).toEqual([])
+  expect(seen.toasts.at(-1)).toBe(CONTINUE_FAILED)
+
+  seen.holdMs = 0
+  await idleUntilHandoff()
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear', 'handoff', 'clear'])
+  expect(resubmits()).toEqual([CONTINUE])
+})
+
+test('an idle /handoff that rejects: a later turn naming a fresh handoff runs no /clear', async ($, on) => {
+  const { seen, write, endTurn, idleUntilHandoff } = world($, on)
+
+  seen.isHandoffRejecting = true
+  await idleUntilHandoff()
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
   expect(seen.commands).toEqual(['handoff'])
 })
 

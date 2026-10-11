@@ -44,6 +44,15 @@ let pings = 0
 let spell = 0
 let pending: Pending | undefined
 let resent: Resent | undefined
+// Set right before the idle /handoff runs; the next main turn's settle reads
+// and clears it.
+let isIdleHandoff = false
+// The hands-free chain cap: 1 after one continue, until a person prompt.
+// session.end keeps it, so the mod's own /clear does too.
+let unattended: 0 | 1 = 0
+// Bumped on every person prompt, commands too: a warm /cost moves neither
+// spell nor handoffPath.
+let personSeen = 0
 
 // --- Handoff in place of auto-compaction: state ---
 // In this file, not its own module: the loader follows $ only into functions
@@ -105,6 +114,9 @@ export function idle(on: On): void {
   spell = 0
   pending = undefined
   resent = undefined
+  isIdleHandoff = false
+  unattended = 0
+  personSeen = 0
   flowState = 'off'
   deadline = 0
   asked = new Map()
@@ -124,6 +136,7 @@ export function idle(on: On): void {
     hasFired = false
     pings = 0
     spell += 1
+    isIdleHandoff = false
     await onSessionEnd($, e)
 
     return next(e)
@@ -170,6 +183,12 @@ export function idle(on: On): void {
   on('prompt.submit', async ($, e, next) => {
     const isPerson = e.origin.kind === 'composer' || e.origin.kind === 'bridge'
     if (!isPerson) return next(e)
+
+    // The person is back, even for a command: the cap resets, and a hands-free
+    // continue still waiting for its tick goes stale.
+    unattended = 0
+    personSeen += 1
+    isIdleHandoff = false
 
     // Both reads before check 2; no await from there to setting pending, so
     // two overlapping person prompts can't both reach check 5.
@@ -261,13 +280,55 @@ async function continueFresh($: EngineInterface): Promise<void> {
   }
 }
 
-// turn.complete steps 1-4: record a handoff written this turn, or arm the wake.
+// The idle return: /clear, then the handoff's Next step as the user's own.
+// Leaves handoffPath alone: a kept session still has it for the cold path, and
+// a good clear's session.end has wiped it.
+async function continueIdle($: EngineInterface, path: string, seenAtSettle: number): Promise<void> {
+  const request = `Continue from the handoff in ${path}: read it, run its Verify command, then do its Next step.`
+  try {
+    const sessionId = await $.session.id()
+    await $.command.run({ command: 'clear' })
+    const clearedId = await $.session.id()
+    if (clearedId === sessionId) throw new Error('/clear kept the session')
+    // A person prompt during the /clear is in the new session already: no
+    // unattended Next step behind it, and the cap stays theirs.
+    if (personSeen !== seenAtSettle) throw new Error('a person prompt came first')
+
+    const { drop } = await $.prompt.submit({ asUser: true, text: request })
+    if (drop) throw new Error(drop)
+
+    unattended = 1
+  } catch {
+    $.ui.toast(`Couldn't continue from the handoff. To continue, paste: ${request}`)
+  }
+}
+
+// turn.complete steps 1-4: record a handoff written this turn, continue from
+// the idle one hands-free, or arm the wake.
 async function settleTurn($: EngineInterface, answer: string, reason: TurnCompleteReason, turnSpell: number): Promise<void> {
+  // Before any await: a person prompt landing in one clears the flag itself.
+  const wasIdleHandoff = isIdleHandoff
+  isIdleHandoff = false
+  const seenAtSettle = personSeen
   const path = await freshHandoff($, answer)
   handoffPath = path
   lastResponseAt = await $.clock.now()
   isPromptInTurn = false
   stopTimer()
+
+  const isHandsFree = wasIdleHandoff && reason === 'answer' && path !== undefined && unattended === 0 && !isFlowActive()
+  if (isHandsFree) {
+    // Checked before the /clear, which moves spell itself: a person prompt or
+    // command, a queued turn, or the compaction flow that came first wins.
+    const continueIfCurrent = async (): Promise<void> => {
+      const isStale = spell !== turnSpell || handoffPath !== path || personSeen !== seenAtSettle || isFlowActive()
+      if (isStale) return
+
+      await continueIdle($, path, seenAtSettle)
+    }
+    // A command can't run inside a hook the turn is waiting on.
+    $.clock.after(0, continueIfCurrent)
+  }
 
   const isArmable = reason === 'answer' && !hasFired && path === undefined
   if (!isArmable) return
@@ -352,7 +413,10 @@ async function fire($: EngineInterface, armedSpell: number): Promise<void> {
 
   hasFired = true
   $.ui.toast('Idle: writing a handoff while the cache is warm')
+  isIdleHandoff = true
   await $.command.run({ command: 'handoff', args: HANDOFF_ARGS }).catch(() => {
+    // No handoff turn follows: a later unrelated one must not continue.
+    isIdleHandoff = false
     $.ui.toast('Idle: /handoff could not run')
   })
 }
