@@ -196,25 +196,17 @@ details > :not(summary) { margin: 0 var(--s4) var(--s4); }
 .pass { color: var(--ok); font-weight: 800; }
 .fail { color: var(--bad); font-weight: 800; }
 
-/* Forms: options, triage, export */
+/* Options and triage: read-only, the user answers in the terminal */
 fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
-legend { padding: 0; margin-bottom: var(--s3); font-weight: 800; font-size: 1.0625rem; }
-.option { display: grid; grid-template-columns: auto 1fr; gap: var(--s3); padding: var(--s3) var(--s4); background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+.option { padding: var(--s3) var(--s4); background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); }
 .option + .option { margin-top: var(--s2); }
-.option:has(input:checked) { border-color: var(--accent); }
-.option input, .choice input { width: 1.1em; height: 1.1em; margin-top: 0.35em; accent-color: var(--accent); }
+.option.is-rec { border-color: var(--accent); }
 .option small, .triage small { display: block; color: var(--muted); font-size: 0.9375rem; }
 .rec { color: var(--accent); font-weight: 800; }
 .triage { margin: 0; padding: 0; list-style: none; }
 .triage li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s3); align-items: start; padding: var(--s3) 0; border-bottom: 1px solid var(--line); }
-.triage label { font-weight: 600; }
-select, textarea { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--s2) var(--s3); }
-textarea { display: block; width: 100%; resize: vertical; }
-.field { display: block; margin-top: var(--s4); font-weight: 600; }
-.field textarea { margin-top: var(--s1); font-weight: 400; }
-.export { display: grid; gap: var(--s2); margin-top: var(--s4); }
-.export button { justify-self: start; padding: var(--s2) var(--s4); font: inherit; font-weight: 800; color: var(--canvas); background: var(--accent); border: 2px solid var(--accent); border-radius: var(--radius); cursor: pointer; }
-.export output { color: var(--muted); font-size: 0.9375rem; min-height: 1.6em; }
+.triage .item { font-weight: 600; }
+.triage .bucket { font-weight: 800; }
 
 /* Diagram */
 .diagram { margin: 0; }
@@ -231,7 +223,7 @@ figcaption { margin-top: var(--s2); color: var(--muted); font-size: 0.9375rem; }
 .next { font-size: 1.125rem; }
 .next strong { font-weight: 800; }
 
-button, .option, .theme label { transition: background-color 180ms var(--ease-out), border-color 180ms var(--ease-out), color 180ms var(--ease-out); }
+button, .theme label { transition: background-color 180ms var(--ease-out), border-color 180ms var(--ease-out), color 180ms var(--ease-out); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
@@ -265,7 +257,7 @@ button, .option, .theme label { transition: background-color 180ms var(--ease-ou
       <li><a href="#flow">How a request flows</a></li>
       <li><a href="#proof">Proof</a></li>
       <li><a href="#evidence">Claims</a></li>
-      <li><a href="#decide">Decide</a></li>
+      <li><a href="#decide">Options</a></li>
       <li><a href="#triage">Follow-ups</a></li>
     </ol>
   </nav>
@@ -420,62 +412,31 @@ button, .option, .theme label { transition: background-color 180ms var(--ease-ou
         </ul>
       </section>
 
-      <!-- component: decision card — any choice the user must make; 2-3 .option labels, recommended one first and checked; data-prompt on each input feeds the export -->
+      <!-- component: options — context for a choice the user makes in the terminal (AskUserQuestion); 2-3 .option cards, recommended first with .is-rec; no form controls -->
       <section class="step" id="decide">
         <span class="node" aria-hidden="true"></span>
-        <h2>Decide</h2>
-        <form data-export>
-          <fieldset>
-            <legend>Fix the logout gap before merge?</legend>
-            <label class="option">
-              <input type="radio" name="logout" id="logout-a" checked data-prompt="Logout gap: option A. Clear the Redis key on logout before merge.">
-              <span><span class="rec">Recommended.</span> Clear the Redis key on logout now<small>About 10 lines plus 1 test. Merge waits about 20 minutes.</small></span>
-            </label>
-            <label class="option">
-              <input type="radio" name="logout" id="logout-b" data-prompt="Logout gap: option B. Merge now and track the logout fix as a follow-up.">
-              <span>Merge now, fix logout in a follow-up<small>Sessions stay valid up to 24 h after logout until then.</small></span>
-            </label>
-          </fieldset>
-          <label class="field">Notes, optional<textarea id="decide-notes" rows="2" data-prompt="Notes"></textarea></label>
-
-          <!-- component: copy-as-prompt export — inside any form[data-export]; serializes every [data-prompt] field (checked radio/checkbox: its data-prompt; select/text: "data-prompt: value"); data-export="..." adds a first line -->
-          <div class="export">
-            <button type="button" data-copy>Copy as prompt</button>
-            <label class="sr-only" for="decide-out">Prompt text</label>
-            <textarea id="decide-out" rows="3" readonly data-output></textarea>
-            <output data-status></output>
-          </div>
-        </form>
+        <h2>Options</h2>
+        <p>Fix the logout gap before merge? Asked in the terminal.</p>
+        <div class="option is-rec"><span class="rec">Recommended.</span> A. Clear the Redis key on logout now<small>About 10 lines plus 1 test. Merge waits about 20 minutes.</small></div>
+        <div class="option">B. Merge now, fix logout in a follow-up<small>Sessions stay valid up to 24 h after logout until then.</small></div>
       </section>
 
-      <!-- component: triage list — todo, backlog, follow-ups; pre-sort each item with a one-line reason; data-prompt is the item name -->
+      <!-- component: triage list — todo, backlog, follow-ups; proposed bucket with a one-line reason; the user confirms or moves items in the terminal -->
       <section class="step" id="triage">
         <span class="node" aria-hidden="true"></span>
         <h2>Follow-ups</h2>
-        <form data-export="Triage:">
-          <ul class="triage">
-            <li><div><label for="t1">Clear the Redis key on logout</label><small>Blocks merge: sessions outlive logout.</small></div>
-              <select id="t1" data-prompt="Clear the Redis key on logout"><option selected>Now</option><option>Next</option><option>Later</option><option>Cut</option></select></li>
-            <li><div><label for="t2">Load-test login at 50 concurrent requests</label><small>Unconfirmed claim above; needs staging Redis.</small></div>
-              <select id="t2" data-prompt="Load-test login at 50 concurrent requests"><option>Now</option><option selected>Next</option><option>Later</option><option>Cut</option></select></li>
-            <li><div><label for="t3">Move the 24 h TTL into config</label><small>Hard-coded today; no one has asked to change it.</small></div>
-              <select id="t3" data-prompt="Move the 24 h TTL into config"><option>Now</option><option>Next</option><option selected>Later</option><option>Cut</option></select></li>
-            <li><div><label for="t4">Rewrite the cookie parser</label><small>Works, no bug reports; churn without payoff.</small></div>
-              <select id="t4" data-prompt="Rewrite the cookie parser"><option>Now</option><option>Next</option><option>Later</option><option selected>Cut</option></select></li>
-          </ul>
-          <div class="export">
-            <button type="button" data-copy>Copy as prompt</button>
-            <label class="sr-only" for="triage-out">Prompt text</label>
-            <textarea id="triage-out" rows="5" readonly data-output></textarea>
-            <output data-status></output>
-          </div>
-        </form>
+        <ul class="triage">
+          <li><div><span class="item">Clear the Redis key on logout</span><small>Blocks merge: sessions outlive logout.</small></div><span class="bucket">Now</span></li>
+          <li><div><span class="item">Load-test login at 50 concurrent requests</span><small>Unconfirmed claim above; needs staging Redis.</small></div><span class="bucket">Next</span></li>
+          <li><div><span class="item">Move the 24 h TTL into config</span><small>Hard-coded today; no one has asked to change it.</small></div><span class="bucket">Later</span></li>
+          <li><div><span class="item">Rewrite the cookie parser</span><small>Works, no bug reports; churn without payoff.</small></div><span class="bucket">Cut</span></li>
+        </ul>
       </section>
 
       <!-- component: Next footer — last step of every report; one line on what happens next or what you need -->
       <footer class="step">
         <span class="node" aria-hidden="true"></span>
-        <p class="next"><strong>Next:</strong> pick A or B above; with A, I fix logout and open the PR.</p>
+        <p class="next"><strong>Next:</strong> pick A or B in the terminal; with A, I fix logout and open the PR.</p>
       </footer>
 
     </div>
@@ -486,8 +447,6 @@ button, .option, .theme label { transition: background-color 180ms var(--ease-ou
 const THEME_KEY = 'report-theme';
 // Theme a host (the Artifact viewer) set before this script ran; "System" returns to it.
 const HOST_THEME = document.documentElement.dataset.theme;
-const COPIED = 'Copied. Paste it into the chat.';
-const BLOCKED = 'Clipboard blocked here. Select the text in the box and copy it.';
 
 function readTheme() {
   try {
@@ -537,52 +496,6 @@ function initTheme() {
   });
 }
 
-function fieldLine(field) {
-  const prompt = field.dataset.prompt;
-  const isToggle = field.type === 'radio' || field.type === 'checkbox';
-
-  if (isToggle) return field.checked ? prompt : '';
-
-  const value = field.value.trim();
-
-  return value ? `${prompt}: ${value}` : '';
-}
-
-function serialize(form) {
-  const fields = Array.from(form.querySelectorAll('[data-prompt]'));
-  const lines = fields.map(fieldLine).filter(Boolean);
-  const header = form.dataset.export;
-
-  if (header) lines.unshift(header);
-
-  return lines.join('\n');
-}
-
-async function copyText(text, status) {
-  try {
-    await navigator.clipboard.writeText(text);
-    status.textContent = COPIED;
-  } catch {
-    status.textContent = BLOCKED;
-  }
-}
-
-function initExport(form) {
-  const output = form.querySelector('[data-output]');
-  const status = form.querySelector('[data-status]');
-  const copy = form.querySelector('[data-copy]');
-  const update = () => { output.value = serialize(form); };
-
-  // A trimmed form must not abort the script for every later form and tab group.
-  if (!output || !status || !copy) return;
-
-  form.addEventListener('input', update);
-  form.addEventListener('change', update);
-  form.addEventListener('submit', (event) => event.preventDefault());
-  copy.addEventListener('click', () => copyText(output.value, status));
-  update();
-}
-
 function selectTab(tabs, next) {
   tabs.forEach((tab) => {
     const isNext = tab === next;
@@ -619,7 +532,6 @@ function initTabs(group) {
 }
 
 initTheme();
-document.querySelectorAll('form[data-export]').forEach(initExport);
 document.querySelectorAll('[data-tabs]').forEach(initTabs);
 </script>
 </body>

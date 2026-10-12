@@ -21,7 +21,7 @@ Re-run these after any change to SKILL.md or the AGENTS.md routing line. Give a 
 | B | HTML file, as a view of the `/plan` markdown plan | `$HOME/html-reports/...`, browser | `16-implementation-plan.html` |
 | C | Terminal | none | none |
 | D | HTML file, as a view of the PR body | `$HOME/html-reports/...`, browser | `17-pr-writeup.html` |
-| E | HTML file with buckets and Copy as prompt | `$HOME/html-reports/...`, browser | `18-editor-triage-board.html` |
+| E | Read-only HTML file with proposed buckets, then AskUserQuestion to confirm or adjust | `$HOME/html-reports/...`, browser | `18-editor-triage-board.html` |
 | F | Artifact | private claude.ai link | `11-status-report.html` |
 
 The terminal reply in A, B, D, E, F holds only the result line, failures, git state in one line, the path or link, and `Next:`.
