@@ -49,8 +49,8 @@ Don't patch gaps yourself, however small: controller fixes skip review. Resume t
 
 ## After all tasks
 
-1. Run the final review with skill:code-review over `<plan-base>..HEAD` (or the working-tree diff if nothing is committed), passing the plan as requirements, with its Review Focus lines for the reviewer, and nothing else.
-2. Re-grade each finding by its effect on a user, not by whether the spec names the trigger; the reviewer's "Declined to judge" lines get the same re-grade. Blockers and Should-fix go to one `executor` dispatch carrying the full list, not one fixer per finding; each fix gets a test that fails first. Notes go to a "Deferred minors" list in the final message. No second fix wave; anything left goes to the user at finishing.
+1. Run the final review with skill:code-review over `<plan-base>..HEAD` (or the working-tree diff if nothing is committed), passing the plan as requirements, with its Review Focus lines for the reviewer, and nothing else. In the same message dispatch `quality-reviewer` (`model: opus`, `effort: high`) on the same diff for house conventions: code-review bans style findings, so drift from cheaper implementers would otherwise reach the user unflagged.
+2. Re-grade each finding by its effect on a user, not by whether the spec names the trigger; the reviewer's "Declined to judge" lines get the same re-grade. Blockers, Should-fix, and Conventions findings go to one `executor` dispatch carrying the full list, not one fixer per finding; each behavior fix gets a test that fails first (convention fixes need none). Notes go to a "Deferred minors" list in the final message. No second fix wave; anything left goes to the user at finishing.
 3. List every decision under "Decisions I made" in the final message.
 4. Finish with skill:finishing-a-development-branch.
 
