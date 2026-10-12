@@ -17,8 +17,11 @@ Execute a plan by dispatching a fresh implementer subagent per task. You check e
 2. Confirm you are not on main/master, or that the user consented to working there. Isolation: skill:using-git-worktrees.
 3. Record the plan's base commit (`git rev-parse HEAD`) for the final review.
 4. Track progress with the plan file's `- [ ]` checkboxes. After compaction, trust the checkboxes and `git log` over memory; never re-dispatch a ticked task.
+5. Most of the plan's task weight is sonnet but this session runs opus? Say so once and suggest restarting with `claude --model sonnet`, then "execute <plan path> with subagent-driven-development". Orchestrating only needs sonnet, its context grows the most, and the plan file is the handoff. The opus tasks still get opus subagents. Continue if the user doesn't switch.
 
-**Inline mode:** small plans or tightly coupled tasks — execute them yourself in order, same checks, no implementer subagents.
+**Inline mode:** small plans or tightly coupled tasks — execute them yourself in order, same checks, no implementer subagents. A task whose Model is above the session's model still goes to a subagent.
+
+**Ruling rows** (`Ruling R1`): ask the user with AskUserQuestion when you reach one, record the answer under it, tick it. Never guess past it.
 
 ## Per-task loop
 
@@ -27,22 +30,22 @@ Batch small same-shape tasks into one dispatch listing every file and its change
 1. Record the task base: `BASE=$(git stash create); BASE=${BASE:-$(git rev-parse HEAD)}` (snapshots uncommitted work without touching the tree; falls back to HEAD when there is nothing to snapshot). Dispatch an implementer (`./implementer-prompt.md`) with the full task text and scene-setting context. Don't make it read the plan file. A dispatch carries this task, the interfaces it touches, and the global constraints — never summaries of earlier tasks. Give it a report file path, `.claude/local/sdd/<plan-name>-task-N.md`.
 2. If it asks questions, answer completely, then re-dispatch.
 3. Read the task's diff (`git diff $BASE`, after `git add -N <files the task created>` so new files show up) against the task text: missing requirements, unrequested extras. DONE but the diff is empty → the implementer worked on another branch or worktree; don't tick the task. Gaps go through fix rounds (below). Dispatch the spec reviewer (`./spec-reviewer-prompt.md`) only when the diff is too large to check in a handful of reads. For a risky task (shared code, trunk signals) also run a skill:code-review mid-plan checkpoint; otherwise the final review covers it.
-4. Tick the task's checkbox. Next task.
+4. Tick the task's checkbox and append its line to the plan's `## Log`: `<date> · task N · <model> · <effort> · <done|blocked> · agent <id, or - inline> · retries <n>`. The log is how tier choices get checked against real outcomes. Next task.
 
-Agent frontmatter sets the model; pick the agent, not a model.
+Pass the task's **Model** line as the Agent call's `model` and `effort`: the plan asks for it, so the override is sanctioned. No Model line → the agent's frontmatter default.
 
 ## Implementer status
 
 - **DONE:** proceed to the spec check.
 - **DONE_WITH_CONCERNS:** read the concerns. Correctness or scope concerns → address before the spec check. Observations ("file getting large") → note and proceed.
 - **NEEDS_CONTEXT:** provide it and re-dispatch.
-- **BLOCKED:** context problem → add context; needs more reasoning → `deep-executor`; too large → split the task; plan is wrong → escalate to the user.
+- **BLOCKED:** context problem → add context; needs more reasoning → `deep-executor` one step up the plan's ladder (sonnet · medium → sonnet · high → opus · high); too large → split the task; plan is wrong → escalate to the user.
 
 Never re-dispatch the same prompt to the same agent without changing something.
 
 ## Fix rounds
 
-Don't patch gaps yourself, however small: controller fixes skip review. Resume the same implementer with `SendMessage`, sending the findings verbatim; its context is intact. After 3 rounds, dispatch a fresh `deep-executor` with the report file, noting a prior implementer tried N times. Escalate the same way at once when a new finding lands in a function an earlier round already fixed: the fixes are chasing each other, and another round on the same approach won't converge. Escalate at most once per task; after that, a repeat finding goes straight to the round-5 decision. After 5, decide each open finding yourself and record it as a `Decision:`.
+Don't patch gaps yourself, however small: controller fixes skip review. Resume the same implementer with `SendMessage`, sending the findings verbatim; its context is intact. After 3 rounds, dispatch a fresh `deep-executor` one ladder step up with the report file, noting a prior implementer tried N times. Escalate the same way at once when a new finding lands in a function an earlier round already fixed: the fixes are chasing each other, and another round on the same approach won't converge. Escalate at most once per task; after that, a repeat finding goes straight to the round-5 decision. After 5, decide each open finding yourself and record it as a `Decision:`.
 
 ## After all tasks
 

@@ -40,7 +40,7 @@ flow --plan-only "<idea>"      # stop after a plan is produced
 Default to **autonomous** for well-scoped, low-blast work. Switch to **supervised** when ANY of:
 
 - touches auth, payments, data migrations, or other security-sensitive paths
-- spans >10 files, or has unclear/contested acceptance criteria
+- has several substantial parts of new logic (judge by the logic to write, not files touched: a rename threaded through 30 files is small), or has unclear/contested acceptance criteria
 - you want to review each task before the next begins
 
 `--auto` / `--supervised` override the heuristic.
