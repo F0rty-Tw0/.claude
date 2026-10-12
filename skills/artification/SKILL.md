@@ -1,6 +1,6 @@
 ---
 name: artification
-description: Applies the user's TypeScript and Angular house style (function-body shape, types, imports, naming, utils placement, module size, module depth and architecture scans, feature-module layers feature/ui/domain-logic/data-access with NGXS, and spec structure). Use when writing, refactoring, reviewing, or testing any TypeScript, including Angular specs.
+description: Applies the user's house style (function-body shape, types, imports, naming, utils placement, module size and depth, feature-module layers with NGXS, spec structure). Use when writing, refactoring, reviewing, or testing TypeScript or Angular; its shape and structure rules also apply to Rust, C#, Lua, and JS.
 ---
 
 # Artification
@@ -31,6 +31,15 @@ Engineer has dyslexia and ADHD and reads code by scanning its shape, not word by
 - One shape per file kind, so no file has to be re-learned.
 
 Consistency beats local convention. A rule applied only sometimes is worse than no rule.
+
+## Other languages (Rust, C#, Lua, JS)
+
+The rules above serve scanning by shape, not TypeScript, so they apply in any language through its idioms:
+
+- Carry over: blank line before return, one-line guards, named conditions, calls, and returned values, no useless comments, explicit return types and visibility where the language has them, grouped sorted imports, no dead conditions, checked conversions over casts that hide a typing gap (`try_from`, pattern matching), constants and types apart from behavior, feature folders with one-way layer imports, test-only files under the feature's test folder, module size and depth, one shape per file kind, and the spec tree from `references/spec-style.md` (FEATURE / GIVEN / WHEN / THEN, one outcome per case) wherever the test framework nests blocks (JS `node:test` or vitest, Lua busted).
+- Map the layout to the language's unit: Rust modules and crates, C# namespaces and projects, Lua modules and folders.
+- Skip what only TypeScript or Angular has: erasable syntax, `import type`, decorators, NGXS, `TestBed`.
+- The language's formatter and linter (rustfmt and clippy, dotnet format and analyzers, StyLua and luacheck) win where they disagree with a rule here.
 
 ## Overview
 

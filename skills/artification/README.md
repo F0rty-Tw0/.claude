@@ -1,6 +1,6 @@
 # Artification
 
-Personal coding rules for TypeScript creation and refactoring. Types expose architecture; pure functions expose behavior boundaries. Ownership, mutability, nested concepts, and utility placement stay explicit.
+Personal coding rules for TypeScript creation and refactoring; the shape and structure rules also carry over to Rust, C#, Lua, and JS. Types expose architecture; pure functions expose behavior boundaries. Ownership, mutability, nested concepts, and utility placement stay explicit.
 
 ## What It Does
 
