@@ -13,38 +13,8 @@
     "sessionUrl": false
   },
   "permissions": {
-    "allow": [
-      "Bash(find:*)",
-      "Bash(ls:*)",
-      "Bash(mkdir:*)",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:www.typescriptlang.org)",
-      "Bash(git log:*)",
-      "Bash(gh issue list:*)",
-      "Bash(gh issue view:*)",
-      "Bash(npx prettier:*)",
-      "Bash(nx prepush:*)",
-      "Bash(pnpm commit:*)",
-      "Bash(rg:*)",
-      "mcp__nx__nx_docs",
-      "mcp__nx__nx_workspace",
-      "mcp__nx__nx_project_details",
-      "Bash(nx show projects:*)",
-      "Bash(nx run-many:*)",
-      "Bash(nx run:*)",
-      "Bash(nx affected:*)",
-      "Bash(nx lint:*)",
-      "Bash(nx test:*)",
-      "Bash(nx build:*)",
-      "Bash(nx documentation:*)"
-    ],
-    "deny": [
-      "Bash(git push origin main:*)",
-      "Bash(git push origin master:*)",
-      "Bash(rm -rf:*)",
-      "Bash(curl:*)",
-      "Bash(wget:*)"
-    ],
+    "allow": [],
+    "deny": [],
     "defaultMode": "auto"
   },
   "model": "opus[1m]",
@@ -109,7 +79,10 @@
     "lua-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "claude-hud@claude-hud": true,
-    "f42@synced": false
+    "f42@synced": false,
+    "cc-plugin-telemetry@builtin": false,
+    "cc-plugin-plugin-authoring@builtin": false,
+    "cc-plugin-diff@builtin": false
   },
   "extraKnownMarketplaces": {
     "claude-hud": {
@@ -119,12 +92,14 @@
       }
     }
   },
+  "feedbackDrafts": "off",
   "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "high"
     }
   },
+  "autoCompactWindow": 300000,
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
   "dialogExpiry": "never",
@@ -132,7 +107,6 @@
   "autoDreamEnabled": false,
   "skipWorkflowUsageWarning": false,
   "autoCompactEnabled": true,
-  "autoCompactWindow": 300000,
   "precomputeCompactionEnabled": false,
   "switchModelsOnFlag": false,
   "autoContinueAtUsageLimit": true,
