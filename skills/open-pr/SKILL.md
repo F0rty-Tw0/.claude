@@ -1,6 +1,6 @@
 ---
 name: open-pr
-description: Writes compact PR titles and descriptions with a before/after Proof section behind a fresh code-review gate. Use when creating or updating a pull request or describing branch changes for one.
+description: Writes compact PR titles and descriptions with a before/after Proof section behind a fresh code-review gate, and splits big or mixed branches into small PRs. Use when creating or updating a PR, describing branch changes, or splitting, stacking, or restacking PRs.
 ---
 
 # Open PR
@@ -12,6 +12,7 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 - Creating a new PR (`gh pr create`)
 - Updating an existing PR description
 - User asks "write a PR description" or "describe my changes"
+- Splitting a branch into several PRs, or restacking after review or a parent merge (`references/stacking.md`)
 
 ## The Process
 
@@ -22,7 +23,7 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 3. Write body        → compact template, same for every PR
 4. Write title       → short, specific, lowercase
 5. Write summary     → 1–3 sentences, whatever the size
-6. Polish            → check Red Flags
+6. Polish            → check Red Flags, then skill:anthropic-skills:avoid-ai-writing on title + prose (Proof verbatim)
 7. Present           → show to user, ready for gh pr create
 ```
 
@@ -30,7 +31,16 @@ Blast radius, test counts, ticket numbers, and branch details are for your own o
 
 ### Before Step 0: One PR or Several?
 
-Branch diff over ~400 changed lines, mixing trunk and leaf changes, or holding independent concerns → run skill:meaningful-prs first. It splits the branch and then runs this skill once per PR. For a stacked PR, `BASE` (Step 1) and the Step 0 review use the **parent branch**, the reviewer gets the stack map, and `## Stack` goes before `## Proof`. Called from `meaningful-prs`? Skip this routing step.
+Count changed lines without lockfiles, generated files, snapshots and eval fixtures.
+
+| One PR | Split |
+|---|---|
+| ≤ ~400 changed lines | > ~400 lines |
+| One blast class, one concern | Trunk + leaf mixed (e.g. an ungated change to a widely-imported helper + a feature) |
+| Hotfix | Migration/schema that has a deploy order relative to code |
+| Pieces don't build apart | Independent concerns (a badge that doesn't need the ledger) |
+
+Split → follow `references/stacking.md`. It builds the slices, then runs Steps 0–6 once per PR against its **parent branch**, with the stack map. Its one stack-wide approval replaces Step 7's per-PR wait.
 
 ### Step 0: Proof Gate
 
@@ -89,7 +99,7 @@ Every PR gets the same compact body, because long bodies go unread and bury the 
 
 <optional sketch: one fenced block, Step 5>
 
-## Stack            ← only if stacked, 1–3 lines
+## Stack            ← only if stacked: one line per PR + one merge-order line
 ## Proof
 - Before: `<same cmd / steps on base>` → <old output or behavior>   ← screenshot table below for UI
 - After: `<same cmd / steps on head>` → <new output or behavior>
@@ -197,6 +207,10 @@ EOF
 ```
 
 `--attach` only for UI PRs, one flag per image path in the body.
+
+Inside an approved split, skip the wait: create each PR after its Step 0 APPROVE (`references/mechanics.md`, Push + open).
+
+Once the PR (or the last PR of a split) is created, offer skill:wrap-up in one line: "Run a retro to turn this session's mistakes into checks or rules?" Run it on a yes. `code-review-receiving` offers it again after human review.
 
 ## Common Mistakes
 

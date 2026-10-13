@@ -1,6 +1,6 @@
 ---
 name: wrap-up
-description: Runs an end-of-session retro - file cleanup, saving what was learned to the right memory location, and turning mistakes and review comments into checks or rules, applied after confirmation. Use when the user says "wrap up", "retro", "retrospective", "close session", "end session", or "close out this task", runs /wrap-up, or when offered after finishing a branch or a round of PR review.
+description: Runs an end-of-session retro - file cleanup, saving what was learned to the right memory location, and turning mistakes and review comments into checks or rules, applied after confirmation. Use when the user says "wrap up", "retro", "retrospective", "close session", "end session", or "close out this task", runs /wrap-up, or when offered after opening a PR, finishing a branch, or a round of PR review.
 ---
 
 # Session Wrap-Up

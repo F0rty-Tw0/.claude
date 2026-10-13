@@ -24,6 +24,8 @@ Triggers when you:
 - Want a gap analysis of the model's own most recent claimed-complete work
 - Type a challenge like "did you do your best", "what did you skip", "are you sure that's done", "stop glazing", or `/deglaze`
 
+It also runs on its own before the final report on any turn that edited files, ran builds or tests, or delegated to agents (wired in `AGENTS.md`, Closing status).
+
 Do **not** use it to pad a clean result with invented gaps — if the audit comes up clean, the correct response is evidence-backed pushback.
 
 ---

@@ -1,27 +1,9 @@
----
-name: meaningful-prs
-description: Splits a large or mixed branch into small PRs, stacked only on real dependencies. Use when a branch exceeds ~400 changed lines, mixes trunk and leaf changes or a migration with feature code, or the user asks to split, stack, or restack PRs.
----
+# Splitting a Branch into Several PRs
 
-# Meaningful PRs
-
-## Overview
-
-This is the PR twin of `meaningful-commits`: **one reviewable unit per PR**.
+The split path of `open-pr`: **one reviewable unit per PR**, the PR twin of `meaningful-commits`. The "One PR or Several?" table in `SKILL.md` decides whether you are here.
 
 - Split by **blast radius** first, then by module or feature. Trunk lines must not hide inside leaf volume, so the review knob can do its job.
 - Every PR stands alone: it builds, its tests pass, it's safe to merge, and it ships dark.
-
-Run skill:open-pr for every PR. It adds `## Proof` and a fresh `code-review`, and a hook blocks PRs without proof.
-
-## Split or not
-
-| One PR | Split |
-|---|---|
-| ≤ ~400 changed lines (lockfiles, generated files, snapshots and eval fixtures excluded) | > ~400 lines |
-| One blast class, one concern | Trunk + leaf mixed (e.g. an ungated change to a widely-imported helper + a feature) |
-| Hotfix | Migration/schema that has a deploy order relative to code |
-| Pieces don't build apart | Independent concerns (a badge that doesn't need the ledger) |
 
 ## Slice order
 
@@ -50,19 +32,19 @@ Run skill:open-pr for every PR. It adds `## Proof` and a fresh `code-review`, an
    - migration number collisions on `origin/<default>`
    - the real typecheck/test script names
 2. **Split plan** as a table: Slice, Branch, Base, Blast (`code-review` `references/blast-radius.md`), Tasks/Files, ~Lines. If the plan has a **PR Slices** table (`plan`, `references/task-format.md`), start from it and fill Files and ~Lines from `git diff --stat`.
-3. **One approval:** ask with AskUserQuestion, **once for the whole stack**. The approval covers the listed commits, the first push and the PRs. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
+3. **One approval:** ask with AskUserQuestion, **once for the whole stack**. The approval covers the listed commits, the first push and the PRs, so it replaces Step 7's per-PR wait. Force-push and remote branch deletes are **never** part of it; ask separately every time. Restacks in later turns need a new user request.
 4. **Build the slices.** Details and commands: `references/mechanics.md`.
    - Sync the source branch with `origin/<default>` first.
    - Take files **by path** from the source branch (`git restore --source`, which also carries deletions).
    - Partial files (a flag line): Edit, or stage a prepared version into the index.
    - Each slice must pass typecheck and tests before its commits, which follow `meaningful-commits`.
 5. **Completeness check:** the union of all slices must equal the source branch. `git diff --stat` must be empty. If not, stop.
-6. **Open PRs bottom-up**, one `open-pr` run per PR. **Skip its "one PR or several?" routing**: the split is already decided, so don't loop back here. Its review gets:
-   - the diff **against the parent** (`<parent>...<slice>`), not `<default>`; the description's Step 1 `BASE` is the parent too
-   - the stack map, so that symbols consumed by a later PR are not flagged as dead code
+6. **Open PRs bottom-up**, running Steps 0–6 of `SKILL.md` once per PR, then creating it. Each run gets:
+   - the diff **against the parent** (`<parent>...<slice>`), not `<default>`; Step 1's `PARENT` is the parent branch
+   - the stack map, so the reviewer doesn't flag symbols consumed by a later PR as dead code
 
    BLOCK on a lower PR → stop. Don't open the PRs above it.
-7. **Stack map** in every body, placed before `## Proof`:
+7. **Stack map** in every body, placed before `## Proof`: one line per PR, then one merge-order line.
 
    ```markdown
    ## Stack

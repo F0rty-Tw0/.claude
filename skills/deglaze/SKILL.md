@@ -7,6 +7,8 @@ description: Audits the model's own claimed-complete work for skipped or lowered
 
 Use when the user suspects work was declared done with real work left: a plan shipped instead of an artifact, the bar lowered to call it complete, or a polished summary over undelivered scope. The challenge can be as short as "Did you do your best?" or `/deglaze`. All forms mean the same thing: audit your most recent claimed-complete work and produce the gap list before anything else.
 
+It also runs unprompted before the final report on work that edited files, ran builds or tests, or delegated. Nobody has challenged the work yet, so Step 1 opens with the scan verdict ("Gaps found:" or "Clean:") instead of "You're right."
+
 The audit only works when the under-delivery is real. Never invent gaps, commitments the user never asked for, or apologies for output that did ship.
 
 ## Step 0 — Scan for the under-delivery signatures

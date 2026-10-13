@@ -34,6 +34,7 @@ Push back when a suggestion breaks behavior, lacks context, adds unused features
 
 - Correct feedback: state the fix ("Fixed — null guard in `parse.ts:42`") or show it in the code; skip praise and thanks.
 - Your pushback was wrong: "Checked X — you're right, it does Y. Fixing." No long apology.
+- Before posting, run each reply through skill:anthropic-skills:avoid-ai-writing; keep code and `file:line` refs verbatim.
 - GitHub inline comments: reply in the thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
 
 ## After the round

@@ -10,12 +10,12 @@ Every PR gets the same compact body:
 | ---- | -------- |
 | Summary | 1–3 sentences: what changed, why if not obvious, one non-obvious impact |
 | Sketch | Optional single fenced block: pseudocode, call tree, file tree, Mermaid, or a `diff` of one of those |
-| `## Stack` | Only for stacked PRs, 1–3 lines |
+| `## Stack` | Only for stacked PRs: one line per PR + a merge-order line |
 | `## Proof` | Before/after pair of the change running (screenshot or CLI/console output), verified / not verified, review verdict |
 
 Blast radius, test counts, ticket numbers, and branch details orient the agent while it builds proof; they stay out of the body.
 
-Process: Proof gate (code-review) > Gather changes > Scan repo context > Write body > Write title (<60 chars, lowercase) > Write summary > Polish (Red Flags) > Present.
+Process: Proof gate (code-review) > Gather changes > Scan repo context > Write body > Write title (<60 chars, lowercase) > Write summary > Polish (Red Flags, then avoid-ai-writing on title and prose) > Present.
 
 ---
 
@@ -26,6 +26,8 @@ Triggers when you:
 - Create a new PR with `gh pr create`
 - Update an existing PR description
 - Are asked to describe branch changes for a PR
+- Have a branch over ~400 changed lines or mixing trunk and leaf changes: it splits into small PRs, stacked only on real dependencies (`references/stacking.md`, commands in `references/mechanics.md`)
+- Need to restack after review fixes or a parent merge
 
 ---
 

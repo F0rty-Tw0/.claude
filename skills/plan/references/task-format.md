@@ -43,7 +43,7 @@ The blocked task's header line gets `**After:** R1`.
 
 ## PR Slices
 
-Plan expected to exceed ~400 changed lines, or mixing trunk and leaf work? Group tasks into PR slices now, per skill:meaningful-prs. Add a table after the header and tag every task with its slice:
+Plan expected to exceed ~400 changed lines, or mixing trunk and leaf work? Group tasks into PR slices now, per skill:open-pr (`references/stacking.md`). Add a table after the header and tag every task with its slice:
 
 ```markdown
 | Slice | Branch | Base | Blast | Tasks |
@@ -53,7 +53,7 @@ Plan expected to exceed ~400 changed lines, or mixing trunk and leaf work? Group
 | 3 | feat/x-3-badge | main | Leaf | 5 |
 ```
 
-Tasks for one slice sit contiguously, and each slice must build and pass tests on its own. At PR time `meaningful-prs` reads this table instead of re-deriving the split. Working on per-slice branches during execution needs commits, so only do that when the user has authorized commits.
+Tasks for one slice sit contiguously, and each slice must build and pass tests on its own. At PR time `open-pr`'s split path reads this table instead of re-deriving the split. Working on per-slice branches during execution needs commits, so only do that when the user has authorized commits.
 
 ## Header
 

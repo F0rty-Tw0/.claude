@@ -1,4 +1,6 @@
-# meaningful-prs evals
+# Stacking evals
+
+Run when this split path was its own skill, `meaningful-prs`; "the skill" below means that skill, now `references/stacking.md`.
 
 ## Split plan (paper test)
 

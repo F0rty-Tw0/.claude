@@ -19,7 +19,7 @@ Triggers when you:
 - Say "wrap up", "retro", "close session", "end session", or "wrap things up"
 - Invoke `/wrap-up` directly
 - Finish a task and want a clean close-out
-- Finish a branch (`finishing-a-development-branch`) or a round of PR review (`code-review-receiving`); both offer it
+- Open a PR (`open-pr`), finish a branch (`finishing-a-development-branch`), or finish a round of PR review (`code-review-receiving`); each offers it
 
 ---
 
