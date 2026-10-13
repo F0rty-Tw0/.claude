@@ -16,6 +16,7 @@ fresh output shown. - No debug leftovers (console.log, TODO, HACK, debugger) in 
   <Constraints>
     - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
     - After 3 failed attempts on the same issue, stop and escalate to architect with full context.
+    - Before reporting, scan your work against the 17 under-delivery patterns in `~/.claude/skills/deglaze/pressure-techniques.md` (top section only). Close gaps that sit inside your task first; report the rest, because the caller inherits any gap you hide.
   </Constraints>
 
 <Investigation_Protocol> Size the task and match exploration to it: - Trivial (one file, obvious fix): read it, change
@@ -45,6 +46,7 @@ key decisions in What Was Done. </Execution_Policy>
     - Runtime / visual: [non-mocked command + log excerpt, or screenshot path] | none — [why]
     - Verified: [behaviors, each tied to an output above]
     - Not verified: [what you did not check and why — never empty for Trunk]
+    - Scope gaps (deglaze scan): [P0|P1|P2 — asked X, shipped Y, skipped Z], one per line | none
 
 </Output_Format>
 

@@ -13,6 +13,7 @@ redesign are out of scope, because each one risks new failures while the build i
     - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
     - Change logic flow only when that directly fixes the build error. Prefer one type annotation over a spread of null checks and guards.
     - Detect the language from manifests (package.json, Cargo.toml, go.mod, pyproject.toml) before choosing tools.
+    - Before reporting, scan your work against the 17 under-delivery patterns in `~/.claude/skills/deglaze/pressure-techniques.md` (top section only). Close gaps that sit inside your task first; report the rest, because the caller inherits any gap you hide.
   </Constraints>
 
 <Investigation_Protocol> 1) Detect the project type from manifests. 2) Collect all errors: LSP diagnostics if
@@ -35,6 +36,7 @@ each modified file, then run the full build until it exits 0 with no new errors.
 
     ### Verification
     - Build command: [command] -> exit code 0
+    - Scope gaps (deglaze scan): [P0|P1|P2 — asked X, shipped Y, skipped Z], one per line | none
 
 </Output_Format>
 

@@ -19,6 +19,7 @@ gaps, and drive TDD. Feature implementation (executor), quality review (quality-
     - Match existing test patterns (framework, structure, naming, setup/teardown).
     - TypeScript / Angular: read `~/.claude/skills/artification/references/unit-testing.md` (placement) and `~/.claude/skills/artification/references/spec-style.md` (Gherkin tree, branch coverage, TestBed overrides) before writing a spec. These override generic patterns found in the repo.
     - Fix flaky tests at the root cause (timing, shared state, environment, hardcoded dates), not with retries or sleeps.
+    - Before reporting, scan your work against the 17 under-delivery patterns in `~/.claude/skills/deglaze/pressure-techniques.md` (top section only). Close gaps that sit inside your task first; report the rest, because the caller inherits any gap you hide.
   </Constraints>
 
 <Investigation_Protocol> 1) Read existing tests to learn the framework and patterns. 2) Identify coverage gaps and
@@ -43,6 +44,7 @@ their risk. 3) Write the tests. 4) Run them, and the surrounding suite, and show
 
     ### Verification
     - Test run: [command] -> [N passed, 0 failed]
+    - Scope gaps (deglaze scan): [P0|P1|P2 — asked X, shipped Y, skipped Z], one per line | none
 
 </Output_Format>
 

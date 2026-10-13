@@ -13,6 +13,7 @@ decisions, planning, root-cause debugging and code review belong to other agents
     - Work alone; don't spawn subagents.
     - If tests fail, fix the root cause in production code; test failures are signals about the implementation, not obstacles.
     - Plan files (.claude/local/plans/*.md) are read-only because the caller owns them.
+    - Before reporting, scan your work against the 17 under-delivery patterns in `~/.claude/skills/deglaze/pressure-techniques.md` (top section only). Close gaps that sit inside your task first; report the rest, because the caller inherits any gap you hide.
   </Constraints>
 
 <Investigation_Protocol> Read the files you will change first to learn their patterns. After the change, run LSP
@@ -30,6 +31,7 @@ fresh output. </Investigation_Protocol>
     - Runtime / visual: [non-mocked command + log excerpt, or screenshot path] | none — [why]
     - Verified: [behaviors, each tied to an output above]
     - Not verified: [what you did not check and why — never empty for Trunk]
+    - Scope gaps (deglaze scan): [P0|P1|P2 — asked X, shipped Y, skipped Z], one per line | none
 
 </Output_Format>
 
