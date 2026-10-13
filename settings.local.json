@@ -1,4 +1,5 @@
 {
   "respectGitignore": true,
-  "outputStyle": "Explanatory"
+  "outputStyle": "Concise",
+  "spinnerTipsEnabled": false
 }
