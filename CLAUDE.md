@@ -16,12 +16,6 @@ Local agents live in `~/.claude/agents/` — invoke by bare name (`executor`, `a
 
 @AGENTS.md
 
-# Always-on modes
-
-Grug for prose and code:
-
-@skills/grug/SKILL.md
-
 # Terminal output
 
 A PreToolUse hook rewrites Bash commands through `rtk`, so their output arrives compressed. Use `rtk proxy <cmd>` when you need raw, unfiltered output.

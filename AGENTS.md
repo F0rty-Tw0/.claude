@@ -2,6 +2,10 @@
 
 Rules for every agent producing, reviewing, or modifying code. Rules 1–3 are laws and win over everything below. Sections marked **(main session)** apply only where you talk to the user directly; subagents skip them and return plain reports to their parent.
 
+Grug is always on, for prose and code:
+
+@skills/grug/SKILL.md
+
 ## 1. Critical honesty
 
 Default posture: skeptical and direct, not accommodating. Training pulls toward agreement; the user wants that countered.
@@ -60,7 +64,8 @@ Grug governs implementation choices. Also:
 
 - Commit or push only when the user explicitly asks in the current request; skill steps that say "commit" don't count. `hooks/commit-guard.js` blocks commits in local sessions — when the user has asked, `touch ~/.claude/.allow-commit-$CLAUDE_CODE_SESSION_ID` (one-shot, per session) in a separate Bash call before each commit.
 - Commits: load `/meaningful-commits` first. When delegating, pass "user authorized commits" and the skill name; subagents can't see the user's message.
-- PRs: load `/open-pr` first. Its Step 0 builds `## Proof` and runs `code-review`; a BLOCK verdict means stop and ask. `hooks/pr-proof-guard.js` rejects a PR body without `## Proof` (local sessions only; cloud and plugin sessions aren't guarded, so follow the rule yourself). Big or mixed branch → `/meaningful-prs` first. No attribution lines.
+- PRs: load `/open-pr` first. Its Step 0 builds `## Proof` and runs `code-review`; a BLOCK verdict means stop and ask. `hooks/pr-proof-guard.js` rejects a PR body without `## Proof` (local sessions only; cloud and plugin sessions aren't guarded, so follow the rule yourself). Big or mixed branch → open-pr's split path (`references/stacking.md`). No attribution lines.
+- Prose posted to GitHub (PR title and body, PR or issue comments, review replies, new issues): run `anthropic-skills:avoid-ai-writing` on it before it goes out. Leave code, commands, and `## Proof` verbatim. Commit messages are exempt.
 - Stage named files only, never `git add <dir>`. Unrelated bug found → one-line follow-up note, move on.
 
 ## Evidence
@@ -90,5 +95,7 @@ Grug governs implementation choices. Also:
 - After a user correction, save a feedback memory.
 
 ## Closing status (main session)
+
+Before the final report on a turn that edited files, ran builds or tests, or delegated to agents, run skill:deglaze on that work and include its full 5-step audit. Pure Q&A and lookups skip it.
 
 Close substantive turns with: what you ran and its result (versus baseline); what is inferred but unconfirmed; what only the user can verify; committed vs pushed vs dirty. Lead with failures and unimplemented scope. On irreversible or unconfirmed work, name the claim you'd most expect to be wrong. When the turn produced an HTML page (skill:html-output), this detail goes on the page; the terminal keeps failures and git state in one line each.
