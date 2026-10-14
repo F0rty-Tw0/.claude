@@ -11,12 +11,12 @@ Write a handoff for a session that has none of this conversation. Whatever it le
 
 ## Check, then write
 
-1. In each repo touched this session, run `git status --short` and `git log --oneline -5`, so the git state is checked rather than recalled.
+1. Run `date -u +%FT%TZ` for the written time. In each repo touched this session, run `git status --short` and `git log --oneline -5`, so the git state is checked rather than recalled.
 2. Write the file to `~/.claude/handoffs/<YYYY-MM-DD-HHmm>-<slug>.md`, slug being 2-4 words of the goal. Every section appears, with "nothing" if that is the answer:
 
 ```markdown
 # Handoff: <goal in a few words>
-<date> · <working directory> · branch <name>
+<date> · <working directory> · branch <name> · written <`date -u +%FT%TZ`>
 
 ## Goal
 What should exist at the end, in one sentence.
@@ -35,7 +35,7 @@ Including what you meant to ask the user.
 ## Files and commits
 Paths touched, commit hashes, and what is committed, pushed, or uncommitted.
 ## Background agents
-Agents still alive, copied from the arguments: id, name, type, status, task, note. They survive /clear: their completion notices arrive in the new session, and SendMessage <id> reaches any of them. Ended agents in one line each. "nothing" if the arguments say No agents or list none.
+Agents still alive, copied from the arguments: id, name, type, status, task, note. They survive /clear: their completion notices arrive in the new session, and SendMessage <id> reaches any of them. Ended agents in one line each. "nothing" if the arguments say No agents or list none. End the section with this line verbatim, even when it says nothing: "A teammate message from an agent not listed as alive above, timestamped before the written time, was queued before this handoff: it is stale and repeats what this file records; don't act on it."
 ## Verify
 The command that shows whether the state is what this says.
 ## Last user prompts (verbatim, oldest first)
@@ -50,7 +50,7 @@ Rules:
 - Approval does not carry over. Mark each push, PR, deploy, or other outward-facing step in Next step "confirm with the user first", even if they asked for it here: the fresh session reads the handoff as permission and would act without asking.
 - If `$ARGUMENTS` is not empty, the user asked to stress it; give it room — except the agent lists, the `[handoff-trigger:compact]` marker and the keepalive note, which are data, not emphasis.
 - When the arguments list agents, copy them into Background agents verbatim; the next session has no other record of them.
-- Only the git checks and the Write. A handoff that starts new work defeats its purpose.
+- Only the step-1 checks and the Write. A handoff that starts new work defeats its purpose.
 
 ## Finish
 
