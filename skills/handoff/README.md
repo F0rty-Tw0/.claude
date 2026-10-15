@@ -1,6 +1,6 @@
 # Handoff
 
-On-demand session handoff. Writes what the next context needs into one Markdown file, so you can `/clear` and continue without a generic compaction summary. It costs no context until it runs: you run `/handoff`, or the `handoff-trigger` mod (`mods/handoff-trigger`) nudges at 70% of the compaction limit and runs it at 90%.
+On-demand session handoff. Writes what the next context needs into one Markdown file, so you can `/clear` and continue without a generic compaction summary. It costs no context until it runs: you run `/handoff`, or the `handoff-trigger` mod (`mods/handoff-trigger`) warns at 80% of the compaction limit (a toast, plus a note on the next tool result or prompt) and runs it in place of auto-compaction.
 
 ## What It Does
 
