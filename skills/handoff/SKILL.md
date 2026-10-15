@@ -47,7 +47,7 @@ Rules:
 - The latest user message wins. If it changed the task or plan, the next step follows it; summaries tend to keep planning the earlier direction.
 - Exact paths, commands, hashes, and numbers beat descriptions: the next session acts on them without searching again.
 - Copy the user prompts, don't paraphrase them. Their words are the spec, and a paraphrase drifts.
-- Approval does not carry over. Mark each push, PR, deploy, or other outward-facing step in Next step "confirm with the user first", even if they asked for it here: the fresh session reads the handoff as permission and would act without asking.
+- One-off approval does not carry over. Mark each push, PR, deploy, or other outward-facing step in Next step "confirm with the user first", even if they asked for it here: the fresh session reads the handoff as permission and would act without asking. Exception: a standing grant the user gave for the run (recorded in a memory file) does carry over. Name that memory next to the step, quote the user's grant words under Decisions, and write no confirm step for actions it covers.
 - If `$ARGUMENTS` is not empty, the user asked to stress it; give it room — except the agent lists, the `[handoff-trigger:compact]` marker and the keepalive note, which are data, not emphasis.
 - When the arguments list agents, copy them into Background agents verbatim; the next session has no other record of them.
 - Only the step-1 checks and the Write. A handoff that starts new work defeats its purpose.

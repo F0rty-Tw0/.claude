@@ -102,6 +102,7 @@
   "autoCompactWindow": 300000,
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
+  "askUserQuestionTimeout": "5m",
   "dialogExpiry": "never",
   "autoUpdatesChannel": "latest",
   "autoDreamEnabled": false,
