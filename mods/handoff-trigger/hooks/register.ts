@@ -97,18 +97,26 @@ export const register: Register = on => {
   })
 
   // A turn that answered without tools: the next prompt carries it, whoever
-  // sent it (a notification, a loop, a peer), except this mod's own pings and
-  // continues. Matched on `wait`, both values, because idle.ts holds the
-  // unmatched hook.
+  // sent it (a notification, a loop, a peer), except a plugin's own (this
+  // mod's pings and continues). Matched on `wait`, both values, because
+  // idle.ts holds the unmatched hook.
   for (const wait of [false, true]) {
     on('prompt.submit', { wait }, async ($, e, next) => {
       if (warnAt === undefined || e.command || e.origin.kind === 'plugin') {
         return next(e)
       }
 
+      // Look again: a /clear, /resume or /compact since the warning was armed
+      // ran no turn, and the fresh context must not be told it is full.
+      isCrossing(await percentOfLimit($))
+      if (warnAt === undefined) {
+        return next(e)
+      }
+
       const percent = warnAt
       const result = await next({ ...e, context: takeWarning(e.context) })
-      // A dropped prompt (idle.ts's cold path clears) carried nothing in.
+      // Dropped beneath this hook (a settings hook, the engine): nothing went
+      // in. idle.ts's drops never reach here; its hook is outermost.
       if ('drop' in result) {
         warnAt = percent
       }

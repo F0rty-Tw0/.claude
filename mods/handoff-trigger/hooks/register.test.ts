@@ -33,7 +33,7 @@ function world($: Engine, on: On) {
     return { text: '' } as never
   })
   on('turn.complete', (_$, e) => ({ text: e.answer }))
-  on('tool.call', () => ({ result: 'file' }) as never)
+  on('tool.call', (_$, e) => (e.tool === 'Denied' ? { deny: 'no' } : { result: 'file' }) as never)
   on('prompt.submit', (_$, e) => {
     if (e.text === 'dropped') {
       return { drop: 'cleared' }
@@ -52,8 +52,8 @@ function world($: Engine, on: On) {
     await clock.settle()
   }
 
-  async function useTool(agentId?: string) {
-    const result = await $.tool.call({ tool: 'Read', input: { file_path: '/x' }, agentId } as never)
+  async function useTool(agentId?: string, tool = 'Read') {
+    const result = await $.tool.call({ tool, input: { file_path: '/x' }, agentId } as never)
     return (result as { context?: readonly string[] }).context ?? []
   }
 
@@ -202,4 +202,46 @@ test("a notification's prompt carries the warning; this mod's own does not", asy
   await submit('ping', { origin: { kind: 'plugin' } } as Partial<PromptSubmitInput>)
   await submit('agent done', { origin: { kind: 'task-notification' } } as Partial<PromptSubmitInput>)
   expect(seen.contexts).toEqual([[], [warning(82)]])
+})
+
+test('79% stays quiet, 80% nudges', async ($, on) => {
+  const { seen, endTurn } = world($, on)
+
+  seen.tokens = 237_000 // 79%
+  await endTurn()
+  expect(seen.toasts).toEqual([])
+  seen.tokens = 240_000 // 80%
+  await endTurn()
+  expect(seen.toasts.length).toBe(1)
+})
+
+test('a warning armed before /clear never reaches the fresh context', async ($, on) => {
+  const { seen, endTurn, submit } = world($, on)
+
+  seen.tokens = 246_000
+  await endTurn()
+  seen.tokens = 5_000 // /clear or /compact: no turn ran
+  await submit('fresh task')
+  seen.tokens = 246_000
+  await endTurn()
+  await submit('full again')
+  expect(seen.contexts).toEqual([[], [warning(82)]])
+})
+
+test('a denied tool call leaves the warning for the next result', async ($, on) => {
+  const { seen, endTurn, useTool } = world($, on)
+
+  seen.tokens = 246_000
+  await endTurn()
+  expect(await useTool(undefined, 'Denied')).toEqual([])
+  expect(await useTool()).toEqual([warning(82)])
+})
+
+test('parallel tool calls past 80% carry one warning between them', async ($, on) => {
+  const { seen, useTool } = world($, on)
+
+  seen.tokens = 246_000
+  const results = await Promise.all([useTool(), useTool(), useTool()])
+  expect(results.flat()).toEqual([warning(82)])
+  expect(seen.toasts.length).toBe(1)
 })
