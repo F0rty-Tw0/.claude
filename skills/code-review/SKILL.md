@@ -40,7 +40,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
    | Case | What happens |
    |---|---|
    | 1, `materialChanged:false` | Dispatch nothing. Print the stamped report under `Reused review @ <short sha> (<stamp date>)`, go to Step 6. No new stamp. |
-   | 1, `materialChanged:true` | Proof pass: one `code-reviewer` in `proof` mode. No trunk escalation (code unchanged, stamp has the specialist findings). Report = stamped one with section 5 and the section 7 verdict replaced; keep the stamped Discarded findings and append new ones. Check the reviewer's section 7 against the verdict table on the combined report; override on mismatch (stamped Blocker + clean new proof is still BLOCK). |
+   | 1, `materialChanged:true` | Proof pass: one `code-reviewer` in `proof` mode. No trunk escalation (code unchanged, stamp has the specialist findings). Report = stamped one with section 5 and the section 7 verdict replaced, plus any reinstated finding merged into sections 2 or 3; keep the stamped Discarded findings and append new ones. Check the reviewer's section 7 against the verdict table on the combined report; override on mismatch (stamped Blocker + clean new proof is still BLOCK). |
    | 2 | Delta review: one `code-reviewer` in `delta` mode on the range, told `materialChanged`. Step 3 trunk escalation is judged on the delta diff; specialists get the delta diff and their verified findings merge into sections 2 and 3. |
    | 3 | Full review, as today. |
    | lookup exits non-zero or prints no JSON | Treat as case 3. |
@@ -67,7 +67,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
 5. **Report** in the format below. If the host offers `ReportFindings`, also call it with the verified findings.
 
-   **5b. Stamp.** If Step 1 was eligible (a fresh-review request counts) and ran a review or pass: save the verified report to `$SCRATCH/report.md`, then run `review-stamp.mjs write <base> $REVIEWED <full|delta|proof> $SCRATCH/report.md $SCRATCH/pr.md $SCRATCH/plan.md`. Exit 1 (HEAD moved or tree dirty) or exit 2 (no verdict in the report, bad path) → skip the stamp, say why in one line. 5b runs before Step 6, so fixes are never stamped.
+   **5b. Stamp.** If Step 1 was eligible (a fresh-review request counts) and ran a review or pass: save the verified report to `$SCRATCH/report.md`, then run `review-stamp.mjs write <base> $REVIEWED <full|delta|proof> $SCRATCH/report.md $SCRATCH/pr.md $SCRATCH/plan.md`. Exit 1 (HEAD moved, tree dirty, bad base, or an error) or exit 2 (no verdict in the report, bad path) → skip the stamp, say why in one line. 5b runs before Step 6, so fixes are never stamped.
 
 6. **After the verdict:** triage fixes with the `code-review-receiving` skill. Plan the gate or canary with `launch` mode.
 
