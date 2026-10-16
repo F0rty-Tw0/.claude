@@ -316,7 +316,7 @@ async function settleTurn($: EngineInterface, answer: string, reason: TurnComple
   isPromptInTurn = false
   stopTimer()
 
-  const isHandsFree = wasIdleHandoff && reason === 'answer' && path !== undefined && unattended === 0 && !isFlowActive()
+  const isHandsFree = wasIdleHandoff && reason === 'answer' && path !== undefined && isUnattendedAllowed() && !isFlowActive()
   if (isHandsFree) {
     // Checked before the /clear, which moves spell itself: a person prompt or
     // command, a queued turn, or the compaction flow that came first wins.
@@ -487,6 +487,12 @@ function fail($: EngineInterface, flow: number): void {
   $.ui.toast(FAILED_TOAST)
 }
 
+// One unattended continue per person prompt, for the idle path and for the
+// flow while idle.
+function isUnattendedAllowed(): boolean {
+  return unattended === 0
+}
+
 function isFlowActive(): boolean {
   return ACTIVE.includes(flowState)
 }
@@ -535,6 +541,12 @@ async function veto($: EngineInterface, e: SessionCompactInput): Promise<boolean
   }
 
   if (isActive) return true
+
+  // An unattended continue came first and nothing is working: compaction runs,
+  // no second chain. The engine's idle compaction never fires mid-turn, and a
+  // ping's turn is no work; a long run's mid-turn compactions still hand off.
+  const isIdle = !isMainTurnRunning || pings > 0
+  if (isIdle && !isUnattendedAllowed()) return false
 
   // No deadline yet: onTurnComplete starts it with the check.
   flowState = 'vetoed'
@@ -773,6 +785,7 @@ async function clearAndContinue($: EngineInterface, path: string, sessionId: str
     if (flow !== flowId) return
     if (drop) throw new Error(drop)
 
+    unattended = 1
     reset('off')
   } catch {
     if (flow !== flowId) return

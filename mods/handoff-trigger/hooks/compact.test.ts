@@ -232,6 +232,11 @@ function world($: Engine, on: On) {
     return seen.commands.flatMap((command, i) => command === 'handoff' ? [seen.args[i]] : [])
   }
 
+  // A prompt the person typed: the unattended cap resets.
+  async function person(text = 'back') {
+    await $.prompt.submit({ text, wait: false, origin: { kind: 'composer' } })
+  }
+
   // A /clear the person typed: the session ends, the mod ran no command.
   async function userClear() {
     await $.session.end({ reason: 'clear', sessionId: 'session-x', resume: { id: 'session-x' } })
@@ -245,7 +250,7 @@ function world($: Engine, on: On) {
     await completeTurn({ turnId: 'h', answer: `Handoff written to ${path}`, ...extra })
   }
 
-  return { clock, seen, write, startTurn, completeTurn, endTurn, idle, compactNow, pings, agentSends, doneChecks, stops, handoffs, userClear, handoffTurn }
+  return { clock, seen, write, startTurn, completeTurn, endTurn, idle, compactNow, pings, agentSends, doneChecks, stops, handoffs, person, userClear, handoffTurn }
 }
 
 // The /handoff args: the marker, the agent lines, HANDOFF_ARGS last.
@@ -514,8 +519,69 @@ test('a check that settles while a main turn runs hands off only after that turn
   expect(handoffs()).toHaveLength(1)
 })
 
+test('after a hands-free idle continue, an idle auto compaction passes to the core: one unattended chain per person prompt', async ($, on) => {
+  const { seen, write, endTurn, idle, compactNow, handoffTurn } = world($, on)
+
+  // Two pings, then the idle /handoff, whose turn clears and continues alone.
+  for (let wake = 0; wake < 3; wake += 1) {
+    await endTurn()
+    await idle()
+  }
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+
+  expect(await compactNow()).toEqual(COMPACTED)
+  await endTurn()
+  await handoffTurn()
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+})
+
+test('a continue from the compaction flow is unattended too: the next idle auto passes to the core until a person prompts', async ($, on) => {
+  const { seen, compactNow, endTurn, handoffTurn, person } = world($, on)
+
+  expect(await compactNow()).toEqual(SKIPPED)
+  await endTurn()
+  await handoffTurn()
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+
+  expect(await compactNow()).toEqual(COMPACTED)
+  await person()
+  expect(await compactNow()).toEqual(SKIPPED)
+})
+
+test('after a flow continue, an auto inside the continued run still hands off: the cap is for idle compactions only', async ($, on) => {
+  const { seen, compactNow, startTurn, endTurn, handoffTurn } = world($, on)
+
+  await compactNow()
+  await endTurn()
+  await handoffTurn()
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+
+  await startTurn()
+  expect(await compactNow()).toEqual(SKIPPED)
+})
+
+test('after a hands-free idle continue, an auto inside a keepalive ping turn passes to the core: a ping is no work', async ($, on) => {
+  const { seen, write, startTurn, endTurn, idle, compactNow, pings } = world($, on)
+
+  for (let wake = 0; wake < 3; wake += 1) {
+    await endTurn()
+    await idle()
+  }
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+
+  await endTurn()
+  await idle()
+  expect(pings()).toBe(3)
+  await startTurn()
+  expect(await compactNow()).toEqual(COMPACTED)
+})
+
 test('a notice turn after /handoff is ignored; the turn naming a fresh handoff clears and continues as the user, flow off', async ($, on) => {
-  const { seen, endTurn, compactNow, handoffTurn } = world($, on)
+  const { seen, endTurn, compactNow, handoffTurn, person } = world($, on)
 
   await compactNow()
   await endTurn()
@@ -527,6 +593,7 @@ test('a notice turn after /handoff is ignored; the turn naming a fresh handoff c
   await handoffTurn()
   expect(seen.commands).toEqual(['handoff', 'clear'])
   expect(seen.submits).toEqual([{ text: CONTINUE, origin: 'plugin', asUser: true }])
+  await person()
   expect(await compactNow()).toEqual(SKIPPED)
   expect(seen.toasts).toEqual([VETO_TOAST, VETO_TOAST])
 })
@@ -644,7 +711,7 @@ test('the deadline firing while the handoff waits on a running turn cancels it',
 
 for (const [call, window] of [['clear', 'during the mod\'s own /clear'], ['id', 'between clearing and the deferred /clear']] as const) {
   test(`the deadline landing ${window} still clears and continues; the flow ends off`, async ($, on) => {
-    const { clock, seen, endTurn, compactNow, handoffTurn } = world($, on)
+    const { clock, seen, endTurn, compactNow, handoffTurn, person } = world($, on)
 
     await compactNow()
     await endTurn()
@@ -656,6 +723,7 @@ for (const [call, window] of [['clear', 'during the mod\'s own /clear'], ['id', 
     expect(seen.commands).toEqual(['handoff', 'clear'])
     expect(seen.submits).toEqual([{ text: CONTINUE, origin: 'plugin', asUser: true }])
     expect(seen.toasts).not.toContain(TIMED_OUT_TOAST)
+    await person()
     expect(await compactNow()).toEqual(SKIPPED)
   })
 }
