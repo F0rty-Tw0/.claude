@@ -57,7 +57,7 @@ Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`h
 
 Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
 
-Screenshots go in with `gh pr create --attach <path>`, one flag per file, and the body references the same paths. Every later create or edit that sends a body (`--body`, `--body-file`) repeats the same `--attach` flags: the body still holds local paths, and without them it overwrites the hosted URLs and the images break.
+Screenshots go in with `gh pr create --attach <path>`, one flag per file, and the body references the same paths. Every later create or edit that sends a body (`--body`, `--body-file`) repeats the same `--attach` flags: the body still holds local paths, and without them it overwrites the hosted URLs and the images break. No screen changed → a `No screenshots: <why>` line in `## Proof`; `hooks/pr-proof-guard.js` blocks a body with neither, or with a local image not passed to `--attach`.
 
 Run `git push` and `gh pr create` as **separate** Bash calls. If the hook blocks a chained call, the push never runs, but commit-guard has already used up its one-shot flag.
 

@@ -99,7 +99,7 @@
       "effortLevel": "high"
     }
   },
-  "autoCompactWindow": 288000,
+  "autoCompactWindow": 400000,
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
   "askUserQuestionTimeout": "5m",

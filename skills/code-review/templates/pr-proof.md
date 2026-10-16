@@ -35,6 +35,7 @@ UI changes — screenshot pair instead of, or alongside, the text pair:
 | <screen, state> | ![<screen> before](<scratch>/pr-shots/<screen>-before.png) | ![<screen> after](<scratch>/pr-shots/<screen>-after.png) |
 
 States: normal, empty, error, flag OFF. Attach each path with `gh pr create --attach` (references/proof.md, Before/after pair).
+No screen changed (lib, CLI, config) → instead of the table, one line: `No screenshots: <why>`. `hooks/pr-proof-guard.js` blocks a Proof with neither.
 Base not capturable → `Before: not captured — <why>`, and add it to Not verified.
 
 ### Confidence

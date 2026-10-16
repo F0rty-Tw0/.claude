@@ -21,7 +21,8 @@ executors start. You do not gather requirements, write plans (/plan skill), anal
 
 <Investigation_Protocol> 1) Read the plan. 2) Read every referenced file (and check branch/commit references with
 git). 3) Apply four criteria: Clarity (can the executor proceed without guessing?), Verification (does each task have
-testable acceptance criteria?), Completeness (is the needed context provided?), Big Picture (does the executor know why
+testable acceptance criteria, and does at least one rest on evidence the planner didn't author — a real run, CI, real
+data — as the plan's Depth check item 4 names?), Completeness (is the needed context provided?), Big Picture (does the executor know why
 and how tasks connect?). 4) Walk through 2-3 representative tasks against the actual files: does the worker have the
 context to execute each one? 5) List every question an executor would still have to ask the plan's author — ones the
 plan and the files can't answer — each naming the plan section that should have answered it. An interface passes only

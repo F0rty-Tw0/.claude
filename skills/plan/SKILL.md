@@ -98,9 +98,19 @@ Every plan includes:
 - Implementation Steps (with file references)
 - Risks and Mitigations
 - Verification Steps
+- Depth check (below)
 - PR Slices — when the work will exceed ~400 changed lines or mixes blast-radius classes: slice table (Slice, Branch, Base, Blast, Tasks — see `references/task-format.md`) per skill:open-pr (`references/stacking.md`). Slicing at plan time is cheap; splitting a finished branch is not.
 
 Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
+
+**Depth check** — every mode, before the Architect or Critic sees the plan (Review mode: before step 2). The goal is a deeper plan, not a bigger one. Answer in a `## Depth check` section, 1–3 lines each:
+
+1. What a top practitioner would do here that the request doesn't ask for.
+2. The rawest material they would start from instead of the digested version — transcripts, logs, the code, real data, not a handoff, summary, or earlier agent report — and whether the plan reads it.
+3. The specific methods and tools they would use.
+4. What, other than the planner or the user, would show the result is right — a real run, CI, production data, an outside tool — and which acceptance criterion checks it.
+
+Then revise the tasks and acceptance criteria to ask for exactly that. An answer that adds scope rather than depth goes under Risks as an option for the user, not into the tasks.
 
 In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan file before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
 
