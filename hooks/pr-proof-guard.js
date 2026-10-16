@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // PreToolUse guard: blocks `gh pr create|new` / `gh pr edit --body…` unless the PR body has a `## Proof` heading
-// with a before/after pair under it (Before:/After: lines or a `| Before | After |` table).
+// with a before/after pair under it (Before:/After: lines or a `| Before | After |` table), plus screenshots whose local
+// paths are all passed to --attach, or a `No screenshots: <why>` line.
 // Enforces "every PR ships with proof" (code-review skill, proof mode) mechanically instead of by prose.
 // ponytail: checks the heading and pair markers exist, not that the proof is real — the code-review reviewer judges content.
 // ponytail: catches a forgotten proof, not deliberate evasion (eval, shell aliases, `"$(gh pr create)"` inside quotes).
@@ -73,7 +74,7 @@ const baseDir = path.resolve(cwd, cd ? expandHome(unquote(cmd.slice(...cd.indice
 // one with `After:`, a parenthetical allowed before the colon (`Before (base abc123):`); prose like "after the fix" is not.
 const PROOF_HEADING = /^[ \t]*## Proof\b/m;
 const pairLine = (word) => new RegExp(String.raw`^[ \t>*|-]*${word}\b(?:\*\*)?(?:[ \t]*\([^)\n]*\))?[ \t]*[:|]`, 'im');
-const hasPair = (text) => {
+const proofSection = (text) => {
   const lines = text.slice(text.search(PROOF_HEADING)).split('\n');
   let inFence = false;
   const end = lines.findIndex((line, i) => {
@@ -81,9 +82,29 @@ const hasPair = (text) => {
 
     return i > 0 && !inFence && /^[ \t]*## /.test(line);
   });
-  const section = (end < 0 ? lines : lines.slice(0, end)).join('\n');
 
-  return /^[ \t]*\|.*\bBefore\b.*\|.*\bAfter\b/im.test(section) || (pairLine('Before').test(section) && pairLine('After').test(section));
+  return (end < 0 ? lines : lines.slice(0, end)).join('\n');
+};
+const hasPair = (section) =>
+  /^[ \t]*\|.*\bBefore\b.*\|.*\bAfter\b/im.test(section) || (pairLine('Before').test(section) && pairLine('After').test(section));
+// The section also shows screenshots (`![alt](target)` / `<img src=target>`) or says why it has none in a
+// `No screenshots: <why>` line. gh rewrites only the body paths passed to --attach, so every local target needs one.
+const IMAGE = /!\[[^\]\n]*\]\([ \t]*<?([^)\s>]+)|<img\b[^>\n]*\bsrc[ \t]*=[ \t]*["']?([^"'\s>]+)/gi;
+const OPT_OUT = /^[ \t>*|-]*No screenshots\b(?:\*\*)?[ \t]*:(?:\*\*)?[ \t]*\S/im;
+const ATTACH_HOW = 'Reference each screenshot in the body by a path and pass that same path to --attach, one flag per file:\n' +
+  'gh pr create --attach <scratch>/pr-shots/<screen>-before.png --attach <scratch>/pr-shots/<screen>-after.png --body-file pr.md\n' +
+  'with `![<screen> after](<scratch>/pr-shots/<screen>-after.png)` in the body. Re-send the same --attach flags on every ' +
+  'later `gh pr edit` that sends a body. See code-review references/proof.md, Screenshots.';
+const NO_SHOTS = 'pr-proof-guard: `## Proof` has no screenshot. Add the before/after screenshots as Markdown images, or, when ' +
+  'no screen changed (lib-only, CLI-only), a line `No screenshots: <why>` with a non-empty reason. ' + ATTACH_HOW;
+const shotGap = (section, attached) => {
+  const targets = [...section.matchAll(IMAGE)].map((m) => m[1] || m[2]);
+  if (!targets.length) return OPT_OUT.test(section) ? '' : NO_SHOTS;
+  const unattached = targets.filter((t) => !/^https?:\/\//i.test(t) && !attached.includes(t));
+  if (!unattached.length) return '';
+
+  return `pr-proof-guard: screenshot ${unattached.join(', ')} is a local path with no matching --attach flag, so the image ` +
+    'breaks on GitHub. ' + ATTACH_HOW;
 };
 const HOW = 'Pass the full body via a heredoc, with the delimiter alone on its line and `)"` on the next:\n' +
   '--body "$(cat <<\'EOF\'\n...\nEOF\n)"\n' +
@@ -94,8 +115,13 @@ const NO_PAIR = 'pr-proof-guard: `## Proof` has no before/after pair. Every PR s
   'a `Before:` line and an `After:` line (screenshot, CLI or console output of the real thing on base vs head), or a ' +
   '`| Before | After |` table. Test-runner output alone does not count. Base not capturable → `Before: not captured — <why>` ' +
   'and list it under Not verified. See code-review references/proof.md, Before/after pair. ' + HOW;
-// Returns the block message for a body, or '' when it may run.
-const proofGap = (text) => (!PROOF_HEADING.test(text) ? NO_PROOF : hasPair(text) ? '' : NO_PAIR);
+// Returns the block message for a body sent with these --attach paths, or '' when it may run.
+const proofGap = (text, attached) => {
+  if (!PROOF_HEADING.test(text)) return NO_PROOF;
+  const section = proofSection(text);
+
+  return hasPair(section) ? shotGap(section, attached) : NO_PAIR;
+};
 
 // `gh pr create|new|edit` at command position: start, newline, `;`, `&&`, `||`, `|`, `(`, `$(`, backtick,
 // after optional repeatable `VAR=x ` / `then` / `do` / `else` / `!` / `{` / `time` / `command` / `nohup` / `env` /
@@ -122,9 +148,13 @@ const check = (inv) => {
   if (tokens.some((t) => t.flag === '--help' || t.flag === '-h')) return '';
 
   let source = null; // last body flag wins, like gh's flag parser
+  const attached = []; // --attach paths as gh receives them, `#alt text` dropped
   tokens.forEach((t, i) => {
     const long = t.flag.match(/^--body(-file)?(=|$)/);
     const short = t.flag.match(/^-([bF])/);
+    const attach = t.flag.match(/^--attach(=|$)/);
+    const attachRange = attach && (attach[1] ? { start: t.start + attach[0].length, end: t.end } : tokens[i + 1]);
+    if (attachRange) attached.push(expandHome(unquote(cmd.slice(attachRange.start, attachRange.end))).split('#')[0]);
     if (long) source = { isFile: Boolean(long[1]), range: long[2] ? { start: t.start + long[0].length, end: t.end } : tokens[i + 1] };
     else if (short) source = { isFile: short[1] === 'F', range: t.flag.length > 2 ? { start: t.start + 2, end: t.end } : tokens[i + 1] };
   });
@@ -132,11 +162,11 @@ const check = (inv) => {
 
   const { start, end } = source.range || { start: argsEnd, end: argsEnd };
   const inHeredoc = heredocs.filter((h) => h.start >= start && h.end <= end);
-  if (inHeredoc.length) return proofGap(inHeredoc.map((h) => cmd.slice(h.start, h.end)).join('\n'));
+  if (inHeredoc.length) return proofGap(inHeredoc.map((h) => cmd.slice(h.start, h.end)).join('\n'), attached);
 
   let value = unquote(cmd.slice(start, end));
   const catFile = !source.isFile && value.match(/^\$\(\s*cat\s+([^)\n]+?)\s*\)$/);
-  if (!source.isFile && !catFile) return proofGap(value);
+  if (!source.isFile && !catFile) return proofGap(value, attached);
   if (catFile) value = unquote(catFile[1]);
 
   let scanEnd = inv.index; // earlier mentions of the body file are looked for before here
@@ -147,20 +177,20 @@ const check = (inv) => {
     const catSource = masked.slice(pipeStart, inv.index).match(/^[ \t]*cat[ \t]+(\S+)[ \t]*$/d);
     const printfSource = masked.slice(pipeStart, inv.index).match(/^[ \t]*printf[ \t]+/);
     scanEnd = pipeStart; // the pipe source reading the file (`cat pr.md |`) is not a stale write
-    if (redirect?.op === '<<<') return proofGap(redirect.word);
+    if (redirect?.op === '<<<') return proofGap(redirect.word, attached);
     if (redirect && redirect.op !== '<') {
       const heredoc = heredocs.find((h) => h.op === redirect.index);
-      return heredoc ? proofGap(cmd.slice(heredoc.start, heredoc.end)) : NO_PROOF;
+      return heredoc ? proofGap(cmd.slice(heredoc.start, heredoc.end), attached) : NO_PROOF;
     }
     if (redirect) value = redirect.word;
     else if (catSource) value = unquote(cmd.slice(pipeStart + catSource.indices[1][0], pipeStart + catSource.indices[1][1]));
     else if (printfSource) {
-      return proofGap(unquote(cmd.slice(pipeStart + printfSource[0].length, inv.index)).replace(/\\n/g, '\n'));
+      return proofGap(unquote(cmd.slice(pipeStart + printfSource[0].length, inv.index)).replace(/\\n/g, '\n'), attached);
     } else {
       const raw = cmd.slice(pipeStart, inv.index);
       const heading = /(^|['"])[ \t]*## Proof\b/m.exec(raw);
 
-      return heading ? proofGap(raw.slice(heading.index + heading[1].length)) : NO_PROOF;
+      return heading ? proofGap(raw.slice(heading.index + heading[1].length), attached) : NO_PROOF;
     }
   }
   if (value.includes('$')) return `pr-proof-guard: cannot resolve body file path \`${value}\` (it expands a variable). Pass a literal path. ${HOW}`;
@@ -176,7 +206,7 @@ const check = (inv) => {
   let body = '';
   try { body = fs.readFileSync(file, 'utf8'); } catch { return `pr-proof-guard: cannot read body file ${file}. ${HOW}`; }
 
-  return proofGap(body);
+  return proofGap(body, attached);
 };
 
 for (const inv of masked.matchAll(INVOKE)) {

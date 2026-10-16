@@ -47,16 +47,17 @@ Split → follow `references/stacking.md`. It builds the slices, then runs Steps
 Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it, or without a `Before:`/`After:` pair (or `| Before | After |` table) under it.
 
 1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. Every PR → before/after pair of the change running: screenshot for UI, CLI/console/HTTP output otherwise. Test output or the diff never counts as the pair (`references/proof.md`, Before/after pair).
-2. **Fresh review** — `code-review` review mode on `<base>...HEAD`. It dispatches an independent reviewer; do not review your own work in this session.
+2. **Independent review** — `code-review` review mode on `<base>...HEAD`. It dispatches an independent reviewer; do not review your own work in this session. code-review reuses a stamp on HEAD and delta-reviews fix commits on top of one (code-review Step 1).
 3. **Verdict gate:**
    - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
    - `APPROVE — …` → continue.
    - No before/after pair (the reviewer reports it as a proof gap) → same as BLOCK: say why it's missing and ask *capture first (Recommended)* / *open as draft with `Before: not captured — <why>` and the gap in Not verified*. PRs used to ship with proof that code was written, not that it worked.
+   - Fixes applied after the verdict (blockers or accepted should-fixes) → commit them if the user authorized commits (skill:meaningful-commits), else ask first; then re-run item 1 for the touched proof and item 2 (a delta review) before `gh pr create`. Repeat while the verdict blocks; after 2 delta rounds, ask the user.
 4. **Trim for the body** — the full proof bundle (blast radius, test counts, gate, invariants) stays with you. Only the compact `## Proof` from Step 3 goes in the body.
 
 Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
 
-Screenshots go in with `gh pr create --attach <path>`, one flag per file, and the body references the same paths. Every later create or edit that sends a body (`--body`, `--body-file`) repeats the same `--attach` flags: the body still holds local paths, and without them it overwrites the hosted URLs and the images break.
+Screenshots go in with `gh pr create --attach <path>`, one flag per file, and the body references the same paths. Every later create or edit that sends a body (`--body`, `--body-file`) repeats the same `--attach` flags: the body still holds local paths, and without them it overwrites the hosted URLs and the images break. No screen changed → a `No screenshots: <why>` line in `## Proof`; `hooks/pr-proof-guard.js` blocks a body with neither, or with a local image not passed to `--attach`.
 
 Run `git push` and `gh pr create` as **separate** Bash calls. If the hook blocks a chained call, the push never runs, but commit-guard has already used up its one-shot flag.
 
