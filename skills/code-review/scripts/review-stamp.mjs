@@ -3,7 +3,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, parse, resolve } from 'node:path';
 
 const USAGE = 'usage: review-stamp.mjs lookup <base> [<material>...] | write <base> <reviewed-sha> <full|delta|proof> <report-file> [<material>...]';
 const MODES = ['full', 'delta', 'proof'];
@@ -11,6 +11,8 @@ const STAMP_NAME = /^[0-9a-f]{40,64}\.md$/;
 const HEADER = /^mb: ([0-9a-f]{40,64})\ndigest: ([0-9a-f]{64})\ndate: ([^\n]*)\nmode: (full|delta|proof)\n\n/;
 const EXCUSED_UNTRACKED = ['?? .claude/local/', '?? docs/specs/'];
 const QUOTED_UNTRACKED = /^\?\? "/;
+const VERDICT_SECTION = /^## 7\b/m;
+const VERDICT_LINE = /^\**(APPROVE|BLOCK) — /m;
 
 const sha256 = (data) => createHash('sha256').update(data).digest('hex');
 
@@ -141,8 +143,20 @@ const write = (base, reviewed, mode, reportFile, materials) => {
   return { status: 0 };
 };
 
-// A missing file is legal (skipped); a missing parent directory is a caller bug such as an unset $SCRATCH.
-const orphanMaterial = (materials) => materials.find((file) => !existsSync(dirname(resolve(file))));
+// A missing file is legal (skipped); a missing or root parent directory is a caller bug such as an unset $SCRATCH.
+const isOrphan = (file) => {
+  const parent = dirname(resolve(file));
+
+  return parent === parse(parent).root || !existsSync(parent);
+};
+
+const orphanMaterial = (materials) => materials.find(isOrphan);
+
+const isCompleteReport = (reportFile) => {
+  const text = readFileSync(reportFile, 'utf8');
+
+  return VERDICT_SECTION.test(text) && VERDICT_LINE.test(text);
+};
 
 const usageFail = (message = USAGE) => {
   console.error(message);
@@ -167,6 +181,7 @@ const main = (argv) => {
   if (command === 'write' && rest.length >= 4) {
     const [base, reviewed, mode, reportFile, ...materials] = rest;
     if (!MODES.includes(mode) || !existsSync(reportFile)) return usageFail();
+    if (!isCompleteReport(reportFile)) return usageFail(`${USAGE}\nreport lacks a "## 7" section and an "APPROVE — " or "BLOCK — " verdict line: ${reportFile}`);
 
     const orphan = orphanMaterial(materials);
     if (orphan) return orphanFail(orphan);

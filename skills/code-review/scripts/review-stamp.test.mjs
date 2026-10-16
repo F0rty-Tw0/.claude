@@ -2,7 +2,7 @@
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -51,7 +51,7 @@ const files = () => {
   writeFileSync(pr2, 'pr v2');
   writeFileSync(plan, 'plan v1');
   writeFileSync(plan2, 'plan v2');
-  writeFileSync(report, '## 1. Summary\nbody\n\n## 7. Verdict\nSHIP\n');
+  writeFileSync(report, '## 1. Summary\nbody\n\n## 7. Verdict\nAPPROVE — LOW RISK LEAF\n');
 
   return { dir, pr, pr2, plan, plan2, report };
 };
@@ -108,15 +108,22 @@ describe('FEATURE: review-stamp', () => {
       assert.deepStrictEqual(pick(result, ['case', 'materialChanged']), { case: 1, materialChanged: true });
     });
 
-    it('WHEN written THEN the stamp dir holds no .tmp leftover (atomic write)', () => {
+    it('WHEN a crashed writer left .md.tmp files THEN lookup ignores them, and a valid stamp beside them is case 1', () => {
       const dir = repo();
       const { pr, report } = files();
+      const parent = git(dir, 'rev-parse', 'HEAD~1').stdout.trim();
       const sha = head(dir);
       stamp(dir, sha, 'full', report, pr);
+      const valid = stampPath(dir, sha);
+      renameSync(valid, `${valid}.tmp`);
+      copyFileSync(`${valid}.tmp`, `${stampPath(dir, parent)}.tmp`);
 
-      const names = readdirSync(join(dir, '.git', 'claude-review'));
+      const orphaned = lookup(dir, 'main', pr);
+      renameSync(`${valid}.tmp`, valid);
+      const beside = lookup(dir, 'main', pr);
 
-      assert.deepStrictEqual(names, [`${sha}.md`]);
+      assert.strictEqual(orphaned.case, 3);
+      assert.strictEqual(beside.case, 1);
     });
 
     it('WHEN a worktree is added at that commit THEN case 1 from the worktree (RF2)', () => {
@@ -334,6 +341,19 @@ describe('FEATURE: review-stamp', () => {
     });
   });
 
+  describe('GIVEN a clean repo that never had a stamp', () => {
+    it('WHEN looked up THEN case 3 with exit 0 (no claude-review dir)', () => {
+      const dir = repo();
+      const { pr } = files();
+
+      const result = run(dir, 'lookup', 'main', pr);
+
+      assert.ok(!existsSync(join(dir, '.git', 'claude-review')));
+      assert.strictEqual(result.status, 0, result.stderr);
+      assert.deepStrictEqual(JSON.parse(result.stdout), { case: 3, reason: 'no reusable stamp' });
+    });
+  });
+
   describe('GIVEN untracked files', () => {
     it('WHEN one sits outside the planning dirs THEN lookup is dirty and write exits 1 (8a)', () => {
       const dir = repo();
@@ -415,7 +435,7 @@ describe('FEATURE: review-stamp', () => {
   });
 
   describe('GIVEN a material path', () => {
-    it('WHEN its parent directory is missing THEN lookup and write exit 2 naming the path (unset $SCRATCH)', () => {
+    it('WHEN its parent directory is missing THEN lookup and write exit 2 naming the path', () => {
       const dir = repo();
       const { report } = files();
       const orphan = join(dir, 'no-such-dir', 'pr.md');
@@ -427,6 +447,20 @@ describe('FEATURE: review-stamp', () => {
       assert.ok(looked.stderr.includes(orphan), looked.stderr);
       assert.strictEqual(written.status, 2);
       assert.ok(written.stderr.includes(orphan), written.stderr);
+      assert.ok(!existsSync(stampPath(dir, head(dir))));
+    });
+
+    it('WHEN its parent is the filesystem root (unset $SCRATCH: /pr.md, /plan.md) THEN lookup and write exit 2 naming the path', () => {
+      const dir = repo();
+      const { report } = files();
+
+      const looked = run(dir, 'lookup', 'main', '/pr.md', '/plan.md');
+      const written = run(dir, 'write', 'main', head(dir), 'full', report, '/pr.md', '/plan.md');
+
+      assert.strictEqual(looked.status, 2);
+      assert.ok(looked.stderr.includes('/pr.md'), looked.stderr);
+      assert.strictEqual(written.status, 2);
+      assert.ok(written.stderr.includes('/pr.md'), written.stderr);
       assert.ok(!existsSync(stampPath(dir, head(dir))));
     });
 
@@ -473,6 +507,41 @@ describe('FEATURE: review-stamp', () => {
 
       assert.strictEqual(result.status, 2);
     });
+
+    for (const [label, text] of [
+      ['is empty', ''],
+      ['is truncated before section 7', '## 1. Summary\nbody\n'],
+      ['has section 7 but no verdict line', '## 7. Verdict\nlooks fine\n'],
+      ['has a verdict line but no section 7', '## 1. Summary\nAPPROVE — LOW RISK LEAF\n'],
+      ['has a verdict without the em-dash separator', '## 7. Verdict\nAPPROVE LOW RISK LEAF\n'],
+    ]) {
+      it(`WHEN the report ${label} THEN exit 2 naming the report and no stamp`, () => {
+        const dir = repo();
+        const { dir: matDir, pr } = files();
+        const bad = join(matDir, 'bad-report.md');
+        writeFileSync(bad, text);
+
+        const result = run(dir, 'write', 'main', head(dir), 'full', bad, pr);
+
+        assert.strictEqual(result.status, 2);
+        assert.ok(result.stderr.includes(bad), result.stderr);
+        assert.ok(!existsSync(stampPath(dir, head(dir))));
+      });
+    }
+
+    for (const verdict of ['**APPROVE — LOW RISK LEAF**', '**BLOCK — missing proof**', 'BLOCK — missing proof']) {
+      it(`WHEN the verdict line is "${verdict}" THEN the stamp is written`, () => {
+        const dir = repo();
+        const { dir: matDir, pr } = files();
+        const good = join(matDir, 'good-report.md');
+        writeFileSync(good, `## 7. Verdict\n${verdict}\n`);
+
+        const result = run(dir, 'write', 'main', head(dir), 'full', good, pr);
+
+        assert.strictEqual(result.status, 0, result.stderr);
+        assert.ok(existsSync(stampPath(dir, head(dir))));
+      });
+    }
 
     it('WHEN the subcommand is unknown THEN exit 2', () => {
       const dir = repo();
