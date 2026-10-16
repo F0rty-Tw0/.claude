@@ -28,13 +28,29 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
    No diff found → say so and stop. Never review from memory.
 
+   **Review stamp.** Runs only when all hold; otherwise full review, no stamp:
+   - Diff is `git diff <base>...HEAD` on the local checkout. A caller's `<x>..HEAD` converts to `<x>...HEAD` only if `git merge-base --is-ancestor <x> HEAD` succeeds.
+   - Not an excluded diff: non-ancestor two-dot range, `gh pr diff <n>`, explicit other head, `--cached` or working-tree diff, mid-plan `git diff <task-base>`.
+   - Tree clean: `git status --porcelain --untracked-files=all` at the toplevel shows nothing but untracked files under `.claude/local/` or `docs/specs/` (the script checks this).
+
+   User asked for a fresh or second-opinion review → skip the lookup (case 3), but still stamp in 5b, so the newest independent review wins.
+
+   Record `REVIEWED=$(git rev-parse HEAD)` and `SCRATCH=$(mktemp -d)` outside the worktree. Shell state doesn't persist between Bash calls: echo both and use the literal values in every later call. Material files go in `$SCRATCH`: PR text as `pr.md`, plan copied as `plan.md`. Then run `node ~/.claude/skills/code-review/scripts/review-stamp.mjs lookup <base> $SCRATCH/pr.md $SCRATCH/plan.md`:
+
+   | Case | What happens |
+   |---|---|
+   | 1, `materialChanged:false` | Dispatch nothing. Print the stamped report under `Reused review @ <short sha> (<stamp date>)`, go to Step 6. No new stamp. |
+   | 1, `materialChanged:true` | Proof pass: one `code-reviewer` in `proof` mode. No trunk escalation (code unchanged, stamp has the specialist findings). Report = stamped one with section 5 and the section 7 verdict replaced; keep the stamped Discarded findings and append new ones. Check the reviewer's section 7 against the verdict table on the combined report; override on mismatch (stamped Blocker + clean new proof is still BLOCK). |
+   | 2 | Delta review: one `code-reviewer` in `delta` mode on the range, told `materialChanged`. Step 3 trunk escalation is judged on the delta diff; specialists get the delta diff and their verified findings merge into sections 2 and 3. |
+   | 3 | Full review, as today. |
+
    **Mid-plan checkpoint** (e.g. after a `subagent-driven-development` task): diff = `git diff <task-base>` (working tree against the recorded task base, so uncommitted work counts), plan = the task text. Run one for risky task diffs (shared code, trunk signals); the plan's final review covers the rest.
 
    **Stacked PR** (base is not the default branch: `gh pr view <n> --json baseRefName`) → diff against the **parent** (`<parent>...<head>`), and pass the `## Stack` map to the reviewer.
 
-2. **Independence.** Dispatch the reviewer with `references/reviewer-prompt.md`. Always dispatch, even for small diffs: a session that wrote any of the code is biased.
+2. **Independence.** Dispatch the reviewer with `references/reviewer-prompt.md`. Always dispatch, even for small diffs, unless Step 1 reuses a stamp (case 1, unchanged material): a session that wrote any of the code is biased.
 
-   Pass only artifacts: diff, PR text, plan. Never pass your session's rationale, opinions, or a hint list.
+   Pass only artifacts: diff, PR text, plan. Never pass your session's rationale, opinions, or a hint list. Exception: stamped independent-review findings, in delta and proof modes only.
 
 3. **Trunk escalation.** Check the trunk signals from `references/blast-radius.md` (greps and fan-in, not file names alone). If any shows, dispatch the `security-reviewer` and/or `performance-reviewer` in the **same message**, ≤3 agents total.
 
@@ -46,7 +62,11 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
    Discard a finding only with evidence. "The author intended it" is not evidence. List discarded findings with the reason.
 
+   Delta review: a prior Blocker marked fixed needs its fixing hunk in `S..HEAD` and a re-run of its reproduction; otherwise it stays open.
+
 5. **Report** in the format below. If the host offers `ReportFindings`, also call it with the verified findings.
+
+   **5b. Stamp.** If Step 1 was eligible (a fresh-review request counts) and ran a review or pass: save the verified report to `$SCRATCH/report.md`, then run `review-stamp.mjs write <base> $REVIEWED <full|delta|proof> $SCRATCH/report.md $SCRATCH/pr.md $SCRATCH/plan.md`. Exit 1 (HEAD moved or tree dirty) → skip the stamp, say so in one line. 5b runs before Step 6, so fixes are never stamped.
 
 6. **After the verdict:** triage fixes with the `code-review-receiving` skill. Plan the gate or canary with `launch` mode.
 
@@ -126,7 +146,8 @@ Should-fix and Note findings never change the verdict; they go in section 3.
 | Mistake | Fix |
 |---|---|
 | Reviewing in the session that wrote the code | Dispatch a fresh reviewer — step 2 |
-| Priming the reviewer ("check the race in wallet.ts") | Pass artifacts only; let it find things |
+| Adding `critic` to a diff review | `critic` reviews specs and plans. On code diffs it found nothing or repeated `code-reviewer` (2026-10-16 audit). |
+| Priming the reviewer ("check the race in wallet.ts") | Pass artifacts only; let it find things (stamped prior findings excepted, Step 2) |
 | Trusting "all tests pass" | Re-run; mutation-probe; base-failure check |
 | Stopping at the producer side of a new event/type | Read the consumer's dispatch point outside the diff |
 | Treating a gated PR as all-leaf | Migrations, shared helpers, and payload changes are trunk even inside a gate |

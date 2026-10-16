@@ -12,7 +12,7 @@ Risk-gradient code review for AI-assisted changes. It classifies each change by 
 | `attack` | Pre-launch: flow-breaker, profiler and security prober against staging (≤3 agents) |
 | `launch` | Gate plan before coding, merge-ready vs launch-ready checklists, human-polish handoff, canary ramp + rollback |
 
-References: `blast-radius.md`, `proof.md`, `vanity-tests.md`, `adversarial-inspection.md`, `reviewer-prompt.md`, `babysit.md`, `attack.md`, `launch.md`. Template: `templates/pr-proof.md`.
+References: `blast-radius.md`, `proof.md`, `vanity-tests.md`, `adversarial-inspection.md`, `reviewer-prompt.md`, `babysit.md`, `attack.md`, `launch.md`. Template: `templates/pr-proof.md`. Script: `scripts/review-stamp.mjs`.
 
 Verdicts: `APPROVE — LOW RISK LEAF`, `APPROVE — BRANCH, PROOF MET`, `APPROVE — TRUNK, HUMAN SIGN-OFF REQUIRED`, `BLOCK — REQUIRES PROOF`, `BLOCK — HIGH BLAST RADIUS DEFECT`.
 

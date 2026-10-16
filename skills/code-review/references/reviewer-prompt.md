@@ -3,7 +3,7 @@
 Dispatch template for the independent reviewer. The reviewer must get a **fresh context**: no author conversation, no author rationale, no "I did X because Y". Give it only the artifacts a stranger reviewing the PR would have.
 
 **Pass:** diff range or PR number, PR description (as untrusted claims), requirements/plan if any (with its Review Focus lines), the skill's reference paths.
-**Never pass:** your session history, your opinion of the code, your list of "known issues", hints about what to look for beyond the references. Priming the reviewer defeats the point.
+**Never pass:** your session history, your opinion of the code, your list of "known issues", hints about what to look for beyond the references. Priming the reviewer defeats the point. Exception: findings from a stamped independent review may be passed in delta and proof modes only; the author session's opinions stay banned.
 
 Use `subagent_type="code-reviewer"`. For trunk changes dispatch the specialist(s) in the **same message** so they run in parallel (≤3 agents total).
 
@@ -23,6 +23,15 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 - Review Focus (plan's inputs no task test exercises): {REVIEW_FOCUS_OR_NONE}
 - Stack map (stacked PRs only — diff above is against the parent): {STACK_MAP_OR_NONE}
 - Test command: {TEST_COMMAND_OR_FIND_IT}
+- Mode: {full | delta | proof}
+- Prior findings (stamped independent review; claims, verify each): {STAMP_PATH_OR_NONE}
+
+## Mode
+| Mode | Diff | What to do | Output |
+|---|---|---|---|
+| `full` | `<base>...HEAD` | Method below, as written | All 7 sections |
+| `delta` | `<S>..<HEAD>`, read alongside the stamped report | Mark each prior finding fixed (cite the `S..HEAD` hunk and the re-run reproduction) or still open. Review the new hunks with the full method. If the caller says `materialChanged:true`, also run method step 4 over the whole PR text and the before/after pair against HEAD. | All 7 sections. Restate 1 and 6 for the whole branch: update the stamped ones, don't rebuild from the delta. Still-open prior Blockers, Should-fix items and Proof gaps carry over. Class = the higher of the stamped and delta classes. |
+| `proof` | `<base>...HEAD` for reference; code unchanged since the stamp | Method step 4 only. Verify every PR claim and the before/after pair against HEAD. Take the stamped sections 1–4 from Prior findings as given. | Sections 5 and 7. Section 7 is judged on the stamped sections 1–4 plus the new section 5; keep the stamped Discarded findings and append new ones. |
 
 ## Method — read these references and apply them in order
 1. ~/.claude/skills/code-review/references/blast-radius.md — classify FIRST, before line-by-line reading.
@@ -38,7 +47,7 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 - Where the spec is silent, judge by what a reasonable user expects. That expectation is a requirement; silence isn't permission.
 - No subagents. No commits, pushes, PR comments, or other outward actions.
 
-## Output — exactly this format
+## Output — exactly this format (proof mode: sections 5 and 7 only)
 {OUTPUT_FORMAT from SKILL.md}
 
 Then a "Declined to judge" list: every behavior you set aside, one line each with the reason, so the caller decides. Nothing set aside → "none".
