@@ -85,6 +85,19 @@ describe('FEATURE: review-stamp', () => {
       assert.deepStrictEqual(pick(result, ['case', 'materialChanged']), { case: 1, materialChanged: true });
     });
 
+    it('WHEN the stamp body was truncated to its header THEN it is not reused, case 3', () => {
+      const dir = repo();
+      const { pr, report } = files();
+      const sha = head(dir);
+      stamp(dir, sha, 'full', report, pr);
+      const text = readFileSync(stampPath(dir, sha), 'utf8');
+      writeFileSync(stampPath(dir, sha), text.slice(0, text.indexOf('\n\n') + 2));
+
+      const result = lookup(dir, 'main', pr);
+
+      assert.strictEqual(result.case, 3);
+    });
+
     it('WHEN written THEN the file is the header plus the report verbatim', () => {
       const dir = repo();
       const { pr, report } = files();

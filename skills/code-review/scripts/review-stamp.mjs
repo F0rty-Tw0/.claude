@@ -43,8 +43,11 @@ const digestOf = (materials) => {
 
 const readHeader = (file) => {
   try {
-    const match = HEADER.exec(readFileSync(file, 'utf8'));
-    if (!match) return null;
+    const text = readFileSync(file, 'utf8');
+    const match = HEADER.exec(text);
+    // A stamp whose body lost its verdict (truncated, hand-edited) is not a review.
+    const body = match ? text.slice(match[0].length) : '';
+    if (!match || !VERDICT_SECTION.test(body) || !VERDICT_LINE.test(body)) return null;
 
     return { mb: match[1], digest: match[2] };
   } catch {
