@@ -35,7 +35,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
    User asked for a fresh or second-opinion review → skip the lookup (case 3), but still stamp in 5b, so the newest independent review wins.
 
-   Record `REVIEWED=$(git rev-parse HEAD)` and `SCRATCH=$(mktemp -d)` outside the worktree. Shell state doesn't persist between Bash calls: echo both and use the literal values in every later call. Material files go in `$SCRATCH`: PR text as `pr.md`, plan copied as `plan.md`. Then run `node ~/.claude/skills/code-review/scripts/review-stamp.mjs lookup <base> $SCRATCH/pr.md $SCRATCH/plan.md`:
+   Record `REVIEWED=$(git rev-parse HEAD)` and `SCRATCH=$(mktemp -d)` outside the worktree. Shell state doesn't persist between Bash calls: echo both and use the literal values in every later call. Material files go in `$SCRATCH`: PR text as `pr.md`, plan copied as `plan.md` (append the `## Stack` map for a stacked PR). Then run `node ~/.claude/skills/code-review/scripts/review-stamp.mjs lookup <base> $SCRATCH/pr.md $SCRATCH/plan.md`:
 
    | Case | What happens |
    |---|---|
@@ -43,6 +43,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
    | 1, `materialChanged:true` | Proof pass: one `code-reviewer` in `proof` mode. No trunk escalation (code unchanged, stamp has the specialist findings). Report = stamped one with section 5 and the section 7 verdict replaced; keep the stamped Discarded findings and append new ones. Check the reviewer's section 7 against the verdict table on the combined report; override on mismatch (stamped Blocker + clean new proof is still BLOCK). |
    | 2 | Delta review: one `code-reviewer` in `delta` mode on the range, told `materialChanged`. Step 3 trunk escalation is judged on the delta diff; specialists get the delta diff and their verified findings merge into sections 2 and 3. |
    | 3 | Full review, as today. |
+   | lookup exits non-zero or prints no JSON | Treat as case 3. |
 
    **Mid-plan checkpoint** (e.g. after a `subagent-driven-development` task): diff = `git diff <task-base>` (working tree against the recorded task base, so uncommitted work counts), plan = the task text. Run one for risky task diffs (shared code, trunk signals); the plan's final review covers the rest.
 
@@ -66,7 +67,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
 5. **Report** in the format below. If the host offers `ReportFindings`, also call it with the verified findings.
 
-   **5b. Stamp.** If Step 1 was eligible (a fresh-review request counts) and ran a review or pass: save the verified report to `$SCRATCH/report.md`, then run `review-stamp.mjs write <base> $REVIEWED <full|delta|proof> $SCRATCH/report.md $SCRATCH/pr.md $SCRATCH/plan.md`. Exit 1 (HEAD moved or tree dirty) → skip the stamp, say so in one line. 5b runs before Step 6, so fixes are never stamped.
+   **5b. Stamp.** If Step 1 was eligible (a fresh-review request counts) and ran a review or pass: save the verified report to `$SCRATCH/report.md`, then run `review-stamp.mjs write <base> $REVIEWED <full|delta|proof> $SCRATCH/report.md $SCRATCH/pr.md $SCRATCH/plan.md`. Exit 1 (HEAD moved or tree dirty) or exit 2 (no verdict in the report, bad path) → skip the stamp, say why in one line. 5b runs before Step 6, so fixes are never stamped.
 
 6. **After the verdict:** triage fixes with the `code-review-receiving` skill. Plan the gate or canary with `launch` mode.
 
