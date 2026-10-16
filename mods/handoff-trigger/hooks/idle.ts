@@ -102,6 +102,9 @@ let isMainTurnRunning = false
 let handOffFlow: number | undefined
 // Set while the mod's own /clear runs: its session.end leaves the flow alone.
 let isOwnClear = false
+// personSeen at an idle veto, undefined at a mid-turn one: only an idle flow's
+// continue, with no person prompt since, takes the unattended cap.
+let idleVetoSeen: number | undefined
 
 export function idle(on: On): void {
   lastResponseAt = undefined
@@ -126,6 +129,7 @@ export function idle(on: On): void {
   isMainTurnRunning = false
   handOffFlow = undefined
   isOwnClear = false
+  idleVetoSeen = undefined
 
   // Keeps pending: the mod's own /clear ends the session mid-flight.
   on('session.end', async ($, e, next) => {
@@ -550,6 +554,7 @@ async function veto($: EngineInterface, e: SessionCompactInput): Promise<boolean
 
   // No deadline yet: onTurnComplete starts it with the check.
   flowState = 'vetoed'
+  idleVetoSeen = isIdle ? personSeen : undefined
   $.ui.toast('Handing off instead of compacting')
 
   return true
@@ -785,7 +790,7 @@ async function clearAndContinue($: EngineInterface, path: string, sessionId: str
     if (flow !== flowId) return
     if (drop) throw new Error(drop)
 
-    unattended = 1
+    if (idleVetoSeen === personSeen) unattended = 1
     reset('off')
   } catch {
     if (flow !== flowId) return

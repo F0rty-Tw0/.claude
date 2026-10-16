@@ -562,6 +562,36 @@ test('after a flow continue, an auto inside the continued run still hands off: t
   expect(await compactNow()).toEqual(SKIPPED)
 })
 
+test('a mid-turn flow continue takes no cap: the idle /handoff after it still clears and continues hands-free', async ($, on) => {
+  const { seen, write, startTurn, completeTurn, endTurn, idle, compactNow, handoffTurn } = world($, on)
+
+  await startTurn()
+  expect(await compactNow()).toEqual(SKIPPED)
+  await completeTurn()
+  await handoffTurn()
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+
+  for (let wake = 0; wake < 3; wake += 1) {
+    await endTurn()
+    await idle()
+  }
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear', 'handoff', 'clear'])
+})
+
+test('a person prompt during an idle flow keeps the cap off: the next idle auto hands off again', async ($, on) => {
+  const { seen, compactNow, endTurn, handoffTurn, person } = world($, on)
+
+  expect(await compactNow()).toEqual(SKIPPED)
+  await person()
+  await endTurn()
+  await handoffTurn()
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+
+  expect(await compactNow()).toEqual(SKIPPED)
+})
+
 test('after a hands-free idle continue, an auto inside a keepalive ping turn passes to the core: a ping is no work', async ($, on) => {
   const { seen, write, startTurn, endTurn, idle, compactNow, pings } = world($, on)
 
