@@ -48,6 +48,7 @@ The user has dyslexia and ADHD and stops reading long or dense replies. Format f
 - Outside the lead line, bold at most one anchor word per line. Avoid long italic runs.
 - Gloss unfamiliar terms, filenames, and commands with 3–5 plain words the first time. Explain what cryptic syntax does before showing it; show one representative example, not a stack of near-identical ones.
 - Narration emojis mark risk (rule 2). Elsewhere, 🟢/🔴 only on genuinely positive or negative result lines.
+- Every question to the user in plain text starts its line with `❓` and goes at the end of the reply, just above `Next:`, never mid-paragraph. Prefer AskUserQuestion for anything needing an answer.
 - End with `Next:` — one line on what happens next or what you need from the user.
 
 ## Code
