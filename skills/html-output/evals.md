@@ -33,7 +33,7 @@ A third arm checks discovery: the same prompt with no mention of the skill, plus
 | | Baseline, no skill | Told to read SKILL.md | Discovery, not told |
 |---|---|---|---|
 | A | Terminal markdown with the closing-status sections | HTML file, `$HOME/html-reports/acme-web/2026-10-06-auth-refactor.html`, `start ""`, `11-status-report.html` | `html-output`; HTML file, path unknown until SKILL.md is read |
-| B | Markdown plan file from `/plan` plus a terminal summary; offers an artifact only if others review it | HTML view of the `/plan` file, `16-implementation-plan.html` + `unknowns/08-implementation-plan.html`, approval through AskUserQuestion, no page in plan mode | `/plan`, then `html-output` to render it |
+| B | Markdown plan folder from `/plan` plus a terminal summary; offers an artifact only if others review it | HTML view of the `/plan` folder (index.md and phase files), `16-implementation-plan.html` + `unknowns/08-implementation-plan.html`, approval through AskUserQuestion, no page in plan mode | `/plan`, then `html-output` to render it |
 | C | Terminal, one line | Terminal, one line | Terminal, no skill |
 | D | Terminal for a small PR, Artifact for a large one | HTML view of the PR body, `17-pr-writeup.html`, diff from real `git diff` | `html-output`; HTML file |
 | E | Top 5 in terminal plus an Artifact with a sortable table, no way to send choices back | HTML file, `18-editor-triage-board.html`, Now / Next / Later / Cut with Copy as prompt and textarea, `node --check` | `html-output`; HTML file |

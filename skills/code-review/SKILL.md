@@ -35,7 +35,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
    User asked for a fresh or second-opinion review → skip the lookup (case 3), but still stamp in 5b, so the newest independent review wins.
 
-   Record `REVIEWED=$(git rev-parse HEAD)` and `SCRATCH=$(mktemp -d)` outside the worktree. Shell state doesn't persist between Bash calls: echo both and use the literal values in every later call. Material files go in `$SCRATCH`: PR text as `pr.md`, plan copied as `plan.md` (append the `## Stack` map for a stacked PR). Then run `node ~/.claude/skills/code-review/scripts/review-stamp.mjs lookup <base> $SCRATCH/pr.md $SCRATCH/plan.md`:
+   Record `REVIEWED=$(git rev-parse HEAD)` and `SCRATCH=$(mktemp -d)` outside the worktree. Shell state doesn't persist between Bash calls: echo both and use the literal values in every later call. Material files go in `$SCRATCH`: PR text as `pr.md`, plan copied as `plan.md` (a plan folder: index.md then each `NN-*.md` in order, concatenated; append the `## Stack` map for a stacked PR). Then run `node ~/.claude/skills/code-review/scripts/review-stamp.mjs lookup <base> $SCRATCH/pr.md $SCRATCH/plan.md`:
 
    | Case | What happens |
    |---|---|

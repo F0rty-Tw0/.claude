@@ -28,9 +28,9 @@ flow --plan-only "<idea>"      # stop after a plan is produced
 ## Stage Routing
 
 1. **IDEATE** — If the request is a vague idea, an open design question, or "build me X" with unclear shape, invoke `Skill("brainstorming")` to explore approaches and write a spec. A concrete, scoped behavior change gets brainstorming's short pass; only typos, config tweaks, version bumps, formatter-only diffs, and bug fixes skip this stage. Under `--auto`, brainstorming's cold-reader and critic checks still run, but step 5's write-back doesn't wait for a reply (only critical unknowns ask) and the spec goes to PLAN without the user-review pause, as the PLAN gate already does.
-2. **PLAN** — `Skill("plan")` turns the idea/spec into a work plan (interview by default, or `--consensus` for a Planner -> Architect -> Critic loop on high-stakes work). Produces a plan file under `.claude/local/plans/`.
+2. **PLAN** — `Skill("plan")` turns the idea/spec into a work plan (interview by default, or `--consensus` for a Planner -> Architect -> Critic loop on high-stakes work). Produces a plan folder under `.claude/local/plans/`.
 3. **EXECUTE** — Branch on mode (see Mode Selection):
-   - **Autonomous** -> `Skill("ralph")` with the plan path. Independent components run in parallel via `dispatching-parallel-agents`.
+   - **Autonomous** -> `Skill("ralph")` with the plan folder path. Independent components run in parallel via `dispatching-parallel-agents`.
    - **Supervised** -> `Skill("subagent-driven-development")` with the plan (fresh subagent + spec check per task).
 4. **REVIEW** — first build the proof bundle (`code-review` `proof` mode) and pass it as the PR text; then `Skill("code-review")`. Triage feedback with `code-review-receiving`.
 5. **FINISH** — `Skill("finishing-a-development-branch")` to integrate, merge, and clean up the branch/worktree.
@@ -52,7 +52,7 @@ Do not advance a stage until its gate holds; if a gate can't be met, stop and re
 | Stage    | Gate before moving on                                                      |
 | -------- | -------------------------------------------------------------------------- |
 | IDEATE   | A spec that passed brainstorming's cold-reader and critic checks exists (typo, config, bump, format, or bug fix -> skip); interactive mode waits for the user's spec review, `--auto` continues |
-| PLAN     | Plan file under `.claude/local/plans/` with testable acceptance criteria; interactive mode links the saved plan and waits for the user to review it (approving the idea or scope doesn't approve an unseen plan); `--auto` continues without the pause |
+| PLAN     | Plan folder under `.claude/local/plans/` with testable acceptance criteria; interactive mode links the saved plan and waits for the user to review it (approving the idea or scope doesn't approve an unseen plan); `--auto` continues without the pause |
 | EXECUTE  | All plan tasks done; `build` exit 0 and the full project test suite passes (real output) |
 | REVIEW   | `code-review` verdict is not BLOCK; findings fixed or dismissed; every acceptance criterion mapped to the proof bundle; a TRUNK verdict stops for human sign-off, even in `--auto` |
 | FINISH   | Branch merged/PR opened and workspace/worktree cleaned up                  |

@@ -9,7 +9,9 @@ Keep working the task until fresh evidence shows it is complete. Deliver the ful
 
 ## Loop
 
-1. **Checklist.** Keep the task's parts as `- [ ]` items in the plan file (or `.claude/local/ralph-<task>.md` when there is no plan) and tick them as they finish. The file carries progress across compaction and resumed sessions; on resume, read it first and continue from the first open item.
+1. **Checklist.** Keep the task's parts as `- [ ]` items and tick them as they finish; the files carry progress across compaction and resumed sessions.
+   - Plan folder (or its `index.md`): items live in phase files, phase state in index.md's Phases Status. Set a phase `in progress` at its first item; at its last tick, write and apply its Handoff per skill:plan `references/task-format.md` `## Handoff` before the next phase. On resume, read index.md and open the first phase not `done`; if every item there is ticked, do its Handoff first. Done = every phase `done`.
+   - Legacy plan (any other `.md` path) or no plan (`.claude/local/ralph-<task>.md`): items live in that file; on resume, read it first and continue from the first open item.
 2. **Work directly; delegate only independent, sizeable tracks.** Do lookups, small edits, and checks yourself. Two or more genuinely independent tracks that each need more than a handful of tool calls go to skill:dispatching-parallel-agents (`executor` / `deep-executor`, ≤3 per wave, worktree isolation when files overlap).
 3. **Long operations** (installs, builds, test suites) run with `run_in_background: true`; wait for them before treating the task as done.
 4. **Verify with fresh evidence.** Name the commands that prove completion (tests, build, typecheck), run them, read the output. Every checklist item is ticked.
@@ -30,6 +32,7 @@ Put status notes and recommendations in the same message as the next tool call, 
 **Stop when:**
 - nothing can advance without the user (missing credentials, a requirement only they can decide, an external service down);
 - the blocker is deliberately protected from you (commit/push guard, permission prompt);
+- a phase Handoff would patch a protected plan section (task-format.md `## Handoff`);
 - the user says stop, cancel, or abort;
 - the same issue recurs across 3 iterations — report it as a likely fundamental problem.
 

@@ -64,28 +64,30 @@ Plan creates actionable work plans. It interviews the user on broad requests, pl
    - **Proceed to review** — send to Architect and Critic for evaluation
    - **Request changes** — return to step 1 with user feedback incorporated
    - **Skip review** — go directly to final approval (step 7)
-3. **Architect** reviews for architectural soundness
-4. **Critic** evaluates against quality criteria
+3. **Architect** reviews for architectural soundness (give it the plan folder path; it reads index.md and every phase file)
+4. **Critic** evaluates against quality criteria (same: index.md and every phase file)
 5. **Re-review loop** (max 5 rounds): if Critic rejects, feed the Architect + Critic feedback to the Planner, then
-   repeat steps 3-4 on the revision. No approval after 5 rounds → present the best version via `AskUserQuestion`,
+   repeat steps 3-4 on the revision. The Planner revises the affected files itself, including phase files
+   written by phase writers. No approval after 5 rounds → present the best version via `AskUserQuestion`,
    noting consensus was not reached.
-6. **Apply improvements**: merge the accepted, deduplicated reviewer suggestions into the plan file in
-   `.claude/local/plans/` and list them in a short changelog at the end of the plan.
+6. **Apply improvements**: merge the accepted, deduplicated reviewer suggestions into index.md and the affected
+   phase files of the plan folder, and list them in a short changelog at the end of index.md.
 7. On Critic approval (with improvements applied): present the plan with `AskUserQuestion` and these options:
    - **Approve and execute** — proceed to implementation via ralph
    - **Clear context and implement** — compact the context window first (recommended when context is large after
-     planning), then start fresh implementation via ralph with the saved plan file
+     planning), then start fresh implementation via ralph with the saved plan folder
    - **Request changes** — return to step 1 with user feedback
    - **Reject** — discard the plan entirely
 8. User chooses in the `AskUserQuestion` UI, not in plain text
 9. On user approval:
-   - **Approve and execute**: invoke `Skill("ralph")` (autonomous) **or** `Skill("subagent-driven-development")` (supervised — review-gated per task) with the approved plan path from `.claude/local/plans/`. Pick supervised for high-stakes or ambiguous work. The planning agent does not edit source files itself.
+   - **Approve and execute**: invoke `Skill("ralph")` (autonomous) **or** `Skill("subagent-driven-development")` (supervised — review-gated per task) with the approved plan folder path from `.claude/local/plans/`. Pick supervised for high-stakes or ambiguous work. The planning agent does not edit source files itself.
    - **Clear context and implement**: `/compact` is a built-in command only the user can run. Ask the user to run it,
-     then invoke `Skill("ralph")` with the approved plan path from `.claude/local/plans/`.
+     then invoke `Skill("ralph")` with the approved plan folder path from `.claude/local/plans/`.
 
 ### Review Mode (`--review`)
 
-1. Read plan file from `.claude/local/plans/`
+1. Read the plan folder from `.claude/local/plans/`: index.md and every phase file (a path ending `.md` is a
+   legacy single-file plan; read it as before)
 2. Evaluate via Critic
 3. Return verdict: APPROVED, REVISE (with specific feedback), or REJECT (replanning required)
 
@@ -95,13 +97,20 @@ Every plan includes:
 
 - Requirements Summary
 - Acceptance Criteria (testable)
-- Implementation Steps (with file references)
+- Implementation Steps (with file references) — the phase files
 - Risks and Mitigations
 - Verification Steps
 - Depth check (below)
 - PR Slices — when the work will exceed ~400 changed lines or mixes blast-radius classes: slice table (Slice, Branch, Base, Blast, Tasks — see `references/task-format.md`) per skill:open-pr (`references/stacking.md`). Slicing at plan time is cheap; splitting a finished branch is not.
 
-Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
+Each plan is a plan folder under `.claude/local/plans/` (spec.md, index.md, one `NN-<phase>.md` per phase), laid out per `references/task-format.md`, which also says where the folder goes when the spec lives elsewhere. Drafts go to `.claude/local/drafts/`.
+
+**Writing order:**
+
+1. Create the folder and write index.md complete, including Cross-phase interfaces, the Phases table, and the Outline with reserved ruling ids.
+2. 1–2 phases: write the phase files yourself.
+3. 3+ phases: record `sha256sum index.md`, then dispatch one writer per phase with `references/phase-writer-prompt.md` (`general-purpose`, sonnet · high, at most 3 in parallel). Handle `NEEDS_*` replies as its "Writer returns" line says. When all return `DONE`, confirm the hash is unchanged (apart from your own NEEDS_* edits) and the folder holds only spec.md, index.md, and the expected `NN-*.md` files.
+4. Run the format's self-review across index.md and every phase file and fix inline.
 
 **Depth check** — every mode, before the Architect or Critic sees the plan (Review mode: before step 2). The goal is a deeper plan, not a bigger one. Answer in a `## Depth check` section, 1–3 lines each:
 
@@ -112,7 +121,7 @@ Plans are saved to `.claude/local/plans/`. Drafts go to `.claude/local/drafts/`.
 
 Then revise the tasks and acceptance criteria to ask for exactly that. An answer that adds scope rather than depth goes under Risks as an option for the user, not into the tasks.
 
-In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan file before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
+In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan folder (index.md and every phase file) before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
 
 After saving in interview or direct mode, link the plan and ask the user to review it before execution; approving the idea or scope doesn't approve a plan they haven't seen. Consensus mode gets this approval in step 7.
 
@@ -174,7 +183,7 @@ Why bad: The planner should look this up itself, not ask the user.
 - [ ] Codebase claims reference specific files/lines
 - [ ] All risks have mitigations identified
 - [ ] No vague terms without metrics ("fast" -> "p99 < 200ms")
-- [ ] Plan saved to `.claude/local/plans/`
+- [ ] Plan folder saved under `.claude/local/plans/`
 - [ ] In consensus mode: user explicitly approved before any execution </Final_Checklist>
 
 <Advanced>
