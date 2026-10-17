@@ -21,7 +21,7 @@ Re-run these after any change to SKILL.md or the AGENTS.md routing line. Give a 
 | B | HTML file, as a view of the `/plan` markdown plan | `$HOME/html-reports/...`, browser | `16-implementation-plan.html` |
 | C | Terminal | none | none |
 | D | HTML file, as a view of the PR body | `$HOME/html-reports/...`, browser | `17-pr-writeup.html` |
-| E | Read-only HTML file with proposed buckets, then AskUserQuestion to confirm or adjust | `$HOME/html-reports/...`, browser | `18-editor-triage-board.html` |
+| E | Read-only HTML file with proposed buckets, then AskUserQuestion to confirm or adjust | `$HOME/html-reports/...`, browser | house.html triage list, `unknowns/05-churn-brainstorm.html` |
 | F | Artifact | private claude.ai link | `11-status-report.html` |
 
 The terminal reply in A, B, D, E, F holds only the result line, failures, git state in one line, the path or link, and `Next:`.
@@ -40,5 +40,7 @@ A third arm checks discovery: the same prompt with no mention of the skill, plus
 | F | Terminal markdown, shorter than A | Artifact, not Docs; source in scratchpad, `sed` strip, secrets redacted, house style over artifact-design | `html-output`; Artifact link |
 
 Baseline 1 of 6 matched the expected routing (C). Told, 6 of 6. Discovery, 6 of 6 on routing, quoting the AGENTS.md Output style line. The baseline ran before any skill file or AGENTS.md line existed. Told and discovery ran at the SKILL.md that added the scratchpad, house-style and local-file rules; the git-state wording changed after and does not touch routing.
+
+Stale since 2026-10-17: row E's "Copy as prompt and textarea" and `18-editor-triage-board.html` predate the read-only rule and the removal of the editor pages; re-run before trusting E.
 
 Open gaps the told arm named: D fits both the PR writeup and pre-merge rows; E overlaps the `triage` skill; plan mode blocks the plan page for decisions AGENTS.md sends to plan mode.

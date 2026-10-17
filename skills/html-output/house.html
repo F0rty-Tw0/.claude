@@ -94,37 +94,12 @@ a { color: var(--accent); text-underline-offset: 3px; }
 p { margin: 0; }
 p + p { margin-top: var(--s3); }
 code, pre { font-family: var(--mono); font-size: 0.9375rem; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* Page layout */
 .page { max-width: 76rem; margin: 0 auto; padding: var(--s5) var(--s4) var(--s8); }
-.page main { min-width: 0; }
-.head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s4) var(--s6); margin-bottom: var(--s6); }
-.head > div { flex: 1 1 20rem; max-width: var(--measure); }
+.head { max-width: var(--measure); margin-bottom: var(--s6); }
 h1 { margin: 0 0 var(--s2); font-size: clamp(1.6rem, 5vw, 2.25rem); line-height: 1.2; font-weight: 800; }
 .meta { color: var(--muted); }
-@media (min-width: 1100px) {
-  /* Sidebar grid only when the page has a table of contents; without one, main keeps the full width. */
-  .page:has(> .toc) { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 0 var(--s7); }
-  .head { grid-column: 1 / -1; }
-  .toc { position: sticky; top: calc(var(--s4) + env(safe-area-inset-top, 0px)); align-self: start; }
-}
-
-/* Theme toggle */
-.theme { display: flex; margin: 0 0 0 auto; padding: 0; border: 0; }
-.theme label { position: relative; padding: var(--s1) var(--s3); border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 0.9375rem; }
-.theme label:first-of-type { border-radius: var(--radius) 0 0 var(--radius); }
-.theme label:last-of-type { border-radius: 0 var(--radius) var(--radius) 0; }
-.theme label + label { border-left: 0; }
-.theme input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
-.theme label:has(input:checked) { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
-.theme label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; z-index: 1; }
-
-/* Table of contents */
-.toc { margin-bottom: var(--s6); }
-.toc h2 { margin: 0 0 var(--s2); font-size: 1rem; font-weight: 800; }
-.toc ol { margin: 0; padding: 0; list-style: none; }
-.toc li + li { margin-top: var(--s1); }
 
 /* Status spine */
 .spine { position: relative; }
@@ -197,7 +172,6 @@ details > :not(summary) { margin: 0 var(--s4) var(--s4); }
 .fail { color: var(--bad); font-weight: 800; }
 
 /* Options and triage: read-only, the user answers in the terminal */
-fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
 .option { padding: var(--s3) var(--s4); background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); }
 .option + .option { margin-top: var(--s2); }
 .option.is-rec { border-color: var(--accent); }
@@ -223,7 +197,7 @@ figcaption { margin-top: var(--s2); color: var(--muted); font-size: 0.9375rem; }
 .next { font-size: 1.125rem; }
 .next strong { font-weight: 800; }
 
-button, .theme label { transition: background-color 180ms var(--ease-out), border-color 180ms var(--ease-out), color 180ms var(--ease-out); }
+button { transition: background-color 180ms var(--ease-out), border-color 180ms var(--ease-out), color 180ms var(--ease-out); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
@@ -234,33 +208,11 @@ button, .theme label { transition: background-color 180ms var(--ease-out), borde
 <div class="page">
 
   <!-- component: title + meta line — every report; title states the subject, meta says report type, branch or scope, date -->
+  <!-- theme follows the OS (prefers-color-scheme) or a host-set data-theme; no toggle -->
   <header class="head">
-    <div>
-      <h1>Auth refactor: sessions moved to Redis</h1>
-      <p class="meta">Done-task report for <code>feat/redis-sessions</code>, <time datetime="2026-10-06">6 Oct 2026</time>.</p>
-    </div>
-    <!-- component: theme toggle — every report; keep as is -->
-    <fieldset class="theme">
-      <legend class="sr-only">Theme</legend>
-      <label><input type="radio" name="theme" id="theme-light" value="light">Light</label>
-      <label><input type="radio" name="theme" id="theme-dark" value="dark">Dark</label>
-      <label><input type="radio" name="theme" id="theme-system" value="system" checked>System</label>
-    </fieldset>
+    <h1>Auth refactor: sessions moved to Redis</h1>
+    <p class="meta">Done-task report for <code>feat/redis-sessions</code>, <time datetime="2026-10-06">6 Oct 2026</time>.</p>
   </header>
-
-  <!-- component: table of contents — 4+ sections; one link per section id, sticky sidebar on wide screens -->
-  <nav class="toc" aria-labelledby="toc-title">
-    <h2 id="toc-title">Contents</h2>
-    <ol>
-      <li><a href="#files">Files changed</a></li>
-      <li><a href="#diff">Key diff</a></li>
-      <li><a href="#flow">How a request flows</a></li>
-      <li><a href="#proof">Proof</a></li>
-      <li><a href="#evidence">Claims</a></li>
-      <li><a href="#decide">Options</a></li>
-      <li><a href="#triage">Follow-ups</a></li>
-    </ol>
-  </nav>
 
   <main>
     <!-- component: status spine — wraps every section; each .step gets is-ok / is-bad / is-warn or no class (neutral); .wide for tables, diffs, diagrams; .tight for consecutive one-line flags -->
@@ -444,58 +396,6 @@ button, .theme label { transition: background-color 180ms var(--ease-out), borde
 </div>
 
 <script>
-const THEME_KEY = 'report-theme';
-// Theme a host (the Artifact viewer) set before this script ran; "System" returns to it.
-const HOST_THEME = document.documentElement.dataset.theme;
-
-function readTheme() {
-  try {
-    return localStorage.getItem(THEME_KEY) || 'system';
-  } catch {
-    return 'system';
-  }
-}
-
-function applyTheme(value) {
-  const root = document.documentElement;
-
-  if (value === 'system' && HOST_THEME) {
-    root.dataset.theme = HOST_THEME;
-
-    return;
-  }
-
-  if (value === 'system') {
-    delete root.dataset.theme;
-
-    return;
-  }
-
-  root.dataset.theme = value;
-}
-
-function onThemeChange(event) {
-  const value = event.target.value;
-
-  applyTheme(value);
-  try {
-    localStorage.setItem(THEME_KEY, value);
-  } catch {
-    // Storage throws in private windows; the theme still applies for this visit.
-  }
-}
-
-function initTheme() {
-  const saved = readTheme();
-
-  // Nothing saved: leave data-theme alone, a host (Artifact viewer) may have set it.
-  if (saved !== 'system') applyTheme(saved);
-  document.querySelectorAll('input[name="theme"]').forEach((radio) => {
-    radio.checked = radio.value === saved;
-    radio.addEventListener('change', onThemeChange);
-  });
-}
-
 function selectTab(tabs, next) {
   tabs.forEach((tab) => {
     const isNext = tab === next;
@@ -531,7 +431,6 @@ function initTabs(group) {
   });
 }
 
-initTheme();
 document.querySelectorAll('[data-tabs]').forEach(initTabs);
 </script>
 </body>
