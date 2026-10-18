@@ -12,11 +12,12 @@ Keep working the task until fresh evidence shows it is complete. Deliver the ful
 1. **Checklist.** Keep the task's parts as `- [ ]` items and tick them as they finish; the files carry progress across compaction and resumed sessions.
    - Plan folder (or its `index.md`): items live in phase files, phase state in index.md's Phases Status. Set a phase `in progress` at its first item; at its last tick, write and apply its Handoff per skill:plan `references/task-format.md` `## Handoff` before the next phase. On resume, read index.md and open the first phase not `done`; if every item there is ticked, do its Handoff first. Done = every phase `done`.
    - Legacy plan (any other `.md` path) or no plan (`.claude/local/ralph-<task>.md`): items live in that file; on resume, read it first and continue from the first open item.
+   - **Slice mode** (`flow --stacked` only, `flow/references/stacked.md`): given a plan folder and slice N, the checklist is only the tasks tagged `**PR slice:** N`, in plan order. Phase status and Handoff work as above: a phase that spans slices stays `in progress` until its last task, in whichever slice. Done = every slice-N task ticked; step 6 is skipped and state files stay until the stacked run ends. A "Stop when" case other than the user saying stop doesn't end the turn: it returns to the stacked loop as `blockedOn: "ruling"` (stacked.md User blocks), which keeps working on other slices.
 2. **Work directly; delegate only independent, sizeable tracks.** Do lookups, small edits, and checks yourself. Two or more genuinely independent tracks that each need more than a handful of tool calls go to skill:dispatching-parallel-agents (`executor` / `deep-executor`, ≤3 per wave, worktree isolation when files overlap).
 3. **Long operations** (installs, builds, test suites) run with `run_in_background: true`; wait for them before treating the task as done.
 4. **Verify with fresh evidence.** Name the commands that prove completion (tests, build, typecheck), run them, read the output. Every checklist item is ticked.
 5. **Architect review only when warranted** — cross-system, security-sensitive, or architectural changes, or when the user asked for sign-off. Otherwise step 4's evidence is the gate. A rejection means fix and re-verify, not stop.
-6. **Finish.** Work on a dedicated branch or worktree → skill:finishing-a-development-branch. Delete any `.claude/local/` state files this run created.
+6. **Finish.** Work on a dedicated branch or worktree → skill:finishing-a-development-branch. Delete any `.claude/local/` state files this run created. Slice mode: skip this step; the stacked loop owns push and cleanup.
 
 ## How turns end
 

@@ -8,11 +8,11 @@ Risk-gradient code review for AI-assisted changes. It classifies each change by 
 |---|---|
 | `review` (default) | Classify → adversarial reviewer (+ specialists on trunk) → verify findings → risk report + verdict |
 | `proof` | Author side: build the PR proof bundle (tests, base-failure check, before/after pair of the change running, verified / not verified) |
-| `babysit <PR#>` | Loop on CI and comments; fix mechanical failures in the local tree only (never commits or pushes); ping on decisions |
+| `babysit [--report-only] <PR#>...` | Loop on CI and comments for one or more PRs, woken by a background check watcher; fix mechanical failures in the local tree only (never commits or pushes; `--report-only` only reports them); ping on decisions |
 | `attack` | Pre-launch: flow-breaker, profiler and security prober against staging (≤3 agents) |
 | `launch` | Gate plan before coding, merge-ready vs launch-ready checklists, human-polish handoff, canary ramp + rollback |
 
-References: `blast-radius.md`, `proof.md`, `vanity-tests.md`, `adversarial-inspection.md`, `reviewer-prompt.md`, `babysit.md`, `attack.md`, `launch.md`. Template: `templates/pr-proof.md`. Script: `scripts/review-stamp.mjs`.
+References: `blast-radius.md`, `proof.md`, `vanity-tests.md`, `adversarial-inspection.md`, `reviewer-prompt.md`, `babysit.md`, `attack.md`, `launch.md`. Template: `templates/pr-proof.md`. Scripts: `scripts/review-stamp.mjs`, `scripts/watch-pr-checks.mjs` (babysit's background CI watcher).
 
 Verdicts: `APPROVE — LOW RISK LEAF`, `APPROVE — BRANCH, PROOF MET`, `APPROVE — TRUNK, HUMAN SIGN-OFF REQUIRED`, `BLOCK — REQUIRES PROOF`, `BLOCK — HIGH BLAST RADIUS DEFECT`.
 

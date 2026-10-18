@@ -23,6 +23,9 @@ flow --auto "<task>"           # force autonomous execution
 flow --supervised "<task>"     # force human-checkpointed execution
 flow --from plan "<task>"      # skip ideate, start at planning
 flow --plan-only "<idea>"      # stop after a plan is produced
+flow --stacked "<task>"        # build PR slices in overlap with earlier slices' gates and CI
+flow --stacked --resume <plan folder>   # continue a stacked run in a new session
+flow --stacked --tick <plan folder>     # internal: the stacked loop's wake prompt (references/stacked.md Waiting)
 ```
 
 ## Stage Routing
@@ -32,6 +35,7 @@ flow --plan-only "<idea>"      # stop after a plan is produced
 3. **EXECUTE** — Branch on mode (see Mode Selection):
    - **Autonomous** -> `Skill("ralph")` with the plan folder path. Independent components run in parallel via `dispatching-parallel-agents`.
    - **Supervised** -> `Skill("subagent-driven-development")` with the plan (fresh subagent + spec check per task).
+   - **Stacked** (`--stacked`) -> the per-slice loop in `references/stacked.md`, running either mode above in Slice mode.
 4. **REVIEW** — first build the proof bundle (`code-review` `proof` mode) and pass it as the PR text; then `Skill("code-review")`. Triage feedback with `code-review-receiving`.
 5. **FINISH** — `Skill("finishing-a-development-branch")` to integrate, merge, and clean up the branch/worktree.
 
@@ -45,6 +49,8 @@ Default to **autonomous** for well-scoped, low-blast work. Switch to **supervise
 
 `--auto` / `--supervised` override the heuristic.
 
+`flow --stacked` needs a PR Slices table in the plan (`plan` `references/task-format.md`, PR Slices) and user-authorized commits; missing either → stop and say which. The launch also counts as the user's consent to per-slice worktrees.
+
 ## Stage Gates
 
 Do not advance a stage until its gate holds; if a gate can't be met, stop and report rather than proceed on a weak artifact.
@@ -56,6 +62,8 @@ Do not advance a stage until its gate holds; if a gate can't be met, stop and re
 | EXECUTE  | All plan tasks done; `build` exit 0 and the full project test suite passes (real output) |
 | REVIEW   | `code-review` verdict is not BLOCK; findings fixed or dismissed; every acceptance criterion mapped to the proof bundle; a TRUNK verdict stops for human sign-off, even in `--auto` |
 | FINISH   | Branch merged/PR opened and workspace/worktree cleaned up                  |
+
+Under `flow --stacked`, the EXECUTE, REVIEW and FINISH gates run per slice, as defined in `references/stacked.md`.
 
 ## Cross-cutting
 

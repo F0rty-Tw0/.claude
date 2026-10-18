@@ -9,6 +9,8 @@ Execute a plan by dispatching a fresh implementer subagent per task. You check e
 
 **Plan shape:** a plan is a folder (index.md + one `NN-<phase>.md` per phase, per skill:plan `references/task-format.md`); a path to its `index.md` means that folder. During execution read only index.md and the current phase file (Phase close also patches later ones). Any other path ending `.md` is a legacy single-file plan: run it as before, with its checkboxes, Log, and Decisions in that file, report paths `<plan-name>-task-N.md`, and no Phase close.
 
+**Slice mode** (`flow --stacked` only, `flow/references/stacked.md`): given a plan folder and slice N, run the Per-task loop over only the tasks tagged `**PR slice:** N`, in plan order. Phase close works as below; a phase that spans slices closes at its last task, in whichever slice. Report files go to `<plan folder>/sdd/task-N.M.md`, with `<plan folder>` the absolute path in the main checkout, not the worktree. "After all tasks" changes as marked there. "Before starting" steps 1 and 5 run once at `flow --stacked` launch, not per slice; a concern found then is a ruling. "Before starting" steps 2-3 and every `git` call use the slice worktree (stacked.md Per slice step 1). A stop below (ruling row, protected Handoff patch, unresolved BLOCKED, critical unknown) never asks or ends the turn: it returns to the stacked loop as `blockedOn: "ruling"` (stacked.md User blocks).
+
 **Continuous execution:** do not check in with the user between tasks. Stop only for a BLOCKED status you cannot resolve, genuine blocking ambiguity, a Handoff patch to a protected section (Phase close), or all tasks complete. They asked you to execute the plan, so "Should I continue?" wastes their time.
 
 **Decisions:** non-critical plan conflicts or ambiguities: decide, keep going, and note `Decision: <what> — <why> — <cost if wrong>` in the current phase file's `## Handoff`. Critical unknowns (per the AGENTS.md Unknowns gate) and destructive, security-sensitive, or outward-facing actions still stop.
@@ -66,6 +68,8 @@ Don't patch gaps yourself, however small: controller fixes skip review. Resume t
 2. Re-grade each finding by its effect on a user, not by whether the spec names the trigger; the reviewer's "Declined to judge" lines get the same re-grade. Blockers, Should-fix, and Conventions findings go to one `executor` dispatch carrying the full list, not one fixer per finding; each behavior fix gets a test that fails first (convention fixes need none). Notes go to a "Deferred minors" list in the final message. No second fix wave; anything left goes to the user at finishing.
 3. List every decision under "Decisions I made" in the final message, collected from every phase file's `## Handoff`.
 4. Finish with skill:finishing-a-development-branch.
+
+Slice mode: skip step 1's code-review (open-pr Step 0 runs it per slice) but keep its `quality-reviewer` pass, on the slice diff `<parent>...<slice>`. Steps 2-3 apply to that slice; what step 2 leaves "to the user at finishing" goes into the slice's push-approval question instead. Skip step 4.
 
 ## Rules
 

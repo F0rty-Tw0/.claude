@@ -13,12 +13,13 @@ GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
 git rev-parse --show-superproject-working-tree 2>/dev/null   # prints a path → submodule, treat as a normal repo
 ```
 
+- `flow --stacked` creates its per-slice worktrees itself and never enters them (`flow` `references/stacked.md`); only step 3 applies to each.
 - `GIT_DIR != GIT_COMMON` and not a submodule → already in a linked worktree. Don't nest another; go to step 3. Report the path and branch (detached HEAD → "externally managed; branch needed at finish time").
 - Otherwise it's a normal checkout. Without a stated worktree preference, ask: "Set up an isolated worktree? It protects your current branch." Declined → work in place, go to step 3.
 
 ## 2. Create it
 
-Use `EnterWorktree` (creates `.claude/worktrees/<name>` on a new branch and switches the session there). The harness tracks it, so a manual `git worktree add` next to it creates state the harness can't see. Subagents get the same isolation with `Agent(isolation: "worktree")`.
+Use `EnterWorktree` (creates `.claude/worktrees/<name>` on a new branch and switches the session there). The harness tracks it, so a manual `git worktree add` next to it creates state the harness can't see. Subagents get the same isolation with `Agent(isolation: "worktree")`. Known exception: `flow --stacked` (ruling R1) never uses `EnterWorktree`; it adds manual `.claude/worktrees/stacked-<branch>` worktrees and works in them by absolute path.
 
 Fallback only when `EnterWorktree` is unavailable:
 

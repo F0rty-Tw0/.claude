@@ -14,7 +14,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 |---|---|---|
 | `review` (default) | Review a diff / branch / PR | this file + `references/blast-radius.md`; other references when a step cites them |
 | `proof` | You wrote the change; build the PR proof bundle | `references/proof.md`, `templates/pr-proof.md` |
-| `babysit <PR#>` | Watch CI + comments on a loop, fix mechanical failures locally | `references/babysit.md` |
+| `babysit [--report-only] <PR#>...` | Watch CI + comments for one or more PRs on a loop woken by a background check watcher, fix mechanical failures locally (`--report-only`: report them) | `references/babysit.md` |
 | `attack` | Before opening a feature gate: break the product in staging | `references/attack.md` |
 | `launch` | Plan the gate before coding; merge-ready → launch-ready → canary | `references/launch.md` |
 
