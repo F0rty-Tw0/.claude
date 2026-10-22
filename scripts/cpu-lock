@@ -17,4 +17,7 @@ esac
 [ "$#" -gt 0 ] || { echo "cpu-lock: no command" >&2; exit 2; }
 
 mkdir -p "$(dirname "$LOCK")"
-exec flock "$flag" "$LOCK" "$@"
+# Say why the call stalls instead of hanging silently behind a peer's lock.
+flock -n "$flag" "$LOCK" true || echo "cpu-lock: waiting for the $mode lock ($LOCK)" >&2
+# -o: the lock frees when CMD exits, not when a child it left running in the background does.
+exec flock -o "$flag" "$LOCK" "$@"
