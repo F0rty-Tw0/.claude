@@ -5,7 +5,10 @@
 // builds and tests in the shared gate lock so peers' benches stay clean.
 // A footgun net, not a security boundary: the model can type the user-approved
 // exception prefix `CQT_GUARD_OK=1 ` itself, so the rules in cqt's CLAUDE.md
-// say when it may.
+// say when it may. Known gaps, left open: a heredoc fed to a shell
+// (`bash <<EOF`), prefixes with their own options (`sudo -u me`, `env -i`,
+// `timeout -k 5`, `/usr/bin/time -v`), space-separated git long options
+// (`--git-dir x`), and a bare pathspec checkout (`git checkout a.rs`).
 // rtk's hook skips heavy cargo (exclude_commands in ~/.config/rtk/config.toml):
 // when two hooks rewrite one command, rtk's rewrite won and the lock was lost.
 const fs = require('fs');
@@ -13,10 +16,12 @@ const fs = require('fs');
 const LOCK = '~/.claude/scripts/cpu-lock';
 const OVERRIDE = 'A user-approved exception: prefix the command with `CQT_GUARD_OK=1 `.';
 
-// Commit messages and heredoc bodies are prose, not commands.
+// Commit messages and heredoc bodies are prose, and a `cpu-lock bench` call's
+// quoted script already holds the bench lock: none of them is checked.
 const stripProse = (cmd) => cmd
   .replace(/(\s(?:-m|--message)(?:=|\s+))("[^"]*"|'[^']*')/g, "$1''")
-  .replace(/<<-?\s*(['"]?)(\w+)\1[^\n]*\n[\s\S]*?\n\2(?=\n|$)/g, '<<$2');
+  .replace(/(<<-?\s*(['"]?)(\w+)\2[^\n]*)\n[\s\S]*?\n\3(?=\n|$)/g, '$1')
+  .replace(/(\S*cpu-lock\s+bench\b[^;&|\n]*?)('[^']*'|"[^"]*")/g, "$1''");
 
 // Leading `VAR=value` assignments and wrappers that run the next word as the command.
 const PREFIX = /^(?:\w+=(?:"[^"]*"|'[^']*'|\S*)|sudo|env|command|exec|time|nohup|bash|sh|xargs(?:\s+-\S+)*|nice(?:\s+-n\s*-?\d+|\s+-\d+)?|timeout(?:\s+-\S+)*\s+\S+|taskset(?:\s+-c)?\s+\S+|\S*cpu-lock\s+gate)\s+/;

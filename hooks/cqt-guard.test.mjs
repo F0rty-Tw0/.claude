@@ -29,23 +29,32 @@ describe('cqt-guard', () => {
 
   it('WHEN a commit message or a file name mentions a blocked command THEN nothing is blocked', () => {
     const prose = [
-      'git commit -m "never git stash here"', 'git commit -m "a; git stash"', "git commit -m 'run pkill -f x'",
+      'git commit -m "never git stash here"', 'git commit -m "a; git stash it"', "git commit -m 'run pkill -f x'",
       'cat scripts/e2e/perf.sh', 'git add scripts/e2e/perf.sh', "cat > notes.md <<'EOF'\ngit stash is banned\nEOF",
     ];
     for (const cmd of prose) assert.deepEqual(decide(cmd), {}, cmd);
+  });
+
+  it('WHEN a heredoc opener line also runs commands THEN those commands are still checked', () => {
+    assert.ok(decide("cat > n.md <<'EOF'; git stash\nnotes\nEOF").block);
+    assert.match(decide("cat > t.rs <<'EOF' && cargo test\nfn x() {}\nEOF").command, /cpu-lock gate/);
   });
 
   it('WHEN a perf run is outside cpu-lock bench THEN it is blocked with the override named; inside it passes unwrapped', () => {
     const runs = [
       './perfrun.sh B1 bin', 'STUDIO_BIN=x scripts/e2e/perf.sh', 'bash scripts/e2e/perf.sh', 'hyperfine a', 'timeout 600 ./perf.sh',
       'time ./perfrun.sh', 'taskset -c 2 ./perfrun.sh', 'taskset -c 2 cargo bench', 'nice -19 ./perf.sh', 'FOO="a b" ./perf.sh',
-      '~/.claude/scripts/cpu-lock gate ./perf.sh', '~/.claude/scripts/cpu-lock bench true; ./perf.sh',
+      '~/.claude/scripts/cpu-lock gate ./perf.sh', '~/.claude/scripts/cpu-lock bench true; ./perf.sh', 'nohup ./perf.sh &', 'exec ./perf.sh',
     ];
     for (const cmd of runs) {
       assert.ok(decide(cmd).block, cmd);
       assert.match(decide(cmd).block, /CQT_GUARD_OK=1/);
     }
-    assert.deepEqual(decide('~/.claude/scripts/cpu-lock bench ./perfrun.sh B1 bin'), {});
+    const locked = [
+      '~/.claude/scripts/cpu-lock bench ./perfrun.sh B1 bin', "~/.claude/scripts/cpu-lock bench bash -c 'cd x && ./perf.sh'",
+      "~/.claude/scripts/cpu-lock bench bash -c 'cd a && cargo bench'", "~/.claude/scripts/cpu-lock bench taskset -c 2 bash -c 'make; ./perfrun.sh B1'",
+    ];
+    for (const cmd of locked) assert.deepEqual(decide(cmd), {}, cmd);
   });
 
   it('WHEN cargo build or test runs bare THEN it is wrapped in the gate lock with rtk added at command position', () => {
