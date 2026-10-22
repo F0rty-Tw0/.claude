@@ -95,33 +95,12 @@ uv tool upgrade --reinstall mcp-proxy
 
 Verify: `where mcp-proxy` (should show `~/.local/bin/mcp-proxy.exe`)
 
-## Step 4: Install GitHub MCP Server
+## Step 4: Authenticate GitHub CLI
 
-> Repo: [github/github-mcp-server](https://github.com/github/github-mcp-server)
+GitHub access goes through the `gh` CLI (no GitHub MCP server):
 
 ```powershell
-# Download the latest release for Windows from:
-# https://github.com/github/github-mcp-server/releases
-# Or build from source (requires Go): go build -o github-mcp-server.exe ./cmd/github-mcp-server
-# Place github-mcp-server.exe in ~/bin/
-```
-
-Authenticate with GitHub CLI first: `gh auth login`
-
-Create `~/bin/github-mcp-wrapper.cmd` for dynamic auth via `gh`:
-
-```batch
-@echo off
-for /f "tokens=*" %%a in ('gh auth token 2^>nul') do set GITHUB_PERSONAL_ACCESS_TOKEN=%%a
-"%~dp0github-mcp-server.exe" stdio
-```
-
-Create `~/bin/github-mcp-wrapper.sh` for Git Bash:
-
-```bash
-#!/bin/bash
-export GITHUB_PERSONAL_ACCESS_TOKEN=$("/c/Program Files/GitHub CLI/gh" auth token 2>/dev/null)
-exec "/c/Users/$USERNAME/bin/github-mcp-server.exe" stdio
+gh auth login
 ```
 
 ## Step 5: Login
@@ -244,7 +223,6 @@ The proxy config defines these MCP servers:
 
 | Server          | Package / Binary                                       | Requires                       |
 | --------------- | ------------------------------------------------------ | ------------------------------ |
-| **github**      | `~/bin/github-mcp-server.exe`                          | `GITHUB_PERSONAL_ACCESS_TOKEN` |
 | **codex-cli**   | `pnpm dlx @cexll/codex-mcp-server`                     | `OPENAI_API_KEY` (env)         |
 | **gemini-cli**  | `pnpm dlx gemini-mcp-tool`                             | `GEMINI_API_KEY` (env)         |
 | **angular-cli** | `pnpm dlx @angular/cli mcp`                            | -                              |
@@ -257,22 +235,6 @@ The proxy config defines these MCP servers:
 ### Installing Each MCP Server
 
 All `pnpm dlx` servers run on-demand (no global install needed) as long as **pnpm** is on PATH. The proxy launches them automatically. You only need to install the standalone binaries and obtain API keys.
-
-#### GitHub MCP Server (binary)
-
-> Repo: [github/github-mcp-server](https://github.com/github/github-mcp-server)
-
-```powershell
-# 1. Download the latest release for Windows
-#    https://github.com/github/github-mcp-server/releases
-# 2. Place in ~/bin
-Copy-Item github-mcp-server.exe "$HOME\bin\"
-
-# 3. Authenticate with GitHub CLI (the wrapper uses `gh auth token`)
-gh auth login
-```
-
-Alternative: use the remote server at `https://api.githubcopilot.com/mcp/` (requires OAuth or PAT).
 
 #### Codex CLI (OpenAI)
 
@@ -418,11 +380,6 @@ Claude Code connects to the MCP servers through the proxy. Add this `mcpServers`
 ```json
 {
   "mcpServers": {
-    "github": {
-      "type": "stdio",
-      "command": "mcp-proxy",
-      "args": ["http://127.0.0.1:8808/servers/github/sse"]
-    },
     "codex-cli": {
       "type": "stdio",
       "command": "mcp-proxy",
@@ -682,9 +639,6 @@ Standalone binaries on PATH:
 | Binary                   | Purpose                                               |
 | ------------------------ | ----------------------------------------------------- |
 | `rtk.exe`                | RTK - Rust Token Killer (CLI proxy for token savings) |
-| `github-mcp-server.exe`  | GitHub MCP Server binary                              |
-| `github-mcp-wrapper.cmd` | Wrapper using `gh auth token` for dynamic auth        |
-| `github-mcp-wrapper.sh`  | Same wrapper for Git Bash                             |
 | `jq.exe`                 | JSON processor                                        |
 | `marksman.exe`           | Markdown LSP server                                   |
 
@@ -741,7 +695,7 @@ corepack enable && corepack prepare pnpm@latest --activate
 # 2. Install Claude Code
 irm https://claude.ai/install.ps1 | iex
 
-# 3. Set up ~/bin with RTK, GitHub MCP Server, jq, marksman
+# 3. Set up ~/bin with RTK, jq, marksman
 mkdir "$HOME\bin" -Force
 # Download binaries and place in ~/bin
 [Environment]::SetEnvironmentVariable("PATH", "$env:PATH;$HOME\bin", "User")
