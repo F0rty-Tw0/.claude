@@ -336,6 +336,19 @@ if (metadata === undefined) { ... }
 
 When the compiler proves a condition constant, the condition is a lie about the code. Delete it, or, if the runtime really can violate the type (untyped input, a library that lies), fix the type where the value enters. A `switch` over a union either lists every member or has a `default` that returns the fall-through value.
 
+### Keys From Outside Data
+
+```ts
+// a package named "__proto__" or "constructor" hits the prototype
+const byName: Record<string, Package> = {}
+if (byName[name]) { ... }
+
+// "a>b" + "c" and "a" + "b>c" collide
+const edgeId = `${from}>${to}`
+```
+
+A lookup keyed by names from outside the program (package names, file paths, user input) is a `Map`, or an object from `Object.create(null)` read through `Object.hasOwn`. A key built from several parts is `JSON.stringify([from, to])`, never a join on a separator the parts may contain. The spec covers it with a `__proto__` row and a row whose parts contain the old separator.
+
 ### Node-Native Syntax
 
 Code runs through Node's type stripping. Only erasable syntax is allowed: no parameter properties, no `enum` (use a union of literals or an `as const` object), no `namespace`. Type-only imports use `import type`. `erasableSyntaxOnly` and `verbatimModuleSyntax` in `tsconfig` enforce both.

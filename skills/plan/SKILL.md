@@ -66,13 +66,14 @@ Plan creates actionable work plans. It interviews the user on broad requests, pl
    - **Skip review** — go directly to final approval (step 7)
 3. **Architect** reviews for architectural soundness (give it the plan folder path; it reads index.md and every phase file)
 4. **Critic** evaluates against quality criteria (same: index.md and every phase file)
-5. **Re-review loop** (max 5 rounds): if Critic rejects, feed the Architect + Critic feedback to the Planner, then
+5. **Re-review loop** (max 5 rounds): Critic OKAY-WITH-EDITS → the Planner applies its listed edits verbatim
+   and the loop ends, no further round. If Critic rejects, feed the Architect + Critic feedback to the Planner, then
    repeat steps 3-4 on the revision. The Planner revises the affected files itself, including phase files
    written by phase writers. No approval after 5 rounds → present the best version via `AskUserQuestion`,
    noting consensus was not reached.
 6. **Apply improvements**: merge the accepted, deduplicated reviewer suggestions into index.md and the affected
    phase files of the plan folder, and list them in a short changelog at the end of index.md.
-7. On Critic approval (with improvements applied): present the plan with `AskUserQuestion` and these options:
+7. On Critic approval (OKAY, or OKAY-WITH-EDITS with its edits applied; improvements applied): present the plan with `AskUserQuestion` and these options:
    - **Approve and execute** — proceed to implementation via ralph
    - **Clear context and implement** — compact the context window first (recommended when context is large after
      planning), then start fresh implementation via ralph with the saved plan folder
@@ -89,7 +90,7 @@ Plan creates actionable work plans. It interviews the user on broad requests, pl
 1. Read the plan folder from `.claude/local/plans/`: index.md and every phase file (a path ending `.md` is a
    legacy single-file plan; read it as before)
 2. Evaluate via Critic
-3. Return verdict: APPROVED, REVISE (with specific feedback), or REJECT (replanning required)
+3. Return verdict: APPROVED (Critic OKAY; for OKAY-WITH-EDITS, list its edits), REVISE (with specific feedback), or REJECT (replanning required)
 
 ### Plan Output Format
 
@@ -121,7 +122,7 @@ Each plan is a plan folder under `.claude/local/plans/` (spec.md, index.md, one 
 
 Then revise the tasks and acceptance criteria to ask for exactly that. An answer that adds scope rather than depth goes under Risks as an option for the user, not into the tasks.
 
-In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan folder (index.md and every phase file) before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
+In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan folder (index.md and every phase file) before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. OKAY-WITH-EDITS: apply its supplied edits and move on, no re-dispatch. A re-dispatch goes out only after every fix has landed in the files. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
 
 After saving in interview or direct mode, link the plan and ask the user to review it before execution; approving the idea or scope doesn't approve a plan they haven't seen. Consensus mode gets this approval in step 7.
 

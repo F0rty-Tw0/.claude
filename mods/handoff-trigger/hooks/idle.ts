@@ -62,6 +62,10 @@ const FLOW_MS = 10 * 60_000
 // How long the done check waits for answers after its first send.
 const CHECK_MS = 90_000
 const DONE_CHECK = 'Handoff check from the handoff-trigger mod: is the task you were given finished? Reply with exactly DONE if it is, or NOT DONE: <one line on what is left>. Do nothing else.'
+// Agents that hand back one report and are done once idle: stopped without a
+// done check, whose answer turn rebuilds a cold context (38 of 119 checks in
+// the week of 2026-10-19 went to these).
+const REPORT_TYPES = new Set(['critic', 'code-reviewer', 'quality-reviewer', 'security-reviewer', 'performance-reviewer', 'architect', 'verifier', 'Explore'])
 // At or past this share of the model window an auto compaction is a prompt
 // too long: vetoing it would leave the session unable to answer.
 const WINDOW_SHARE = 0.9
@@ -595,7 +599,14 @@ async function check($: EngineInterface, flow: number): Promise<void> {
   }
 
   $.clock.after(CHECK_MS, () => expire($, flow))
-  for (const agent of idleAgents) {
+  const reporters = idleAgents.filter((agent) => REPORT_TYPES.has(agent.type))
+  for (const agent of reporters) {
+    asked.set(agent.id, { agent, reply: 'report agent, stopped without a check' })
+    await stop($, flow, agent)
+    if (flow !== flowId) return
+  }
+
+  for (const agent of idleAgents.filter((agent) => !REPORT_TYPES.has(agent.type))) {
     const sent = await $.session.send({ to: { agentId: agent.id }, text: DONE_CHECK })
     if (flow !== flowId) return
     if (!sent.isDelivered) keep($, agent.id, `not delivered: ${sent.reason}`)

@@ -12,6 +12,8 @@ decisions, planning, root-cause debugging and code review belong to other agents
     - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
     - Work alone; don't spawn subagents.
     - If tests fail, fix the root cause in production code; test failures are signals about the implementation, not obstacles.
+    - Every behavior change or fix ships a test that fails with the change reverted. Prove it: back up the file with `cp`, revert the change, run the test, see it fail, restore from the backup. Convention-only fixes need none.
+    - Fixing a finding: first grep for every other path with the same shape (a guard on one code path usually belongs on its siblings) and fix those too. Then re-read the comments, docstrings, plan lines and PR claims in every hunk you touched, and correct the ones your change made stale.
     - Plan folders and files (.claude/local/plans/**) are read-only because the caller owns them.
     - Before reporting, scan your work against the 17 under-delivery patterns in `~/.claude/skills/deglaze/pressure-techniques.md` (top section only). Close gaps that sit inside your task first; report the rest, because the caller inherits any gap you hide.
   </Constraints>
@@ -29,6 +31,7 @@ fresh output. </Investigation_Protocol>
     - Build / tests / diagnostics: [command] -> [result], one line each
     - Blast radius: [Leaf | Branch | Trunk] [n]/10 — [highest-risk file:line] (~/.claude/skills/code-review/references/blast-radius.md)
     - Runtime / visual: [non-mocked command + log excerpt, or screenshot path] | none — [why]
+    - Fails on revert: [test] -> [failing output line with the change reverted], one per behavior change | none — convention-only
     - Verified: [behaviors, each tied to an output above]
     - Not verified: [what you did not check and why — never empty for Trunk]
     - Scope gaps (deglaze scan): [P0|P1|P2 — asked X, shipped Y, skipped Z], one per line | none

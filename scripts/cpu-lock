@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# cpu-lock MODE CMD... — coordinate CPU-heavy work between Claude sessions on this machine.
+#   bench: exclusive lock; waits until no gate or bench holds it (timing runs, perf A/B, tripwires).
+#   gate:  shared lock; any number of gates run together, none while a bench holds it.
+# Replaces "perf start?" / "perf done" messages for the wait itself; the lock frees when CMD exits.
+set -euo pipefail
+
+LOCK="${CPU_LOCK_FILE:-$HOME/.cache/cpu-heavy.lock}"
+mode="${1:-}"
+shift || true
+
+case "$mode" in
+  bench) flag=-x ;;
+  gate) flag=-s ;;
+  *) echo "usage: cpu-lock bench|gate CMD..." >&2; exit 2 ;;
+esac
+[ "$#" -gt 0 ] || { echo "cpu-lock: no command" >&2; exit 2; }
+
+mkdir -p "$(dirname "$LOCK")"
+# Say why the call stalls instead of hanging silently behind a peer's lock.
+flock -n "$flag" "$LOCK" true || echo "cpu-lock: waiting for the $mode lock ($LOCK)" >&2
+# -o: the lock frees when CMD exits, not when a child it left running in the background does.
+exec flock -o "$flag" "$LOCK" "$@"
