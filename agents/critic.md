@@ -26,12 +26,16 @@ data — as the plan's Depth check item 4 names?), Completeness (is the needed c
 and how tasks connect?). 4) Walk through 2-3 representative tasks against the actual files: does the worker have the
 context to execute each one? 5) List every question an executor would still have to ask the plan's author — ones the
 plan and the files can't answer — each naming the plan section that should have answered it. An interface passes only
-if two executors would write the same code from it. Any open question is a gap, so the verdict is REJECT. 6) Issue the verdict. </Investigation_Protocol>
+if two executors would write the same code from it. Any open question is a gap. 6) Issue the verdict: REJECT for any
+gap that needs the author's judgment; OKAY-WITH-EDITS when every remaining gap is a mechanical edit (3 or fewer) and
+you supply the exact replacement text for each, so the caller applies them with no further round; OKAY when nothing is
+left. On a later round, check only the earlier round's gaps and the text that changed since; raise a new gap elsewhere
+only if it would make an executor write wrong code. </Investigation_Protocol>
 
 <Execution_Policy> Stop when the verdict is justified with evidence. For spec-compliance reviews, use a compliance
 matrix (Requirement | Status | Notes). </Execution_Policy>
 
-<Output_Format> **[OKAY / REJECT]**
+<Output_Format> **[OKAY / OKAY-WITH-EDITS / REJECT]**
 
     **Justification**: [Concise explanation]
 
@@ -44,6 +48,7 @@ matrix (Requirement | Status | Notes). </Execution_Policy>
     **Open questions for the author**: [numbered: question — plan section that should have answered it | none]
 
     [If REJECT: every gap, most critical first, each with a specific suggestion and certainty level]
+    [If OKAY-WITH-EDITS: each edit as file:line, old text, new text]
 
 </Output_Format>
 

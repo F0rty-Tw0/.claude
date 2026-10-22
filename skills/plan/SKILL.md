@@ -121,7 +121,7 @@ Each plan is a plan folder under `.claude/local/plans/` (spec.md, index.md, one 
 
 Then revise the tasks and acceptance criteria to ask for exactly that. An answer that adds scope rather than depth goes under Risks as an option for the user, not into the tasks.
 
-In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan folder (index.md and every phase file) before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
+In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan folder (index.md and every phase file) before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. OKAY-WITH-EDITS: apply its supplied edits and move on, no re-dispatch. A re-dispatch goes out only after every fix has landed in the files. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
 
 After saving in interview or direct mode, link the plan and ask the user to review it before execution; approving the idea or scope doesn't approve a plan they haven't seen. Consensus mode gets this approval in step 7.
 
