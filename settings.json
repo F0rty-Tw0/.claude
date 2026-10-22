@@ -7,7 +7,6 @@
     "CLAUDE_CODE_PLUGIN_DIRS": "~/.claude/mods/handoff-trigger",
     "CLAUDE_CODE_THRIFTY_SONIC": "0"
   },
-  "spinnerTipsEnabled": false,
   "attribution": {
     "commit": "",
     "pr": "",
@@ -86,7 +85,6 @@
     "cc-plugin-plugin-authoring@builtin": false,
     "cc-plugin-diff@builtin": false
   },
-  "outputStyle": "Concise",
   "extraKnownMarketplaces": {
     "claude-hud": {
       "source": {
@@ -95,14 +93,16 @@
       }
     }
   },
+  "outputStyle": "Concise",
   "feedbackDrafts": "off",
+  "spinnerTipsEnabled": false,
   "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "high"
     }
   },
-  "autoCompactWindow": 400000,
+  "autoCompactWindow": 300000,
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
   "askUserQuestionTimeout": "5m",
@@ -117,6 +117,6 @@
   "autoContinueAtUsageLimit": true,
   "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true,
-  "defaultMode": "auto"
+  "defaultMode": "auto",
+  "theme": "dark"
 }
-

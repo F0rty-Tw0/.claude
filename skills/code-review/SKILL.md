@@ -35,7 +35,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
    User asked for a fresh or second-opinion review → skip the lookup (case 3), but still stamp in 5b, so the newest independent review wins.
 
-   Record `REVIEWED=$(git rev-parse HEAD)` and `SCRATCH=$(mktemp -d)` outside the worktree. Shell state doesn't persist between Bash calls: echo both and use the literal values in every later call. Material files go in `$SCRATCH`: PR text as `pr.md`, plan copied as `plan.md` (a plan folder: index.md then each `NN-*.md` in order, concatenated; append the `## Stack` map for a stacked PR). Then run `node ~/.claude/skills/code-review/scripts/review-stamp.mjs lookup <base> $SCRATCH/pr.md $SCRATCH/plan.md`:
+   Record `REVIEWED=$(git rev-parse HEAD)` and `SCRATCH=$(mktemp -d)` outside the worktree. Shell state doesn't persist between Bash calls: echo both and use the literal values in every later call. Material files go in `$SCRATCH`: PR text as `pr.md` (drafted in skill:open-pr's body shape: a `## Proof` section with `Before:`/`After:` lines, plus rollback and canary lines for Trunk; each claim names the command or artifact behind it, re-checked against the current HEAD after every new commit), plan copied as `plan.md` (a plan folder: index.md then each `NN-*.md` in order, concatenated; append the `## Stack` map for a stacked PR). Then run `node ~/.claude/skills/code-review/scripts/review-stamp.mjs lookup <base> $SCRATCH/pr.md $SCRATCH/plan.md`:
 
    | Case | What happens |
    |---|---|
@@ -53,7 +53,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
    Pass only artifacts: diff, PR text, plan. Never pass your session's rationale, opinions, or a hint list. Exception: stamped independent-review findings, in delta and proof modes only.
 
-3. **Trunk escalation.** Check the trunk signals from `references/blast-radius.md` (greps and fan-in, not file names alone). If any shows, dispatch the `security-reviewer` and/or `performance-reviewer` in the **same message**, ≤3 agents total.
+3. **Trunk escalation.** Check the trunk signals from `references/blast-radius.md` (greps and fan-in, not file names alone). If any shows, dispatch the `security-reviewer` and/or `performance-reviewer` in the **same message**, ≤3 agents total. `performance-reviewer` only when the diff touches a measured hot path, a bench or a budget test: elsewhere it repeated the code-reviewer's findings (4 of 5 passes in the week of 2026-10-19).
 
    If the reviewer later classifies the change as trunk and no specialist was sent, send one then.
 
