@@ -194,14 +194,14 @@ it('should do specific behavior', () => {
 
 - [ ] **Step 2: Run it and watch it fail**
 
-Run: `pnpm test -- --testPathPattern=file.spec.ts`
+Run: `pnpm --filter <package> exec vitest run src/file.spec.ts`
 Expected: FAIL with "myFunction is not defined"
 
 - [ ] **Step 3: Minimal implementation** — `export function myFunction(input: InputType): OutputType` plus the rule it must implement.
 
 - [ ] **Step 4: Run it and watch it pass**
 
-Run: `pnpm test -- --testPathPattern=file.spec.ts`
+Run: `pnpm --filter <package> exec vitest run src/file.spec.ts`
 Expected: PASS
 
 - [ ] **Step 5: Checkpoint** — stage the task's files by name. Commit only if the user authorized commits.
@@ -238,5 +238,9 @@ Run across index.md and every phase file:
 5. **Review Focus:** each line has its test in the owning task. An empty section means you checked and found none.
 6. **Models:** every task has a Model line; each opus line has its reason from the table.
 7. **Proportion:** a phase file several times longer than the spec sections in its `**Spec §:**` line is a transcript. Replace bodies with signatures and assertions.
+8. **Commands:** every Run line is copied from the repo's `.claude/local/plans/CONVENTIONS.md` when it exists, else from its package.json scripts and CI workflow. A `test -- <file>` form runs the whole suite in most runners; a target that depends on a build (e2e, integration) goes through the build or the task runner first.
+9. **Each slice green alone:** grep the existing tests, type pins (`toStrictEqual`, snapshots), stubs and typecheck scopes (e2e folders included) for every shape a task changes. Each hit is listed in the task that breaks it, so no commit goes red.
+10. **Oracles:** each expected value comes from a fixture or the spec, not from running the new code. Each mutant a task names has the test row that kills it.
+11. **Size budget:** a task that grows a file or function near the lint caps (`~/.claude/skills/artification/references/module-size.md`) names the split.
 
 Fix issues inline; no second pass or subagent needed.
