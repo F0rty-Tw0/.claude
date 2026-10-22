@@ -490,11 +490,11 @@ test('an idle reviewer is stopped without a done check; other idle agents still 
   const { seen, endTurn, compactNow, doneChecks, stops } = world($, on)
 
   const reviewers = ['critic', 'code-reviewer', 'quality-reviewer', 'security-reviewer', 'performance-reviewer', 'architect', 'verifier', 'Explore']
-  seen.agents = [...reviewers.map((type) => agent(type, 'idle', type)), agent('a1'), agent('r1', 'running', 'code-reviewer')]
+  seen.agents = [...reviewers.map((type) => agent(type, 'idle', type)), agent('a1'), agent('e1', 'idle', 'executor'), agent('r1', 'running', 'code-reviewer')]
   await compactNow()
   await endTurn()
   expect(stops()).toEqual(reviewers)
-  expect(doneChecks()).toEqual(['a1'])
+  expect(doneChecks()).toEqual(['a1', 'e1'])
 })
 
 test('only idle reviewers: they are stopped and /handoff runs with no done check sent', async ($, on) => {
