@@ -13,22 +13,33 @@ const fs = require('fs');
 const LOCK = '~/.claude/scripts/cpu-lock';
 const OVERRIDE = 'A user-approved exception: prefix the command with `CQT_GUARD_OK=1 `.';
 
-// Commit and tag messages are prose, not commands.
-const stripMessages = (cmd) => cmd.replace(/(\s(?:-m|--message)(?:=|\s+))("[^"]*"|'[^']*')/g, "$1''");
+// Commit messages and heredoc bodies are prose, not commands.
+const stripProse = (cmd) => cmd
+  .replace(/(\s(?:-m|--message)(?:=|\s+))("[^"]*"|'[^']*')/g, "$1''")
+  .replace(/<<-?\s*(['"]?)(\w+)\1[^\n]*\n[\s\S]*?\n\2(?=\n|$)/g, '<<$2');
 
-// Each command of a chain or pipeline, without leading `VAR=value` assignments.
-const segments = (cmd) => cmd.split(/[;&|\n(]+/).map((part) => part.trim().replace(/^(\w+=\S*\s+)*/, ''));
+// Leading `VAR=value` assignments and wrappers that run the next word as the command.
+const PREFIX = /^(?:\w+=(?:"[^"]*"|'[^']*'|\S*)|sudo|env|command|exec|time|nohup|bash|sh|xargs(?:\s+-\S+)*|nice(?:\s+-n\s*-?\d+|\s+-\d+)?|timeout(?:\s+-\S+)*\s+\S+|taskset(?:\s+-c)?\s+\S+|\S*cpu-lock\s+gate)\s+/;
+function command(part) {
+  let rest = part.trim();
+  for (let next = rest.replace(PREFIX, ''); next !== rest; next = rest.replace(PREFIX, '')) rest = next;
+  return rest;
+}
 
-// git subcommands that drop uncommitted work, after global `-C <dir>` options.
+// Each command of a chain or pipeline, with its prefixes stripped.
+const segments = (cmd) => cmd.split(/[;&|\n(]+/).map(command);
+
+// git subcommands that drop uncommitted work, after global options (`-C <dir>`, `-c k=v`, `--git-dir=x`).
 function wipesWork(segment) {
-  const match = segment.match(/^(?:\S*\/)?git((?:\s+-C\s+\S+)*)\s+(\S+)(.*)$/);
+  const match = segment.match(/^(?:\S*\/)?git((?:\s+(?:-[Cc]\s+(?:"[^"]*"|'[^']*'|\S+)|--[\w-]+(?:=\S+)?))*)\s+(\S+)(.*)$/);
   if (!match) return false;
   const [, , sub, rest] = match;
   if (sub === 'stash') return !/^\s+(list|show)\b/.test(rest);
   if (sub === 'reset') return /\s--(hard|merge|keep)\b/.test(rest);
   if (sub === 'clean') return /\s(-\w*f\w*|--force)\b/.test(rest);
   if (sub === 'restore') return !/\s(--staged|-S)\b/.test(rest) || /\s(--worktree|-W)\b/.test(rest);
-  if (sub === 'checkout') return /\s(--|-f|--force|\.)(\s|$)/.test(rest);
+  if (sub === 'checkout') return /\s(--|-\w*f\w*|--force|\.)(\s|$)/.test(rest);
+  if (sub === 'switch') return /\s(-\w*f\w*|--force|--discard-changes)(\s|$)/.test(rest);
   return false;
 }
 
@@ -42,9 +53,8 @@ const RULES = [
     why: 'git stash/reset --hard/restore/checkout --/clean -f wipe uncommitted work in a worktree. Restore a mutated file from its cp backup, then touch it.',
   },
   {
-    test: (segment) => /^((bash|sh|exec|nice(\s+-n\s*-?\d+)?|timeout\s+\S+)\s+)*((\S*\/)?(perf|perfrun|tabrun|scroll)\.sh|hyperfine)\b/.test(segment)
+    test: (segment) => /^((\S*\/)?(perf|perfrun|tabrun|scroll)\.sh|hyperfine)\b/.test(segment)
       || (/^cargo\s+bench\b/.test(segment) && !/\s--no-run\b/.test(segment)),
-    unless: /cpu-lock\s+bench\b/,
     why: `perf and bench runs take the exclusive machine lock: \`${LOCK} bench <cmd>\`.`,
   },
 ];
@@ -57,9 +67,9 @@ const withRtk = (cmd) => (/\bRTK_DISABLED=1\b/.test(cmd) ? cmd : cmd.replace(/(^
 // The hook's answer for one command: a block reason, a wrapped command, or nothing.
 function decide(cmd) {
   if (/^\s*CQT_GUARD_OK=1\s/.test(cmd)) return {};
-  const prose = stripMessages(cmd);
+  const prose = stripProse(cmd);
   const parts = segments(prose);
-  const rule = RULES.find((r) => parts.some((part) => r.test(part)) && !(r.unless && r.unless.test(cmd)));
+  const rule = RULES.find((r) => parts.some((part) => r.test(part)));
   if (rule) return { block: `cqt-guard: ${rule.why} ${OVERRIDE}` };
   if (!HEAVY.test(prose) || /cpu-lock\s/.test(cmd)) return {};
 
