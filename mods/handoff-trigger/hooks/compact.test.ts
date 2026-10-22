@@ -258,8 +258,8 @@ function args(...lines: string[]) {
   return [MARKER, ...lines, HANDOFF_ARGS].join('\n')
 }
 
-function agent(id: string, status: AgentInfo['status'] = 'idle'): AgentInfo {
-  return { id, status, type: 'general-purpose', description: `task ${id}` }
+function agent(id: string, status: AgentInfo['status'] = 'idle', type = 'general-purpose'): AgentInfo {
+  return { id, status, type, description: `task ${id}` }
 }
 
 function slashed(path: string) {
@@ -484,6 +484,27 @@ test('a bare NOT DONE prints its note as -', async ($, on) => {
   await endTurn()
   await completeTurn({ agentId: 'a1', answer: 'NOT DONE' })
   expect(handoffs()).toEqual([args(ALIVE, 'a1 · - · general-purpose · idle · "task a1" · -', ENDED, 'none')])
+})
+
+test('an idle reviewer is stopped without a done check; other idle agents still get one, a running reviewer neither', async ($, on) => {
+  const { seen, endTurn, compactNow, doneChecks, stops } = world($, on)
+
+  seen.agents = [agent('c1', 'idle', 'critic'), agent('q1', 'idle', 'quality-reviewer'), agent('a1'), agent('r1', 'running', 'code-reviewer')]
+  await compactNow()
+  await endTurn()
+  expect(stops()).toEqual(['c1', 'q1'])
+  expect(doneChecks()).toEqual(['a1'])
+})
+
+test('only idle reviewers: they are stopped and /handoff runs with no done check sent', async ($, on) => {
+  const { seen, endTurn, compactNow, doneChecks, handoffs } = world($, on)
+
+  seen.agents = [agent('c1', 'idle', 'critic')]
+  await compactNow()
+  await endTurn()
+  expect(doneChecks()).toEqual([])
+  expect(handoffs()).toHaveLength(1)
+  expect(handoffs()[0]).toContain('c1 · critic · stopped · "task c1" · stopped by the handoff check')
 })
 
 test('every agent stopped: alive prints none and the stopped one is ended though off the list', async ($, on) => {
