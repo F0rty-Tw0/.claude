@@ -489,10 +489,11 @@ test('a bare NOT DONE prints its note as -', async ($, on) => {
 test('an idle reviewer is stopped without a done check; other idle agents still get one, a running reviewer neither', async ($, on) => {
   const { seen, endTurn, compactNow, doneChecks, stops } = world($, on)
 
-  seen.agents = [agent('c1', 'idle', 'critic'), agent('q1', 'idle', 'quality-reviewer'), agent('a1'), agent('r1', 'running', 'code-reviewer')]
+  const reviewers = ['critic', 'code-reviewer', 'quality-reviewer', 'security-reviewer', 'performance-reviewer', 'architect', 'verifier', 'Explore']
+  seen.agents = [...reviewers.map((type) => agent(type, 'idle', type)), agent('a1'), agent('r1', 'running', 'code-reviewer')]
   await compactNow()
   await endTurn()
-  expect(stops()).toEqual(['c1', 'q1'])
+  expect(stops()).toEqual(reviewers)
   expect(doneChecks()).toEqual(['a1'])
 })
 
