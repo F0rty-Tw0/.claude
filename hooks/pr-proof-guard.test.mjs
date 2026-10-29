@@ -288,9 +288,9 @@ test('block message shows the heredoc delimiter alone on its line', () => {
   assert.doesNotMatch(stderr, /one-shot flag/);
 });
 
-test('block message after a push warns the commit-guard flag is spent', () => {
-  const { stderr } = run(['git', 'push -u origin x && gh pr create --fill'].join(' '));
-  assert.match(stderr, /commit-guard's one-shot flag was already spent; re-touch it only if the user's request still covers the push/);
+test('block message after a push carries no stale flag advice', () => {
+  const { stderr } = run('git push -u origin x && gh pr create --fill');
+  assert.doesNotMatch(stderr, /commit.guard|one-shot flag|re-touch/i);
 });
 
 test('blocks an unresolvable body file path and asks for a literal one', () => {

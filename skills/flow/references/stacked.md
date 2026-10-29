@@ -20,7 +20,7 @@ Build slice N+1 while slice N's gate or CI runs. Gate and CI results arrive as b
 ## Decisions in force
 
 - **D1** Each push needs the user's approval (AskUserQuestion), asked at push time. One approval covers: `git push` of that slice, `gh pr create` for it, and `gh pr edit` of bodies (`## Stack`, `## Proof`) on PRs in the same stack. Force-push is never covered. While the question waits, building pauses; that is an allowed wait.
-- **D2** A launch that authorizes commits authorizes every commit and every `git merge` in the run, including turns re-invoked by background jobs with no user message. Every commit (task, fix, call-site repair) follows skill:meaningful-commits: one change plus its test, green before commit. The commit-guard one-shot flag is still set per commit (`open-pr/references/mechanics.md` Commit-guard bullet).
+- **D2** A launch that authorizes commits authorizes every commit and every `git merge` in the run, including turns re-invoked by background jobs with no user message. Every commit (task, fix, call-site repair) follows skill:meaningful-commits: one change plus its test, green before commit.
 - **D3** D2's `git merge` covers every merge in the run: a parent slice into a child slice, pushed or not (local restack, Push scan step 1), and `origin/<default>` into a slice. Pushing the merged child is a normal push (D1). Merge conflict → ping + `blockedOn: "conflict"` (User blocks).
 - **D4** Babysit ticks run in report-only mode: they never touch the working tree. The stacked loop applies and commits fixes under D2.
 - **D5** Per-slice gate before open-pr proof/review: build + full test suite + the cheap CI jobs, fresh, in the slice's worktree, as a background job.
@@ -129,7 +129,7 @@ Runs after every event: gate exit, review, watcher exit, push, fix, merge, user 
    ```
    Missing a head → restack (below), which resets the gate (back to Per slice step 2).
 2. Eligible → ask to push (D1). The question carries the slice report: gate commands, review verdict @ `reviewedSha` (with the TRUNK sign-off line, Per slice step 5), SDD's "left to the user" items.
-3. Approved → `git -C <worktree> push -u origin <Branch>`; for a new PR, fill `## Stack` in `<plan folder>/pr/<slice>.md` with the PR numbers known now (stacking.md step 7), then `cd "<worktree>" && gh pr create --base <Base> --head <Branch> --title "$(cat "<plan folder>/pr/<slice>.title")" --body-file "<plan folder>/pr/<slice>.md"`, one `--attach <path>` per line of `<slice>.attach` (mechanics.md Push + open); an existing PR gets `gh pr edit <PR#> --body-file …` with the same flags instead; `gh pr edit` earlier PRs' `## Stack` with their own `--attach` flags; start a watcher (Waiting), `ci: pending`. Record `pushedSha`, `pr`. Push and `gh pr create` go in separate Bash calls, the push after its own one-shot flag (mechanics.md Commit-guard bullet). On Windows pass `--body-file` as `C:/…`, not `/c/…`: `pr-proof-guard` resolves `/c/…` wrongly and blocks the call.
+3. Approved → `git -C <worktree> push -u origin <Branch>`; for a new PR, fill `## Stack` in `<plan folder>/pr/<slice>.md` with the PR numbers known now (stacking.md step 7), then `cd "<worktree>" && gh pr create --base <Base> --head <Branch> --title "$(cat "<plan folder>/pr/<slice>.title")" --body-file "<plan folder>/pr/<slice>.md"`, one `--attach <path>` per line of `<slice>.attach` (mechanics.md Push + open); an existing PR gets `gh pr edit <PR#> --body-file …` with the same flags instead; `gh pr edit` earlier PRs' `## Stack` with their own `--attach` flags; start a watcher (Waiting), `ci: pending`. Record `pushedSha`, `pr`. Push and `gh pr create` go in separate Bash calls. On Windows pass `--body-file` as `C:/…`, not `/c/…`: `pr-proof-guard` resolves `/c/…` wrongly and blocks the call.
 4. Declined → `blockedOn: "declined"`.
 
 **Restack** (D3). Checked on every event for every child slice with a worktree, built or not; don't wait for the ancestor's CI or for eligibility. As soon as the child's Base slice is gated green at a head the child lacks and the child's tree is clean (task boundary), merge it into the child:
@@ -138,7 +138,7 @@ Runs after every event: gate exit, review, watcher exit, push, fix, merge, user 
 git -C <child worktree> merge --no-edit <Base slice Branch>
 ```
 
-No commit-guard flag (the hook doesn't match `git merge`). Fix call sites the change broke (mechanics.md Review changes) and commit them, then re-gate and re-review. Conflict → `git -C <child worktree> merge --abort`, `blockedOn: "conflict"`, ping. Repeat for each descendant, nearest first. mechanics.md's `git switch` lines don't apply: each branch is checked out in its own worktree.
+Fix call sites the change broke (mechanics.md Review changes) and commit them, then re-gate and re-review. Conflict → `git -C <child worktree> merge --abort`, `blockedOn: "conflict"`, ping. Repeat for each descendant, nearest first. mechanics.md's `git switch` lines don't apply: each branch is checked out in its own worktree.
 
 ## Waiting
 

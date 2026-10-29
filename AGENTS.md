@@ -63,8 +63,8 @@ Grug governs implementation choices. Also:
 
 ## Git and PRs
 
-- Commit or push only when the user explicitly asks in the current request; skill steps that say "commit" don't count. `hooks/commit-guard.js` blocks commits in local sessions — when the user has asked, `touch ~/.claude/.allow-commit-$CLAUDE_CODE_SESSION_ID` (one-shot, per session) in a separate Bash call before each commit.
-- `flow --stacked` exception: a launch that authorizes commits — or a user-typed `--resume` of one, or a handoff continuation that names it — counts as the request for every commit and `git merge` in that run. Each push still needs approval. `git merge` commits aren't caught by commit-guard; plain commits still need the flag.
+- Commit or push only when the user explicitly asks in the current request; skill steps that say "commit" don't count.
+- `flow --stacked` exception: a launch that authorizes commits — or a user-typed `--resume` of one, or a handoff continuation that names it — counts as the request for every commit and `git merge` in that run. Each push still needs approval.
 - Commits: load `/meaningful-commits` first. When delegating, pass "user authorized commits" and the skill name; subagents can't see the user's message.
 - PRs: load `/open-pr` first. Its Step 0 builds `## Proof` and runs `code-review`; a BLOCK verdict means stop and ask. `hooks/pr-proof-guard.js` rejects a PR body without `## Proof` (local sessions only; cloud and plugin sessions aren't guarded, so follow the rule yourself). Big or mixed branch → open-pr's split path (`references/stacking.md`). No attribution lines.
 - Prose posted to GitHub (PR title and body, PR or issue comments, review replies, new issues): run `anthropic-skills:avoid-ai-writing` on it before it goes out (not in the skill list → Read `~/.claude/skills/synced/*/avoid-ai-writing/SKILL.md` and apply it; several matches → ask which). Leave code, commands, and `## Proof` verbatim. Commit messages are exempt.
