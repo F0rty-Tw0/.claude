@@ -213,3 +213,11 @@ describe('Task 3.1 review-round budget', () => {
     assert.match(t, /the `quality-reviewer` pass stays/);
   });
 });
+
+describe('Task 3.2 PR size cap', () => {
+  it('open-pr names the 800-line cap and the exemption marker', () => {
+    const t = read('skills/open-pr/SKILL.md');
+    assert.match(t, /800 changed lines/);
+    assert.match(t, /Size-exempt: <reason>/);
+  });
+});

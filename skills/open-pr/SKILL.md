@@ -40,6 +40,8 @@ Count changed lines without lockfiles, generated files, snapshots and eval fixtu
 | Hotfix | Migration/schema that has a deploy order relative to code |
 | Pieces don't build apart | Independent concerns (a badge that doesn't need the ledger) |
 
+Hard cap: 800 changed lines (same counting). `hooks/pr-proof-guard.js` blocks `gh pr create` over it. Split, or put a `Size-exempt: <reason>` line in the body (generated output, a mechanical rename).
+
 Split → follow `references/stacking.md`. It builds the slices, then runs Steps 0–6 once per PR against its **parent branch**, with the stack map. Its one stack-wide approval replaces Step 7's per-PR wait.
 
 ### Step 0: Proof Gate

@@ -309,3 +309,45 @@ test('block message points at heredoc / --body-file and the session cwd', () => 
 test('allows unparseable input', () => {
   assert.strictEqual(spawnSync('node', [hook], { input: 'not json' }).status, ALLOW);
 });
+
+const git = (cwd, ...args) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' });
+const nLines = (n) => 'x\n'.repeat(n);
+// A repo whose HEAD is one commit past branch `base`; `files` is {name: text} added on top.
+const repoAhead = (files) => {
+  const repo = mkdtempSync(join(dir, 'repo-'));
+  git(repo, 'init', '-q', '-b', 'master');
+  git(repo, 'commit', '-q', '--allow-empty', '-m', 'base');
+  git(repo, 'branch', 'base');
+  for (const [name, text] of Object.entries(files)) writeFileSync(join(repo, name), text);
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'feat');
+
+  return repo;
+};
+const SIZE_BODY = 'x\n## Proof\nNo screenshots: cli\nBefore: a\nAfter: b\nok';
+const create = (body, base = '--base base') => `gh pr create ${base} --body "${body}"`;
+const sizeCases = [
+  ['801 changed lines', { 'a.txt': nLines(801) }, create(SIZE_BODY), BLOCK, /801 changed lines[\s\S]*Size-exempt: <reason>/],
+  ['exactly 800 changed lines', { 'a.txt': nLines(800) }, create(SIZE_BODY), ALLOW],
+  ['lockfile lines are not counted', { 'pnpm-lock.yaml': nLines(900), 'a.txt': nLines(10) }, create(SIZE_BODY), ALLOW],
+  ['Size-exempt line with a reason', { 'a.txt': nLines(900) }, create(`${SIZE_BODY}\nSize-exempt: generated fixtures`), ALLOW],
+  ['Size-exempt line with no reason', { 'a.txt': nLines(900) }, create(`${SIZE_BODY}\nSize-exempt:   \nok`), BLOCK, /changed lines/],
+  ['gh pr edit is not size-checked', { 'a.txt': nLines(900) }, `gh pr edit 5 --body "${SIZE_BODY}"`, ALLOW],
+  ['unknown --base fails open', { 'a.txt': nLines(900) }, create(SIZE_BODY, '--base nope'), ALLOW],
+  ['no --base and no origin/HEAD fails open', { 'a.txt': nLines(900) }, create(SIZE_BODY, ''), ALLOW],
+  ['cwd that is not a git repo fails open', null, create(SIZE_BODY), ALLOW],
+];
+for (const [name, files, command, expected, message] of sizeCases) {
+  test(`size: ${expected === ALLOW ? 'allows' : 'blocks'}: ${name}`, () => {
+    const { status, stderr } = run(command, { cwd: files ? repoAhead(files) : dir });
+    assert.strictEqual(status, expected, stderr);
+    if (message) assert.match(stderr, message);
+  });
+}
+
+for (const flag of ['--base=base', '-B base', '-Bbase']) {
+  test(`size: reads the base from ${flag}`, () => {
+    const { status } = run(create(SIZE_BODY, flag), { cwd: repoAhead({ 'a.txt': nLines(801) }) });
+    assert.strictEqual(status, BLOCK);
+  });
+}
