@@ -11,10 +11,25 @@ const reads = [
   ['tail -50 log.txt', ['log.txt']],
   ['cd x && cat "my file.ts"', ['my file.ts']],
   ['sed -n 1,5p a.ts b.ts', ['a.ts', 'b.ts']],
+  ['cat a.ts 2>/dev/null', ['a.ts']],
+  ['cat a.ts 2>&1', ['a.ts']],
+  ['cat < a.ts', ['a.ts']],
+  ['tail -n +10 a.ts', ['a.ts']],
+  ["sed -e 's/x/y/' a.ts", ['a.ts']],
+  ["sed --expression='s/x/y/' a.ts", ['a.ts']],
+  ['cat a.ts &', ['a.ts']],
+  ['cat a.ts # comment', ['a.ts']],
+  ['rtk proxy cat a.ts', ['a.ts']],
+  ['rtk cat a.ts', ['a.ts']],
+  ['sudo cat a.ts', ['a.ts']],
+  ['LC_ALL=C cat a.ts', ['a.ts']],
+  ['cat a.ts; head a.ts', ['a.ts']],
 ];
 const notReads = [
-  "cat <<EOF > file\nhi\nEOF", "cat <<'EOF' > a.ts\nhi\nEOF",
-  'cat a.ts > b.ts', "sed -i 's/a/b/' a.ts", 'echo hi | tee a.ts',
+  "cat <<EOF > file\nhi\nEOF", "cat <<'EOF' > a.ts\nhi\nEOF", "cat <<EOF\nhi\nEOF",
+  "cat <<-EOF > run.sh\n\tcat config.json\n\tEOF",
+  'cat a.ts > b.ts', 'cat a.ts >> b.ts', 'cat a.ts 1> b.ts', 'cat a.ts &> b.ts', 'cat a.ts >| b.ts',
+  "sed -i 's/a/b/' a.ts", 'echo hi | tee a.ts',
   'git log | head -5', 'ls -la', 'cat -',
 ];
 for (const [cmd, want] of reads) test(`reads: ${JSON.stringify(cmd)}`, () => assert.deepEqual(readTargets(cmd), want));
@@ -30,4 +45,7 @@ test('CLI never blocks and speaks only when something was read', () => {
   assert.equal(miss.status, 0);
   assert.equal(miss.stdout, '');
   assert.equal(spawnSync('node', [new URL('./read-hint.js', import.meta.url).pathname], { input: 'not json' }).status, 0);
+  const many = JSON.parse(run('cat f1.ts f2.ts f3.ts f4.ts').stdout).hookSpecificOutput.additionalContext;
+  assert.match(many, /f1\.ts, f2\.ts, f3\.ts does not/);
+  assert.doesNotMatch(many, /f4\.ts/);
 });
