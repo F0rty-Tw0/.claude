@@ -212,9 +212,7 @@ const check = (inv) => {
 for (const inv of masked.matchAll(INVOKE)) {
   const message = check(inv);
   if (!message) continue;
-  const pushNote = /\bgit[ \t]+push\b/.test(masked)
-    ? "\ncommit-guard's one-shot flag was already spent; re-touch it only if the user's request still covers the push." : '';
-  process.stderr.write(message + pushNote);
+  process.stderr.write(message);
   process.exit(2);
 }
 process.exit(0);

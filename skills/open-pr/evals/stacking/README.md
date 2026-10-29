@@ -6,8 +6,8 @@ Run when this split path was its own skill, `meaningful-prs`; "the skill" below 
 
 `scenario.md` describes an 18-file, ~1,630-line interleaved branch in a squash-only repo. Two fresh agents each wrote a split plan and ran no commands:
 
-- `results/baseline-no-skill.md` — no skill loaded.
-- `results/with-skill.md` — this skill loaded.
+- `../../../../archive/open-pr-stacking-evals/results/baseline-no-skill.md` — no skill loaded.
+- `../../../../archive/open-pr-stacking-evals/results/with-skill.md` — this skill loaded.
 
 | Check | Baseline | With skill |
 |---|---|---|
@@ -45,4 +45,4 @@ content check (parent files vs squash): 0 diff lines
 drift: present
 ```
 
-The child's own files are `hooks/pr-proof-guard.js hooks/pr-proof-guard.test.mjs settings.json`. (Simulation: commit-guard blocks a single squash commit, so the squash is a cherry-picked range, with `PRE` = default before the squash standing in for `<squash>^`.)
+The child's own files are `hooks/pr-proof-guard.js hooks/pr-proof-guard.test.mjs settings.json`.

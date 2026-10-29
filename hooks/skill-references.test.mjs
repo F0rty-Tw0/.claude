@@ -18,7 +18,7 @@ const mentions = readdirSync(hooksDir)
 test('the scan finds the skills the guard messages point to', () => {
   const names = mentions.map(({ name }) => name);
   assert.ok(names.includes('open-pr'));
-  assert.ok(names.includes('meaningful-commits'));
+  assert.ok(names.includes('code-review'));
 });
 
 test('every skill a hook message names exists', () => {

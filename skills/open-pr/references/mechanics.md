@@ -4,8 +4,8 @@ Commands for building, updating and landing a PR stack with plain `git` + `gh`. 
 
 - `<default>` = the repo's default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`). Never assume `main`.
 - `<stack>` = a branch prefix **different from the source branch name**. Git can't hold both `feat/loyalty` and `feat/loyalty/1-money`, because a ref can't be both a file and a directory. Source `feat/loyalty` → slices `loyalty/1-money`, `loyalty/2-ledger`, …
-- Commit-guard: every Bash call containing `git commit` or `git push` needs the one-shot flag, set in a **separate, earlier** Bash call (`touch ~/.claude/.allow-commit-$CLAUDE_CODE_SESSION_ID`). The hook runs before the command, so `touch … && git commit` in one call is blocked. Batch branches into one `git push`. Run `git push` and `gh pr create` as **separate** Bash calls. If `pr-proof-guard` blocks the call, the push never runs, but commit-guard has already used up the flag.
-- **Authorization:** the split approval covers building, the first push and opening the PRs. Restacks in later turns (after review fixes or merges) need a **new explicit user request**. The same applies to `git merge`, which creates commits that commit-guard does not catch. **Exception — `flow --stacked`:** see AGENTS.md Git and PRs and `flow` `references/stacked.md` D2/D3.
+- Batch branches into one `git push`.
+- **Authorization:** the split approval covers building, the first push and opening the PRs. Restacks in later turns (after review fixes or merges) need a **new explicit user request**. The same applies to `git merge`, which creates commits. **Exception — `flow --stacked`:** see AGENTS.md Git and PRs and `flow` `references/stacked.md` D2/D3.
 
 ## Build slices from one interleaved branch
 

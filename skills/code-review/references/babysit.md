@@ -2,7 +2,7 @@
 
 Automates the tedious loop: CI red → read log → fix → rerun. Pings the human only for decisions.
 
-**Hard limits (user's commit-guard law):** fix in the **local working tree only**. Never `git commit`, never `git push`, never reply to / resolve review threads, never approve, never merge. The human commits and pushes.
+**Hard limits (AGENTS.md: commit or push only when the user asks):** fix in the **local working tree only**. Never `git commit`, never `git push`, never reply to / resolve review threads, never approve, never merge. The human commits and pushes.
 
 ## Start
 
