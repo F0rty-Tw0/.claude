@@ -38,6 +38,8 @@ Agent tool (subagent_type: "executor"):
 
     Work from: your cwd. In an isolated worktree your cwd is the worktree; use paths relative to it. [Slice mode only: the slice worktree's absolute path, per flow stacked.md.]
 
+    Expected: [N] minutes. Past twice that the caller stops you, so report partial progress early (BLOCKED or DONE_WITH_CONCERNS) rather than grind.
+
     **While you work:** Make routine judgment calls yourself and note them in your report.
     Stop and ask only when different readings of the task would lead to materially different work.
 

@@ -76,3 +76,24 @@ describe('2.3 worktree-safe briefs', () => {
     for (const f of files) assert.doesNotMatch(read(f), /^\s*Repo:\s*(\/|[A-Za-z]:)/m);
   });
 });
+
+describe('2.4 subagent time budget', () => {
+  it('CLAUDE.md states the budget and the 2x stop', () => {
+    const claude = read('CLAUDE.md');
+    assert.match(claude, /Expected: N min/);
+    assert.match(claude, /2×.*TaskStop|TaskStop.*2×/s);
+    assert.match(claude, /restarts.*assignment/s);
+  });
+  it('SDD loop dispatches with a budget and stops at 2x', () => {
+    const sdd = read('skills/subagent-driven-development/SKILL.md');
+    assert.match(sdd, /Expected: <N> min/);
+    assert.match(sdd, /2×/);
+  });
+  it('implementer prompt carries the line', () => {
+    assert.match(read('skills/subagent-driven-development/implementer-prompt.md'), /Expected: \[N\] minutes/);
+  });
+  it('parallel dispatch and reviewer prompts carry it', () => {
+    assert.match(read('skills/dispatching-parallel-agents/SKILL.md'), /Expected: N min/);
+    assert.match(read('skills/code-review/references/reviewer-prompt.md'), /Expected: \{EXPECTED_MIN\} min/);
+  });
+});

@@ -41,7 +41,7 @@ Find the root cause; don't just raise timeouts. Change only src/agents/abort*.
 Return: root cause and the files you changed.""")
 ```
 
-Each prompt: one scope, the pasted errors and test names, a constraint on what may change, and the expected return.
+Each prompt: one scope, the pasted errors and test names, a constraint on what may change, `Expected: N min`, and the expected return.
 
 ## Integrate
 

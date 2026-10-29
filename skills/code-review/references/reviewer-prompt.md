@@ -26,6 +26,7 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 - Mode: {full | delta | proof}
 - Prior findings (stamped independent review; claims, verify each): {STAMP_PATH_OR_NONE}
 - Scratchpad dir: {SCRATCHPAD_DIR}
+- Expected: {EXPECTED_MIN} min (the caller stops you at 2×; report what you have then)
 
 ## Mode
 | Mode | Diff | What to do | Output |
