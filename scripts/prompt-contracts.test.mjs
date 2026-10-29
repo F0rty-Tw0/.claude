@@ -97,3 +97,33 @@ describe('2.4 subagent time budget', () => {
     assert.match(read('skills/code-review/references/reviewer-prompt.md'), /Expected: \{EXPECTED_MIN\} min/);
   });
 });
+
+describe('2.5 cold-reader agent', () => {
+  const frontmatter = () => read('agents/cold-reader.md').split('---')[1];
+  it('exists on sonnet with a description of 40 words or fewer', () => {
+    const fm = frontmatter();
+    assert.match(fm, /^model: sonnet$/m);
+    const desc = fm.match(/^description: (.+)$/m)[1];
+    assert.ok(desc.split(/\s+/).length <= 40, desc);
+  });
+  it('is read-only and sees no chat history', () => {
+    const fm = frontmatter();
+    assert.match(fm, /^disallowedTools:.*Write.*Edit/m);
+    assert.match(fm, /no chat history/);
+  });
+  it('reads only the spec, never the code', () => {
+    assert.match(read('agents/cold-reader.md'), /Read only the spec path/);
+  });
+  it('brainstorming and flow point at it, not general-purpose', () => {
+    const tpl = read('skills/brainstorming/spec-document-reviewer-prompt.md');
+    assert.ok(tpl.includes('subagent_type: "cold-reader"'));
+    assert.ok(!tpl.includes('general-purpose'));
+    assert.ok(read('skills/brainstorming/SKILL.md').includes('`cold-reader` agent'));
+    assert.ok(read('skills/flow/SKILL.md').includes('`cold-reader` agent'));
+  });
+  it('touched prompts carry no machine-specific path', () => {
+    const files = ['agents/cold-reader.md', 'agents/executor.md', 'agents/deep-executor.md', 'AGENTS.md', 'CLAUDE.md',
+      'skills/brainstorming/SKILL.md', 'skills/dispatching-parallel-agents/SKILL.md', 'skills/code-review/references/reviewer-prompt.md'];
+    for (const f of files) assert.doesNotMatch(read(f), /(?<![\w.-])\/home\/[a-z0-9_-]+\/|[A-Z]:\\+Users\\/i);
+  });
+});
