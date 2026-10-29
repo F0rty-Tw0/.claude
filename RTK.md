@@ -42,9 +42,10 @@ No repo hook is involved (`nul-guard`, `pr-proof-guard`, `cqt-guard` return in w
 
 **Workaround today**: after a heredoc, never use a bare `ls`/`ll`/`la`/`l`. Use `command ls`, `/bin/ls`, `ls <path>`, or `ls </dev/null`.
 
-**Fix (outside this repo, user applies)**: in `~/.zshrc`, replace the four eza aliases with functions that use eza only on a terminal. `[[ -t 0 ]]` is false for the Bash tool, so agent shells get coreutils `ls`:
+**Fix (outside this repo, user applies)**: in `~/.zshrc`, replace the four eza aliases with functions that use eza only on a terminal. `[[ -t 0 ]]` is false for the Bash tool, so agent shells get coreutils `ls`. The `unalias` line sits before the `if` because zsh expands aliases while it parses the whole block, so a re-`source ~/.zshrc` with the old aliases still defined would otherwise fail with "defining function based on alias":
 
 ```zsh
+unalias ls ll la l 2>/dev/null
 if command -v eza >/dev/null 2>&1; then
   ls() { if [[ -t 0 ]]; then eza --icons --group-directories-first "$@"; else command ls "$@"; fi }
   ll() { if [[ -t 0 ]]; then eza -alF --icons --group-directories-first "$@"; else command ls -alF "$@"; fi }

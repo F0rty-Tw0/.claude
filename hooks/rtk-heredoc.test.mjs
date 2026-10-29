@@ -9,11 +9,11 @@
 // None of the repo hooks is involved; the first block below proves they are fast on heredocs.
 //
 // The fix lives outside the repo (the user's ~/.zshrc): make the aliases fall back to coreutils when stdin is
-// not a terminal. The test runs that snippet (SAFE_ALIASES) against the same commands.
+// not a terminal. The test reads that snippet (SAFE_ALIASES) from RTK.md and runs it against the same commands.
 import { after, test } from 'node:test';
 import assert from 'node:assert';
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,14 +25,10 @@ const hookDir = fileURLToPath(new URL('.', import.meta.url));
 
 // What ~/.zshrc defines when eza is installed (the snapshot copies it into agent shells).
 const EZA_ALIASES = "alias ls='eza --icons --group-directories-first'\nalias ll='eza -alF --icons --group-directories-first'\nalias la='eza -A --icons'\nalias l='eza -CF --icons'\n";
-// The recommended replacement: icons on a terminal, plain coreutils everywhere else.
-const SAFE_ALIASES = [
-  "ls() { if [[ -t 0 ]]; then eza --icons --group-directories-first \"$@\"; else command ls \"$@\"; fi }",
-  "ll() { if [[ -t 0 ]]; then eza -alF --icons --group-directories-first \"$@\"; else command ls -alF \"$@\"; fi }",
-  "la() { if [[ -t 0 ]]; then eza -A --icons \"$@\"; else command ls -A \"$@\"; fi }",
-  "l() { if [[ -t 0 ]]; then eza -CF --icons \"$@\"; else command ls -CF \"$@\"; fi }",
-  '',
-].join('\n');
+// The recommended replacement, read from the ```zsh block under RTK.md "## Heredocs" so the doc and the test cannot drift:
+// icons on a terminal, plain coreutils everywhere else.
+const rtkDoc = readFileSync(new URL('../RTK.md', import.meta.url), 'utf8');
+const SAFE_ALIASES = rtkDoc.slice(rtkDoc.indexOf('\n## Heredocs\n')).match(/\n```zsh\n([\s\S]*?)```/)[1];
 
 const work = mkdtempSync(join(tmpdir(), 'rtk-heredoc-'));
 const bin = join(work, 'bin');
@@ -74,7 +70,10 @@ const execInZsh = (setup, command, { ms = 15000 } = {}) => new Promise((resolve)
   writeFileSync(join(work, 'run.zsh'), `${setup}eval "$(<${join(work, 'cmd.sh')})"\n`);
   const child = spawn('zsh', [join(work, 'run.zsh')], { cwd: repo, env, detached: true, stdio: ['pipe', 'pipe', 'pipe'] });
   let timedOut = false;
-  const timer = setTimeout(() => { timedOut = true; process.kill(-child.pid, 'SIGKILL'); }, ms);
+  const timer = setTimeout(() => {
+    timedOut = true;
+    try { process.kill(-child.pid, 'SIGKILL'); } catch { /* the group exited between the timeout and the kill (ESRCH) */ }
+  }, ms);
   child.stdout.resume();
   child.stderr.resume();
   child.on('close', (status) => { clearTimeout(timer); child.stdin.destroy(); resolve({ timedOut, status }); });
@@ -116,6 +115,12 @@ test('fix: with the stdin-aware aliases every heredoc form followed by ls return
       assert.deepStrictEqual({ name, tail, timedOut: r.timedOut, status: r.status }, { name, tail, timedOut: false, status: 0 });
     }
   }
+});
+
+test('fix: re-sourcing the snippet while the eza aliases exist still leaves functions, not aliases', { skip: evalMissing }, async () => {
+  const allFunctions = 'for f in ls ll la l; do [[ "$(whence -w $f)" == "$f: function" ]] || exit 1; done';
+  const r = await execInZsh(`${EZA_ALIASES}${SAFE_ALIASES}${SAFE_ALIASES}`, allFunctions);
+  assert.deepStrictEqual({ timedOut: r.timedOut, status: r.status }, { timedOut: false, status: 0 });
 });
 
 after(() => rmSync(work, { recursive: true, force: true }));
