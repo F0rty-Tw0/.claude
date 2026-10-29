@@ -48,6 +48,7 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 - No subagents. No commits, pushes, PR comments, or other outward actions.
 
 ## Output — exactly this format (proof mode: sections 5 and 7 only)
+The reply's first line is `VERDICT: APPROVE | CHANGES | BLOCK` (keep one word, e.g. `VERDICT: CHANGES`), before any heading. Open the reply with `VERDICT: APPROVE | CHANGES | BLOCK` (APPROVE — * → APPROVE, BLOCK — * → BLOCK from section 7), then the sections. Every blocking finding carries a `Repro:` line: the command you ran and its output, or the file:line trace. A finding without one is a Note. When a BLOCK rests only on missing proof (the code itself looks correct), line 2 is `BLOCK-KIND: proof`; otherwise `BLOCK-KIND: defect`.
 {OUTPUT_FORMAT from SKILL.md}
 
 Then a "Declined to judge" list: every behavior you set aside, one line each with the reason, so the caller decides. Nothing set aside → "none".

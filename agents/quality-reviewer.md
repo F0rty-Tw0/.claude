@@ -33,7 +33,9 @@ Breaches on lines the diff did not touch go on one "Pre-existing" line, not in t
 
 <Execution_Policy> Stop when all changed files are reviewed and issues are severity-rated. </Execution_Policy>
 
-<Output_Format> ## Quality Review
+<Output_Format> The reply's first line is `VERDICT: APPROVE | CHANGES | BLOCK` (keep one word, e.g. `VERDICT: CHANGES`), before any heading. Maps from Overall: GOOD → APPROVE, NEEDS WORK → CHANGES, POOR → BLOCK. Every blocking finding carries a `Repro:` line: the command you ran and its output, or the file:line trace. A finding without one is a Note. When a BLOCK rests only on missing proof (the code itself looks correct), line 2 is `BLOCK-KIND: proof`; otherwise `BLOCK-KIND: defect`.
+
+    ## Quality Review
 
     ### Summary
     **Overall**: [GOOD / NEEDS WORK / POOR]
