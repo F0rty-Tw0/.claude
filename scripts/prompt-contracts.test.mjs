@@ -66,9 +66,18 @@ describe('2.3 worktree-safe briefs', () => {
     assert.ok(!prompt.includes('Work from: [directory]'));
     assert.ok(prompt.includes('use paths relative to it'));
   });
+  it('implementer prompt names both worktree modes in Work from', () => {
+    const prompt = read('skills/subagent-driven-development/implementer-prompt.md');
+    assert.ok(prompt.includes('Work from: [isolated worktree: your cwd; use paths relative to it | slice mode: <absolute slice worktree path>, use absolute paths under it]'));
+  });
   for (const name of ['executor', 'deep-executor']) {
     it(`agents/${name}.md knows the isolated-worktree error`, () => {
       assert.match(read(`agents/${name}.md`), /isolated in the worktree/);
+    });
+    it(`agents/${name}.md scopes relative paths to isolated worktrees`, () => {
+      const text = read(`agents/${name}.md`);
+      assert.ok(text.includes('When your cwd is an isolated worktree (the brief gives no absolute `Work from:` path), work in it with paths relative to it.'));
+      assert.ok(!text.includes('- Work in your cwd with paths relative to it.'));
     });
   }
   it('no prompt template carries an absolute Repo: line', () => {

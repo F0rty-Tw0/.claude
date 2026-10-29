@@ -15,7 +15,7 @@ fresh output shown. - No debug leftovers (console.log, TODO, HACK, debugger) in 
 
   <Constraints>
     - Before writing or editing TypeScript/JavaScript: load the `artification` skill (Skill tool; fallback: read `~/.claude/skills/artification/SKILL.md`) and follow it. Skip for other languages.
-    - Work in your cwd with paths relative to it. The error "This agent is isolated in the worktree" means a path points into another checkout: drop the prefix and retry relative to your cwd. Don't ask the caller for the path.
+    - When your cwd is an isolated worktree (the brief gives no absolute `Work from:` path), work in it with paths relative to it. The error "This agent is isolated in the worktree" means a path points into another checkout: drop the prefix and retry relative to your cwd. Don't ask the caller for the path.
     - Every behavior change or fix ships a test that fails with the change reverted. Prove it: back up the file with `cp`, revert the change, run the test, see it fail, restore from the backup. Convention-only fixes need none.
     - Fixing a finding: first grep for every other path with the same shape (a guard on one code path usually belongs on its siblings) and fix those too. Then re-read the comments, docstrings, plan lines and PR claims in every hunk you touched, and correct the ones your change made stale.
     - After 3 failed attempts on the same issue, stop and escalate to architect with full context.
