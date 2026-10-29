@@ -21,6 +21,7 @@ One agent per independent problem domain, running concurrently.
 - One agent per component, each with an exclusive file set (`src/api/**`, `src/ui/**`). No file is owned by two agents.
 - Same files, or a real risk of collision → give each agent `isolation: "worktree"`. Its own checkout turns the ownership map into a merge plan instead of an honor-system lock.
 - Worktree agents start from the last commit, not your uncommitted work. With uncommitted work, isolate only tasks that don't depend on it; otherwise run them sequentially or ask the user to authorize a WIP commit.
+- A brief for a worktree agent opens `Your cwd is the worktree; use paths relative to it.` and names files repo-relative. It never carries the main checkout's absolute path or a `Repo:` line: the file tools reject paths outside the worktree (about 650 such errors in the retro).
 - Shared boundary files (`package.json`, `tsconfig.json`, shared types) are not edited by parallel agents; update them sequentially at merge time.
 - Disjoint files are not enough: a task that codes against a signature or type another task in the wave is changing runs after it, not beside it, because it would build against a shape that is still moving.
 - Merge worktree branches at the end; if commits weren't authorized, apply each worktree's diff instead (`git -C <wt> add -N . && git -C <wt> diff --binary HEAD | git apply`; `add -N` carries files the agent created but never staged). A merge conflict is a decomposition miss — note it.

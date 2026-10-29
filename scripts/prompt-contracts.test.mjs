@@ -54,3 +54,25 @@ describe('2.2 long reports go to the scratchpad', () => {
     assert.deepEqual(hits, []);
   });
 });
+
+describe('2.3 worktree-safe briefs', () => {
+  const RULE = 'Your cwd is the worktree; use paths relative to it';
+  it('CLAUDE.md and the parallel-dispatch skill state the rule', () => {
+    assert.ok(read('CLAUDE.md').includes(RULE));
+    assert.ok(read('skills/dispatching-parallel-agents/SKILL.md').includes(RULE));
+  });
+  it('implementer prompt no longer hands out a bare directory', () => {
+    const prompt = read('skills/subagent-driven-development/implementer-prompt.md');
+    assert.ok(!prompt.includes('Work from: [directory]'));
+    assert.ok(prompt.includes('use paths relative to it'));
+  });
+  for (const name of ['executor', 'deep-executor']) {
+    it(`agents/${name}.md knows the isolated-worktree error`, () => {
+      assert.match(read(`agents/${name}.md`), /isolated in the worktree/);
+    });
+  }
+  it('no prompt template carries an absolute Repo: line', () => {
+    const files = ['skills/subagent-driven-development/implementer-prompt.md', 'skills/dispatching-parallel-agents/SKILL.md', 'skills/code-review/references/reviewer-prompt.md'];
+    for (const f of files) assert.doesNotMatch(read(f), /^\s*Repo:\s*(\/|[A-Za-z]:)/m);
+  });
+});

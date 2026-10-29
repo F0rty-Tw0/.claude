@@ -36,7 +36,7 @@ Agent tool (subagent_type: "executor"):
     4. Stage the task's files by name. Commit only if the user authorized commits: [yes/no]
     5. Report back
 
-    Work from: [directory]
+    Work from: your cwd. In an isolated worktree your cwd is the worktree; use paths relative to it. [Slice mode only: the slice worktree's absolute path, per flow stacked.md.]
 
     **While you work:** Make routine judgment calls yourself and note them in your report.
     Stop and ask only when different readings of the task would lead to materially different work.
