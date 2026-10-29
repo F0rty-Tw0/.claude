@@ -46,7 +46,7 @@ Split → follow `references/stacking.md`. It builds the slices, then runs Steps
 
 Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`hooks/pr-proof-guard.js`) blocks `gh pr create` without it, or without a `Before:`/`After:` pair (or `| Before | After |` table) under it.
 
-1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. Every PR → before/after pair of the change running: screenshot for UI, CLI/console/HTTP output otherwise. Test output or the diff never counts as the pair (`references/proof.md`, Before/after pair).
+1. **Build proof** — `code-review` `proof` mode (`references/proof.md`, `templates/pr-proof.md`). Re-run tests **fresh**; reuse executor/deep-executor `Proof` blocks only as leads, never as output. Bug fix → base-failure check. Every PR → before/after pair of the change running: screenshot for UI, CLI/console/HTTP output otherwise. Test output or the diff never counts as the pair (`references/proof.md`, Before/after pair). UI PR → the After screenshot comes from a real run (skill:run) that performed the changed interaction.
 2. **Independent review** — `code-review` review mode on `<base>...HEAD`. It dispatches an independent reviewer; do not review your own work in this session. code-review reuses a stamp on HEAD and delta-reviews fix commits on top of one (code-review Step 1).
 3. **Verdict gate:**
    - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
