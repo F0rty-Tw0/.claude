@@ -7,6 +7,9 @@ import { describe, it } from 'node:test';
 const ROOT = join(import.meta.dirname, '..');
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
 const VERDICT_LINE = 'VERDICT: APPROVE | CHANGES | BLOCK';
+const VERDICT_SENTENCE = "The reply's first line is `VERDICT: APPROVE | CHANGES | BLOCK` (keep one word, e.g. `VERDICT: CHANGES`), before any heading.";
+const VERDICT_CARRIERS = ['agents/code-reviewer.md', 'agents/quality-reviewer.md', 'agents/security-reviewer.md', 'agents/performance-reviewer.md',
+  'skills/code-review/references/reviewer-prompt.md', 'skills/subagent-driven-development/spec-reviewer-prompt.md'];
 
 describe('2.1 reviewer VERDICT first line', () => {
   for (const name of ['code-reviewer', 'quality-reviewer', 'security-reviewer', 'performance-reviewer']) {
@@ -15,12 +18,30 @@ describe('2.1 reviewer VERDICT first line', () => {
       assert.match(read(`agents/${name}.md`), /Repro:/);
     });
   }
+  for (const name of ['quality-reviewer', 'security-reviewer', 'performance-reviewer']) {
+    it(`agents/${name}.md puts the VERDICT sentence above its first heading`, () => {
+      const block = read(`agents/${name}.md`).split('<Output_Format>')[1].split('</Output_Format>')[0];
+      const heading = block.search(/^\s*#/m);
+      const sentence = block.indexOf(VERDICT_SENTENCE);
+      assert.ok(sentence >= 0 && heading >= 0 && sentence < heading, `sentence at ${sentence}, heading at ${heading}`);
+    });
+  }
+  for (const file of VERDICT_CARRIERS) {
+    it(`${file} states the VERDICT sentence once, verbatim`, () => {
+      const text = read(file);
+      assert.ok(text.includes(VERDICT_SENTENCE));
+      assert.equal(text.split(VERDICT_LINE).length - 1, 1);
+    });
+  }
   it('code-review reviewer prompt demands it before the 7 sections', () => {
     assert.ok(read('skills/code-review/references/reviewer-prompt.md').includes(VERDICT_LINE));
     assert.match(read('skills/code-review/references/reviewer-prompt.md'), /Repro:.*BLOCK-KIND: proof|BLOCK-KIND: proof.*Repro:/s);
   });
   it('SDD spec reviewer prompt demands it', () => {
     assert.ok(read('skills/subagent-driven-development/spec-reviewer-prompt.md').includes(VERDICT_LINE));
+  });
+  it('SDD spec reviewer maps P0/P1 to BLOCK, as code-reviewer does', () => {
+    assert.ok(read('skills/subagent-driven-development/spec-reviewer-prompt.md').includes('❌ → CHANGES, or BLOCK for any P0/P1'));
   });
   it('critic keeps its own vocabulary', () => {
     const critic = read('agents/critic.md');
@@ -33,7 +54,8 @@ describe('2.2 long reports go to the scratchpad', () => {
   const agents = read('AGENTS.md');
   it('AGENTS.md carries the path contract and its fallback', () => {
     assert.ok(agents.includes('$CLAUDE_SCRATCHPAD/reports/<agent>-<slug>.md'));
-    assert.ok(agents.includes('/tmp/claude-reports/'));
+    assert.ok(agents.includes('none → your OS temp dir + `/claude-reports/`'));
+    assert.ok(!agents.includes('/tmp/claude-reports/'));
   });
   it('AGENTS.md drops the old overflow rules', () => {
     assert.ok(!agents.includes('No report files'));
@@ -47,6 +69,11 @@ describe('2.2 long reports go to the scratchpad', () => {
     assert.ok(prompt.includes('{SCRATCHPAD_DIR}'));
     assert.ok(prompt.includes('reports/code-reviewer-'));
   });
+  for (const file of ['skills/code-review/references/reviewer-prompt.md', 'skills/code-review/SKILL.md']) {
+    it(`${file} tells the caller to fill the scratchpad and budget placeholders`, () => {
+      assert.match(read(file), /Fill `\{SCRATCHPAD_DIR\}`.*`\{EXPECTED_MIN\}`.*default 20 min/);
+    });
+  }
   it('no agent report file sits in the repo root or reports/', () => {
     const stray = /^(code-reviewer|quality-reviewer|security-reviewer|performance-reviewer|critic|architect|debugger)-.+\.md$|\.report\.md$/;
     const dirs = ['.', 'reports'].filter((d) => existsSync(join(ROOT, d)));

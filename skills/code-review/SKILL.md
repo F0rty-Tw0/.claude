@@ -51,7 +51,7 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
 2. **Independence.** Dispatch the reviewer with `references/reviewer-prompt.md`. Always dispatch, even for small diffs, unless Step 1 reuses a stamp (case 1, unchanged material): a session that wrote any of the code is biased.
 
-   Pass only artifacts: diff, PR text, plan. Never pass your session's rationale, opinions, or a hint list. Exception: stamped independent-review findings, in delta and proof modes only.
+   Pass only artifacts: diff, PR text, plan. Fill `{SCRATCHPAD_DIR}` (your session scratchpad) and `{EXPECTED_MIN}` (default 20 min). Never pass your session's rationale, opinions, or a hint list. Exception: stamped independent-review findings, in delta and proof modes only.
 
 3. **Trunk escalation.** Check the trunk signals from `references/blast-radius.md` (greps and fan-in, not file names alone). If any shows, dispatch the `security-reviewer` and/or `performance-reviewer` in the **same message**, ≤3 agents total. `performance-reviewer` only when the diff touches a measured hot path, a bench or a budget test: elsewhere it repeated the code-reviewer's findings (4 of 5 passes in the week of 2026-10-19).
 

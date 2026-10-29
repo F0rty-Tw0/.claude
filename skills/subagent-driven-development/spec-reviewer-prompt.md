@@ -44,7 +44,7 @@ Agent tool (subagent_type: "code-reviewer"):
     - Did they solve the wrong problem?
     - Did they implement the right feature but wrong way?
 
-    The reply's first line is `VERDICT: APPROVE | CHANGES | BLOCK` (keep one word, e.g. `VERDICT: CHANGES`), before any heading. Open with `VERDICT: APPROVE | CHANGES | BLOCK` (✅ → APPROVE, ❌ → CHANGES; BLOCK when the task cannot be accepted at all).
+    The reply's first line is `VERDICT: APPROVE | CHANGES | BLOCK` (keep one word, e.g. `VERDICT: CHANGES`), before any heading. Maps from the report: ✅ → APPROVE; ❌ → CHANGES, or BLOCK for any P0/P1 or when the task cannot be accepted at all.
 
     Report:
     - ✅ Spec compliant (if everything matches after code inspection)
