@@ -65,6 +65,10 @@ const unquote = (s) => {
 };
 // Bash expands ~ from $HOME; os.homedir() reads USERPROFILE on Windows, which can differ.
 const expandHome = (p) => p.replace(/^~(?=\/|$)/, process.env.HOME || os.homedir());
+// ponytail: this is Claude Code's environment, which can differ from the Bash shell's; a variable set only inside the
+// shell stays unresolved and is rejected below.
+const expandEnv = (p) => p.replace(/\$(?:\{(\w+)\}|(\w+))/g, (m, a, b) => process.env[a ?? b] ?? m);
+const resolvePath = (p) => expandHome(expandEnv(p));
 
 const cd = masked.match(/^[ \t]*cd[ \t]+([^\s;&]+)[ \t]*(?:&&|;)/d);
 const baseDir = path.resolve(cwd, cd ? expandHome(unquote(cmd.slice(...cd.indices[1]))) : '.');
@@ -193,13 +197,14 @@ const check = (inv) => {
       return heading ? proofGap(raw.slice(heading.index + heading[1].length), attached) : NO_PROOF;
     }
   }
-  if (value.includes('$')) return `pr-proof-guard: cannot resolve body file path \`${value}\` (it expands a variable). Pass a literal path. ${HOW}`;
-  const file = path.resolve(baseDir, expandHome(value));
+  const resolved = expandEnv(value);
+  if (resolved.includes('$')) return `pr-proof-guard: cannot resolve body file path \`${value}\` (it expands a variable). Pass a literal path. ${HOW}`;
+  const file = path.resolve(baseDir, expandHome(resolved));
   // The hook runs before the command, so a body file created or changed earlier in this same command (>, tee, cp, mv,
   // sed -i, ...) is read stale or missing. ponytail: any earlier mention of the path counts, so a harmless
   // `ls pr.md && gh pr create -F pr.md` also blocks; the message says how to fix it, which beats a silent wrong allow.
   const mentions = [...masked.slice(0, scanEnd).matchAll(/[^\s;&|()<>`]+/dg)];
-  if (mentions.some((w) => path.resolve(baseDir, expandHome(unquote(cmd.slice(...w.indices[0])))) === file)) {
+  if (mentions.some((w) => path.resolve(baseDir, resolvePath(unquote(cmd.slice(...w.indices[0])))) === file)) {
     return `pr-proof-guard: this command touches ${file} before gh reads it. Write the body file in a separate Bash call — ` +
       'the hook reads it before your command runs.';
   }

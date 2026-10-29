@@ -22,9 +22,9 @@ writeFileSync(join(dir, 'sub', 'only-in-sub.md'), PROOF);
 after(() => rmSync(dir, { recursive: true, force: true }));
 
 // HOME points at the temp dir so `~/ok.md` resolves there; the hook input's cwd is the temp dir unless a case overrides it.
-const run = (command, { cwd = dir, spawnCwd } = {}) => spawnSync('node', [hook], {
+const run = (command, { cwd = dir, spawnCwd, env = {} } = {}) => spawnSync('node', [hook], {
   input: JSON.stringify({ tool_input: { command }, ...(cwd ? { cwd } : {}) }),
-  env: { ...process.env, HOME: dir },
+  env: { ...process.env, HOME: dir, ...env },
   cwd: spawnCwd,
   encoding: 'utf8',
 });
@@ -293,10 +293,28 @@ test('block message after a push carries no stale flag advice', () => {
   assert.doesNotMatch(stderr, /commit.guard|one-shot flag|re-touch/i);
 });
 
-test('blocks an unresolvable body file path and asks for a literal one', () => {
-  const { status, stderr } = run('gh pr create --body-file "$TMPDIR/b.md"');
+const ENVDIR = 'PRG_BODY_DIR';
+test('env-var body paths resolve like the shell would', () => {
+  for (const cmd of [
+    'gh pr create --body-file "$HOME/ok.md"',
+    `gh pr create --body-file \${${ENVDIR}}/ok.md`,
+    `gh pr create -F $${ENVDIR}/ok.md`,
+    'gh pr create --body "$(cat $HOME/ok.md)"',
+  ]) assert.strictEqual(run(cmd, { env: { [ENVDIR]: dir } }).status, ALLOW, cmd);
+});
+
+test('an env-var path to a body without proof still blocks on the proof, not the path', () => {
+  const { status, stderr } = run('gh pr create --body-file "$HOME/bad.md"');
   assert.strictEqual(status, BLOCK);
-  assert.match(stderr, /literal path/);
+  assert.doesNotMatch(stderr, /literal path/);
+});
+
+test('an unset variable or an unsupported form is still rejected with the existing message', () => {
+  for (const cmd of ['gh pr create --body-file "$PRG_NEVER_SET/b.md"', 'gh pr create --body-file "${HOME:-x}/ok.md"', 'gh pr create --body-file "$(pwd)/ok.md"']) {
+    const { status, stderr } = run(cmd);
+    assert.strictEqual(status, BLOCK, cmd);
+    assert.match(stderr, /cannot resolve body file path .* Pass a literal path\./, cmd);
+  }
 });
 
 test('block message points at heredoc / --body-file and the session cwd', () => {
