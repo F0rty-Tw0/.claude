@@ -56,6 +56,7 @@ const cases = [
   ['stdin body from < redirect', 'gh pr create -F - < ok.md', ALLOW],
   ['stdin body from here-string', "gh pr create -F - <<< '## Proof\nNo screenshots: cli\nBefore: a\nAfter: b'", ALLOW],
   ['relative body file after leading cd ;', 'cd sub; gh pr create --body-file only-in-sub.md', ALLOW],
+  ['relative body file after leading cd into an env-var dir', 'cd "$HOME/sub" && gh pr create --body-file only-in-sub.md', ALLOW],
   ['last body flag wins (proof last)', 'gh pr create --body nope --body "## Proof\nNo screenshots: cli\nBefore: a\nAfter: b\nok"', ALLOW],
   ['heredoc closed as EOF) on one line, judged by its text', "gh pr create --body \"$(cat <<'EOF'\nsum\n## Proof\nNo screenshots: cli\nBefore: a\nAfter: b\nok\nEOF)\"", ALLOW],
   ['escaped quote inside double quotes', 'echo "a \\" ; gh pr create --fill"', ALLOW],
@@ -212,6 +213,7 @@ const sameCallWrites = [
   ['mv onto the body file', 'mv bad.md ok.md; gh pr create --body-file ok.md'],
   ['sed -i on the body file', "sed -i 's/Proof/x/' ok.md && gh pr create -F ok.md"],
   ['clobber redirect', 'echo x >| ok.md && gh pr create -F ok.md'],
+  ['written through an env-var path', "cat > \"$HOME/ok.md\" <<'EOF'\n# t\nno proof now\nEOF\ngh pr create -F ~/ok.md"],
 ];
 for (const [name, command] of sameCallWrites) {
   test(`blocks a body file written in the same call: ${name}`, () => {
@@ -314,6 +316,40 @@ test('an unset variable or an unsupported form is still rejected with the existi
     const { status, stderr } = run(cmd);
     assert.strictEqual(status, BLOCK, cmd);
     assert.match(stderr, /cannot resolve body file path .* Pass a literal path\./, cmd);
+  }
+});
+
+const UNRESOLVED = /cannot resolve body file path .* Pass a literal path\./;
+test('a variable the command assigns before gh holds the shell\'s value, so the path is rejected', () => {
+  for (const cmd of [
+    `export PRG_BODY=${badBody} && gh pr create --title t --body-file "$PRG_BODY"`,
+    `PRG_BODY=${badBody}; gh pr create -F $PRG_BODY`,
+    `PRG_BODY+=.x; gh pr create -F $PRG_BODY`,
+    `local PRG_BODY=${badBody}; gh pr create -F "$PRG_BODY"`,
+    `declare -x PRG_BODY="${badBody}"; gh pr create -F "\${PRG_BODY}"`,
+    `typeset PRG_BODY=${badBody}; gh pr create -F "$PRG_BODY"`,
+    `for PRG_BODY in ${badBody}; do gh pr create -F "$PRG_BODY"; done`,
+    'read -r PRG_BODY < list.txt && gh pr create -F "$PRG_BODY"',
+    'unset PRG_BODY; gh pr create -F "$PRG_BODY"',
+    `HOME=${dir}/sub; gh pr create -F ~/ok.md`,
+  ]) {
+    const { status, stderr } = run(cmd, { env: { PRG_BODY: okBody } });
+    assert.strictEqual(status, BLOCK, cmd);
+    assert.match(stderr, UNRESOLVED, cmd);
+  }
+});
+
+test('a prefix assignment on gh itself or to another variable leaves the hook value in place', () => {
+  for (const cmd of ['PRG_BODY=x gh pr create -F "$PRG_BODY"', 'PRG_OTHER=x; gh pr create -F "$PRG_BODY"']) {
+    assert.strictEqual(run(cmd, { env: { PRG_BODY: okBody } }).status, ALLOW, cmd);
+  }
+});
+
+test('$PWD and $OLDPWD follow the session cwd, not the hook process, so they are rejected', () => {
+  for (const cmd of ['gh pr create -F "$PWD/ok.md"', 'gh pr create --body-file ${OLDPWD}/ok.md']) {
+    const { status, stderr } = run(cmd, { env: { PWD: dir, OLDPWD: dir } });
+    assert.strictEqual(status, BLOCK, cmd);
+    assert.match(stderr, UNRESOLVED, cmd);
   }
 });
 
