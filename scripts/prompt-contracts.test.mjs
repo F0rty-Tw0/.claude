@@ -28,3 +28,29 @@ describe('2.1 reviewer VERDICT first line', () => {
     assert.ok(!critic.includes('VERDICT: APPROVE'));
   });
 });
+
+describe('2.2 long reports go to the scratchpad', () => {
+  const agents = read('AGENTS.md');
+  it('AGENTS.md carries the path contract and its fallback', () => {
+    assert.ok(agents.includes('$CLAUDE_SCRATCHPAD/reports/<agent>-<slug>.md'));
+    assert.ok(agents.includes('/tmp/claude-reports/'));
+  });
+  it('AGENTS.md drops the old overflow rules', () => {
+    assert.ok(!agents.includes('No report files'));
+    assert.ok(!agents.includes('SendMessage parts'));
+  });
+  it('CLAUDE.md tells the caller what a path reply means', () => {
+    assert.ok(read('CLAUDE.md').includes('reports/<agent>-<slug>.md'));
+  });
+  it('code-review reviewer prompt passes the scratchpad dir', () => {
+    const prompt = read('skills/code-review/references/reviewer-prompt.md');
+    assert.ok(prompt.includes('{SCRATCHPAD_DIR}'));
+    assert.ok(prompt.includes('reports/code-reviewer-'));
+  });
+  it('no agent report file sits in the repo root or reports/', () => {
+    const stray = /^(code-reviewer|quality-reviewer|security-reviewer|performance-reviewer|critic|architect|debugger)-.+\.md$|\.report\.md$/;
+    const dirs = ['.', 'reports'].filter((d) => existsSync(join(ROOT, d)));
+    const hits = dirs.flatMap((d) => readdirSync(join(ROOT, d)).filter((f) => stray.test(f)));
+    assert.deepEqual(hits, []);
+  });
+});

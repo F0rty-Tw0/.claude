@@ -25,6 +25,7 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 - Test command: {TEST_COMMAND_OR_FIND_IT}
 - Mode: {full | delta | proof}
 - Prior findings (stamped independent review; claims, verify each): {STAMP_PATH_OR_NONE}
+- Scratchpad dir: {SCRATCHPAD_DIR}
 
 ## Mode
 | Mode | Diff | What to do | Output |
@@ -46,6 +47,7 @@ state corruption, unhandled edge cases, fake proof, and vanity tests — and pro
 - Report pre-existing issues separately, labeled pre-existing.
 - Where the spec is silent, judge by what a reasonable user expects. That expectation is a requirement; silence isn't permission.
 - No subagents. No commits, pushes, PR comments, or other outward actions.
+- Report over ~5,000 characters → write it to `$CLAUDE_SCRATCHPAD/reports/code-reviewer-<slug>.md` ({SCRATCHPAD_DIR}) and reply with the `VERDICT:` line, a summary and the path. The caller reads the file before stamping.
 
 ## Output — exactly this format (proof mode: sections 5 and 7 only)
 The reply's first line is `VERDICT: APPROVE | CHANGES | BLOCK` (keep one word, e.g. `VERDICT: CHANGES`), before any heading. Open the reply with `VERDICT: APPROVE | CHANGES | BLOCK` (APPROVE — * → APPROVE, BLOCK — * → BLOCK from section 7), then the sections. Every blocking finding carries a `Repro:` line: the command you ran and its output, or the file:line trace. A finding without one is a Note. When a BLOCK rests only on missing proof (the code itself looks correct), line 2 is `BLOCK-KIND: proof`; otherwise `BLOCK-KIND: defect`.
