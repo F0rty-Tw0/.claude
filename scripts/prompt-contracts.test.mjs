@@ -167,3 +167,49 @@ describe('2.5 cold-reader agent', () => {
     for (const f of files) assert.doesNotMatch(read(f), /(?<![\w.-])\/home\/[a-z0-9_-]+\/|[A-Z]:\\+Users\\/i);
   });
 });
+
+describe('Task 3.1 review-round budget', () => {
+  it('critic: second dispatch only after REJECT', () => {
+    assert.match(read('agents/critic.md'), /again only after REJECT, never a third time/);
+  });
+  it('plan: critic loops capped at 2, no old caps left', () => {
+    const t = read('skills/plan/SKILL.md');
+    assert.match(t, /max 2 rounds; Critic runs again only after REJECT/);
+    assert.match(t, /make one re-dispatch/);
+    assert.match(t, /stop after 2 Planner\/Architect\/Critic iterations/);
+    assert.doesNotMatch(t, /max 5 rounds|up to 3 rounds|after 5 rounds|stop after 5/);
+  });
+  it('brainstorming: critic step gets one re-dispatch', () => {
+    const step = read('skills/brainstorming/SKILL.md').split('\n').find((l) => l.startsWith('11. **Critic check.**'));
+    assert.match(step, /make one re-dispatch/);
+    assert.doesNotMatch(step, /3 rounds/);
+  });
+  it('code-review: convention-only gate skips without waiting', () => {
+    const t = read('skills/code-review/SKILL.md');
+    assert.match(t, /node ~\/\.claude\/scripts\/convention-only\.mjs <range>/);
+    assert.match(t, /Review skipped: convention-only diff/);
+    assert.match(t, /write no stamp/);
+    assert.match(t, /The caller waits for no reviewer/);
+  });
+  it('code-review: delta budget on sonnet, 2 rounds, BLOCK stops', () => {
+    const t = read('skills/code-review/SKILL.md');
+    assert.match(t, /\*\*Delta budget\.\*\*/);
+    assert.match(t, /model: sonnet/);
+    assert.match(t, /at most 2 delta rounds/);
+    assert.match(t, /A BLOCK in delta round 2 stops for the user/);
+    assert.match(read('skills/code-review/references/babysit.md'), /Delta budget/);
+  });
+  it('open-pr: delta cap, BLOCK stops, skipped review continues', () => {
+    const t = read('skills/open-pr/SKILL.md');
+    assert.match(t, /At most 2 delta rounds/);
+    assert.match(t, /A BLOCK in delta round 2 stops for the user/);
+    assert.match(t, /`Review skipped: convention-only diff` → continue as APPROVE/);
+    assert.doesNotMatch(t, /introduced by the previous fix/);
+  });
+  it('SDD: convention-only diff skips code-review, keeps quality-reviewer', () => {
+    const t = read('skills/subagent-driven-development/SKILL.md');
+    assert.match(t, /Convention-only gate/);
+    assert.match(t, /convention-only\.mjs <plan-base>\.\.HEAD/);
+    assert.match(t, /the `quality-reviewer` pass stays/);
+  });
+});
