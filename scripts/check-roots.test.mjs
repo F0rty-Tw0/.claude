@@ -1,16 +1,21 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 
 const SCRIPTS = ['check-skill-refs.js', 'check-portability.js'];
+// Without GIT_* vars: under a git hook, GIT_INDEX_FILE or GIT_DIR would point the fixture's git at the outer repo.
+const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+const dirs = [];
+const tempDir = (prefix) => { const dir = mkdtempSync(join(tmpdir(), prefix)); dirs.push(dir); return dir; };
+after(() => dirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
 const GIT = ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false'];
 
 // A throwaway checkout holding copies of both scripts; only a script that resolves its own checkout can see it.
 function fixture({ skillText = 'ok\n', agentsText = 'ok\n' }) {
-  const repo = mkdtempSync(join(tmpdir(), 'check-roots-'));
+  const repo = tempDir('check-roots-');
   mkdirSync(join(repo, 'scripts'));
   mkdirSync(join(repo, 'skills', 'a'), { recursive: true });
   mkdirSync(join(repo, 'agents'));
@@ -18,15 +23,16 @@ function fixture({ skillText = 'ok\n', agentsText = 'ok\n' }) {
   writeFileSync(join(repo, 'skills', 'a', 'SKILL.md'), skillText);
   writeFileSync(join(repo, 'agents', 'x.md'), 'x\n');
   writeFileSync(join(repo, 'AGENTS.md'), agentsText);
-  execFileSync('git', ['init', '-q'], { cwd: repo });
-  execFileSync('git', [...GIT, 'add', '.'], { cwd: repo });
-  execFileSync('git', [...GIT, 'commit', '-qm', 'fixture'], { cwd: repo });
+  execFileSync('git', ['init', '-q'], { cwd: repo, env });
+  execFileSync('git', [...GIT, 'add', '.'], { cwd: repo, env });
+  execFileSync('git', [...GIT, 'commit', '-qm', 'fixture'], { cwd: repo, env });
   return repo;
 }
 
 function run(repo, script) {
-  const home = mkdtempSync(join(tmpdir(), 'check-roots-home-'));
-  return spawnSync('node', [join(repo, 'scripts', script)], { cwd: repo, env: { ...process.env, HOME: home, USERPROFILE: home }, encoding: 'utf8' });
+  // cwd is the empty HOME, not the repo: only a root resolved from the script's own path finds the fixture.
+  const home = tempDir('check-roots-home-');
+  return spawnSync('node', [join(repo, 'scripts', script)], { cwd: home, env: { ...env, HOME: home, USERPROFILE: home }, encoding: 'utf8' });
 }
 
 describe('check scripts', () => {
