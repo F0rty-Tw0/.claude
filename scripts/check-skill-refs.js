@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const REPO = path.join(require('os').homedir(), '.claude');
+const REPO = path.resolve(__dirname, '..');
 const SCAN = ['skills', 'agents', 'AGENTS.md', 'CLAUDE.md', 'scripts/skill-eval-spec.md'];
 // Test data and vendored/synced content quote names that are not live references.
 const SKIP = /\/evals\/|\/examples\/|^skills\/synced\//;

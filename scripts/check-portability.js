@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const REPO = path.join(require('os').homedir(), '.claude');
+const REPO = path.resolve(__dirname, '..');
 const SCAN_DIRS = ['settings.json', 'settings.local.json', 'CLAUDE.md', 'AGENTS.md', 'skills', 'agents', 'copilot', '.omp', 'hooks', 'scripts'];
 const PATTERNS = [
   // Lookbehind: only a path root counts, so relative segments like `e2e/home/` or `../users/` pass.
