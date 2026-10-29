@@ -47,6 +47,15 @@
             "command": "node $HOME/.claude/hooks/pr-proof-guard.js"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/cpu-guard.js"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
