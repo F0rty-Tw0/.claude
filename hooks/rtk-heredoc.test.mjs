@@ -27,7 +27,7 @@ const hookDir = fileURLToPath(new URL('.', import.meta.url));
 const EZA_ALIASES = "alias ls='eza --icons --group-directories-first'\nalias ll='eza -alF --icons --group-directories-first'\nalias la='eza -A --icons'\nalias l='eza -CF --icons'\n";
 // The recommended replacement, read from the ```zsh block under RTK.md "## Heredocs" so the doc and the test cannot drift:
 // icons on a terminal, plain coreutils everywhere else.
-const rtkDoc = readFileSync(new URL('../RTK.md', import.meta.url), 'utf8');
+const rtkDoc = readFileSync(new URL('../RTK.md', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const SAFE_ALIASES = rtkDoc.slice(rtkDoc.indexOf('\n## Heredocs\n')).match(/\n```zsh\n([\s\S]*?)```/)[1];
 
 const work = mkdtempSync(join(tmpdir(), 'rtk-heredoc-'));

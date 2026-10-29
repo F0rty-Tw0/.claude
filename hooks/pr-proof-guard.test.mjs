@@ -331,12 +331,20 @@ test('a variable the command assigns before gh holds the shell\'s value, so the 
     `for PRG_BODY in ${badBody}; do gh pr create -F "$PRG_BODY"; done`,
     'read -r PRG_BODY < list.txt && gh pr create -F "$PRG_BODY"',
     'unset PRG_BODY; gh pr create -F "$PRG_BODY"',
+    `printf -v PRG_BODY %s ${badBody}; gh pr create -F "$PRG_BODY"`,
+    'mapfile -t PRG_BODY < list.txt; gh pr create -F "$PRG_BODY"',
     `HOME=${dir}/sub; gh pr create -F ~/ok.md`,
   ]) {
     const { status, stderr } = run(cmd, { env: { PRG_BODY: okBody } });
     assert.strictEqual(status, BLOCK, cmd);
     assert.match(stderr, UNRESOLVED, cmd);
   }
+});
+
+test('a long command full of $VAR words stays fast (assignment scan is linear)', () => {
+  const started = Date.now();
+  run(`read -r X < f; ls ${'$HOME/x '.repeat(30000)}; gh pr create -F ok.md`);
+  assert.ok(Date.now() - started < 1500, `took ${Date.now() - started} ms`);
 });
 
 test('a prefix assignment on gh itself or to another variable leaves the hook value in place', () => {

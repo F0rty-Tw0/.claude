@@ -66,10 +66,20 @@ const unquote = (s) => {
 // Bash expands ~ from $HOME; os.homedir() reads USERPROFILE on Windows, which can differ.
 const expandHome = (p) => p.replace(/^~(?=\/|$)/, process.env.HOME || os.homedir());
 // The shell, not this hook, owns $PWD / $OLDPWD (they follow the session's cd) and any variable the command assigns
-// before `end` (NAME=, NAME+=, export/local/declare/typeset NAME=, for NAME in, read/unset … NAME).
+// before `end` (NAME=, NAME+=, export/local/declare/typeset NAME=, for NAME in, read/mapfile/printf -v/unset … NAME).
 // ponytail: `source`, `eval` and shell functions can assign too and are not seen.
-const shellOwned = (name, end) => name === 'PWD' || name === 'OLDPWD' ||
-  new RegExp(String.raw`(?:^|[\s;&|(\`{])${name}\+?=|\bfor[ \t]+${name}\b|\b(?:read|unset)\b[^\n;&|]*[ \t]${name}\b`).test(masked.slice(0, end));
+// The first assignment's end is found once per name, so a long command with many `$VAR` words stays linear.
+const assignedAt = new Map();
+const shellOwned = (name, end) => {
+  if (name === 'PWD' || name === 'OLDPWD') return true;
+  if (!assignedAt.has(name)) {
+    const m = new RegExp(String.raw`(?:^|[\s;&|(\`{])${name}\+?=|\b(?:for|select)[ \t]+${name}\b|` +
+      String.raw`\b(?:read|readarray|mapfile|printf|getopts|unset)\b[^\n;&|]*?[ \t]${name}\b`).exec(masked);
+    assignedAt.set(name, m ? m.index + m[0].length : Infinity);
+  }
+
+  return assignedAt.get(name) <= end;
+};
 // ponytail: this is Claude Code's environment, which can differ from the Bash shell's; a variable set only inside the
 // shell, or owned by it, stays unresolved and is rejected below.
 const expandEnv = (p, end) => p.replace(/\$(?:\{(\w+)\}|(\w+))/g, (m, a, b) => (shellOwned(a ?? b, end) ? m : process.env[a ?? b] ?? m));
