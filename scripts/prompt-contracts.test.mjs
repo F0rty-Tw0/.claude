@@ -31,6 +31,7 @@ describe('2.1 reviewer VERDICT first line', () => {
       const text = read(file);
       assert.ok(text.includes(VERDICT_SENTENCE));
       assert.equal(text.split(VERDICT_LINE).length - 1, 1);
+      assert.ok(!text.includes('Open the reply with'), 'a paraphrased second VERDICT rule');
     });
   }
   it('code-review reviewer prompt demands it before the 7 sections', () => {
@@ -41,7 +42,9 @@ describe('2.1 reviewer VERDICT first line', () => {
     assert.ok(read('skills/subagent-driven-development/spec-reviewer-prompt.md').includes(VERDICT_LINE));
   });
   it('SDD spec reviewer maps P0/P1 to BLOCK, as code-reviewer does', () => {
-    assert.ok(read('skills/subagent-driven-development/spec-reviewer-prompt.md').includes('❌ → CHANGES, or BLOCK for any P0/P1'));
+    const spec = read('skills/subagent-driven-development/spec-reviewer-prompt.md');
+    assert.ok(spec.includes('❌ → CHANGES, or BLOCK for any P0/P1'));
+    assert.ok(spec.includes('P0-P3 severity'), 'the report must carry the severity the mapping reads');
   });
   it('critic keeps its own vocabulary', () => {
     const critic = read('agents/critic.md');
@@ -69,11 +72,12 @@ describe('2.2 long reports go to the scratchpad', () => {
     assert.ok(prompt.includes('{SCRATCHPAD_DIR}'));
     assert.ok(prompt.includes('reports/code-reviewer-'));
   });
-  for (const file of ['skills/code-review/references/reviewer-prompt.md', 'skills/code-review/SKILL.md']) {
-    it(`${file} tells the caller to fill the scratchpad and budget placeholders`, () => {
-      assert.match(read(file), /Fill `\{SCRATCHPAD_DIR\}`.*`\{EXPECTED_MIN\}`.*default 20 min/);
-    });
-  }
+  it('the reviewer template alone says how to fill its placeholders; code-review points at it', () => {
+    assert.match(read('skills/code-review/references/reviewer-prompt.md'), /Fill `\{SCRATCHPAD_DIR\}`.*`\{EXPECTED_MIN\}`.*default 20 min/);
+    const skill = read('skills/code-review/SKILL.md');
+    assert.ok(skill.includes("fill the template's placeholders"));
+    assert.ok(!skill.includes('default 20 min'), 'the budget default lives in one place');
+  });
   it('no agent report file sits in the repo root or reports/', () => {
     const stray = /^(code-reviewer|quality-reviewer|security-reviewer|performance-reviewer|critic|architect|debugger)-.+\.md$|\.report\.md$/;
     const dirs = ['.', 'reports'].filter((d) => existsSync(join(ROOT, d)));
@@ -95,7 +99,7 @@ describe('2.3 worktree-safe briefs', () => {
   });
   it('implementer prompt names both worktree modes in Work from', () => {
     const prompt = read('skills/subagent-driven-development/implementer-prompt.md');
-    assert.ok(prompt.includes('Work from: [isolated worktree: your cwd; use paths relative to it | slice mode: <absolute slice worktree path>, use absolute paths under it]'));
+    assert.ok(prompt.includes('Work from: [isolated worktree: your cwd; use paths relative to it | slice mode: <absolute slice worktree path>, use absolute paths under it and run Bash as `cd <path> && …`]'));
   });
   for (const name of ['executor', 'deep-executor']) {
     it(`agents/${name}.md knows the isolated-worktree error`, () => {

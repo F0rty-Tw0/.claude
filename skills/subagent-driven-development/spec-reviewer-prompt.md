@@ -48,5 +48,5 @@ Agent tool (subagent_type: "code-reviewer"):
 
     Report:
     - ✅ Spec compliant (if everything matches after code inspection)
-    - ❌ Issues found: [list specifically what's missing or extra, with file:line references]
+    - ❌ Issues found: [list specifically what's missing or extra, each with file:line and P0-P3 severity]
 ```
