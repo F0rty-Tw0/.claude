@@ -22,3 +22,14 @@ test('Task 3.3 proof.md: UI proof is a real run that performs the interaction', 
 test('Task 3.3 open-pr: UI PR After screenshot comes from a real run', () => {
   assert.match(repoText('skills/open-pr/SKILL.md'), /UI PR → the After screenshot comes from a real run \(skill:run\)/);
 });
+test('Task 3.4 handoff: blocked section links the digest instead of re-listing', () => {
+  const t = repoText('skills/handoff/SKILL.md');
+  assert.match(t, /Sign-offs: ~\/\.claude\/handoffs\/<project>-SIGNOFFS\.md \(<n> open\)/);
+  assert.match(t, /Never re-list carried ❓ or sign-off items/);
+});
+test('Task 3.4 handoff: digest rule defines the line format and the write exception', () => {
+  const t = repoText('skills/handoff/SKILL.md');
+  assert.match(t, /- \[ \] <id> · first seen <YYYY-MM-DD> · <what to verify> · <command or path>/);
+  assert.match(t, /- \[x\] <id> · closed <YYYY-MM-DD> · <how>/);
+  assert.match(t, /Only the step-1 checks, the Write and the digest update/);
+});
