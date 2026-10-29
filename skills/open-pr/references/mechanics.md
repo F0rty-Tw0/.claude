@@ -48,7 +48,7 @@ Any output means a file was dropped or misplaced. Fix it before pushing.
 ## Push + open (bottom-up)
 
 ```bash
-git push -u origin <stack>/1-<name> <stack>/2-<name> <stack>/3-<name>     # one call, one flag
+git push -u origin <stack>/1-<name> <stack>/2-<name> <stack>/3-<name>     # one call
 ```
 ```bash
 gh pr create --base <default>         --head <stack>/1-<name> --title "…" --body-file <scratch>/pr1.md   # separate call
