@@ -24,16 +24,22 @@ const reads = [
   ['sudo cat a.ts', ['a.ts']],
   ['LC_ALL=C cat a.ts', ['a.ts']],
   ['cat a.ts; head a.ts', ['a.ts']],
+  ['cat a.ts >&2', ['a.ts']],
+  ['head -c 1k a.ts', ['a.ts']],
+  ['cat a.ts # c\nhead b.ts', ['a.ts', 'b.ts']],
+  ['cat a.ts >; cat b.ts', ['b.ts']],
 ];
 const notReads = [
   "cat <<EOF > file\nhi\nEOF", "cat <<'EOF' > a.ts\nhi\nEOF", "cat <<EOF\nhi\nEOF",
   "cat <<-EOF > run.sh\n\tcat config.json\n\tEOF",
   'cat a.ts > b.ts', 'cat a.ts >> b.ts', 'cat a.ts 1> b.ts', 'cat a.ts &> b.ts', 'cat a.ts >| b.ts',
+  'cat a.ts >& out.txt', 'cat 3<a.ts',
   "sed -i 's/a/b/' a.ts", 'echo hi | tee a.ts',
   'git log | head -5', 'ls -la', 'cat -',
 ];
 for (const [cmd, want] of reads) test(`reads: ${JSON.stringify(cmd)}`, () => assert.deepEqual(readTargets(cmd), want));
 for (const cmd of notReads) test(`no hint: ${JSON.stringify(cmd)}`, () => assert.deepEqual(readTargets(cmd), []));
+test('a huge command does not overflow the stack', () => assert.equal(readTargets(`cat ${'a '.repeat(5e5)}`).length, 1));
 
 test('CLI never blocks and speaks only when something was read', () => {
   const run = (command) => spawnSync('node', [new URL('./read-hint.js', import.meta.url).pathname],

@@ -29,7 +29,7 @@ function segments(cmd) {
     else current.words.push(word);
     word = null;
   };
-  const endSegment = () => { endWord(); result.push(current); current = { words: [], redirect: false }; };
+  const endSegment = () => { endWord(); dropNext = false; result.push(current); current = { words: [], redirect: false }; };
 
   for (let i = 0; i < cmd.length; i += 1) {
     const ch = cmd[i];
@@ -48,7 +48,9 @@ function segments(cmd) {
       else word = null;
       const op = cmd.slice(i).match(/^(<<<|<<-?|<>|<&|>>|>&|>\||<|>)/)[0];
       i += op.length - 1;
-      if (op[0] === '>' && op !== '>&' && (fd ?? '1') === '1') current.redirect = true;
+      // `>&2` duplicates a descriptor; `>& file` is bash's spelling of `&> file`.
+      const dup = op === '>&' && /^\s*(\d+|-)(?=$|[\s;&|<>)])/.test(cmd.slice(i + 1));
+      if (op[0] === '>' && !dup && (fd ?? '1') === '1') current.redirect = true;
       dropNext = op !== '<' || (fd ?? '0') !== '0';
       continue;
     }
@@ -90,7 +92,7 @@ function readTargets(cmd) {
     }
     const inPlace = rest[0] === 'sed' && rest.some((a) => /^-[a-zA-Z]*i/.test(a) || a.startsWith('--in-place'));
     if (!READERS.has(rest[0]) || redirect || inPlace) continue;
-    found.push(...operands(rest));
+    for (const file of operands(rest)) found.push(file);
   }
 
   return [...new Set(found)];
