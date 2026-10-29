@@ -57,6 +57,7 @@ Grug governs implementation choices. Also:
 
 - DRY after the second repeat, unless the usages will likely diverge.
 - Validate at boundaries (user input, external APIs, I/O, deserialization); trust internal code.
+- A Bash `cat`/`sed`/`head`/`tail` is not a Read: Edit and Write need the Read tool on that file first (`hooks/read-hint.js` nudges).
 - Root-cause fixes by default; a workaround needs a tracked ticket and expiry.
 - New production behavior needs tests; throwaway scripts don't.
 - **(main session)** A new feature or a change to existing behavior goes through skill:brainstorming before any code, at the short pass when it is small and scoped. Typos, config tweaks, version bumps, formatter-only diffs, and bug fixes skip it.
