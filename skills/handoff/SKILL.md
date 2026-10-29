@@ -11,7 +11,7 @@ Write a handoff for a session that has none of this conversation. Whatever it le
 
 ## Check, then write
 
-1. Run `date -u +%FT%TZ` for the written time. In each repo touched this session, run `git status --short` and `git log --oneline -5`, so the git state is checked rather than recalled.
+1. Run `date -u +%FT%TZ` for the written time. In each repo touched this session, run `git status --short` and `git log --oneline -5`, so the git state is checked rather than recalled. Read `~/.claude/handoffs/<project>-SIGNOFFS.md` if it exists; the first write creates it.
 2. Write the file to `~/.claude/handoffs/<YYYY-MM-DD-HHmm>-<slug>.md`, slug being 2-4 words of the goal. Every section appears, with "nothing" if that is the answer:
 
 ```markdown
@@ -50,7 +50,7 @@ Rules:
 - One-off approval does not carry over. Mark each push, PR, deploy, or other outward-facing step in Next step "confirm with the user first", even if they asked for it here: the fresh session reads the handoff as permission and would act without asking. Exception: a standing grant the user gave for the run (recorded in a memory file) does carry over. Name that memory next to the step, quote the user's grant words under Decisions, and write no confirm step for actions it covers.
 - If `$ARGUMENTS` is not empty, the user asked to stress it; give it room — except the agent lists, the `[handoff-trigger:compact]` marker and the keepalive note, which are data, not emphasis.
 - When the arguments list agents, copy them into Background agents verbatim; the next session has no other record of them.
-- Sign-off digest: carried ❓ and sign-off lists (ids like G1-G19, F1-F46) live in `~/.claude/handoffs/<project>-SIGNOFFS.md`, `<project>` being the repo root's basename. Read it in step 1; append this session's new items as `- [ ] <id> · first seen <YYYY-MM-DD> · <what to verify> · <command or path>`; turn closed ones into `- [x] <id> · closed <YYYY-MM-DD> · <how>` and drop last handoff's closed lines. The handoff links the file and does not repeat its items.
+- Sign-off digest: carried ❓ and sign-off lists (ids like G1-G19, F1-F46) live in `~/.claude/handoffs/<project>-SIGNOFFS.md`, `<project>` being `basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`, the same name for every worktree of a repo. Read it in step 1; append this session's new items as `- [ ] <id> · first seen <YYYY-MM-DD> · <what to verify> · <command or path>`; turn closed ones into `- [x] <id> · closed <YYYY-MM-DD> · <how>` and drop last handoff's closed lines. The handoff links the file and does not repeat its items.
 - Only the step-1 checks, the Write and the digest update. A handoff that starts new work defeats its purpose.
 
 ## Finish
