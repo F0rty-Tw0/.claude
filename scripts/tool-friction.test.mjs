@@ -1,7 +1,7 @@
 // Run: node --test scripts/tool-friction.test.mjs
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
@@ -41,6 +41,16 @@ describe('tool-friction', () => {
     assert.deepEqual(got.denials, [{ reason: 'Interfere With Workloads', tool: 'Bash', head: 'git log', count: 1 }]);
   });
 
+  it('tool-friction skips a transcript that vanished after listing and still reports the rest', { skip: !py }, () => {
+    const dir = mkdtempSync(join(tmpdir(), 'tool-friction-gone-'));
+    after(() => rmSync(dir, { recursive: true, force: true }));
+    symlinkSync(join(dir, 'missing.jsonl'), join(dir, 'dangling.jsonl'));
+    writeFileSync(join(dir, 'ok.jsonl'), JSON.stringify(use('a', 'Bash', { command: 'sleep 60' })));
+    const out = spawnSync('python3', ['-I', '-B', script, '--root', dir], { encoding: 'utf8' });
+    assert.equal(out.status, 0, out.stderr);
+    assert.equal(JSON.parse(out.stdout).sleep_blocks, 0);
+  });
+
   it('Task 6.6 AGENTS.md: waiting uses run_in_background or Monitor with its required fields', () => {
     const agents = read('AGENTS.md');
     assert.match(agents, /a foreground `sleep` is blocked by the harness/);
@@ -49,6 +59,7 @@ describe('tool-friction', () => {
   });
 
   it('Task 6.6 settings.json allowlist holds read-only prefixes only', () => {
+    // Vacuous while permissions.allow is []: the loop body never runs. It starts guarding on the first rule added.
     const allow = JSON.parse(read('settings.json')).permissions.allow;
     const readOnly = /^Bash\((git (log|status|diff|show|branch|rev-parse|ls-files|blame)|gh (pr (view|checks|list|status)|run (list|view))|ls|wc|rg|grep)\b/;
     const destructive = /\b(rm|mv|push|merge|reset|checkout|clean|kill|sudo|-delete)\b/;

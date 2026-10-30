@@ -29,7 +29,11 @@ def scan(root):
     denials = Counter()
     for path in Path(root).rglob("*.jsonl"):
         uses = {}
-        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            continue
+        for line in lines:
             try:
                 content = json.loads(line)["message"]["content"]
             except (ValueError, KeyError, TypeError):
