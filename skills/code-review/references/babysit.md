@@ -70,7 +70,7 @@ A tick runs on a watcher exit or a fallback wake.
    ```
    For the checked-out PR, local HEAD differs from `headRefOid` → report "local checkout differs from PR head (unpulled or unpushed commits)" and apply no fixes this tick. Other PRs in a stack are report-only anyway.
 2. **Pending local fixes not yet pushed?** → do not stack more. Report "N fixes waiting in working tree since <time>" and go to step 7.
-3. **New commits since last tick?** → `git fetch origin` first, then run a **delta review** (SKILL.md review mode, scoped to `git diff <last-reviewed-sha>..<headRefOid>` — the remote head, not the local checkout, which may be stale). Record the new reviewed SHA in the tick summary.
+3. **New commits since last tick?** → `git fetch origin` first, then run a **delta review** on `model: sonnet` (code-review Delta budget) (SKILL.md review mode, scoped to `git diff <last-reviewed-sha>..<headRefOid>` — the remote head, not the local checkout, which may be stale). Record the new reviewed SHA in the tick summary.
 4. **Failing checks** → for each: `gh run view <run-id> --log-failed | tail -100`. Classify; a `cancel` bucket with no `fail` is Infra flake. Ping once per head + failure signature (`pinged`):
 
 | Class | Examples | Action |

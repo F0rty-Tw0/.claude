@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const hook = fileURLToPath(new URL('./pr-proof-guard.js', import.meta.url));
@@ -22,9 +22,9 @@ writeFileSync(join(dir, 'sub', 'only-in-sub.md'), PROOF);
 after(() => rmSync(dir, { recursive: true, force: true }));
 
 // HOME points at the temp dir so `~/ok.md` resolves there; the hook input's cwd is the temp dir unless a case overrides it.
-const run = (command, { cwd = dir, spawnCwd } = {}) => spawnSync('node', [hook], {
+const run = (command, { cwd = dir, spawnCwd, env = {} } = {}) => spawnSync('node', [hook], {
   input: JSON.stringify({ tool_input: { command }, ...(cwd ? { cwd } : {}) }),
-  env: { ...process.env, HOME: dir },
+  env: { ...process.env, HOME: dir, ...env },
   cwd: spawnCwd,
   encoding: 'utf8',
 });
@@ -56,6 +56,7 @@ const cases = [
   ['stdin body from < redirect', 'gh pr create -F - < ok.md', ALLOW],
   ['stdin body from here-string', "gh pr create -F - <<< '## Proof\nNo screenshots: cli\nBefore: a\nAfter: b'", ALLOW],
   ['relative body file after leading cd ;', 'cd sub; gh pr create --body-file only-in-sub.md', ALLOW],
+  ['relative body file after leading cd into an env-var dir', 'cd "$HOME/sub" && gh pr create --body-file only-in-sub.md', ALLOW],
   ['last body flag wins (proof last)', 'gh pr create --body nope --body "## Proof\nNo screenshots: cli\nBefore: a\nAfter: b\nok"', ALLOW],
   ['heredoc closed as EOF) on one line, judged by its text', "gh pr create --body \"$(cat <<'EOF'\nsum\n## Proof\nNo screenshots: cli\nBefore: a\nAfter: b\nok\nEOF)\"", ALLOW],
   ['escaped quote inside double quotes', 'echo "a \\" ; gh pr create --fill"', ALLOW],
@@ -212,6 +213,7 @@ const sameCallWrites = [
   ['mv onto the body file', 'mv bad.md ok.md; gh pr create --body-file ok.md'],
   ['sed -i on the body file', "sed -i 's/Proof/x/' ok.md && gh pr create -F ok.md"],
   ['clobber redirect', 'echo x >| ok.md && gh pr create -F ok.md'],
+  ['written through an env-var path', "cat > \"$HOME/ok.md\" <<'EOF'\n# t\nno proof now\nEOF\ngh pr create -F ~/ok.md"],
 ];
 for (const [name, command] of sameCallWrites) {
   test(`blocks a body file written in the same call: ${name}`, () => {
@@ -293,10 +295,70 @@ test('block message after a push carries no stale flag advice', () => {
   assert.doesNotMatch(stderr, /commit.guard|one-shot flag|re-touch/i);
 });
 
-test('blocks an unresolvable body file path and asks for a literal one', () => {
-  const { status, stderr } = run('gh pr create --body-file "$TMPDIR/b.md"');
+const ENVDIR = 'PRG_BODY_DIR';
+test('env-var body paths resolve like the shell would', () => {
+  for (const cmd of [
+    'gh pr create --body-file "$HOME/ok.md"',
+    `gh pr create --body-file \${${ENVDIR}}/ok.md`,
+    `gh pr create -F $${ENVDIR}/ok.md`,
+    'gh pr create --body "$(cat $HOME/ok.md)"',
+  ]) assert.strictEqual(run(cmd, { env: { [ENVDIR]: dir } }).status, ALLOW, cmd);
+});
+
+test('an env-var path to a body without proof still blocks on the proof, not the path', () => {
+  const { status, stderr } = run('gh pr create --body-file "$HOME/bad.md"');
   assert.strictEqual(status, BLOCK);
-  assert.match(stderr, /literal path/);
+  assert.doesNotMatch(stderr, /literal path/);
+});
+
+test('an unset variable or an unsupported form is still rejected with the existing message', () => {
+  for (const cmd of ['gh pr create --body-file "$PRG_NEVER_SET/b.md"', 'gh pr create --body-file "${HOME:-x}/ok.md"', 'gh pr create --body-file "$(pwd)/ok.md"']) {
+    const { status, stderr } = run(cmd);
+    assert.strictEqual(status, BLOCK, cmd);
+    assert.match(stderr, /cannot resolve body file path .* Pass a literal path\./, cmd);
+  }
+});
+
+const UNRESOLVED = /cannot resolve body file path .* Pass a literal path\./;
+test('a variable the command assigns before gh holds the shell\'s value, so the path is rejected', () => {
+  for (const cmd of [
+    `export PRG_BODY=${badBody} && gh pr create --title t --body-file "$PRG_BODY"`,
+    `PRG_BODY=${badBody}; gh pr create -F $PRG_BODY`,
+    `PRG_BODY+=.x; gh pr create -F $PRG_BODY`,
+    `local PRG_BODY=${badBody}; gh pr create -F "$PRG_BODY"`,
+    `declare -x PRG_BODY="${badBody}"; gh pr create -F "\${PRG_BODY}"`,
+    `typeset PRG_BODY=${badBody}; gh pr create -F "$PRG_BODY"`,
+    `for PRG_BODY in ${badBody}; do gh pr create -F "$PRG_BODY"; done`,
+    'read -r PRG_BODY < list.txt && gh pr create -F "$PRG_BODY"',
+    'unset PRG_BODY; gh pr create -F "$PRG_BODY"',
+    `printf -v PRG_BODY %s ${badBody}; gh pr create -F "$PRG_BODY"`,
+    'mapfile -t PRG_BODY < list.txt; gh pr create -F "$PRG_BODY"',
+    `HOME=${dir}/sub; gh pr create -F ~/ok.md`,
+  ]) {
+    const { status, stderr } = run(cmd, { env: { PRG_BODY: okBody } });
+    assert.strictEqual(status, BLOCK, cmd);
+    assert.match(stderr, UNRESOLVED, cmd);
+  }
+});
+
+test('a long command full of $VAR words stays fast (assignment scan is linear)', () => {
+  const started = Date.now();
+  run(`read -r X < f; ls ${'$HOME/x '.repeat(30000)}; gh pr create -F ok.md`);
+  assert.ok(Date.now() - started < 1500, `took ${Date.now() - started} ms`);
+});
+
+test('a prefix assignment on gh itself or to another variable leaves the hook value in place', () => {
+  for (const cmd of ['PRG_BODY=x gh pr create -F "$PRG_BODY"', 'PRG_OTHER=x; gh pr create -F "$PRG_BODY"']) {
+    assert.strictEqual(run(cmd, { env: { PRG_BODY: okBody } }).status, ALLOW, cmd);
+  }
+});
+
+test('$PWD and $OLDPWD follow the session cwd, not the hook process, so they are rejected', () => {
+  for (const cmd of ['gh pr create -F "$PWD/ok.md"', 'gh pr create --body-file ${OLDPWD}/ok.md']) {
+    const { status, stderr } = run(cmd, { env: { PWD: dir, OLDPWD: dir } });
+    assert.strictEqual(status, BLOCK, cmd);
+    assert.match(stderr, UNRESOLVED, cmd);
+  }
 });
 
 test('block message points at heredoc / --body-file and the session cwd', () => {
@@ -309,3 +371,53 @@ test('block message points at heredoc / --body-file and the session cwd', () => 
 test('allows unparseable input', () => {
   assert.strictEqual(spawnSync('node', [hook], { input: 'not json' }).status, ALLOW);
 });
+
+const git = (cwd, ...args) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' });
+const nLines = (n) => 'x\n'.repeat(n);
+// A repo whose HEAD is one commit past branch `base`; `files` is {name: text} added on top.
+const repoAhead = (files) => {
+  const repo = mkdtempSync(join(dir, 'repo-'));
+  git(repo, 'init', '-q', '-b', 'master');
+  git(repo, 'commit', '-q', '--allow-empty', '-m', 'base');
+  git(repo, 'branch', 'base');
+  for (const [name, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(repo, name)), { recursive: true });
+    writeFileSync(join(repo, name), text);
+  }
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'feat');
+
+  return repo;
+};
+const SIZE_BODY = 'x\n## Proof\nNo screenshots: cli\nBefore: a\nAfter: b\nok';
+const create = (body, base = '--base base') => `gh pr create ${base} --body "${body}"`;
+const sizeCases = [
+  ['801 changed lines', { 'a.txt': nLines(801) }, create(SIZE_BODY), BLOCK, /801 changed lines[\s\S]*Size-exempt: <reason>/],
+  ['exactly 800 changed lines', { 'a.txt': nLines(800) }, create(SIZE_BODY), ALLOW],
+  ['lockfile lines are not counted', { 'pnpm-lock.yaml': nLines(900), 'a.txt': nLines(10) }, create(SIZE_BODY), ALLOW],
+  ['Size-exempt line with a reason', { 'a.txt': nLines(900) }, create(`${SIZE_BODY}\nSize-exempt: generated fixtures`), ALLOW],
+  ['Size-exempt line with no reason', { 'a.txt': nLines(900) }, create(`${SIZE_BODY}\nSize-exempt:   \nok`), BLOCK, /changed lines/],
+  ['gh pr edit is not size-checked', { 'a.txt': nLines(900) }, `gh pr edit 5 --body "${SIZE_BODY}"`, ALLOW],
+  ['gh pr edit with an explicit --base is not size-checked', { 'a.txt': nLines(900) }, `gh pr edit 5 --base base --body "${SIZE_BODY}"`, ALLOW],
+  ['non-ASCII lockfile path is not counted', { 'ü/pnpm-lock.yaml': nLines(900) }, create(SIZE_BODY), ALLOW],
+  ['NuGet packages.lock.json is not counted', { 'packages.lock.json': nLines(900), 'a.txt': nLines(10) }, create(SIZE_BODY), ALLOW],
+  ['--base inside a quoted body is not the base', { 'a.txt': nLines(801) }, create(`${SIZE_BODY}\nrun gh with --base nope`), BLOCK, /801 changed lines/],
+  ['--base inside a heredoc body is not the base', { 'a.txt': nLines(801) }, `gh pr create --base base --body "$(cat <<'EOF'\n${SIZE_BODY}\nrun gh with --base nope\nEOF\n)"`, BLOCK, /801 changed lines/],
+  ['unknown --base fails open', { 'a.txt': nLines(900) }, create(SIZE_BODY, '--base nope'), ALLOW],
+  ['no --base and no origin/HEAD fails open', { 'a.txt': nLines(900) }, create(SIZE_BODY, ''), ALLOW],
+  ['cwd that is not a git repo fails open', null, create(SIZE_BODY), ALLOW],
+];
+for (const [name, files, command, expected, message] of sizeCases) {
+  test(`size: ${expected === ALLOW ? 'allows' : 'blocks'}: ${name}`, () => {
+    const { status, stderr } = run(command, { cwd: files ? repoAhead(files) : dir });
+    assert.strictEqual(status, expected, stderr);
+    if (message) assert.match(stderr, message);
+  });
+}
+
+for (const flag of ['--base=base', '-B base', '-Bbase']) {
+  test(`size: reads the base from ${flag}`, () => {
+    const { status } = run(create(SIZE_BODY, flag), { cwd: repoAhead({ 'a.txt': nLines(801) }) });
+    assert.strictEqual(status, BLOCK);
+  });
+}
