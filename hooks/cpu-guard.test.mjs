@@ -115,8 +115,10 @@ describe('cpu-guard', () => {
       ['for d in a b; do cargo build; done', 'for d in a b; do rtk cargo build; done'],
       ['{ cargo test; }', '{ rtk cargo test; }'],
       ['! cargo test', '! rtk cargo test'],
-      ['env FOO=1 cargo test', 'env FOO=1 rtk cargo test'],
-      ['sudo cargo build', 'sudo rtk cargo build'],
+      // env and sudo can reset PATH, which may not hold rtk: locked, no rtk form
+      ['env FOO=1 cargo test', 'env FOO=1 cargo test'],
+      ['env -i cargo test', 'env -i cargo test'],
+      ['sudo cargo build', 'sudo cargo build'],
       ['ls | xargs -n1 cargo test', 'ls | xargs -n1 rtk cargo test'],
       ['time -p cargo test', 'time -p rtk cargo test'],
       ['nice --adjustment=5 cargo test', 'nice --adjustment=5 rtk cargo test'],
@@ -132,5 +134,13 @@ describe('cpu-guard', () => {
     assert.equal(decide('FOO="a b" cargo test', ctx).command, `${WRAP}'FOO="a b" rtk cargo test'`);
     const heredoc = 'cat > run.sh <<EOF\ncargo test\npnpm vitest run\nEOF\npnpm vitest run';
     assert.equal(decide(heredoc, ctx).command, `${WRAP}'cat > run.sh <<EOF\ncargo test\npnpm vitest run\nEOF\nrtk vitest'`);
+    const bodies = [
+      'cat > f <<-EOF\n\tcargo test\n\tEOF\npnpm vitest run',
+      'cat > f <<EOF\r\ncargo test\r\nEOF\r\npnpm vitest run',
+      "cat > f <<'END-X'\ncargo test\nEND-X\npnpm vitest run",
+    ];
+    for (const cmd of bodies) assert.equal(decide(cmd, ctx).command, `${WRAP}'${cmd.replace(/pnpm vitest run$/, 'rtk vitest').replaceAll("'", "'\\''")}'`, JSON.stringify(cmd));
+    assert.equal(decide('out=$(cargo test 2>&1); echo "$out"', ctx).command, `${WRAP}'out=$(cargo test 2>&1); echo "$out"'`);
+    assert.equal(decide('cat <<< "x"\ncargo test', ctx).command, `${WRAP}'cat <<< "x"\nrtk cargo test'`);
   });
 });
