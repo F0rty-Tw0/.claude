@@ -60,6 +60,7 @@ Grug governs implementation choices. Also:
 - Root-cause fixes by default; a workaround needs a tracked ticket and expiry.
 - New production behavior needs tests; throwaway scripts don't.
 - **(main session)** A new feature or a change to existing behavior goes through skill:brainstorming before any code, at the short pass when it is small and scoped. Typos, config tweaks, version bumps, formatter-only diffs, and bug fixes skip it.
+- Waiting: a foreground `sleep` is blocked by the harness. One wake-up (server ready, build done) → Bash `run_in_background` with `until <check>; do sleep 2; done`. One notice per event → Monitor. Monitor is a deferred tool: load it with ToolSearch (`select:Monitor`) first, then pass `command`, `description` and `timeout_ms` (not `timeout`).
 
 ## Git and PRs
 
