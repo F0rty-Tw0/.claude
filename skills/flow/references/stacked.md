@@ -26,7 +26,7 @@ Build slice N+1 while slice N's gate or CI runs. Gate and CI results arrive as b
 - **D5** Per-slice gate before open-pr proof/review: build + full test suite + the cheap CI jobs, fresh, in the slice's worktree, as a background job.
 - **D6** Slice N has a real red, is unpushed, or its CI is pending → slices that have N as an ancestor keep building, gating and reviewing, but don't push. Independent slices are unaffected.
 - **D7** In a new session, the user typing `flow --stacked --resume <plan folder>` re-authorizes commits and merges (D2/D3) for the resumed run.
-- **D8** When the handoff-trigger mod (`/handoff`, then `/clear`, then work continues) interrupts the run, the continuation keeps D2/D3 if the handoff file names the run: `next: flow --stacked --resume <plan folder>` in Next step and `commits authorized: yes (flow --stacked launch <date>)` under Standing grants. Pushes still need D1.
+- **D8** When the handoff-trigger mod (`/handoff`, then `/clear`, then work continues) interrupts the run, the continuation keeps D2/D3 if the handoff file names the run: `next: flow --stacked --resume <plan folder>` in Next step and `commits authorized: yes (flow --stacked launch <date>)`, plus the user's launch words verbatim, under Standing grants. Pushes still need D1.
 
 ## State
 
