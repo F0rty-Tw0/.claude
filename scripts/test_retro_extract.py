@@ -218,6 +218,13 @@ class Metrics(unittest.TestCase):
         s = run_extract(self.root)
         self.assertEqual((s["req1_reviewer_verdict_share"], s["req26_executor_block_rate_opus"]), (1.0, 1.0))
 
+    def test_report_head_keeps_a_handback_verdict_over_a_trailing_done(self):
+        main_session(self.root, "s1", [prompt("go"), assistant([spawn(1, "executor", "Build A"), spawn(2, "code-reviewer", "Review A")], 1)])
+        report = [assistant([tool_use("h1", "SubagentHandback", message="VERDICT: BLOCK\nfindings")], 1), text_msg("Done.", 2)]
+        sub_session(self.root, "s1", "r1", report, "code-reviewer", "Review A")
+        s = run_extract(self.root)
+        self.assertEqual((s["req1_reviewer_verdict_share"], s["req26_executor_block_rate_opus"]), (1.0, 1.0))
+
     def test_reviewer_runs_sharing_a_description_pair_in_time_order(self):
         def run(minute, verdict):
             return {"agentType": "code-reviewer", "parent": "s1", "desc": "Review",

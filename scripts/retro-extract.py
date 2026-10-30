@@ -77,7 +77,7 @@ def scan(path: Path, is_sub: bool) -> dict:
              cmds=collections.Counter(), writes=collections.Counter(), deglaze=collections.Counter(),
              skill_reads=collections.Counter())
     pending = {}
-    last_report = ""
+    last_report = verdict_report = ""
     with open(path, encoding="utf-8", errors="ignore") as fh:
         for line in fh:
             if any(t in line[:300] for t in SKIP_TYPES):
@@ -117,6 +117,7 @@ def scan(path: Path, is_sub: bool) -> dict:
                 if txt.strip():
                     s["final_text"] = txt
                     last_report = txt
+                    verdict_report = txt if has_verdict_line(txt) else verdict_report
                     kind = deglaze_kind(txt)
                     if kind:
                         s["deglaze"][kind] += 1
@@ -132,6 +133,7 @@ def scan(path: Path, is_sub: bool) -> dict:
                     elif name in ("SubagentHandback", "SendMessage"):
                         body = inp.get("message")
                         last_report = (body if isinstance(body, str) else json.dumps(inp))[:400]
+                        verdict_report = last_report if has_verdict_line(last_report) else verdict_report
                     elif name == "Read":
                         read_skill = SKILL_FILE.search(str(inp.get("file_path") or ""))
                         if read_skill:
@@ -189,7 +191,8 @@ def scan(path: Path, is_sub: bool) -> dict:
                     s["user_texts"].append(txt[:400])
                 if CORR.search(txt[:600]) and len(txt) < 2000:
                     s["corrections"].append(txt[:400])
-    s["report_head"] = last_report[:400] if is_sub else ""
+    # The last report wins, unless a later one (a trailing "Done.") carries no VERDICT line.
+    s["report_head"] = (verdict_report or last_report)[:400] if is_sub else ""
     s["verdicts"] = VERDICT.findall(s["final_text"][-1500:]) if is_sub else []
     s["final_text"] = s["final_text"][-600:]
     return s
@@ -256,6 +259,10 @@ def classify(e):
 
 def ratio(num, den, scale=1):
     return None if not den else num * scale / den
+
+
+def has_verdict_line(text: str) -> bool:
+    return bool(VERDICT_LINE.match(next((ln for ln in text.split("\n") if ln.strip()), "")))
 
 
 def verdict_of(head: str):
