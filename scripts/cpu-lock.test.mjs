@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 
 const LOCK_SCRIPT = join(import.meta.dirname, 'cpu-lock');
-const env = { ...process.env, CPU_LOCK_FILE: join(mkdtempSync(join(tmpdir(), 'cpu-lock-')), 'l.lock') };
+const dir = mkdtempSync(join(tmpdir(), 'cpu-lock-'));
+const env = { ...process.env, CPU_LOCK_FILE: join(dir, 'l.lock') };
 const run = (...args) => spawnSync('timeout', ['1', LOCK_SCRIPT, ...args], { env, encoding: 'utf8' });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const held = () => spawnSync('flock', ['-n', '-x', env.CPU_LOCK_FILE, 'true']).status !== 0;
@@ -16,6 +17,8 @@ async function untilHeld() {
 }
 
 describe('cpu-lock', () => {
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
   it('WHEN a gate command runs THEN a second gate runs alongside and a bench waits, saying so', async () => {
     const gate = spawn(LOCK_SCRIPT, ['gate', 'sleep', '2'], { env });
     await untilHeld();
@@ -31,5 +34,11 @@ describe('cpu-lock', () => {
     spawnSync(LOCK_SCRIPT, ['gate', 'bash', '-c', 'sleep 2 & true'], { env, stdio: 'ignore' });
     assert.equal(run('bench', 'true').status, 0);
     await sleep(2000);
+  });
+
+  it('WHEN flock is not installed THEN the command runs unlocked with its own exit code', () => {
+    const noFlock = { CPU_LOCK_FILE: env.CPU_LOCK_FILE, PATH: dir };
+    const result = spawnSync('/bin/bash', [LOCK_SCRIPT, 'gate', process.execPath, '-e', 'process.stdout.write("ran"); process.exit(3)'], { env: noFlock, encoding: 'utf8' });
+    assert.deepEqual([result.status, result.stdout], [3, 'ran']);
   });
 });
