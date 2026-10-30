@@ -138,9 +138,13 @@ describe('cpu-guard', () => {
       'cat > f <<-EOF\n\tcargo test\n\tEOF\npnpm vitest run',
       'cat > f <<EOF\r\ncargo test\r\nEOF\r\npnpm vitest run',
       "cat > f <<'END-X'\ncargo test\nEND-X\npnpm vitest run",
+      'cat > f <<\\EOF\ncargo test\nEOF\npnpm vitest run',
+      // a <<- inside a plain heredoc body is body text: the outer heredoc ends at EOF
+      "cat <<'EOF' > gen.sh\ncargo test\ncat <<-EOF\nx\nEOF\npnpm vitest run",
     ];
     for (const cmd of bodies) assert.equal(decide(cmd, ctx).command, `${WRAP}'${cmd.replace(/pnpm vitest run$/, 'rtk vitest').replaceAll("'", "'\\''")}'`, JSON.stringify(cmd));
     assert.equal(decide('out=$(cargo test 2>&1); echo "$out"', ctx).command, `${WRAP}'out=$(cargo test 2>&1); echo "$out"'`);
     assert.equal(decide('cat <<< "x"\ncargo test', ctx).command, `${WRAP}'cat <<< "x"\nrtk cargo test'`);
+    assert.equal(decide('cat <<EOF; cargo build\nx\nEOF', ctx).command, `${WRAP}'cat <<EOF; rtk cargo build\nx\nEOF'`);
   });
 });

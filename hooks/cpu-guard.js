@@ -38,15 +38,15 @@ const LOCK = '~/.claude/scripts/cpu-lock';
 // compression. Missed, left open: prefix options with a value (`sudo -u me`), a
 // `case` arm (`a) cargo test`), `"$(cargo test)"` inside quotes, `cargo +nightly test`.
 const PREFIXES = [
-  String.raw`\w+=\S*\s+`,
-  String.raw`xargs(?:\s+-\S+)*\s+`,
-  String.raw`time(?:\s+-p)?\s+`,
-  String.raw`nice(?:\s+(?:-n\s*-?\d+|-\d+|--adjustment=-?\d+))?\s+`,
-  String.raw`timeout(?:\s+(?:-[sk]\s+\S+|-[sk]\S+|-[^sk\s]\S*))*\s+\S+\s+`,
+  String.raw`\w+=\S*[ \t]+`,
+  String.raw`xargs(?:[ \t]+-\S+)*[ \t]+`,
+  String.raw`time(?:[ \t]+-p)?[ \t]+`,
+  String.raw`nice(?:[ \t]+(?:-n[ \t]*-?\d+|-\d+|--adjustment=-?\d+))?[ \t]+`,
+  String.raw`timeout(?:[ \t]+(?:-[sk][ \t]+\S+|-[sk]\S+|-[^sk\s]\S*))*[ \t]+\S+[ \t]+`,
 ];
 const atCommand = (separators, prefixes) =>
   String.raw`((?:^|[${separators}])[ \t]*(?:(?:then|do|else|elif|\{|!)[ \t]+)*)((?:${prefixes.join('|')})*)`;
-const AT_COMMAND = atCommand(String.raw`;&|(\n`, [...PREFIXES, String.raw`(?:env|sudo)(?:\s+-\S+)*\s+`]);
+const AT_COMMAND = atCommand(String.raw`;&|(\n`, [...PREFIXES, String.raw`(?:env|sudo)(?:[ \t]+-\S+)*[ \t]+`]);
 // Where rtk's form may go: not after env or sudo (both can reset PATH, and rtk lives in
 // ~/.local/bin), and not after `(`, so `$(cargo test)` captures the raw output.
 const AT_RTK = atCommand(String.raw`;&|\n`, PREFIXES);
@@ -73,22 +73,25 @@ const RTK_FORMS = [
   [String.raw`pnpm\s+run\s+build\b`, 'rtk pnpm run build'],
 ].map(([pattern, form]) => [new RegExp(AT_RTK + pattern, 'dg'), new RegExp(`^${pattern}`), form]);
 
-// Heredoc opener line, body, and terminator. `<<-` lets the terminator carry leading
-// tabs; a CRLF script ends it with `\r`; `<<<` is a here-string, not a heredoc.
-const heredoc = (dash, indent) =>
-  new RegExp(String.raw`((?<!<)<<${dash}[ \t]*(['"]?)([^\s'"<>;&|()]+)\2[^\n]*)\n[\s\S]*?\n${indent}\3\r?(?=\n|$)`, 'g');
-const HEREDOCS = [heredoc('-', String.raw`\t*`), heredoc('(?![-<])', '')];
+// Heredoc opener line, body, and terminator, matched left to right in one pass. `<<-`
+// lets the terminator carry leading tabs; a CRLF script ends it with `\r`; `<<<` is a
+// here-string. Missed, left open: two heredocs on one line (`<<A <<B`), a delimiter
+// with spaces (`<<"a b"`).
+const DELIM = String.raw`(['"]?)\\?([^\s'"<>;&|()\\]+)`;
+const HEREDOC = new RegExp(String.raw`(?<!<)<<(?:-[ \t]*${DELIM}\1[^\n]*\n[\s\S]*?\n\t*\2|(?![-<])[ \t]*${DELIM}\3[^\n]*\n[\s\S]*?\n\4)\r?(?=\n|$)`, 'g');
 const QUOTED = /"(?:[^"\\]|\\[\s\S])*"|'[^']*'/g;
-const maskHeredocs = (cmd, mask) => HEREDOCS.reduce((out, pattern) => out.replace(pattern, mask), cmd);
+// mask(match, opener line) → replacement
+const maskHeredocs = (cmd, mask) => cmd.replace(HEREDOC, (match) => mask(match, match.slice(0, match.indexOf('\n'))));
 
 // Commit messages and heredoc bodies are prose, and a `cpu-lock bench` call's
 // quoted script already holds the bench lock: none of them is checked.
-const stripProse = (cmd) => maskHeredocs(cmd.replace(/(\s(?:-m|--message)(?:=|\s+))("[^"]*"|'[^']*')/g, "$1''"), '$1')
+const stripProse = (cmd) => maskHeredocs(cmd.replace(/(\s(?:-m|--message)(?:=|\s+))("[^"]*"|'[^']*')/g, "$1''"), (match, head) => head)
   .replace(/(\S*cpu-lock\s+bench\b[^;&|\n]*?)('[^']*'|"[^"]*")/g, "$1''");
 const maskQuotes = (cmd) => cmd.replace(QUOTED, (quoted) => quoted[0].repeat(2));
 // Same masks with the length kept, so a match offset is an offset in the raw command.
-const blankProse = (cmd) => maskHeredocs(cmd, (body, head) => head + '_'.repeat(body.length - head.length))
-  .replace(QUOTED, (quoted) => '_'.repeat(quoted.length));
+// The filler is not a word character, so `\b` after a command word still holds.
+const blankProse = (cmd) => maskHeredocs(cmd, (body, head) => head + '\x01'.repeat(body.length - head.length))
+  .replace(QUOTED, (quoted) => '\x01'.repeat(quoted.length));
 
 // Rewrites only the command word found at command position in the blanked text, so
 // quoted text and heredoc bodies (a file being written) reach the shell unchanged.
