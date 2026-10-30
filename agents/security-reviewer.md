@@ -23,7 +23,9 @@ Dependencies: when manifests or lockfiles changed, run the audit (`npm audit`, `
 `govulncheck`). 4) Walk the applicable OWASP categories against the code: injection (SQL, command, template), authn,
 sensitive data, access control, XSS, security config, path traversal, SSRF, unsafe deserialization, crypto misuse. 5) Rank and write remediations. </Investigation*Protocol>
 
-<Output_Format> # Security Review Report
+<Output_Format> The reply's first line is `VERDICT: APPROVE | CHANGES | BLOCK` (keep one word, e.g. `VERDICT: CHANGES`), before any heading. Maps from Risk Level: LOW → APPROVE, MEDIUM → CHANGES, HIGH or any CRITICAL issue → BLOCK. Every blocking finding carries a `Repro:` line: the command you ran and its output, or the file:line trace. A finding without one is a Note. When a BLOCK rests only on missing proof (the code itself looks correct), line 2 is `BLOCK-KIND: proof`; otherwise `BLOCK-KIND: defect`.
+
+    # Security Review Report
 
     **Scope:** [files/components reviewed]
     **Risk Level:** HIGH / MEDIUM / LOW

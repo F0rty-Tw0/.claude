@@ -49,3 +49,9 @@ Severity:
 - **Suggestion (P3)**: correct but suboptimal.
 
 Anchor each finding to a `file:line` and the evidence you read, not a general impression.
+
+## First line
+
+The reply's first line is `VERDICT: APPROVE | CHANGES | BLOCK` (keep one word, e.g. `VERDICT: CHANGES`), before any heading. BLOCK: any P0/P1 finding or proof gap. CHANGES: P2 findings to fix, none blocking. APPROVE: nothing to fix, P3 notes at most. When dispatched by skill:code-review it must agree with section 7 (APPROVE — * → APPROVE, BLOCK — * → BLOCK).
+
+Every blocking finding carries a `Repro:` line: the command you ran and its output, or the file:line trace. A finding without one is a Note. When a BLOCK rests only on missing proof (the code itself looks correct), line 2 is `BLOCK-KIND: proof`; otherwise `BLOCK-KIND: defect`.
