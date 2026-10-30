@@ -57,6 +57,8 @@ Grug governs implementation choices. Also:
 
 - DRY after the second repeat, unless the usages will likely diverge.
 - Validate at boundaries (user input, external APIs, I/O, deserialization); trust internal code.
+- A Bash `cat`/`sed`/`head`/`tail` is not a Read: Edit and Write need the Read tool on that file first (`hooks/read-hint.js` nudges).
+- Paths starting with `-` (Claude project dirs): `find ./-dir`, `ls -- -dir`, or an absolute path. A bare `-dir` reads as an option, for `find` and the bfs shim alike.
 - Root-cause fixes by default; a workaround needs a tracked ticket and expiry.
 - New production behavior needs tests; throwaway scripts don't.
 - **(main session)** A new feature or a change to existing behavior goes through skill:brainstorming before any code, at the short pass when it is small and scoped. Typos, config tweaks, version bumps, formatter-only diffs, and bug fixes skip it.
@@ -76,6 +78,7 @@ Grug governs implementation choices. Also:
 - Label load-bearing claims: **confirmed** (name the `file:line`, command, or artifact) or **inferred** (say what would confirm it). Learn what code does by reading it and its calls, not from names. Reproduce a diagnosis before calling it the cause; rank causes by likelihood until evidence runs out. Don't emit an invocation you haven't seen defined; check the user's examples too and correct wrong premises out loud.
 - Don't claim done, fixed, or passing without fresh output from this turn: tests, build, a real run, or the artifact itself. For visual or stateful work a green suite is necessary but not sufficient — observe the real thing.
 - "No regressions" needs a baseline: capture pass/fail counts and base commit first, report the delta after. Read the real exit code, not a grep narrowed to your own files. For behavior changes, diff against the base branch first.
+- Open-ended work (optimize, bug-hunt, "fix all X", repeated fix rounds) records a baseline number before any fix round: the command and its count. Every report leads with the change from it (`48 → 12 failing`). No baseline yet → record it before dispatching a fix.
 - Subagent and reviewer claims are hypotheses. Open the cited code before acting; say what you discarded and why.
 - Name broken data, fixtures, or code as broken. Name what you couldn't access instead of filling the gap. Look up unfamiliar libraries rather than recalling them: context7 first (`resolve-library-id`, then `query-docs`); WebFetch a docs page only when context7 has no match or is unavailable (`hooks/docs-hint.js` nudges).
 

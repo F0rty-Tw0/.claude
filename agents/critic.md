@@ -29,7 +29,7 @@ plan and the files can't answer — each naming the plan section that should hav
 if two executors would write the same code from it. Any open question is a gap. 6) Issue the verdict: REJECT for any
 gap that needs the author's judgment; OKAY-WITH-EDITS when every remaining gap is a mechanical edit (3 or fewer) and
 you supply the exact replacement text for each, so the caller applies them with no further round; OKAY when nothing is
-left. On a later round, check only the earlier round's gaps and the text that changed since; raise a new gap elsewhere
+left. The caller dispatches you once, and again only after REJECT, never a third time, so list every gap in the first verdict. On a later round, check only the earlier round's gaps and the text that changed since; raise a new gap elsewhere
 only if it would make an executor write wrong code. </Investigation_Protocol>
 
 <Execution_Policy> Stop when the verdict is justified with evidence. For spec-compliance reviews, use a compliance

@@ -2,9 +2,11 @@
 // PreToolUse guard: blocks `gh pr create|new` / `gh pr edit --body…` unless the PR body has a `## Proof` heading
 // with a before/after pair under it (Before:/After: lines or a `| Before | After |` table), plus screenshots whose local
 // paths are all passed to --attach, or a `No screenshots: <why>` line.
+// `gh pr create|new` also needs <= 800 counted changed lines vs its base, or a `Size-exempt: <reason>` body line.
 // Enforces "every PR ships with proof" (code-review skill, proof mode) mechanically instead of by prose.
 // ponytail: checks the heading and pair markers exist, not that the proof is real — the code-review reviewer judges content.
 // ponytail: catches a forgotten proof, not deliberate evasion (eval, shell aliases, `"$(gh pr create)"` inside quotes).
+const { spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -65,9 +67,28 @@ const unquote = (s) => {
 };
 // Bash expands ~ from $HOME; os.homedir() reads USERPROFILE on Windows, which can differ.
 const expandHome = (p) => p.replace(/^~(?=\/|$)/, process.env.HOME || os.homedir());
+// The shell, not this hook, owns $PWD / $OLDPWD (they follow the session's cd) and any variable the command assigns
+// before `end` (NAME=, NAME+=, export/local/declare/typeset NAME=, for NAME in, read/mapfile/printf -v/unset … NAME).
+// ponytail: `source`, `eval` and shell functions can assign too and are not seen.
+// The first assignment's end is found once per name, so a long command with many `$VAR` words stays linear.
+const assignedAt = new Map();
+const shellOwned = (name, end) => {
+  if (name === 'PWD' || name === 'OLDPWD') return true;
+  if (!assignedAt.has(name)) {
+    const m = new RegExp(String.raw`(?:^|[\s;&|(\`{])${name}\+?=|\b(?:for|select)[ \t]+${name}\b|` +
+      String.raw`\b(?:read|readarray|mapfile|printf|getopts|unset)\b[^\n;&|]*?[ \t]${name}\b`).exec(masked);
+    assignedAt.set(name, m ? m.index + m[0].length : Infinity);
+  }
+
+  return assignedAt.get(name) <= end;
+};
+// ponytail: this is Claude Code's environment, which can differ from the Bash shell's; a variable set only inside the
+// shell, or owned by it, stays unresolved and is rejected below.
+const expandEnv = (p, end) => p.replace(/\$(?:\{(\w+)\}|(\w+))/g, (m, a, b) => (shellOwned(a ?? b, end) ? m : process.env[a ?? b] ?? m));
+const resolvePath = (p, end) => expandEnv(shellOwned('HOME', end) ? p.replace(/^~(?=\/|$)/, '$HOME') : expandHome(p), end);
 
 const cd = masked.match(/^[ \t]*cd[ \t]+([^\s;&]+)[ \t]*(?:&&|;)/d);
-const baseDir = path.resolve(cwd, cd ? expandHome(unquote(cmd.slice(...cd.indices[1]))) : '.');
+const baseDir = path.resolve(cwd, cd ? resolvePath(unquote(cmd.slice(...cd.indices[1])), cd.index) : '.');
 
 // The Proof section runs from its heading to the next `## ` heading outside a code fence (output may print markdown).
 // A pair is a `| … Before | After |` table row, or a line starting (after bullets/bold/quote marks) with `Before:` and
@@ -115,12 +136,48 @@ const NO_PAIR = 'pr-proof-guard: `## Proof` has no before/after pair. Every PR s
   'a `Before:` line and an `After:` line (screenshot, CLI or console output of the real thing on base vs head), or a ' +
   '`| Before | After |` table. Test-runner output alone does not count. Base not capturable → `Before: not captured — <why>` ' +
   'and list it under Not verified. See code-review references/proof.md, Before/after pair. ' + HOW;
+// PR size cap. Counted lines are the added + deleted lines of <base>...HEAD in baseDir.
+const SIZE_LIMIT = 800;
+const SIZE_EXEMPT = /^[ \t>*-]*Size-exempt\b(?:\*\*)?[ \t]*:(?:\*\*)?[ \t]*\S/im;
+// Not counted, like open-pr's "One PR or Several?": lockfiles, snapshots, generated and eval-fixture paths.
+const UNCOUNTED = /(?:^|\/)(?:[^/]*\.lock|package-lock\.json|pnpm-lock\.yaml|packages\.lock\.json|[^/]*\.snap|[^/]*\.min\.(?:js|css))$|(?:^|\/)(?:__snapshots__|generated|evals?\/fixtures?)\//;
+let verb = ''; // set at the top of check(): 'create' | 'new' | 'edit'
+let baseFlag = ''; // the --base / -B value of the invocation being checked, '' when absent
+const git = (...args) => spawnSync('git', args, { cwd: baseDir, encoding: 'utf8' });
+const baseCandidates = () => {
+  if (baseFlag) return [`origin/${baseFlag}`, baseFlag];
+  const head = git('symbolic-ref', '--short', 'refs/remotes/origin/HEAD');
+
+  return head.status === 0 ? [head.stdout.trim()] : [];
+};
+// Counted changed lines of <ref>...HEAD plus the ref used; null when git can't say (not a repo, base missing).
+// ponytail: fail open, a size cap is not worth blocking on a git hiccup.
+const changedLines = () => {
+  const ref = baseCandidates().find((r) => git('rev-parse', '--verify', '--quiet', `${r}^{commit}`).status === 0);
+  if (!ref) return null;
+  // -z: paths come NUL-terminated and unquoted, so a non-ASCII or tab-bearing path still meets UNCOUNTED.
+  const diff = git('diff', '--numstat', '-z', '--no-renames', `${ref}...HEAD`);
+  if (diff.status !== 0) return null;
+  const rows = diff.stdout.split('\0').filter(Boolean).map((entry) => entry.match(/^([^\t]*)\t([^\t]*)\t([\s\S]*)$/)).filter(Boolean);
+  const counted = rows.filter(([, added, , file]) => added !== '-' && !UNCOUNTED.test(file));
+  const n = counted.reduce((sum, [, added, deleted]) => sum + Number(added) + Number(deleted), 0);
+
+  return { n, ref };
+};
+const sizeGap = (text) => {
+  if (verb === 'edit' || SIZE_EXEMPT.test(text)) return '';
+  const size = changedLines();
+  if (!size || size.n <= SIZE_LIMIT) return '';
+
+  return `pr-proof-guard: PR is ${size.n} changed lines vs ${size.ref}, over the ${SIZE_LIMIT} cap (lockfiles, snapshots, generated files not counted). ` +
+    'Split it (open-pr references/stacking.md), or add a line `Size-exempt: <reason>` to the body.';
+};
 // Returns the block message for a body sent with these --attach paths, or '' when it may run.
 const proofGap = (text, attached) => {
   if (!PROOF_HEADING.test(text)) return NO_PROOF;
   const section = proofSection(text);
 
-  return hasPair(section) ? shotGap(section, attached) : NO_PAIR;
+  return hasPair(section) ? shotGap(section, attached) || sizeGap(text) : NO_PAIR;
 };
 
 // `gh pr create|new|edit` at command position: start, newline, `;`, `&&`, `||`, `|`, `(`, `$(`, backtick,
@@ -140,6 +197,8 @@ const lastStdinRedirect = (start, end) => {
 
 // Returns the block message for one invocation, or '' when it may run.
 const check = (inv) => {
+  verb = inv.groups.verb;
+  baseFlag = '';
   const argsStart = inv.index + inv[0].length;
   const stop = masked.slice(argsStart).search(/[\n;&|)`]/);
   const argsEnd = stop < 0 ? masked.length : argsStart + stop;
@@ -153,7 +212,10 @@ const check = (inv) => {
     const long = t.flag.match(/^--body(-file)?(=|$)/);
     const short = t.flag.match(/^-([bF])/);
     const attach = t.flag.match(/^--attach(=|$)/);
+    const base = t.flag.match(/^(?:--base(?=$|=)|-B)=?/);
     const attachRange = attach && (attach[1] ? { start: t.start + attach[0].length, end: t.end } : tokens[i + 1]);
+    const baseRange = base && (t.flag.length > base[0].length ? { start: t.start + base[0].length, end: t.end } : tokens[i + 1]);
+    if (baseRange) baseFlag = unquote(cmd.slice(baseRange.start, baseRange.end));
     if (attachRange) attached.push(expandHome(unquote(cmd.slice(attachRange.start, attachRange.end))).split('#')[0]);
     if (long) source = { isFile: Boolean(long[1]), range: long[2] ? { start: t.start + long[0].length, end: t.end } : tokens[i + 1] };
     else if (short) source = { isFile: short[1] === 'F', range: t.flag.length > 2 ? { start: t.start + 2, end: t.end } : tokens[i + 1] };
@@ -193,13 +255,16 @@ const check = (inv) => {
       return heading ? proofGap(raw.slice(heading.index + heading[1].length), attached) : NO_PROOF;
     }
   }
-  if (value.includes('$')) return `pr-proof-guard: cannot resolve body file path \`${value}\` (it expands a variable). Pass a literal path. ${HOW}`;
-  const file = path.resolve(baseDir, expandHome(value));
+  // INVOKE's `VAR=x` prefix can swallow a whole `A=x;` statement, so gh's own statement starts after the last separator.
+  const statementStart = inv.index + inv[0].search(/[^\n;&|(`]*$/);
+  const resolved = resolvePath(value, statementStart);
+  if (resolved.includes('$')) return `pr-proof-guard: cannot resolve body file path \`${value}\` (it expands a variable). Pass a literal path. ${HOW}`;
+  const file = path.resolve(baseDir, resolved);
   // The hook runs before the command, so a body file created or changed earlier in this same command (>, tee, cp, mv,
   // sed -i, ...) is read stale or missing. ponytail: any earlier mention of the path counts, so a harmless
   // `ls pr.md && gh pr create -F pr.md` also blocks; the message says how to fix it, which beats a silent wrong allow.
   const mentions = [...masked.slice(0, scanEnd).matchAll(/[^\s;&|()<>`]+/dg)];
-  if (mentions.some((w) => path.resolve(baseDir, expandHome(unquote(cmd.slice(...w.indices[0])))) === file)) {
+  if (mentions.some((w) => path.resolve(baseDir, resolvePath(unquote(cmd.slice(...w.indices[0])), w.index)) === file)) {
     return `pr-proof-guard: this command touches ${file} before gh reads it. Write the body file in a separate Bash call — ` +
       'the hook reads it before your command runs.';
   }
