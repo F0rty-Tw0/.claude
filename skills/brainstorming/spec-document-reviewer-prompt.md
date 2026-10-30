@@ -7,7 +7,7 @@ Use this template when dispatching a spec document reviewer subagent.
 **Dispatch after:** Spec document is written (default `.claude/local/plans/<folder>/spec.md`)
 
 ```
-Agent tool (subagent_type: "general-purpose"):
+Agent tool (subagent_type: "cold-reader"):
   description: "Review spec document"
   prompt: |
     You are a spec document reviewer. Verify this spec is complete and ready for planning.

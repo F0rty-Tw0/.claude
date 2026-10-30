@@ -7,6 +7,7 @@ On-demand session handoff. Writes what the next context needs into one Markdown 
 | Section | Why it is there |
 |---|---|
 | Goal, state and proof | The next session starts from facts it can check |
+| Standing grants, stop after | The user's pre-approvals and stop point ride every handoff in a chain, so the next session neither re-asks nor overruns |
 | In progress, next step | Work resumes where it stopped |
 | Decisions, ruled out | Reasons and dead ends survive, so they aren't re-tried |
 | Blocked, files and commits, verify | Open questions, git state, and one command to confirm it all |
