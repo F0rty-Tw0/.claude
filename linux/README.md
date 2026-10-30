@@ -20,6 +20,14 @@ cp profile      ~/.profile
 
 Not backed up: `.zsh/` (plugin git repos), `.omp/` (oh-my-posh binary) — reinstall instead.
 
+## Agent shells
+
+`claude-shell.zsh` sets `nonomatch` when `CLAUDECODE` is set, so an unmatched glob (`echo 100*141/118`) passes through literally, like bash, instead of `zsh: no matches found`. Human shells keep zsh's strict default.
+
+Copy the source line from `.zshrc` into the live `~/.zshrc`, then start a new Claude Code session (the shell snapshot is built at start).
+
+`find` in agent shells is a function Claude Code injects into its snapshot (embedded bfs), so no rc file can unset it. A bare `-dir` fails for real `find` too; use `find ./-dir`.
+
 # Keyboard setup (GNOME + keyd)
 
 Fixes from 2026-06-11. Two problems, one machine.
