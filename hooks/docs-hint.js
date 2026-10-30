@@ -3,7 +3,7 @@
 // docs.google.com is the user's own documents, not library docs.
 const fs = require('fs');
 
-const DOCS_HOSTS = new Set(['react.dev', 'angular.dev', 'nx.dev', 'turborepo.dev', 'vite.dev', 'developer.mozilla.org', 'nodejs.org', 'www.typescriptlang.org', 'tailwindcss.com', 'learn.microsoft.com']);
+const DOCS_HOSTS = new Set(['react.dev', 'angular.dev', 'nx.dev', 'turborepo.dev', 'vite.dev', 'developer.mozilla.org', 'nodejs.org', 'typescriptlang.org', 'www.typescriptlang.org', 'tailwindcss.com', 'learn.microsoft.com']);
 const DOCS_PATH_HOSTS = new Set(['supabase.com', 'vercel.com', 'nextjs.org']);
 
 function docsHost(url) {

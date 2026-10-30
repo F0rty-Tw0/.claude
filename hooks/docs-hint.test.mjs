@@ -9,7 +9,7 @@ const hook = fileURLToPath(new URL('./docs-hint.js', import.meta.url));
 
 const docs = ['https://docs.rs/serde/latest/serde/', 'https://nx.dev/nx-api/js', 'https://angular.dev/guide/signals',
   'https://react.dev/reference/react/useEffect', 'https://supabase.com/docs/guides/auth', 'https://foo.readthedocs.io/en/stable/',
-  'https://www.typescriptlang.org/docs/handbook/intro.html'];
+  'https://www.typescriptlang.org/docs/handbook/intro.html', 'https://typescriptlang.org/docs/handbook/intro.html'];
 const notDocs = ['https://raw.githubusercontent.com/o/r/main/README.md', 'https://crates.io/crates/serde', 'https://github.com/o/r/issues/1',
   'https://supabase.com/pricing', 'https://www.mumsnet.com/x', 'https://docs.google.com/document/d/1/edit', 'not a url', ''];
 for (const u of docs) test(`docs host: ${u}`, () => assert.ok(docsHost(u)));
