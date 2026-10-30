@@ -48,7 +48,7 @@ const top = resolve(topRun.stdout.trim());
 const git = (args, { encoding } = {}) => spawnSync('git', args, { cwd: top, encoding, maxBuffer: MAX_BUFFER });
 
 // --ignore-submodules=none: a repo config or .gitmodules `ignore=all` must not hide a submodule bump from the list.
-const rawRun = git(['diff', '--raw', '-z', '--no-abbrev', '--no-renames', '--no-textconv', '--no-ext-diff', '--ignore-submodules=none', range], { encoding: 'utf8' });
+const rawRun = git(['diff', '--raw', '-z', '--no-abbrev', '--no-renames', '--ignore-submodules=none', range], { encoding: 'utf8' });
 if (rawRun.status !== 0) {
   console.error(rawRun.stderr);
   process.exit(2);
