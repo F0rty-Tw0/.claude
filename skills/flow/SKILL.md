@@ -15,6 +15,8 @@ IDEATE   ->   PLAN   ->   EXECUTE          ->   REVIEW       ->   FINISH
 brainstorm    plan        auto | supervised     code-review      finish-branch
 ```
 
+Handoff can interrupt any stage (see Handoff chain).
+
 ## Usage
 
 ```
@@ -36,6 +38,7 @@ flow --stacked --tick <plan folder>     # internal: the stacked loop's wake prom
    - **Autonomous** -> `Skill("ralph")` with the plan folder path. Independent components run in parallel via `dispatching-parallel-agents`.
    - **Supervised** -> `Skill("subagent-driven-development")` with the plan (fresh subagent + spec check per task).
    - **Stacked** (`--stacked`) -> the per-slice loop in `references/stacked.md`, running either mode above in Slice mode.
+   - Workers (subagents from SDD or ralph, and any teammate messages) report into the orchestrator's context, so read verdicts and summaries, not diffs.
 4. **REVIEW** — first build the proof bundle (`code-review` `proof` mode) and pass it as the PR text; then `Skill("code-review")`. Triage feedback with `code-review-receiving`.
 5. **FINISH** — `Skill("finishing-a-development-branch")` to integrate, merge, and clean up the branch/worktree.
 
@@ -68,6 +71,14 @@ Under `flow --stacked`, the EXECUTE, REVIEW and FINISH gates run per slice, as d
 ## Cross-cutting
 
 - **Isolation:** before EXECUTE on non-trivial work, ensure an isolated workspace via `using-git-worktrees`.
+
+## Handoff chain
+
+Context fills -> the handoff-trigger mod runs `/handoff` in place of auto-compaction -> `/clear` -> the continuation reads the handoff.
+
+- At launch, copy the user's grants and stop words into `## Standing grants` and `## Stop after` of every handoff (skill:handoff; copied forward unchanged down the chain). The resumed run honours both before its first action and does not ask again.
+- `--stacked` D8 is the same mechanism with fixed lines (`references/stacked.md`).
+- **Stop after:** if the user named a stage ("stop after PLAN"), flow reports at that gate and does not enter the next stage. A Stop after in a handoff binds the continuation.
 
 ## Non-Goals
 

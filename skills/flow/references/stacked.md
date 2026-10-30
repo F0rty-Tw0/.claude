@@ -26,7 +26,7 @@ Build slice N+1 while slice N's gate or CI runs. Gate and CI results arrive as b
 - **D5** Per-slice gate before open-pr proof/review: build + full test suite + the cheap CI jobs, fresh, in the slice's worktree, as a background job.
 - **D6** Slice N has a real red, is unpushed, or its CI is pending → slices that have N as an ancestor keep building, gating and reviewing, but don't push. Independent slices are unaffected.
 - **D7** In a new session, the user typing `flow --stacked --resume <plan folder>` re-authorizes commits and merges (D2/D3) for the resumed run.
-- **D8** When the handoff-trigger mod (`/handoff`, then `/clear`, then work continues) interrupts the run, the continuation keeps D2/D3 if the handoff file names the run: `next: flow --stacked --resume <plan folder>` and `commits authorized: yes (flow --stacked launch <date>)`. Pushes still need D1.
+- **D8** When the handoff-trigger mod (`/handoff`, then `/clear`, then work continues) interrupts the run, the continuation keeps D2/D3 if the handoff file names the run: `next: flow --stacked --resume <plan folder>` in Next step and `commits authorized: yes (flow --stacked launch <date>)` under Standing grants. Pushes still need D1.
 
 ## State
 
@@ -64,7 +64,7 @@ Single source of truth: `<plan folder>/stacked-state.json`, written after every 
 
 Background jobs, wakeups and loops die with the session and are not restored on `--resume` / `--continue`; the resumed run re-enters Waiting itself when it has nothing buildable. Unattended runs: babysit.md Start (the same limits apply to gate jobs).
 
-**Context-limit handoff (D8):** when the handoff-trigger mod warns, checkpoint at the next task boundary and make sure the handoff file carries the two D8 lines.
+**Context-limit handoff (D8):** when the handoff-trigger mod warns, checkpoint at the next task boundary and make sure the handoff file carries the two D8 lines (Next step and Standing grants).
 
 ## Worktrees
 

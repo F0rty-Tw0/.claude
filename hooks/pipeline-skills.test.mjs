@@ -25,3 +25,24 @@ describe('handoff skill', () => {
     assert.ok(skill.includes('never move to the sign-off digest'));
   });
 });
+
+describe('flow skill', () => {
+  const skill = read('skills/flow/SKILL.md');
+  const readme = read('skills/flow/README.md');
+  const stacked = read('skills/flow/references/stacked.md');
+
+  test('describes the handoff chain with grants and stop points', () => {
+    assert.match(skill, /^## Handoff chain$/m);
+    assert.match(skill, /Standing grants/);
+    assert.match(skill, /Stop after/);
+  });
+
+  test('README agrees with SKILL.md: no file-count heuristic, mentions the handoff chain', () => {
+    assert.doesNotMatch(readme, /more than 10 files/);
+    assert.match(readme, /handoff/i);
+  });
+
+  test('stacked D8 puts the commit authorization under Standing grants', () => {
+    assert.match(stacked, /D8[^\n]*Standing grants/);
+  });
+});
