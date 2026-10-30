@@ -96,7 +96,7 @@ describe('cpu-guard', () => {
   it('10. WHEN a heavy command is only mentioned, in quotes or as an argument THEN nothing is wrapped; at command position it is', () => {
     const mentions = ['echo "pnpm test"', 'git log --grep "cargo test"', 'grep -r "npm test" .', 'rg "node --test" hooks', 'man cargo test', "bash -c 'x' # pnpm turbo run test", 'cat scripts/gates.sh', 'echo "cd x && pnpm test"', "rg 'a; cargo test' src"];
     for (const cmd of mentions) assert.deepEqual(decide(cmd, ctx), {}, cmd);
-    const real = ['pnpm test', 'cd x && npm test', 'FOO=1 cargo test -p a', 'pnpm vitest run', 'git status; node --test a', 'echo "a" | pnpm nx test x', 'bash scripts/gates.sh'];
+    const real = ['pnpm test', 'cd x && npm test', 'FOO=1 cargo test -p a', 'pnpm vitest run', 'git status; node --test a', 'echo "a" | pnpm nx test x', 'bash scripts/gates.sh', 'time cargo test', 'timeout 600 pnpm test', 'nice -n 5 cargo build'];
     for (const cmd of real) assert.match(decide(cmd, ctx).command ?? '', /cpu-lock gate/, cmd);
   });
 

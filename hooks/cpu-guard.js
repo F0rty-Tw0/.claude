@@ -34,7 +34,7 @@ const LOCK = '~/.claude/scripts/cpu-lock';
 // newline, then VAR=x assignments. Heavy patterns also take an `rtk ` prefix. Quoted
 // text is masked before matching, so a mention (`echo "pnpm test"`, `man cargo test`,
 // `git log --grep tsc`) is neither locked nor dropped from rtk compression.
-const AT_COMMAND = String.raw`(^|[;&|(\n]\s*)((?:\w+=\S*\s+)*)`;
+const AT_COMMAND = String.raw`(^|[;&|(\n]\s*)((?:\w+=\S*\s+|time\s+|nice(?:\s+-n\s*-?\d+)?\s+|timeout\s+\S+\s+)*)`;
 const RUNNER = String.raw`(?:(?:pnpm|npx)\s+(?:exec\s+)?)?`;
 const HEAVY = [
   String.raw`cargo\s+(?:build|test|clippy|nextest|run|bench)\b|(?:(?:ba)?sh\s+)?\S*\b(?:cargo|gates)\.sh\b`,
