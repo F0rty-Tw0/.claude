@@ -60,3 +60,12 @@ test('Task 6.4 the 3.3 rules survive and SDD still stops at one unchanged round'
   assert.match(repoText('AGENTS.md'), /records a baseline number before any fix round/);
   assert.match(repoText('skills/subagent-driven-development/SKILL.md'), /a round that leaves the number unchanged or worse stops the loop/);
 });
+test('Task 6.5 proof.md: a test runner is not the real run', () => {
+  const t = repoText('skills/code-review/references/proof.md');
+  assert.match(t, /A test runner \(`node --test`, `pnpm test`, `vitest`, `cargo test`, `pytest`\) is the suite, not the real run/);
+  assert.match(t, /an After made only of its output is a proof gap/);
+  assert.match(t, /A docs, prompt or config-only PR uses the smallest observable effect/);
+});
+test('Task 6.5 open-pr: non-UI After is a real run', () => {
+  assert.match(repoText('skills/open-pr/SKILL.md'), /Non-UI PR → the After is a real run of the changed path, not the test runner's output/);
+});
