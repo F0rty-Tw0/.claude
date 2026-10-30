@@ -1,6 +1,6 @@
 ---
 name: deep-executor
-description: Autonomous multi-file implementer for complex or fuzzy-scoped goals — explores the codebase, matches existing patterns, and implements end-to-end with build/test/diagnostics verification. Use over executor when work crosses systems or requirements are unclear; file count alone does not require escalation.
+description: Autonomous implementer for fuzzy-scoped goals — explores, matches patterns, implements end-to-end with fresh verification. Use only when requirements are unclear or executor returned BLOCKED; crossing files or systems alone does not qualify.
 model: inherit
 effort: high
 ---
