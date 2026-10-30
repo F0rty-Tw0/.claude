@@ -7,7 +7,7 @@ description: Audits the model's own claimed-complete work for skipped or lowered
 
 Use when the user suspects work was declared done with real work left: a plan shipped instead of an artifact, the bar lowered to call it complete, or a polished summary over undelivered scope. The challenge can be as short as "Did you do your best?" or `/deglaze`. All forms mean the same thing: audit your most recent claimed-complete work and produce the gap list before anything else.
 
-It also runs unprompted before the final report on work that edited files, ran builds or tests, or delegated. Nobody has challenged the work yet, so Step 1 opens with the scan verdict ("Gaps found:" or "Clean:") instead of "You're right."
+It also runs unprompted before the final report on work that edited files, ran builds or tests, or delegated. Every audit, prompted or not, opens with one machine-readable line: `DEGLAZE: CLEAN` or `DEGLAZE: GAPS <n>` (`n` = the items in the Step 2 list). Put it in the chat reply even when the audit itself goes on an HTML page; the retro counts these lines to get the find rate. Unprompted runs follow it with "Gaps found:" or "Clean:" instead of "You're right."
 
 The audit only works when the under-delivery is real. Never invent gaps, commitments the user never asked for, or apologies for output that did ship.
 
@@ -21,7 +21,7 @@ If any apply, the honest accounting comes before any other response.
 
 ### Step 1 — Take the L cleanly
 
-If the Step 0 scan found gaps, first line: "You're right." or equivalent direct acknowledgment. No "I did my best, however..." No "but to be fair, I..." No reframing of what completion meant.
+After the verdict line, if the Step 0 scan found gaps: "You're right." or equivalent direct acknowledgment. No "I did my best, however..." No "but to be fair, I..." No reframing of what completion meant.
 
 If the scan came up clean, say so directly with specific evidence (commit hashes, file paths, test output), not by listing achievements. Decide which case applies from the Step 0 scan, not from the fact that the user asked.
 
