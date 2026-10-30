@@ -65,9 +65,28 @@ const unquote = (s) => {
 };
 // Bash expands ~ from $HOME; os.homedir() reads USERPROFILE on Windows, which can differ.
 const expandHome = (p) => p.replace(/^~(?=\/|$)/, process.env.HOME || os.homedir());
+// The shell, not this hook, owns $PWD / $OLDPWD (they follow the session's cd) and any variable the command assigns
+// before `end` (NAME=, NAME+=, export/local/declare/typeset NAME=, for NAME in, read/mapfile/printf -v/unset … NAME).
+// ponytail: `source`, `eval` and shell functions can assign too and are not seen.
+// The first assignment's end is found once per name, so a long command with many `$VAR` words stays linear.
+const assignedAt = new Map();
+const shellOwned = (name, end) => {
+  if (name === 'PWD' || name === 'OLDPWD') return true;
+  if (!assignedAt.has(name)) {
+    const m = new RegExp(String.raw`(?:^|[\s;&|(\`{])${name}\+?=|\b(?:for|select)[ \t]+${name}\b|` +
+      String.raw`\b(?:read|readarray|mapfile|printf|getopts|unset)\b[^\n;&|]*?[ \t]${name}\b`).exec(masked);
+    assignedAt.set(name, m ? m.index + m[0].length : Infinity);
+  }
+
+  return assignedAt.get(name) <= end;
+};
+// ponytail: this is Claude Code's environment, which can differ from the Bash shell's; a variable set only inside the
+// shell, or owned by it, stays unresolved and is rejected below.
+const expandEnv = (p, end) => p.replace(/\$(?:\{(\w+)\}|(\w+))/g, (m, a, b) => (shellOwned(a ?? b, end) ? m : process.env[a ?? b] ?? m));
+const resolvePath = (p, end) => expandEnv(shellOwned('HOME', end) ? p.replace(/^~(?=\/|$)/, '$HOME') : expandHome(p), end);
 
 const cd = masked.match(/^[ \t]*cd[ \t]+([^\s;&]+)[ \t]*(?:&&|;)/d);
-const baseDir = path.resolve(cwd, cd ? expandHome(unquote(cmd.slice(...cd.indices[1]))) : '.');
+const baseDir = path.resolve(cwd, cd ? resolvePath(unquote(cmd.slice(...cd.indices[1])), cd.index) : '.');
 
 // The Proof section runs from its heading to the next `## ` heading outside a code fence (output may print markdown).
 // A pair is a `| … Before | After |` table row, or a line starting (after bullets/bold/quote marks) with `Before:` and
@@ -193,13 +212,16 @@ const check = (inv) => {
       return heading ? proofGap(raw.slice(heading.index + heading[1].length), attached) : NO_PROOF;
     }
   }
-  if (value.includes('$')) return `pr-proof-guard: cannot resolve body file path \`${value}\` (it expands a variable). Pass a literal path. ${HOW}`;
-  const file = path.resolve(baseDir, expandHome(value));
+  // INVOKE's `VAR=x` prefix can swallow a whole `A=x;` statement, so gh's own statement starts after the last separator.
+  const statementStart = inv.index + inv[0].search(/[^\n;&|(`]*$/);
+  const resolved = resolvePath(value, statementStart);
+  if (resolved.includes('$')) return `pr-proof-guard: cannot resolve body file path \`${value}\` (it expands a variable). Pass a literal path. ${HOW}`;
+  const file = path.resolve(baseDir, resolved);
   // The hook runs before the command, so a body file created or changed earlier in this same command (>, tee, cp, mv,
   // sed -i, ...) is read stale or missing. ponytail: any earlier mention of the path counts, so a harmless
   // `ls pr.md && gh pr create -F pr.md` also blocks; the message says how to fix it, which beats a silent wrong allow.
   const mentions = [...masked.slice(0, scanEnd).matchAll(/[^\s;&|()<>`]+/dg)];
-  if (mentions.some((w) => path.resolve(baseDir, expandHome(unquote(cmd.slice(...w.indices[0])))) === file)) {
+  if (mentions.some((w) => path.resolve(baseDir, resolvePath(unquote(cmd.slice(...w.indices[0])), w.index)) === file)) {
     return `pr-proof-guard: this command touches ${file} before gh reads it. Write the body file in a separate Bash call — ` +
       'the hook reads it before your command runs.';
   }
