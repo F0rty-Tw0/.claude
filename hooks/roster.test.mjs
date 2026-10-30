@@ -65,3 +65,12 @@ test('deep-executor needs unclear requirements or an executor BLOCKED', () => {
   assert.match(desc, /BLOCKED/);
   assert.ok(desc.split(/\s+/).length <= 40, 'description over 40 words');
 });
+
+test('executor and dispatching-parallel-agents repeat the deep-executor tie-break', () => {
+  const rule = /deep-executor`? only when requirements are unclear or `?executor`? returned BLOCKED/;
+  const desc = read('agents/executor.md').match(/^description: (.*)$/m)[1];
+  assert.match(desc, rule);
+  assert.ok(desc.split(/\s+/).length <= 40, 'description over 40 words');
+  assert.match(read('skills/dispatching-parallel-agents/SKILL.md'), rule);
+  assert.doesNotMatch(read('skills/dispatching-parallel-agents/SKILL.md'), /deep-executor` for cross-system/);
+});
