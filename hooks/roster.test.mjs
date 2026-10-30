@@ -51,8 +51,11 @@ test('recipes name only live agents, and test-engineer is a tie-break, not a rec
   assert.match(tieBreaks(), /`test-engineer`/);
 });
 
-test('debugger loads systematic-debugging', () => {
-  assert.match(read('agents/debugger.md'), /load the `systematic-debugging` skill/);
+test('debugger loads systematic-debugging and leaves Phase 4 to the caller', () => {
+  const text = read('agents/debugger.md');
+  assert.match(text, /load the `systematic-debugging` skill/);
+  assert.match(text, /follow Phases 1–3\. Phase 4 becomes your recommendation/);
+  assert.doesNotMatch(text, /follow its phases/);
   assert.ok(existsSync(join(root, 'skills', 'systematic-debugging', 'SKILL.md')));
 });
 
