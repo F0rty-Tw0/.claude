@@ -9,7 +9,7 @@ import { after, describe, it } from 'node:test';
 const { decide } = createRequire(import.meta.url)('./cpu-guard.js');
 const WRAP = '~/.claude/scripts/cpu-lock gate nice -n 19 "${SHELL:-bash}" -c ';
 const root = mkdtempSync(join(tmpdir(), 'cpu-guard-'));
-const ctx = { cwd: root, platform: 'linux' };
+const ctx = { cwd: root, platform: 'linux', hasFlock: true };
 const HEAVY_EXAMPLES = ['cargo test -p a', 'pnpm turbo run test', 'pnpm -r test', 'pnpm --filter x test', 'npm test', 'pnpm nx test x', 'node --test hooks/*.test.mjs'];
 const JS_EXAMPLES = ['pnpm vitest run', 'pnpm tsc --noEmit', 'npx playwright test', 'pnpm exec turbo run test', 'pnpm run build'];
 
@@ -146,5 +146,11 @@ describe('cpu-guard', () => {
     assert.equal(decide('out=$(cargo test 2>&1); echo "$out"', ctx).command, `${WRAP}'out=$(cargo test 2>&1); echo "$out"'`);
     assert.equal(decide('cat <<< "x"\ncargo test', ctx).command, `${WRAP}'cat <<< "x"\nrtk cargo test'`);
     assert.equal(decide('cat <<EOF; cargo build\nx\nEOF', ctx).command, `${WRAP}'cat <<EOF; rtk cargo build\nx\nEOF'`);
+  });
+
+  it('14. WHEN flock is missing THEN a heavy command is left unwrapped; with flock it is wrapped', () => {
+    assert.deepEqual(decide('cargo test', { ...ctx, hasFlock: false }), {});
+    assert.match(decide('cargo test', { ...ctx, hasFlock: true }).command, /cpu-lock gate/);
+    assert.deepEqual(decide('cargo test', { ...ctx, platform: 'win32', hasFlock: true }), {});
   });
 });
