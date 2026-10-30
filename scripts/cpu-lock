@@ -15,8 +15,8 @@ case "$mode" in
   *) echo "usage: cpu-lock bench|gate CMD..." >&2; exit 2 ;;
 esac
 [ "$#" -gt 0 ] || { echo "cpu-lock: no command" >&2; exit 2; }
-# No flock (stock macOS): run CMD unlocked rather than fail every wrapped command.
-command -v flock >/dev/null || exec "$@"
+# No flock (stock macOS, Git Bash on Windows): run CMD unlocked rather than fail every wrapped command.
+command -v flock >/dev/null || { echo "cpu-lock: flock not found, running unlocked" >&2; exec "$@"; }
 
 mkdir -p "$(dirname "$LOCK")"
 # Say why the call stalls instead of hanging silently behind a peer's lock.

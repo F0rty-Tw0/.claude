@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
@@ -40,5 +40,15 @@ describe('cpu-lock', () => {
     const noFlock = { CPU_LOCK_FILE: env.CPU_LOCK_FILE, PATH: dir };
     const result = spawnSync('/bin/bash', [LOCK_SCRIPT, 'gate', process.execPath, '-e', 'process.stdout.write("ran"); process.exit(3)'], { env: noFlock, encoding: 'utf8' });
     assert.deepEqual([result.status, result.stdout], [3, 'ran']);
+  });
+
+  it('WHEN flock is not installed THEN the command runs unlocked and says so', () => {
+    const bin = mkdtempSync(join(tmpdir(), 'nobin-'));
+    symlinkSync(spawnSync('which', ['bash'], { encoding: 'utf8' }).stdout.trim(), join(bin, 'bash'));
+    const r = spawnSync(LOCK_SCRIPT, ['gate', '/bin/echo', 'hi'], { env: { PATH: bin, HOME: bin }, encoding: 'utf8' }); // cpu-lock:8 reads $HOME under set -u
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout.trim(), 'hi');
+    assert.match(r.stderr, /flock not found, running unlocked/);
+    rmSync(bin, { recursive: true, force: true });
   });
 });
