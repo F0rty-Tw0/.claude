@@ -40,7 +40,7 @@ describe('flow skill', () => {
 
   test('README agrees with SKILL.md: no file-count heuristic, mentions the handoff chain', () => {
     assert.doesNotMatch(readme, /more than 10 files/);
-    assert.match(readme, /the handoff chain \(`\/handoff`, `\/clear`, continue\) carries the user's standing grants/);
+    assert.match(readme, /the handoff chain \(`\/handoff`, `\/clear`, continue\) carries the user's standing grants and stop-after points/);
   });
 
   test('stacked D8 pairs the Next step line with the Standing grants line and the verbatim launch words', () => {

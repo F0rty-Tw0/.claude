@@ -77,7 +77,7 @@ Under `flow --stacked`, the EXECUTE, REVIEW and FINISH gates run per slice, as d
 Context fills -> the handoff-trigger mod runs `/handoff` in place of auto-compaction -> `/clear` -> the continuation reads the handoff. (Not the plan phase files' `## Handoff` section, which is for plan authors.)
 
 - At launch, record the user's grants (their words, with date) and any stop point, so each `/handoff` carries them under `## Standing grants` / `## Stop after` (skill:handoff; copied forward unchanged down the chain). Flow writes no handoff itself. The resumed run honours both before its first action and does not ask again.
-- `--stacked` D8 is the same mechanism with fixed lines (`references/stacked.md`).
+- `--stacked` D8 is the same mechanism: fixed lines plus the user's launch words (`references/stacked.md`).
 - **Stop after:** if the user named a stage or any stop point ("stop after PLAN"), flow reports there and does not go past it. A Stop after in a handoff binds the continuation.
 
 ## Non-Goals

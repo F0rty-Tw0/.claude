@@ -17,7 +17,7 @@ brainstorm    plan        auto | supervised     code-review      finish-branch
 | Review | `code-review` (proof bundle + acceptance criteria), triaged with `code-review-receiving` |
 | Finish | `finishing-a-development-branch` |
 
-Defaults to autonomous execution for well-scoped, low-blast work; switches to supervised when the change touches auth/payments/migrations, has several substantial parts of new logic, or has contested acceptance criteria. `--auto`/`--supervised` override the heuristic. When context fills, the handoff chain (`/handoff`, `/clear`, continue) carries the user's standing grants and stop-after stages to the next session unchanged. `flow --stacked` builds the plan's PR slices one after another, each in its own worktree, while earlier slices' local gates and CI run in the background; `--resume <plan folder>` continues it in a new session.
+Defaults to autonomous execution for well-scoped, low-blast work; switches to supervised when the change touches auth/payments/migrations, has several substantial parts of new logic, or has contested acceptance criteria. `--auto`/`--supervised` override the heuristic. When context fills, the handoff chain (`/handoff`, `/clear`, continue) carries the user's standing grants and stop-after points to the next session unchanged. `flow --stacked` builds the plan's PR slices one after another, each in its own worktree, while earlier slices' local gates and CI run in the background; `--resume <plan folder>` continues it in a new session.
 
 ---
 
