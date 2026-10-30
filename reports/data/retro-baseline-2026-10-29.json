@@ -1,6 +1,6 @@
 {
-  "generated": "2026-10-29",
-  "source": "parity.txt and other-machine.html (hand-copied); extractor_totals from scripts/retro-extract.py --since 2026-09-29",
+  "generated": "2026-10-30",
+  "source": "linux and windows hand-copied on 2026-10-29 from parity.txt and other-machine.html; extractor_totals and metrics from scripts/retro-extract.py --since 2026-09-29 --until 2026-10-30, run 2026-10-30",
   "linux": {
     "cost_usd_list": 10646,
     "active_hours": 226,
@@ -52,6 +52,9 @@
     "edit_file_not_read": 941
   },
   "extractor_window": "--since 2026-09-29 --until 2026-10-30, run 2026-10-30; live sessions kept growing after the 426/2865/914 parity run, the port matches the unmodified extract.py on identical input",
+  "notes": [
+    "req21_classifier_denials_per_1k counts only classifier denials returned as is_error tool results (74 in this window); the plan's 141 cross-check is not the same count"
+  ],
   "metrics": {
     "req1_reviewer_verdict_share": 0.0066815144766146995,
     "req2_rereview_share": 0.4054794520547945,
