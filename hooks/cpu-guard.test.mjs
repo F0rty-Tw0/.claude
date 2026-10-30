@@ -106,4 +106,31 @@ describe('cpu-guard', () => {
     for (const cmd of ['pnpm test:watch', 'pnpm -r test:watch']) assert.deepEqual(decide(cmd, ctx), {}, cmd);
     assert.match(decide('echo "cpu-lock gate is next" && cargo test', ctx).command ?? '', /^~\/\.claude\/scripts\/cpu-lock gate/);
   });
+
+  it('12. WHEN a heavy command follows leading space, a shell keyword or brace, or an env, sudo, xargs, time, nice or timeout prefix THEN it is wrapped with rtk\'s form', () => {
+    const cases = [
+      [' cargo test', ' rtk cargo test'],
+      ['\tpnpm vitest run', '\trtk vitest'],
+      ['if true; then cargo test; fi', 'if true; then rtk cargo test; fi'],
+      ['for d in a b; do cargo build; done', 'for d in a b; do rtk cargo build; done'],
+      ['{ cargo test; }', '{ rtk cargo test; }'],
+      ['! cargo test', '! rtk cargo test'],
+      ['env FOO=1 cargo test', 'env FOO=1 rtk cargo test'],
+      ['sudo cargo build', 'sudo rtk cargo build'],
+      ['ls | xargs -n1 cargo test', 'ls | xargs -n1 rtk cargo test'],
+      ['time -p cargo test', 'time -p rtk cargo test'],
+      ['nice --adjustment=5 cargo test', 'nice --adjustment=5 rtk cargo test'],
+      ['timeout -s KILL 5 cargo test', 'timeout -s KILL 5 rtk cargo test'],
+      ['timeout --signal=KILL 5 cargo test', 'timeout --signal=KILL 5 rtk cargo test'],
+    ];
+    for (const [cmd, inner] of cases) assert.equal(decide(cmd, ctx).command, `${WRAP}'${inner}'`, cmd);
+    assert.match(decide('timeout -k 5 600 pnpm test', ctx).command ?? '', /cpu-lock gate/);
+  });
+
+  it('13. WHEN quoted text or a heredoc body names a command rtk rewrites THEN that text reaches the shell unchanged; the real command still gets rtk\'s form', () => {
+    assert.equal(decide('echo "a; cargo test" && pnpm test', ctx).command, `${WRAP}'echo "a; cargo test" && pnpm test'`);
+    assert.equal(decide('FOO="a b" cargo test', ctx).command, `${WRAP}'FOO="a b" rtk cargo test'`);
+    const heredoc = 'cat > run.sh <<EOF\ncargo test\npnpm vitest run\nEOF\npnpm vitest run';
+    assert.equal(decide(heredoc, ctx).command, `${WRAP}'cat > run.sh <<EOF\ncargo test\npnpm vitest run\nEOF\nrtk vitest'`);
+  });
 });

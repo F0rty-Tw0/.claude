@@ -31,10 +31,13 @@ const path = require('path');
 const LOCK = '~/.claude/scripts/cpu-lock';
 
 // Command position: the start of the command or of a segment after ; & | ( or a
-// newline, then VAR=x assignments. Heavy patterns also take an `rtk ` prefix. Quoted
-// text is masked before matching, so a mention (`echo "pnpm test"`, `man cargo test`,
-// `git log --grep tsc`) is neither locked nor dropped from rtk compression.
-const AT_COMMAND = String.raw`(^|[;&|(\n]\s*)((?:\w+=\S*\s+|time\s+|nice(?:\s+-n\s*-?\d+)?\s+|timeout\s+\S+\s+)*)`;
+// newline, then `then`/`do`/`else`/`elif`/`{`/`!`, then VAR=x assignments and the
+// env, sudo, xargs, time, nice and timeout prefixes. Heavy patterns also take an `rtk `
+// prefix. Quoted text is masked before matching, so a mention (`echo "pnpm test"`,
+// `man cargo test`, `git log --grep tsc`) is neither locked nor dropped from rtk
+// compression. Missed, left open: prefix options with a value (`sudo -u me`), a
+// `case` arm (`a) cargo test`), `"$(cargo test)"` inside quotes, `cargo +nightly test`.
+const AT_COMMAND = String.raw`((?:^|[;&|(\n])\s*(?:(?:then|do|else|elif|\{|!)\s+)*)((?:\w+=\S*\s+|(?:env|sudo|xargs)(?:\s+-\S+)*\s+|time(?:\s+-p)?\s+|nice(?:\s+(?:-n\s*-?\d+|-\d+|--adjustment=-?\d+))?\s+|timeout(?:\s+(?:-[sk]\s+\S+|-[sk]\S+|-[^sk\s]\S*))*\s+\S+\s+)*)`;
 const RUNNER = String.raw`(?:(?:pnpm|npx)\s+(?:exec\s+)?)?`;
 const HEAVY = [
   String.raw`cargo\s+(?:build|test|clippy|nextest|run|bench)\b|(?:(?:ba)?sh\s+)?\S*\b(?:cargo|gates)\.sh\b`,
@@ -50,26 +53,42 @@ const WATCH = /\s--watch\b|\s-w\b|\swatch\b|:watch\b|\bpnpm\s+dev\b/;
 // rtk's own form of each command it no longer rewrites, measured with `rtk rewrite`
 // on rtk 1.0.1 before the exclusion.
 const RTK_FORMS = [
-  [String.raw`cargo\s+(build|test|clippy)\b`, '$1$2rtk cargo $3'],
-  [String.raw`${RUNNER}vitest(?:\s+run)?\b`, '$1$2rtk vitest'],
-  [String.raw`${RUNNER}tsc\b`, '$1$2rtk tsc'],
-  [String.raw`${RUNNER}playwright\s+test\b`, '$1$2rtk playwright test'],
-  [String.raw`pnpm\s+exec\s+turbo\b`, '$1$2rtk pnpm exec turbo'],
-  [String.raw`pnpm\s+run\s+build\b`, '$1$2rtk pnpm run build'],
-].map(([pattern, form]) => [new RegExp(AT_COMMAND + pattern, 'g'), form]);
+  [String.raw`cargo\s+(build|test|clippy)\b`, 'rtk cargo $1'],
+  [String.raw`${RUNNER}vitest(?:\s+run)?\b`, 'rtk vitest'],
+  [String.raw`${RUNNER}tsc\b`, 'rtk tsc'],
+  [String.raw`${RUNNER}playwright\s+test\b`, 'rtk playwright test'],
+  [String.raw`pnpm\s+exec\s+turbo\b`, 'rtk pnpm exec turbo'],
+  [String.raw`pnpm\s+run\s+build\b`, 'rtk pnpm run build'],
+].map(([pattern, form]) => [new RegExp(AT_COMMAND + pattern, 'dg'), new RegExp(`^${pattern}`), form]);
+
+const HEREDOC = /(<<-?\s*(['"]?)(\w+)\2[^\n]*)\n[\s\S]*?\n\3(?=\n|$)/g;
+const QUOTED = /"(?:[^"\\]|\\[\s\S])*"|'[^']*'/g;
 
 // Commit messages and heredoc bodies are prose, and a `cpu-lock bench` call's
 // quoted script already holds the bench lock: none of them is checked.
 const stripProse = (cmd) => cmd
   .replace(/(\s(?:-m|--message)(?:=|\s+))("[^"]*"|'[^']*')/g, "$1''")
-  .replace(/(<<-?\s*(['"]?)(\w+)\2[^\n]*)\n[\s\S]*?\n\3(?=\n|$)/g, '$1')
+  .replace(HEREDOC, '$1')
   .replace(/(\S*cpu-lock\s+bench\b[^;&|\n]*?)('[^']*'|"[^"]*")/g, "$1''");
-const maskQuotes = (cmd) => cmd.replace(/"(?:[^"\\]|\\[\s\S])*"|'[^']*'/g, (quoted) => quoted[0].repeat(2));
+const maskQuotes = (cmd) => cmd.replace(QUOTED, (quoted) => quoted[0].repeat(2));
+// Same masks with the length kept, so a match offset is an offset in the raw command.
+const blankProse = (cmd) => cmd
+  .replace(HEREDOC, (body, head) => head + '_'.repeat(body.length - head.length))
+  .replace(QUOTED, (quoted) => '_'.repeat(quoted.length));
 
+// Rewrites only the command word found at command position in the blanked text, so
+// quoted text and heredoc bodies (a file being written) reach the shell unchanged.
 function withRtk(cmd) {
   if (/\bRTK_DISABLED=1\b/.test(cmd)) return cmd;
+  const blanked = blankProse(cmd);
+  const edits = RTK_FORMS.flatMap(([atCommand, word, form]) => [...blanked.matchAll(atCommand)].map((match) => {
+    const start = match.indices[2][1];
+    const end = match.index + match[0].length;
 
-  return RTK_FORMS.reduce((out, [pattern, form]) => out.replace(pattern, form), cmd);
+    return [start, end, cmd.slice(start, end).replace(word, form)];
+  }));
+
+  return edits.sort((a, b) => b[0] - a[0]).reduce((out, [start, end, text]) => out.slice(0, start) + text + out.slice(end), cmd);
 }
 
 function optedOut(cwd) {
