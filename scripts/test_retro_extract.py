@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Tests for retro-extract.py. Run: python3 scripts/test_retro_extract.py"""
-import json, os, subprocess, sys, tempfile, unittest
+import datetime as dt, importlib.util, json, os, subprocess, sys, tempfile, unittest
 from pathlib import Path
 
 SCRIPT = Path(__file__).with_name("retro-extract.py")
@@ -11,8 +11,8 @@ DAY = "2026-10-10"
 def ts(day=DAY, minute=0): return f"{day}T10:{minute:02d}:00.000Z"
 def text(t): return {"type": "text", "text": t}
 def tool_use(id_, name, **inp): return {"type": "tool_use", "id": id_, "name": name, "input": inp}
-def assistant(blocks, minute=0, usage=None, model="claude-opus-5-5", cwd="/w"):
-    return {"type": "assistant", "timestamp": ts(minute=minute), "cwd": cwd,
+def assistant(blocks, minute=0, usage=None, model="claude-opus-5-5"):
+    return {"type": "assistant", "timestamp": ts(minute=minute), "cwd": "/w",
             "message": {"model": model, "usage": usage or {}, "content": blocks}}
 def prompt(t, minute=0): return {"type": "user", "timestamp": ts(minute=minute), "message": {"content": t}}
 def tool_error(id_, t, minute=0):
@@ -34,6 +34,14 @@ def sub_session(root: Path, parent: str, agent: str, rows, agent_type: str, desc
     p = root / "proj" / parent / "subagents" / f"agent-{agent}.jsonl"
     write_jsonl(p, rows)
     p.with_suffix(".meta.json").write_text(json.dumps({"agentType": agent_type, "description": desc}), encoding="utf-8")
+
+
+def load_extractor():
+    sys.dont_write_bytecode = True  # keep scripts/ free of __pycache__
+    spec = importlib.util.spec_from_file_location("retro_extract", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def run_extract(root, *extra, env=None) -> dict:
@@ -84,6 +92,17 @@ class ExtractorCli(unittest.TestCase):
         for bad in ('"/tmp', "'/tmp", '"/subagents/"', 'rsplit("/"', 'split("/")', "expanduser"):
             self.assertNotIn(bad, src)
 
+    def test_half_written_meta_and_vanished_transcripts_are_skipped(self):
+        meta = self.root / "proj" / "s1" / "subagents" / "agent-a1.meta.json"
+        meta.write_text('{"agentType": "exec', encoding="utf-8")
+        (self.root / "proj" / "unreadable.jsonl").mkdir()  # open() fails, as for a transcript deleted mid-scan
+        try:
+            os.symlink(self.root / "missing", self.root / "proj" / "deleted.jsonl")  # stat() fails
+        except OSError:
+            pass  # no symlink privilege (Windows); the other two cases still run
+        t = run_extract(self.root)["totals"]
+        self.assertEqual((t["main_sessions"], t["subagent_runs"]), (1, 1))
+
     def test_baseline_file_carries_parity_numbers(self):
         b = json.loads(BASELINE.read_text(encoding="utf-8"))
         self.assertEqual(b["linux"]["edit_before_read"], 1081)
@@ -128,7 +147,7 @@ class Metrics(unittest.TestCase):
             sub_session(self.root, "s1", f"r{i}", [text_msg(body)], kind, f"d{i}")
         self.assertAlmostEqual(run_extract(self.root)["req1_reviewer_verdict_share"], 2 / 3)
 
-    def test_per_1k_rates_with_windows_style_cwd(self):
+    def test_per_1k_error_flag_rates(self):
         fnr = "File has not been read yet. Read it first before writing to it."
         calls = [tool_use("e1", "Edit", file_path="a.ts"), tool_use("w1", "Write", file_path="b.ts")]
         cmds = ["ls", "ls", "ls", "ls", "cat <<EOF\nx\nEOF", "gh pr create", "ls", "ls"]
@@ -139,7 +158,7 @@ class Metrics(unittest.TestCase):
                   ("b4", "Permission for this action was denied by the Claude Code auto mode classifier. Reason: [x]."),
                   ("b5", "Command timed out after 120s"), ("b6", "cannot resolve body file path: $X/pr.md"),
                   ("b7", "zsh: no matches found: *.ts"), ("b8", "bfs: error: bad flag")]
-        rows = [prompt("go"), assistant(calls, 1, cwd=r"E:\wow-testkit\.claude\worktrees\x")]
+        rows = [prompt("go"), assistant(calls, 1)]
         rows += [tool_error(i, e, 2) for i, e in errors]
         main_session(self.root, "s1", rows)
         s = run_extract(self.root)
@@ -191,6 +210,23 @@ class Metrics(unittest.TestCase):
         self.assertEqual(s["req26_executor_block_rate_sonnet"], 0.5)
         self.assertEqual(s["req26_executor_block_rate_opus"], 0.0)
 
+    def test_report_head_is_the_last_report_even_after_send_message_parts(self):
+        main_session(self.root, "s1", [prompt("go"), assistant([spawn(1, "executor", "Build A"), spawn(2, "code-reviewer", "Review A")], 1)])
+        report = [assistant([tool_use("m1", "SendMessage", to="main", message="Part 1/2: findings ...")], 1),
+                  text_msg("VERDICT: BLOCK\nPart 2/2: ...", 2)]
+        sub_session(self.root, "s1", "r1", report, "code-reviewer", "Review A")
+        s = run_extract(self.root)
+        self.assertEqual((s["req1_reviewer_verdict_share"], s["req26_executor_block_rate_opus"]), (1.0, 1.0))
+
+    def test_reviewer_runs_sharing_a_description_pair_in_time_order(self):
+        def run(minute, verdict):
+            return {"agentType": "code-reviewer", "parent": "s1", "desc": "Review",
+                    "first": dt.datetime(2026, 10, 10, 10, minute, tzinfo=dt.timezone.utc), "report_head": f"VERDICT: {verdict}"}
+        agents = [dict(type="executor", model="sonnet", desc="Build A"), dict(type="code-reviewer", model=None, desc="Review"),
+                  dict(type="executor", model=None, desc="Build B"), dict(type="code-reviewer", model=None, desc="Review")]
+        rates = load_extractor().block_rates([{"sid": "s1", "agents": agents}], [run(30, "APPROVE"), run(5, "BLOCK")])
+        self.assertEqual(rates, {"sonnet": 1.0, "opus": 0.0})
+
     def test_handoff_grants_share_for_both_slash_styles(self):
         writes = [tool_use("w1", "Write", file_path="/data/u/.claude/handoffs/p-1.md", content="## Standing grants\n- x"),
                   tool_use("w2", "Write", file_path=r"D:\work\u\.claude\handoffs\p-2.md", content="no grants"),
@@ -232,6 +268,13 @@ class Metrics(unittest.TestCase):
         s = run_extract(self.root)
         self.assertEqual(s["req23_debugger_systematic_debugging_share"], 0.5)
         self.assertEqual(s["req23_deep_executor_errors_per_run"], 1.0)
+
+    def test_debugger_skill_read_fallback_counts_as_a_load(self):
+        main_session(self.root, "s1", [prompt("go")])
+        for agent, path in [("d1", "/data/u/.claude/skills/systematic-debugging/SKILL.md"),
+                            ("d2", r"D:\work\u\.claude\skills\systematic-debugging\SKILL.md"), ("d3", "/w/notes.md")]:
+            sub_session(self.root, "s1", agent, [assistant([tool_use("r", "Read", file_path=path)], 1)], "debugger", f"Find {agent}")
+        self.assertAlmostEqual(run_extract(self.root)["req23_debugger_systematic_debugging_share"], 2 / 3)
 
     def test_misc_ratios(self):
         descs = ["Fix review findings", "Build X", "Build Y", "Round 2 fixes"]

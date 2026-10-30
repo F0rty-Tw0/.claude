@@ -12,7 +12,8 @@ requirements a transcript cannot show, each with the reason. Rates are normalise
 so a short re-measure compares with the 30-day baseline.
 
 Heuristics, not ground truth: `req26_*` attributes a code-reviewer spawn to the nearest earlier executor spawn of the same
-session and reads its verdict from the code-reviewer run with the same parent and description; a spawn with no model counts
+session and reads its verdict from the code-reviewer run with the same parent and description (runs sharing one description
+pair with spawns in start-time order); a spawn with no model counts
 as Opus (it inherits the Opus main session, inferred). `req20_*` uses "10+ Agent spawns and no gh pr create" as a proxy.
 Teammate counts (`req10_part_fragments_*`, `req18_*`) read main sessions only: the goal is messages arriving in main.
 """
@@ -34,6 +35,7 @@ LEGACY_VERDICT = re.compile(r"\b(APPROVE|BLOCK|REQUEST CHANGES)\b")
 DEGLAZE_LINE = re.compile(r"^DEGLAZE: (CLEAN|GAPS (\d+))\b", re.M)
 HANDOFF_PATH = re.compile(r"[\\/]handoffs[\\/][^\\/]+\.md$")
 PART_RE = re.compile(r"\bpart [2-9]\b", re.I)
+SKILL_FILE = re.compile(r"[\\/]skills[\\/]([\w-]+)[\\/]SKILL\.md$")
 REVIEWERS = ("code-reviewer", "quality-reviewer", "security-reviewer", "performance-reviewer")
 ARCHIVED_AGENTS = ("build-fixer", "scientist", "verifier")
 UNMEASURABLE = {
@@ -72,9 +74,10 @@ def scan(path: Path, is_sub: bool) -> dict:
              interrupts=0, compacts=0, api_err=collections.Counter(), corrections=[], asks=0,
              commits=0, prs=0, pushes=0, title=None, final_text="", user_texts=[],
              ctx=collections.Counter(), flags=collections.Counter(), teammate=collections.Counter(), report_head="",
-             cmds=collections.Counter(), writes=collections.Counter(), deglaze=collections.Counter())
+             cmds=collections.Counter(), writes=collections.Counter(), deglaze=collections.Counter(),
+             skill_reads=collections.Counter())
     pending = {}
-    last_report, last_text = "", ""
+    last_report = ""
     with open(path, encoding="utf-8", errors="ignore") as fh:
         for line in fh:
             if any(t in line[:300] for t in SKIP_TYPES):
@@ -113,7 +116,7 @@ def scan(path: Path, is_sub: bool) -> dict:
                 txt = text_of(msg.get("content"))
                 if txt.strip():
                     s["final_text"] = txt
-                    last_text = txt
+                    last_report = txt
                     kind = deglaze_kind(txt)
                     if kind:
                         s["deglaze"][kind] += 1
@@ -129,6 +132,10 @@ def scan(path: Path, is_sub: bool) -> dict:
                     elif name in ("SubagentHandback", "SendMessage"):
                         body = inp.get("message")
                         last_report = (body if isinstance(body, str) else json.dumps(inp))[:400]
+                    elif name == "Read":
+                        read_skill = SKILL_FILE.search(str(inp.get("file_path") or ""))
+                        if read_skill:
+                            s["skill_reads"][read_skill.group(1)] += 1
                     if name == "Skill":
                         s["skills"][inp.get("skill")] += 1
                     elif name in ("Agent", "Task"):
@@ -182,7 +189,7 @@ def scan(path: Path, is_sub: bool) -> dict:
                     s["user_texts"].append(txt[:400])
                 if CORR.search(txt[:600]) and len(txt) < 2000:
                     s["corrections"].append(txt[:400])
-    s["report_head"] = (last_report or last_text)[:400] if is_sub else ""
+    s["report_head"] = last_report[:400] if is_sub else ""
     s["verdicts"] = VERDICT.findall(s["final_text"][-1500:]) if is_sub else []
     s["final_text"] = s["final_text"][-600:]
     return s
@@ -274,7 +281,7 @@ def model_family(model):
 
 def block_rates(mains: list, subs: list) -> dict:
     heads = collections.defaultdict(list)
-    for s in subs:
+    for s in sorted(subs, key=lambda s: s["first"]):
         if s.get("agentType") == "code-reviewer":
             heads[(s["parent"], s.get("desc"))].append(s["report_head"])
     tally = {"sonnet": [0, 0], "opus": [0, 0]}
@@ -311,6 +318,7 @@ def summarize(mains: list, subs: list, since: str, until) -> dict:
     def of_type(*kinds): return [a for a in spawns if a["type"] in kinds]
     def described(kind, regex): return [a for a in of_type(kind) if regex.search(a["desc"] or "")]
     def tools(prefix): return sum(n for s in both for name, n in s["tool"].items() if str(name).startswith(prefix))
+    def loaded(s, skill): return s["skills"][skill] + s["skill_reads"][skill] > 0
 
     reviewers = [s for s in subs if s.get("agentType") in REVIEWERS]
     strict = [s for s in reviewers if VERDICT_LINE.match(next((ln for ln in s["report_head"].split("\n") if ln.strip()), ""))]
@@ -361,7 +369,7 @@ def summarize(mains: list, subs: list, since: str, until) -> dict:
         "req21_exit137_per_1k": per_1k(total("flags", "exit_137")),
         "req21_classifier_denials_per_1k": per_1k(total("flags", "classifier_denied")),
         "req22_context7_share_of_doc_lookups": ratio(tools("mcp__context7__"), doc_lookups),
-        "req23_debugger_systematic_debugging_share": ratio(len([s for s in debuggers if s["skills"]["systematic-debugging"]]), len(debuggers)),
+        "req23_debugger_systematic_debugging_share": ratio(len([s for s in debuggers if loaded(s, "systematic-debugging")]), len(debuggers)),
         "req23_deep_executor_errors_per_run": ratio(sum(sum(s["err"].values()) for s in deep_runs), len(deep_runs)),
         "req23_deep_executor_share_of_executors": ratio(deeps, execs + deeps),
         "req26_executor_block_rate_sonnet": blocks["sonnet"],
@@ -383,6 +391,23 @@ def utc_date(value: str) -> dt.datetime:
     return dt.datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=dt.timezone.utc)
 
 
+def modified_since(path: Path, since: dt.datetime) -> bool:
+    try:
+        return path.stat().st_mtime >= since.timestamp()
+    except OSError:
+        return False
+
+
+def read_meta(path: Path) -> dict:
+    """Subagent meta, or {} when it is missing or half-written."""
+    try:
+        meta = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+    return meta if isinstance(meta, dict) else {}
+
+
 def write_json(path: Path, data) -> None:
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(data, fh, default=ser)
@@ -401,17 +426,19 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
 
     files = [f for f in [*args.root.glob("*/*.jsonl"), *args.root.glob("*/*/subagents/*.jsonl")]
-             if f.stat().st_mtime >= since.timestamp()]
+             if modified_since(f, since)]
     print(len(files), "files", file=sys.stderr)
     mains, subs = [], []
     for f in files:
         is_sub = "subagents" in f.parts
-        s = scan(f, is_sub)
+        try:
+            s = scan(f, is_sub)
+        except OSError:  # deleted or unreadable since the glob
+            continue
         if not s["first"] or s["last"] < since or (until and s["first"] >= until):
             continue
         if is_sub:
-            mp = f.with_suffix(".meta.json")
-            meta = json.loads(mp.read_text(encoding="utf-8")) if mp.exists() else {}
+            meta = read_meta(f.with_suffix(".meta.json"))
             s["agentType"] = meta.get("agentType")
             s["desc"] = meta.get("description")
             s["parent"] = f.parent.parent.name
