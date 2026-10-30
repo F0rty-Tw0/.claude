@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 
 const { decide } = createRequire(import.meta.url)('./cpu-guard.js');
 const WRAP = '~/.claude/scripts/cpu-lock gate nice -n 19 "${SHELL:-bash}" -c ';
@@ -14,6 +14,8 @@ const HEAVY_EXAMPLES = ['cargo test -p a', 'pnpm turbo run test', 'pnpm -r test'
 const JS_EXAMPLES = ['pnpm vitest run', 'pnpm tsc --noEmit', 'npx playwright test', 'pnpm exec turbo run test', 'pnpm run build'];
 
 describe('cpu-guard', () => {
+  after(() => rmSync(root, { recursive: true, force: true }));
+
   it('1. WHEN cargo or an rtk-excluded JS command runs bare THEN it is wrapped in the gate lock with rtk\'s form at command position', () => {
     assert.equal(decide("cd x && cargo test -p a -- 'b c'", ctx).command, `${WRAP}'cd x && rtk cargo test -p a -- '\\''b c'\\'''`);
     assert.equal(decide('RUSTFLAGS=x cargo build', ctx).command, `${WRAP}'RUSTFLAGS=x rtk cargo build'`);
@@ -45,7 +47,7 @@ describe('cpu-guard', () => {
   });
 
   it('5. WHEN the cwd or an ancestor has .claude/cpu-guard.off THEN nothing is wrapped; a sibling repo is still wrapped', () => {
-    const off = mkdtempSync(join(tmpdir(), 'cpu-guard-off-'));
+    const off = mkdtempSync(join(root, 'off-'));
     mkdirSync(join(off, '.claude'), { recursive: true });
     writeFileSync(join(off, '.claude', 'cpu-guard.off'), '');
     mkdirSync(join(off, 'pkg', 'a'), { recursive: true });
@@ -67,7 +69,7 @@ describe('cpu-guard', () => {
   it('8. WHEN rtk runs with the exclude_commands line from cpu-guard.js\'s header THEN its hook leaves every bare and cd-prefixed example to this guard', { skip: process.platform !== 'linux' && 'rtk reads XDG_CONFIG_HOME only on Linux' }, (t) => {
     // `rtk hook check` prints "No rewrite for: …" when it would not rewrite. Compounds like `git status && <heavy>` are a known gap (cpu-guard.js header).
     const line = readFileSync(join(import.meta.dirname, 'cpu-guard.js'), 'utf8').match(/^\/\/ (exclude_commands = .*)$/m)[1];
-    const config = mkdtempSync(join(tmpdir(), 'cpu-guard-rtk-'));
+    const config = mkdtempSync(join(root, 'rtk-'));
     mkdirSync(join(config, 'rtk'));
     writeFileSync(join(config, 'rtk', 'config.toml'), `[hooks]\n${line}\n`);
     const check = (cmd) => spawnSync('rtk', ['hook', 'check', ...cmd.split(' ')], { encoding: 'utf8', env: { ...process.env, XDG_CONFIG_HOME: config } });
@@ -76,8 +78,10 @@ describe('cpu-guard', () => {
       const result = check(cmd);
       assert.match(result.stdout + result.stderr, /No rewrite/, `${cmd}: add it to exclude_commands in cpu-guard.js's header`);
     }
-    const mention = check('git log --grep tsc');
-    assert.doesNotMatch(mention.stdout + mention.stderr, /No rewrite/, 'a mention of tsc must keep rtk compression');
+    for (const cmd of ['git log --grep tsc', 'git log --grep pnpm test']) {
+      const mention = check(cmd);
+      assert.doesNotMatch(mention.stdout + mention.stderr, /No rewrite/, `${cmd}: a mention must keep rtk compression`);
+    }
   });
 
   it('9. WHEN the CLI gets a hook payload THEN it prints updatedInput and exits 0; garbage stdin prints nothing', { skip: process.platform === 'win32' }, () => {
@@ -87,5 +91,19 @@ describe('cpu-guard', () => {
     assert.match(JSON.parse(ok.stdout).hookSpecificOutput.updatedInput.command, /cpu-lock gate/);
     const bad = run('not json');
     assert.deepEqual([bad.status, bad.stdout], [0, '']);
+  });
+
+  it('10. WHEN a heavy command is only mentioned, in quotes or as an argument THEN nothing is wrapped; at command position it is', () => {
+    const mentions = ['echo "pnpm test"', 'git log --grep "cargo test"', 'grep -r "npm test" .', 'rg "node --test" hooks', 'man cargo test', "bash -c 'x' # pnpm turbo run test", 'cat scripts/gates.sh', 'echo "cd x && pnpm test"', "rg 'a; cargo test' src"];
+    for (const cmd of mentions) assert.deepEqual(decide(cmd, ctx), {}, cmd);
+    const real = ['pnpm test', 'cd x && npm test', 'FOO=1 cargo test -p a', 'pnpm vitest run', 'git status; node --test a', 'echo "a" | pnpm nx test x', 'bash scripts/gates.sh'];
+    for (const cmd of real) assert.match(decide(cmd, ctx).command ?? '', /cpu-lock gate/, cmd);
+  });
+
+  it('11. WHEN rtk vitest or rtk tsc is typed, a script is a :watch one, or a quote names cpu-lock THEN the watch is left alone and the rest are wrapped', () => {
+    assert.equal(decide('rtk vitest', ctx).command, `${WRAP}'rtk vitest'`);
+    assert.equal(decide('cd x && rtk tsc --noEmit', ctx).command, `${WRAP}'cd x && rtk tsc --noEmit'`);
+    for (const cmd of ['pnpm test:watch', 'pnpm -r test:watch']) assert.deepEqual(decide(cmd, ctx), {}, cmd);
+    assert.match(decide('echo "cpu-lock gate is next" && cargo test', ctx).command ?? '', /^~\/\.claude\/scripts\/cpu-lock gate/);
   });
 });
