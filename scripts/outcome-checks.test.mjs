@@ -37,6 +37,7 @@ test('Task 3.4 handoff: <project> is the same for every worktree of a repo', () 
   const t = repoText('skills/handoff/SKILL.md');
   assert.match(t, /basename "\$\(dirname "\$\(git rev-parse --path-format=absolute --git-common-dir\)"\)"/);
   assert.doesNotMatch(t, /repo root's basename/);
+  assert.match(t, /outside a git repo, the cwd's basename/);
 });
 test('Task 3.4 handoff: step 1 reads the digest, first write creates it', () => {
   const step1 = repoText('skills/handoff/SKILL.md').split('\n').find((l) => l.startsWith('1. Run `date'));
