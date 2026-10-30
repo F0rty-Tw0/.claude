@@ -28,6 +28,8 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
 
    No diff found → say so and stop. Never review from memory.
 
+   **Convention-only gate.** For a local range (`<base>...HEAD`, `<x>..HEAD`) run `node ~/.claude/scripts/convention-only.mjs <range>`. Exit 0 means every changed file is fully explained by the repo's own formatters (prettier, eslint --fix, rustfmt): formatting the old and new text gives the same result. A file with no formatter is never cosmetic, whitespace included. Dispatch nothing: print `VERDICT: APPROVE` and `Review skipped: convention-only diff`, write no stamp, and treat it as APPROVE. The caller waits for no reviewer. Any other exit → review as usual.
+
    **Review stamp.** Runs only when all hold; otherwise full review, no stamp:
    - Diff is `git diff <base>...HEAD` on the local checkout. A caller's `<x>..HEAD` converts to `<x>...HEAD` only if `git merge-base --is-ancestor <x> HEAD` succeeds.
    - Not an excluded diff: non-ancestor two-dot range, `gh pr diff <n>`, explicit other head, `--cached` or working-tree diff, mid-plan `git diff <task-base>`.
@@ -41,15 +43,17 @@ Review effort follows **blast radius**, not line count; claims are replaced by *
    |---|---|
    | 1, `materialChanged:false` | Dispatch nothing. Print the stamped report under `Reused review @ <short sha> (<stamp date>)`, go to Step 6. No new stamp. |
    | 1, `materialChanged:true` | Proof pass: one `code-reviewer` in `proof` mode. No trunk escalation (code unchanged, stamp has the specialist findings). Report = stamped one with section 5 and the section 7 verdict replaced, plus any reinstated finding merged into sections 2 or 3; keep the stamped Discarded findings and append new ones. Check the reviewer's section 7 against the verdict table on the combined report; override on mismatch (stamped Blocker + clean new proof is still BLOCK). |
-   | 2 | Delta review: one `code-reviewer` in `delta` mode on the range, told `materialChanged`. Step 3 trunk escalation is judged on the delta diff; specialists get the delta diff and their verified findings merge into sections 2 and 3. |
+   | 2 | Delta review: one `code-reviewer` in `delta` mode (`model: sonnet`, `effort: high`) on the range, told `materialChanged`. Step 3 trunk escalation is judged on the delta diff; specialists get the delta diff and their verified findings merge into sections 2 and 3. |
    | 3 | Full review, as today. |
    | lookup exits non-zero or prints no JSON | Treat as case 3. |
+
+   **Delta budget.** Delta and proof dispatches set `model: sonnet`, `effort: high` on the Agent call. Read the verdict from the reply's first line (`VERDICT: APPROVE | CHANGES | BLOCK`) and the findings from the report path it names (`$CLAUDE_SCRATCHPAD/reports/<agent>-<slug>.md`, fallback your OS temp dir + `/claude-reports/`). A fix loop gets at most 2 delta rounds (a babysit tick on someone else's new commits starts its own count). Leftover P3/Note findings go into one fix pass with no further delta round. Anything above P3 left after delta round 2 (a BLOCK, or CHANGES with a P0-P2 finding) stops for the user.
 
    **Mid-plan checkpoint** (e.g. after a `subagent-driven-development` task): diff = `git diff <task-base>` (working tree against the recorded task base, so uncommitted work counts), plan = the task text. Run one for risky task diffs (shared code, trunk signals); the plan's final review covers the rest.
 
    **Stacked PR** (base is not the default branch: `gh pr view <n> --json baseRefName`) → diff against the **parent** (`<parent>...<head>`), and pass the `## Stack` map to the reviewer.
 
-2. **Independence.** Dispatch the reviewer with `references/reviewer-prompt.md`. Always dispatch, even for small diffs, unless Step 1 reuses a stamp (case 1, unchanged material): a session that wrote any of the code is biased.
+2. **Independence.** Dispatch the reviewer with `references/reviewer-prompt.md`. Always dispatch, even for small diffs, unless Step 1 reuses a stamp (case 1, unchanged material) or its Convention-only gate exits 0: a session that wrote any of the code is biased.
 
    Pass only artifacts: diff, PR text, plan; fill the template's placeholders. Never pass your session's rationale, opinions, or a hint list. Exception: stamped independent-review findings, in delta and proof modes only.
 

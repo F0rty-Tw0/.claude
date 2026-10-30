@@ -2,9 +2,11 @@
 // PreToolUse guard: blocks `gh pr create|new` / `gh pr edit --body…` unless the PR body has a `## Proof` heading
 // with a before/after pair under it (Before:/After: lines or a `| Before | After |` table), plus screenshots whose local
 // paths are all passed to --attach, or a `No screenshots: <why>` line.
+// `gh pr create|new` also needs <= 800 counted changed lines vs its base, or a `Size-exempt: <reason>` body line.
 // Enforces "every PR ships with proof" (code-review skill, proof mode) mechanically instead of by prose.
 // ponytail: checks the heading and pair markers exist, not that the proof is real — the code-review reviewer judges content.
 // ponytail: catches a forgotten proof, not deliberate evasion (eval, shell aliases, `"$(gh pr create)"` inside quotes).
+const { spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -134,12 +136,48 @@ const NO_PAIR = 'pr-proof-guard: `## Proof` has no before/after pair. Every PR s
   'a `Before:` line and an `After:` line (screenshot, CLI or console output of the real thing on base vs head), or a ' +
   '`| Before | After |` table. Test-runner output alone does not count. Base not capturable → `Before: not captured — <why>` ' +
   'and list it under Not verified. See code-review references/proof.md, Before/after pair. ' + HOW;
+// PR size cap. Counted lines are the added + deleted lines of <base>...HEAD in baseDir.
+const SIZE_LIMIT = 800;
+const SIZE_EXEMPT = /^[ \t>*-]*Size-exempt\b(?:\*\*)?[ \t]*:(?:\*\*)?[ \t]*\S/im;
+// Not counted, like open-pr's "One PR or Several?": lockfiles, snapshots, generated and eval-fixture paths.
+const UNCOUNTED = /(?:^|\/)(?:[^/]*\.lock|package-lock\.json|pnpm-lock\.yaml|packages\.lock\.json|[^/]*\.snap|[^/]*\.min\.(?:js|css))$|(?:^|\/)(?:__snapshots__|generated|evals?\/fixtures?)\//;
+let verb = ''; // set at the top of check(): 'create' | 'new' | 'edit'
+let baseFlag = ''; // the --base / -B value of the invocation being checked, '' when absent
+const git = (...args) => spawnSync('git', args, { cwd: baseDir, encoding: 'utf8' });
+const baseCandidates = () => {
+  if (baseFlag) return [`origin/${baseFlag}`, baseFlag];
+  const head = git('symbolic-ref', '--short', 'refs/remotes/origin/HEAD');
+
+  return head.status === 0 ? [head.stdout.trim()] : [];
+};
+// Counted changed lines of <ref>...HEAD plus the ref used; null when git can't say (not a repo, base missing).
+// ponytail: fail open, a size cap is not worth blocking on a git hiccup.
+const changedLines = () => {
+  const ref = baseCandidates().find((r) => git('rev-parse', '--verify', '--quiet', `${r}^{commit}`).status === 0);
+  if (!ref) return null;
+  // -z: paths come NUL-terminated and unquoted, so a non-ASCII or tab-bearing path still meets UNCOUNTED.
+  const diff = git('diff', '--numstat', '-z', '--no-renames', `${ref}...HEAD`);
+  if (diff.status !== 0) return null;
+  const rows = diff.stdout.split('\0').filter(Boolean).map((entry) => entry.match(/^([^\t]*)\t([^\t]*)\t([\s\S]*)$/)).filter(Boolean);
+  const counted = rows.filter(([, added, , file]) => added !== '-' && !UNCOUNTED.test(file));
+  const n = counted.reduce((sum, [, added, deleted]) => sum + Number(added) + Number(deleted), 0);
+
+  return { n, ref };
+};
+const sizeGap = (text) => {
+  if (verb === 'edit' || SIZE_EXEMPT.test(text)) return '';
+  const size = changedLines();
+  if (!size || size.n <= SIZE_LIMIT) return '';
+
+  return `pr-proof-guard: PR is ${size.n} changed lines vs ${size.ref}, over the ${SIZE_LIMIT} cap (lockfiles, snapshots, generated files not counted). ` +
+    'Split it (open-pr references/stacking.md), or add a line `Size-exempt: <reason>` to the body.';
+};
 // Returns the block message for a body sent with these --attach paths, or '' when it may run.
 const proofGap = (text, attached) => {
   if (!PROOF_HEADING.test(text)) return NO_PROOF;
   const section = proofSection(text);
 
-  return hasPair(section) ? shotGap(section, attached) : NO_PAIR;
+  return hasPair(section) ? shotGap(section, attached) || sizeGap(text) : NO_PAIR;
 };
 
 // `gh pr create|new|edit` at command position: start, newline, `;`, `&&`, `||`, `|`, `(`, `$(`, backtick,
@@ -159,6 +197,8 @@ const lastStdinRedirect = (start, end) => {
 
 // Returns the block message for one invocation, or '' when it may run.
 const check = (inv) => {
+  verb = inv.groups.verb;
+  baseFlag = '';
   const argsStart = inv.index + inv[0].length;
   const stop = masked.slice(argsStart).search(/[\n;&|)`]/);
   const argsEnd = stop < 0 ? masked.length : argsStart + stop;
@@ -172,7 +212,10 @@ const check = (inv) => {
     const long = t.flag.match(/^--body(-file)?(=|$)/);
     const short = t.flag.match(/^-([bF])/);
     const attach = t.flag.match(/^--attach(=|$)/);
+    const base = t.flag.match(/^(?:--base(?=$|=)|-B)=?/);
     const attachRange = attach && (attach[1] ? { start: t.start + attach[0].length, end: t.end } : tokens[i + 1]);
+    const baseRange = base && (t.flag.length > base[0].length ? { start: t.start + base[0].length, end: t.end } : tokens[i + 1]);
+    if (baseRange) baseFlag = unquote(cmd.slice(baseRange.start, baseRange.end));
     if (attachRange) attached.push(expandHome(unquote(cmd.slice(attachRange.start, attachRange.end))).split('#')[0]);
     if (long) source = { isFile: Boolean(long[1]), range: long[2] ? { start: t.start + long[0].length, end: t.end } : tokens[i + 1] };
     else if (short) source = { isFile: short[1] === 'F', range: t.flag.length > 2 ? { start: t.start + 2, end: t.end } : tokens[i + 1] };

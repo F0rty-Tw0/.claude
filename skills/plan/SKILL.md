@@ -66,10 +66,10 @@ Plan creates actionable work plans. It interviews the user on broad requests, pl
    - **Skip review** — go directly to final approval (step 7)
 3. **Architect** reviews for architectural soundness (give it the plan folder path; it reads index.md and every phase file)
 4. **Critic** evaluates against quality criteria (same: index.md and every phase file)
-5. **Re-review loop** (max 5 rounds): Critic OKAY-WITH-EDITS → the Planner applies its listed edits verbatim
+5. **Re-review loop** (max 2 rounds; Critic runs again only after REJECT): Critic OKAY-WITH-EDITS → the Planner applies its listed edits verbatim
    and the loop ends, no further round. If Critic rejects, feed the Architect + Critic feedback to the Planner, then
    repeat steps 3-4 on the revision. The Planner revises the affected files itself, including phase files
-   written by phase writers. No approval after 5 rounds → present the best version via `AskUserQuestion`,
+   written by phase writers. No approval after 2 rounds → present the best version via `AskUserQuestion`,
    noting consensus was not reached.
 6. **Apply improvements**: merge the accepted, deduplicated reviewer suggestions into index.md and the affected
    phase files of the plan folder, and list them in a short changelog at the end of index.md.
@@ -122,7 +122,7 @@ Each plan is a plan folder under `.claude/local/plans/` (spec.md, index.md, one 
 
 Then revise the tasks and acceptance criteria to ask for exactly that. An answer that adds scope rather than depth goes under Risks as an option for the user, not into the tasks.
 
-In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan folder (index.md and every phase file) before showing it; fix every REJECT gap and re-dispatch, up to 3 rounds, then bring the remaining gaps to the user with the plan. OKAY-WITH-EDITS: apply its supplied edits and move on, no re-dispatch. A re-dispatch goes out only after every fix has landed in the files. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
+In interview or direct mode, when the plan was built from a skill:brainstorming spec, dispatch the `critic` agent on the plan folder (index.md and every phase file) before showing it; fix every REJECT gap and make one re-dispatch, then bring the remaining gaps to the user with the plan. OKAY-WITH-EDITS: apply its supplied edits and move on, no re-dispatch. A re-dispatch goes out only after every fix has landed in the files. The spec's critic pass checked the design, not the task breakdown. Consensus mode runs critic in its own loop; drop its **Skip review** option when the input is a brainstorming spec.
 
 After saving in interview or direct mode, link the plan and ask the user to review it before execution; approving the idea or scope doesn't approve a plan they haven't seen. Consensus mode gets this approval in step 7.
 
@@ -171,7 +171,7 @@ Why bad: The planner should look this up itself, not ask the user.
 <Escalation_And_Stop_Conditions>
 
 - Stop interviewing when requirements are clear enough to plan -- do not over-interview
-- In consensus mode, stop after 5 Planner/Architect/Critic iterations and present the best version
+- In consensus mode, stop after 2 Planner/Architect/Critic iterations and present the best version
 - Consensus mode requires explicit user approval before any implementation begins
 - If the user says "just do it" or "skip planning", leave planning: do a single focused fix directly, and hand
   multi-step work to `Skill("ralph")` or `Skill("subagent-driven-development")`.

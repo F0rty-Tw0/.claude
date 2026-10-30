@@ -40,6 +40,8 @@ Count changed lines without lockfiles, generated files, snapshots and eval fixtu
 | Hotfix | Migration/schema that has a deploy order relative to code |
 | Pieces don't build apart | Independent concerns (a badge that doesn't need the ledger) |
 
+Hard cap: 800 changed lines (same counting). `hooks/pr-proof-guard.js` blocks `gh pr create` over it. Split, or put a `Size-exempt: <reason>` line in the body (generated output, a mechanical rename).
+
 Split → follow `references/stacking.md`. It builds the slices, then runs Steps 0–6 once per PR against its **parent branch**, with the stack map. Its one stack-wide approval replaces Step 7's per-PR wait.
 
 ### Step 0: Proof Gate
@@ -51,8 +53,9 @@ Run skill:code-review. Every PR body carries a `## Proof` section — a hook (`h
 3. **Verdict gate:**
    - `BLOCK — …` → **do not open the PR.** Show the blockers, then AskUserQuestion: *fix first (Recommended)* / *open as draft with blockers listed in Proof*. Only open (draft, `gh pr create --draft`) on the user's explicit choice.
    - `APPROVE — …` → continue.
+   - `Review skipped: convention-only diff` → continue as APPROVE; item 1 (proof) still applies.
    - No before/after pair (the reviewer reports it as a proof gap) → same as BLOCK: say why it's missing and ask *capture first (Recommended)* / *open as draft with `Before: not captured — <why>` and the gap in Not verified*. PRs used to ship with proof that code was written, not that it worked.
-   - Fixes applied after the verdict (blockers or accepted should-fixes) → commit them if the user authorized commits (skill:meaningful-commits), else ask first; then re-run item 1 for the touched proof and item 2 (a delta review) before `gh pr create`. Repeat while the verdict blocks; after 2 delta rounds, ask the user. A delta round whose only findings are P3/Note issues introduced by the previous fix: fix them in one commit whose executor report carries its `Fails on revert:` lines, and run no further delta round for them.
+   - Fixes applied after the verdict (blockers or accepted should-fixes) → commit them if the user authorized commits (skill:meaningful-commits), else ask first; then re-run item 1 for the touched proof and item 2 (a delta review) before `gh pr create`. At most 2 delta rounds (code-review Delta budget). Anything above P3 left after delta round 2 (a BLOCK, or CHANGES with a P0-P2 finding) stops for the user: ask, no round 3. Leftover P3/Note findings from any delta round go in one fix pass whose executor report carries its `Fails on revert:` lines, with no further delta round.
 4. **Trim for the body** — the full proof bundle (blast radius, test counts, gate, invariants) stays with you. Only the compact `## Proof` from Step 3 goes in the body.
 
 Updating a PR after new commits → re-run Step 0 (1–3) and replace the `## Proof` section; stale proof is no proof.
