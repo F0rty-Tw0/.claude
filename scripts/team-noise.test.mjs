@@ -10,4 +10,5 @@ test('Task 6.2 CLAUDE.md: agents are spawned without name', () => {
   assert.match(bullet, /Spawn agents without `name`/);
   assert.match(bullet, /idle_notification/);
   assert.match(bullet, /SendMessage` reaches an unnamed agent by id/);
+  assert.match(bullet, /Name one only when the user asks for a team/);
 });
