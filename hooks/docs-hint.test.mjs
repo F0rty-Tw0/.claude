@@ -8,9 +8,10 @@ const { docsHost } = createRequire(import.meta.url)('./docs-hint.js');
 const hook = fileURLToPath(new URL('./docs-hint.js', import.meta.url));
 
 const docs = ['https://docs.rs/serde/latest/serde/', 'https://nx.dev/nx-api/js', 'https://angular.dev/guide/signals',
-  'https://react.dev/reference/react/useEffect', 'https://supabase.com/docs/guides/auth', 'https://foo.readthedocs.io/en/stable/'];
+  'https://react.dev/reference/react/useEffect', 'https://supabase.com/docs/guides/auth', 'https://foo.readthedocs.io/en/stable/',
+  'https://www.typescriptlang.org/docs/handbook/intro.html'];
 const notDocs = ['https://raw.githubusercontent.com/o/r/main/README.md', 'https://crates.io/crates/serde', 'https://github.com/o/r/issues/1',
-  'https://supabase.com/pricing', 'https://www.mumsnet.com/x', 'not a url', ''];
+  'https://supabase.com/pricing', 'https://www.mumsnet.com/x', 'https://docs.google.com/document/d/1/edit', 'not a url', ''];
 for (const u of docs) test(`docs host: ${u}`, () => assert.ok(docsHost(u)));
 for (const u of notDocs) test(`not docs: ${JSON.stringify(u)}`, () => assert.equal(docsHost(u), null));
 
@@ -28,7 +29,7 @@ test('CLI nudges once, never blocks, stays silent otherwise', () => {
 test('Task 6.7 AGENTS.md: context7 first, WebFetch only on no match', () => {
   const t = readFileSync(new URL('../AGENTS.md', import.meta.url), 'utf8');
   assert.match(t, /Look up unfamiliar libraries rather than recalling them: context7 first/);
-  assert.match(t, /WebFetch a docs page only when context7 has no match/);
+  assert.match(t, /WebFetch a docs page only when context7 has no match or is unavailable/);
 });
 
 test('settings.json wires the hint on WebFetch', () => {

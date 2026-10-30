@@ -77,7 +77,7 @@ Grug governs implementation choices. Also:
 - Don't claim done, fixed, or passing without fresh output from this turn: tests, build, a real run, or the artifact itself. For visual or stateful work a green suite is necessary but not sufficient — observe the real thing.
 - "No regressions" needs a baseline: capture pass/fail counts and base commit first, report the delta after. Read the real exit code, not a grep narrowed to your own files. For behavior changes, diff against the base branch first.
 - Subagent and reviewer claims are hypotheses. Open the cited code before acting; say what you discarded and why.
-- Name broken data, fixtures, or code as broken. Name what you couldn't access instead of filling the gap. Look up unfamiliar libraries rather than recalling them: context7 first (`resolve-library-id`, then `query-docs`); WebFetch a docs page only when context7 has no match (`hooks/docs-hint.js` nudges).
+- Name broken data, fixtures, or code as broken. Name what you couldn't access instead of filling the gap. Look up unfamiliar libraries rather than recalling them: context7 first (`resolve-library-id`, then `query-docs`); WebFetch a docs page only when context7 has no match or is unavailable (`hooks/docs-hint.js` nudges).
 
 ## Safety and scope
 
