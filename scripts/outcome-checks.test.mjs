@@ -43,3 +43,11 @@ test('Task 3.4 handoff: step 1 reads the digest, first write creates it', () => 
   const step1 = repoText('skills/handoff/SKILL.md').split('\n').find((l) => l.startsWith('1. Run `date'));
   assert.match(step1, /Read `~\/\.claude\/handoffs\/<project>-SIGNOFFS\.md` if it exists; the first write creates it/);
 });
+for (const agent of ['executor', 'deep-executor']) {
+  test(`Task 6.3 ${agent}: self-check against the brief before returning`, () => {
+    const t = repoText(`agents/${agent}.md`);
+    assert.match(t, /Before reporting, self-check: list each ask in the brief, re-read your `git diff` against it/);
+    assert.match(t, /- Self-check: \[n\]\/\[n\] asks met/);
+    assert.match(t, /17 under-delivery patterns/); // the deglaze scan stays
+  });
+}
