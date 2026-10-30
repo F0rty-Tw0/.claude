@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 // Usage: node convention-only.mjs <range>
-// Exit 0: every changed file is whitespace-only or fully explained by the repo's own formatters (prettier, eslint --fix, rustfmt).
+// Exit 0: every changed file is fully explained by the repo's own formatters (prettier, eslint --fix, rustfmt): format(old) === format(new).
+// A file with no formatter is never cosmetic, whitespace included: whitespace can be semantic (strings, regexes, templates, CRLF, indentation).
 // Exit 1: not convention-only; prints `not convention-only: <file> (<reason>)` for the first offending file.
 // Exit 2: usage error (no range, not a repo, or git rejects the range). Callers treat any non-0 exit as "review".
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 
 const TIMEOUT_MS = 20000;
 const MAX_BUFFER = 64 * 1024 * 1024;
 const BINARY_PROBE_BYTES = 8000;
 const SUBMODULE_MODE = '160000';
+const SYMLINK_MODE = '120000';
 const DEFAULT_RUST_EDITION = '2021';
-const INDENT_SENSITIVE_EXT = new Set(['.py', '.pyi', '.yaml', '.yml', '.mk', '.pug', '.haml', '.coffee']);
-const INDENT_SENSITIVE_NAMES = new Set(['Makefile', 'GNUmakefile']);
 const PRETTIER_EXT = new Set(['.js', '.cjs', '.mjs', '.jsx', '.ts', '.tsx', '.json', '.css', '.scss', '.md', '.html', '.yaml', '.yml', '.vue']);
 const ESLINT_EXT = new Set(['.js', '.cjs', '.mjs', '.jsx', '.ts', '.tsx']);
 const NOT_COSMETIC = { A: 'added', D: 'deleted', T: 'type change' };
@@ -32,7 +32,7 @@ const fail = (file, reason, code = 1) => {
 };
 
 const range = process.argv[2];
-if (!range) {
+if (!range || range.startsWith('-')) {
   console.error('usage: convention-only.mjs <range>');
   process.exit(2);
 }
@@ -42,12 +42,13 @@ if (topRun.status !== 0) {
   console.error('not a git repository');
   process.exit(2);
 }
-const top = topRun.stdout.trim();
+const top = resolve(topRun.stdout.trim());
 
-// Every git call runs from the top, so a top-relative pathspec never matches nothing from a subdirectory.
-const git = (args, { encoding } = {}) => spawnSync('git', ['--literal-pathspecs', ...args], { cwd: top, encoding, maxBuffer: MAX_BUFFER });
+// Every git call runs from the top, where the top-relative paths of `diff --raw` resolve.
+const git = (args, { encoding } = {}) => spawnSync('git', args, { cwd: top, encoding, maxBuffer: MAX_BUFFER });
 
-const rawRun = git(['diff', '--raw', '-z', '--no-abbrev', '--no-renames', range], { encoding: 'utf8' });
+// --ignore-submodules=none: a repo config or .gitmodules `ignore=all` must not hide a submodule bump from the list.
+const rawRun = git(['diff', '--raw', '-z', '--no-abbrev', '--no-renames', '--no-textconv', '--no-ext-diff', '--ignore-submodules=none', range], { encoding: 'utf8' });
 if (rawRun.status !== 0) {
   console.error(rawRun.stderr);
   process.exit(2);
@@ -129,7 +130,8 @@ const rustfmt = (file) => (input) => {
   return run.stdout;
 };
 
-const seamCommand = process.env.CONVENTION_FMT_CMD;
+// Test seam, inert unless CONVENTION_FMT_TEST=1 too: a stray CONVENTION_FMT_CMD (say `true`) must never make every diff look cosmetic.
+const seamCommand = process.env.CONVENTION_FMT_TEST === '1' ? process.env.CONVENTION_FMT_CMD : '';
 const seamFormatter = (input) => {
   const run = spawnFormatter('CONVENTION_FMT_CMD', seamCommand, [], input, { shell: true });
   if (run.status !== 0) throw new FormatterError('CONVENTION_FMT_CMD');
@@ -150,26 +152,20 @@ const stagesFor = (file) => {
 };
 const format = (stages, text) => stages.reduce((acc, stage) => stage(acc), text);
 
-const isWhitespaceOnly = (file) => git(['diff', '--ignore-space-change', '--ignore-blank-lines', '--quiet', range, '--', file]).status === 0;
-const isIndentSensitive = (file) => INDENT_SENSITIVE_EXT.has(extOf(file)) || INDENT_SENSITIVE_NAMES.has(basename(file));
-
 // Returns '' when the file is cosmetic, else the reason it is not.
 const verdict = ({ oldMode, newMode, oldSha, newSha, status, file }) => {
-  if (NOT_COSMETIC[status]) return NOT_COSMETIC[status];
-  if (status !== 'M') return `status ${status}`;
+  if (status !== 'M') return NOT_COSMETIC[status] ?? `status ${status}`;
   if (oldMode !== newMode) return 'mode change';
   if (newMode === SUBMODULE_MODE) return 'submodule';
+  if (newMode === SYMLINK_MODE) return 'symlink retarget';
 
   const before = blob(oldSha);
   const after = blob(newSha);
   if (!before || !after) return 'cannot read blob';
   if (isBinary(before) || isBinary(after)) return 'binary';
 
-  const sensitive = isIndentSensitive(file);
-  if (!sensitive && isWhitespaceOnly(file)) return '';
-
   const stages = stagesFor(file);
-  if (!stages.length) return sensitive ? 'indentation-sensitive, no formatter' : 'changed beyond whitespace, no formatter';
+  if (!stages.length) return 'no formatter for this file';
 
   const formatted = format(stages, before.toString('utf8')) === format(stages, after.toString('utf8'));
 
