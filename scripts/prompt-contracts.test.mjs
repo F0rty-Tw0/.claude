@@ -191,18 +191,27 @@ describe('Task 3.1 review-round budget', () => {
     assert.match(t, /write no stamp/);
     assert.match(t, /The caller waits for no reviewer/);
   });
+  it('code-review: gate is formatter-only and Step 2 carves it out of Always dispatch', () => {
+    const t = read('skills/code-review/SKILL.md');
+    const gate = t.split('\n').find((l) => l.includes('**Convention-only gate.**'));
+    assert.match(gate, /fully explained by the repo's own formatters/);
+    assert.match(gate, /A file with no formatter is never cosmetic, whitespace included/);
+    assert.doesNotMatch(gate, /whitespace-only/);
+    const independence = t.split('\n').find((l) => l.startsWith('2. **Independence.**'));
+    assert.match(independence, /Always dispatch[^.]*unless Step 1 reuses a stamp[^.]*or its Convention-only gate exits 0/);
+  });
   it('code-review: delta budget on sonnet, 2 rounds, BLOCK stops', () => {
     const t = read('skills/code-review/SKILL.md');
     assert.match(t, /\*\*Delta budget\.\*\*/);
     assert.match(t, /model: sonnet/);
     assert.match(t, /at most 2 delta rounds/);
-    assert.match(t, /A BLOCK in delta round 2 stops for the user/);
+    assert.match(t, /Anything above P3 left after delta round 2 \(a BLOCK, or CHANGES with a P0-P2 finding\) stops for the user/);
     assert.match(read('skills/code-review/references/babysit.md'), /Delta budget/);
   });
   it('open-pr: delta cap, BLOCK stops, skipped review continues', () => {
     const t = read('skills/open-pr/SKILL.md');
     assert.match(t, /At most 2 delta rounds/);
-    assert.match(t, /A BLOCK in delta round 2 stops for the user/);
+    assert.match(t, /Anything above P3 left after delta round 2 \(a BLOCK, or CHANGES with a P0-P2 finding\) stops for the user: ask, no round 3/);
     assert.match(t, /`Review skipped: convention-only diff` → continue as APPROVE/);
     assert.doesNotMatch(t, /introduced by the previous fix/);
   });
