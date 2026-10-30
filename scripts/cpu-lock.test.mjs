@@ -44,11 +44,11 @@ describe('cpu-lock', () => {
 
   it('WHEN flock is not installed THEN the command runs unlocked and says so', () => {
     const bin = mkdtempSync(join(tmpdir(), 'nobin-'));
+    after(() => rmSync(bin, { recursive: true, force: true }));
     symlinkSync(spawnSync('which', ['bash'], { encoding: 'utf8' }).stdout.trim(), join(bin, 'bash'));
     const r = spawnSync(LOCK_SCRIPT, ['gate', '/bin/echo', 'hi'], { env: { PATH: bin, HOME: bin }, encoding: 'utf8' }); // cpu-lock:8 reads $HOME under set -u
     assert.equal(r.status, 0);
     assert.equal(r.stdout.trim(), 'hi');
     assert.match(r.stderr, /flock not found, running unlocked/);
-    rmSync(bin, { recursive: true, force: true });
   });
 });
