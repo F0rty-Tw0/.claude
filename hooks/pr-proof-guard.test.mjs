@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const hook = fileURLToPath(new URL('./pr-proof-guard.js', import.meta.url));
@@ -318,7 +318,10 @@ const repoAhead = (files) => {
   git(repo, 'init', '-q', '-b', 'master');
   git(repo, 'commit', '-q', '--allow-empty', '-m', 'base');
   git(repo, 'branch', 'base');
-  for (const [name, text] of Object.entries(files)) writeFileSync(join(repo, name), text);
+  for (const [name, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(repo, name)), { recursive: true });
+    writeFileSync(join(repo, name), text);
+  }
   git(repo, 'add', '-A');
   git(repo, 'commit', '-q', '-m', 'feat');
 
@@ -333,6 +336,11 @@ const sizeCases = [
   ['Size-exempt line with a reason', { 'a.txt': nLines(900) }, create(`${SIZE_BODY}\nSize-exempt: generated fixtures`), ALLOW],
   ['Size-exempt line with no reason', { 'a.txt': nLines(900) }, create(`${SIZE_BODY}\nSize-exempt:   \nok`), BLOCK, /changed lines/],
   ['gh pr edit is not size-checked', { 'a.txt': nLines(900) }, `gh pr edit 5 --body "${SIZE_BODY}"`, ALLOW],
+  ['gh pr edit with an explicit --base is not size-checked', { 'a.txt': nLines(900) }, `gh pr edit 5 --base base --body "${SIZE_BODY}"`, ALLOW],
+  ['non-ASCII lockfile path is not counted', { 'ü/pnpm-lock.yaml': nLines(900) }, create(SIZE_BODY), ALLOW],
+  ['NuGet packages.lock.json is not counted', { 'packages.lock.json': nLines(900), 'a.txt': nLines(10) }, create(SIZE_BODY), ALLOW],
+  ['--base inside a quoted body is not the base', { 'a.txt': nLines(801) }, create(`${SIZE_BODY}\nrun gh with --base nope`), BLOCK, /801 changed lines/],
+  ['--base inside a heredoc body is not the base', { 'a.txt': nLines(801) }, `gh pr create --base base --body "$(cat <<'EOF'\n${SIZE_BODY}\nrun gh with --base nope\nEOF\n)"`, BLOCK, /801 changed lines/],
   ['unknown --base fails open', { 'a.txt': nLines(900) }, create(SIZE_BODY, '--base nope'), ALLOW],
   ['no --base and no origin/HEAD fails open', { 'a.txt': nLines(900) }, create(SIZE_BODY, ''), ALLOW],
   ['cwd that is not a git repo fails open', null, create(SIZE_BODY), ALLOW],

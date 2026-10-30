@@ -121,7 +121,7 @@ const NO_PAIR = 'pr-proof-guard: `## Proof` has no before/after pair. Every PR s
 const SIZE_LIMIT = 800;
 const SIZE_EXEMPT = /^[ \t>*-]*Size-exempt\b(?:\*\*)?[ \t]*:(?:\*\*)?[ \t]*\S/im;
 // Not counted, like open-pr's "One PR or Several?": lockfiles, snapshots, generated and eval-fixture paths.
-const UNCOUNTED = /(?:^|\/)(?:[^/]*\.lock|package-lock\.json|pnpm-lock\.yaml|[^/]*\.snap|[^/]*\.min\.(?:js|css))$|(?:^|\/)(?:__snapshots__|generated|evals?\/fixtures?)\//;
+const UNCOUNTED = /(?:^|\/)(?:[^/]*\.lock|package-lock\.json|pnpm-lock\.yaml|packages\.lock\.json|[^/]*\.snap|[^/]*\.min\.(?:js|css))$|(?:^|\/)(?:__snapshots__|generated|evals?\/fixtures?)\//;
 let verb = ''; // set at the top of check(): 'create' | 'new' | 'edit'
 let baseFlag = ''; // the --base / -B value of the invocation being checked, '' when absent
 const git = (...args) => spawnSync('git', args, { cwd: baseDir, encoding: 'utf8' });
@@ -136,11 +136,12 @@ const baseCandidates = () => {
 const changedLines = () => {
   const ref = baseCandidates().find((r) => git('rev-parse', '--verify', '--quiet', `${r}^{commit}`).status === 0);
   if (!ref) return null;
-  const diff = git('diff', '--numstat', '--no-renames', `${ref}...HEAD`);
+  // -z: paths come NUL-terminated and unquoted, so a non-ASCII or tab-bearing path still meets UNCOUNTED.
+  const diff = git('diff', '--numstat', '-z', '--no-renames', `${ref}...HEAD`);
   if (diff.status !== 0) return null;
-  const rows = diff.stdout.split('\n').filter(Boolean).map((line) => line.split('\t'));
-  const counted = rows.filter(([added, , file]) => added !== '-' && !UNCOUNTED.test(file));
-  const n = counted.reduce((sum, [added, deleted]) => sum + Number(added) + Number(deleted), 0);
+  const rows = diff.stdout.split('\0').filter(Boolean).map((entry) => entry.match(/^([^\t]*)\t([^\t]*)\t([\s\S]*)$/)).filter(Boolean);
+  const counted = rows.filter(([, added, , file]) => added !== '-' && !UNCOUNTED.test(file));
+  const n = counted.reduce((sum, [, added, deleted]) => sum + Number(added) + Number(deleted), 0);
 
   return { n, ref };
 };
