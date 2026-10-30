@@ -54,9 +54,9 @@ for (const agent of ['executor', 'deep-executor']) {
 }
 test('Task 6.4 AGENTS.md: three flat rounds or the stated spend stop open-ended work', () => {
   const t = repoText('AGENTS.md');
-  assert.match(t, /3 flat rounds, plus any hours or dollars the user gave/);
-  assert.match(t, /Either limit stops the work, three rounds in a row that do not improve the number or reaching the stated spend/);
-  assert.match(t, /\*\*\(main session\)\*\* Outside an SDD fix loop \(which stops at the first round that leaves the number unchanged or worse\)/);
+  assert.match(t, /3 rounds in a row with no improvement, plus any hours or dollars the user gave/);
+  assert.match(t, /Either limit stops the work: report baseline/);
+  assert.match(t, /\n- \*\*\(main session\)\*\* Stall limits: outside an SDD fix loop \(which stops at the first round that leaves the number unchanged or worse\)/);
   assert.match(repoText('skills/ralph/SKILL.md'), /open-ended work hits its stall limit/);
 });
 test('Task 6.4 the 3.3 rules survive and SDD still stops at one unchanged round', () => {

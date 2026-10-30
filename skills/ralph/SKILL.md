@@ -36,7 +36,7 @@ Put status notes and recommendations in the same message as the next tool call, 
 - a phase Handoff would patch a protected plan section (task-format.md `## Handoff`);
 - the user says stop, cancel, or abort;
 - the same issue recurs across 3 iterations — report it as a likely fundamental problem;
-- open-ended work hits its stall limit (AGENTS.md Evidence: 3 flat rounds or the stated spend).
+- open-ended work hits its stall limit (AGENTS.md Evidence: 3 rounds in a row with no improvement, or the stated spend).
 
 This loop does not override confirmation for risky or destructive actions.
 
