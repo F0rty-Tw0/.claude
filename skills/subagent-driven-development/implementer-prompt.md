@@ -36,7 +36,9 @@ Agent tool (subagent_type: "executor"):
     4. Stage the task's files by name. Commit only if the user authorized commits: [yes/no]
     5. Report back
 
-    Work from: [directory]
+    Work from: [isolated worktree: your cwd; use paths relative to it | slice mode: <absolute slice worktree path>, use absolute paths under it and run Bash as `cd <path> && …`]
+
+    Expected: [N] minutes. Past twice that the caller stops you, so report partial progress early (BLOCKED or DONE_WITH_CONCERNS) rather than grind.
 
     **While you work:** Make routine judgment calls yourself and note them in your report.
     Stop and ask only when different readings of the task would lead to materially different work.

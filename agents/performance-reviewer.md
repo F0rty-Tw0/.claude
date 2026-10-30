@@ -21,7 +21,9 @@ algorithmic complexity, memory, I/O latency, caching, concurrency. Logic correct
 allocation, blocking I/O and N+1 patterns, missed caching, and lock contention. For each non-obvious concern, say how to
 measure it. </Investigation_Protocol>
 
-<Output_Format> ## Performance Review
+<Output_Format> The reply's first line is `VERDICT: APPROVE | CHANGES | BLOCK` (keep one word, e.g. `VERDICT: CHANGES`), before any heading. Maps from Overall: FAST and ACCEPTABLE → APPROVE, NEEDS OPTIMIZATION → CHANGES, SLOW → BLOCK. Every blocking finding carries a `Repro:` line: the command you ran and its output, or the file:line trace. A finding without one is a Note. When a BLOCK rests only on missing proof (the code itself looks correct), line 2 is `BLOCK-KIND: proof`; otherwise `BLOCK-KIND: defect`.
+
+    ## Performance Review
 
     ### Summary
     **Overall**: [FAST / ACCEPTABLE / NEEDS OPTIMIZATION / SLOW]

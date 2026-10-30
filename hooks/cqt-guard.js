@@ -1,27 +1,19 @@
 #!/usr/bin/env node
 // PreToolUse guard for cqt-monitor sessions (registered in that repo's untracked
 // .claude/settings.json). Blocks commands that killed shells or wiped mutant
-// work there, refuses perf runs outside the machine lock, and wraps cargo
-// builds and tests in the shared gate lock so peers' benches stay clean.
+// work there and refuses perf runs outside the machine lock. Wrapping heavy
+// builds and tests in the gate lock moved to the global hooks/cpu-guard.js.
 // A footgun net, not a security boundary: the model can type the user-approved
 // exception prefix `CQT_GUARD_OK=1 ` itself, so the rules in cqt's CLAUDE.md
 // say when it may. Known gaps, left open: a heredoc fed to a shell
 // (`bash <<EOF`), prefixes with their own options (`sudo -u me`, `env -i`,
 // `timeout -k 5`, `/usr/bin/time -v`), space-separated git long options
 // (`--git-dir x`), and a bare pathspec checkout (`git checkout a.rs`).
-// rtk's hook skips heavy cargo (exclude_commands in ~/.config/rtk/config.toml):
-// when two hooks rewrite one command, rtk's rewrite won and the lock was lost.
 const fs = require('fs');
+const { stripProse } = require('./cpu-guard.js');
 
 const LOCK = '~/.claude/scripts/cpu-lock';
 const OVERRIDE = 'A user-approved exception: prefix the command with `CQT_GUARD_OK=1 `.';
-
-// Commit messages and heredoc bodies are prose, and a `cpu-lock bench` call's
-// quoted script already holds the bench lock: none of them is checked.
-const stripProse = (cmd) => cmd
-  .replace(/(\s(?:-m|--message)(?:=|\s+))("[^"]*"|'[^']*')/g, "$1''")
-  .replace(/(<<-?\s*(['"]?)(\w+)\2[^\n]*)\n[\s\S]*?\n\3(?=\n|$)/g, '$1')
-  .replace(/(\S*cpu-lock\s+bench\b[^;&|\n]*?)('[^']*'|"[^"]*")/g, "$1''");
 
 // Leading `VAR=value` assignments and wrappers that run the next word as the command.
 const PREFIX = /^(?:\w+=(?:"[^"]*"|'[^']*'|\S*)|sudo|env|command|exec|time|nohup|bash|sh|xargs(?:\s+-\S+)*|nice(?:\s+-n\s*-?\d+|\s+-\d+)?|timeout(?:\s+-\S+)*\s+\S+|taskset(?:\s+-c)?\s+\S+|\S*cpu-lock\s+gate)\s+/;
@@ -64,21 +56,15 @@ const RULES = [
   },
 ];
 
-const HEAVY = /\bcargo\s+(build|test|clippy|nextest|run|bench)\b|cargo\.sh\b|gates\.sh\b/;
-
-// rtk's cargo filters, at command position only, so message text is left alone.
-const withRtk = (cmd) => (/\bRTK_DISABLED=1\b/.test(cmd) ? cmd : cmd.replace(/(^|[;&|(\n]\s*)((?:\w+=\S*\s+)*)cargo\s+(build|test|clippy)\b/g, '$1$2rtk cargo $3'));
-
-// The hook's answer for one command: a block reason, a wrapped command, or nothing.
+// The hook's answer for one command: a block reason or nothing.
 function decide(cmd) {
   if (/^\s*CQT_GUARD_OK=1\s/.test(cmd)) return {};
   const prose = stripProse(cmd);
   const parts = segments(prose);
   const rule = RULES.find((r) => parts.some((part) => r.test(part)));
-  if (rule) return { block: `cqt-guard: ${rule.why} ${OVERRIDE}` };
-  if (!HEAVY.test(prose) || /cpu-lock\s/.test(cmd)) return {};
+  if (!rule) return {};
 
-  return { command: `${LOCK} gate nice -n 19 "\${SHELL:-bash}" -c '${withRtk(cmd).replaceAll("'", `'\\''`)}'` };
+  return { block: `cqt-guard: ${rule.why} ${OVERRIDE}` };
 }
 
 if (require.main === module) {
@@ -89,10 +75,6 @@ if (require.main === module) {
   if (result.block) {
     process.stderr.write(result.block);
     process.exit(2);
-  }
-  if (result.command) {
-    const updatedInput = { ...input.tool_input, command: result.command };
-    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecisionReason: 'cqt-guard: cargo under cpu-lock gate', updatedInput } }));
   }
 }
 
