@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Global PreToolUse hook: wraps CPU-heavy builds and tests in the shared gate
 // lock (`cpu-lock gate`) in every repo, so peers' benches stay clean. Never blocks.
-// Skipped: Windows and any machine without flock (cpu-lock needs it), commands that
+// Skipped: Windows (cpu-lock needs flock, which Git Bash lacks), commands that
 // already hold a lock, the one-off prefixes `CPU_GUARD_OFF=1 ` and
 // `CQT_GUARD_OK=1 `, and repos with a `.claude/cpu-guard.off` file in the cwd or
 // an ancestor.
@@ -26,7 +26,6 @@
 // # command-position anchor here, and a mention (`git log --grep tsc`) keeps rtk
 // # compression. Check: `rtk hook check git log --grep tsc` still prints a rewrite.
 const fs = require('fs');
-const { spawnSync } = require('child_process');
 const path = require('path');
 
 const LOCK = '~/.claude/scripts/cpu-lock';
@@ -116,13 +115,11 @@ function optedOut(cwd) {
   }
 }
 
-const probeFlock = () => spawnSync('flock', ['--version']).status === 0;
-
-function decide(cmd, { cwd = process.cwd(), platform = process.platform, hasFlock } = {}) {
+function decide(cmd, { cwd = process.cwd(), platform = process.platform } = {}) {
   const prose = maskQuotes(stripProse(cmd));
   const heavy = HEAVY.some((pattern) => pattern.test(prose)) && !WATCH.test(prose);
   const skipped = platform === 'win32' || /cpu-lock\s/.test(prose) || /^\s*(CQT_GUARD_OK|CPU_GUARD_OFF)=1\s/.test(cmd);
-  if (skipped || !heavy || optedOut(cwd) || !(hasFlock ?? probeFlock())) return {};
+  if (skipped || !heavy || optedOut(cwd)) return {};
   const quoted = withRtk(cmd).replaceAll("'", `'\\''`);
 
   return { command: `${LOCK} gate nice -n 19 "\${SHELL:-bash}" -c '${quoted}'` };
