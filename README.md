@@ -179,7 +179,6 @@ The main Claude Code settings file. Key sections:
   // Enabled plugins
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true,
-    "marksman-lsp": true,
     "lua-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "claude-hud@claude-hud": true,
