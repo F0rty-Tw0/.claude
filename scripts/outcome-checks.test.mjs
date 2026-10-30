@@ -51,3 +51,12 @@ for (const agent of ['executor', 'deep-executor']) {
     assert.match(t, /17 under-delivery patterns/); // the deglaze scan stays
   });
 }
+test('Task 6.4 AGENTS.md: three flat rounds or the stated spend stop open-ended work', () => {
+  const t = repoText('AGENTS.md');
+  assert.match(t, /Three rounds in a row that do not improve the number, or the stated spend, stop the work/);
+  assert.match(t, /Outside an SDD fix loop \(which stops at the first unchanged round\)/);
+});
+test('Task 6.4 the 3.3 rules survive and SDD still stops at one unchanged round', () => {
+  assert.match(repoText('AGENTS.md'), /records a baseline number before any fix round/);
+  assert.match(repoText('skills/subagent-driven-development/SKILL.md'), /a round that leaves the number unchanged or worse stops the loop/);
+});
