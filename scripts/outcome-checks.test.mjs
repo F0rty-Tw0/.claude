@@ -49,12 +49,15 @@ for (const agent of ['executor', 'deep-executor']) {
     assert.match(t, /Before reporting, self-check: list each ask in the brief, re-read your `git diff` against it/);
     assert.match(t, /- Self-check: \[n\]\/\[n\] asks met/);
     assert.match(t, /17 under-delivery patterns/); // the deglaze scan stays
+    assert.doesNotMatch(t, /Fix every gap inside your task first/); // said once, by "Close gaps that sit inside your task first"
   });
 }
 test('Task 6.4 AGENTS.md: three flat rounds or the stated spend stop open-ended work', () => {
   const t = repoText('AGENTS.md');
-  assert.match(t, /Three rounds in a row that do not improve the number, or the stated spend, stop the work/);
-  assert.match(t, /Outside an SDD fix loop \(which stops at the first unchanged round\)/);
+  assert.match(t, /3 flat rounds, plus any hours or dollars the user gave/);
+  assert.match(t, /Either limit stops the work, three rounds in a row that do not improve the number or reaching the stated spend/);
+  assert.match(t, /\*\*\(main session\)\*\* Outside an SDD fix loop \(which stops at the first round that leaves the number unchanged or worse\)/);
+  assert.match(repoText('skills/ralph/SKILL.md'), /open-ended work hits its stall limit/);
 });
 test('Task 6.4 the 3.3 rules survive and SDD still stops at one unchanged round', () => {
   assert.match(repoText('AGENTS.md'), /records a baseline number before any fix round/);
@@ -64,8 +67,8 @@ test('Task 6.5 proof.md: a test runner is not the real run', () => {
   const t = repoText('skills/code-review/references/proof.md');
   assert.match(t, /A test runner \(`node --test`, `pnpm test`, `vitest`, `cargo test`, `pytest`\) is the suite, not the real run/);
   assert.match(t, /an After made only of its output is a proof gap/);
-  assert.match(t, /A docs, prompt or config-only PR uses the smallest observable effect/);
+  assert.match(t, /A docs, prompt or config-only PR uses the smallest observable effect instead \(a lint or check script whose output differs between base and head because of this change/);
 });
 test('Task 6.5 open-pr: non-UI After is a real run', () => {
-  assert.match(repoText('skills/open-pr/SKILL.md'), /Non-UI PR → the After is a real run of the changed path, not the test runner's output/);
+  assert.match(repoText('skills/open-pr/SKILL.md'), /Non-UI PR → the After runs the changed path itself; docs or prompt-only → the smallest observable effect/);
 });

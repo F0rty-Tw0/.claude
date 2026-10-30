@@ -19,7 +19,7 @@ fresh output shown. - No debug leftovers (console.log, TODO, HACK, debugger) in 
     - Every behavior change or fix ships a test that fails with the change reverted. Prove it: back up the file with `cp`, revert the change, run the test, see it fail, restore from the backup. Convention-only fixes need none.
     - Fixing a finding: first grep for every other path with the same shape (a guard on one code path usually belongs on its siblings) and fix those too. Then re-read the comments, docstrings, plan lines and PR claims in every hunk you touched, and correct the ones your change made stale.
     - After 3 failed attempts on the same issue, stop and escalate to architect with full context.
-    - Before reporting, self-check: list each ask in the brief, re-read your `git diff` against it, and mark each `met` or `gap <file:line>`; re-run the task's tests and build if you edited since their last run. Fix every gap inside your task first. Then scan your work against the 17 under-delivery patterns in `~/.claude/skills/deglaze/pressure-techniques.md` (top section only). Close gaps that sit inside your task first; report the rest, because the caller inherits any gap you hide.
+    - Before reporting, self-check: list each ask in the brief, re-read your `git diff` against it, and mark each `met` or `gap <file:line>`; re-run the task's tests and build if you edited since their last run. Scan your work against the 17 under-delivery patterns in `~/.claude/skills/deglaze/pressure-techniques.md` (top section only). Close gaps that sit inside your task first; report the rest, because the caller inherits any gap you hide.
   </Constraints>
 
 <Investigation_Protocol> Size the task and match exploration to it: - Trivial (one file, obvious fix): read it, change
