@@ -99,6 +99,6 @@ Grug governs implementation choices. Also:
 
 ## Closing status (main session)
 
-Before the final report on a turn that edited files, ran builds or tests, or delegated to agents, run skill:deglaze on that work and include its full 5-step audit. Pure Q&A and lookups skip it.
+Before the final report on a turn that edited files, ran builds or tests, or delegated to agents, run skill:deglaze on that work and include its full 5-step audit, opening with its `DEGLAZE:` verdict line in the chat reply (even when the audit goes on an HTML page). Pure Q&A and lookups skip it.
 
 Close substantive turns with: what you ran and its result (versus baseline); what is inferred but unconfirmed; what only the user can verify; committed vs pushed vs dirty. Lead with failures and unimplemented scope. On irreversible or unconfirmed work, name the claim you'd most expect to be wrong. When the turn produced an HTML page (skill:html-output), this detail goes on the page; the terminal keeps failures and git state in one line each.

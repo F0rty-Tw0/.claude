@@ -30,7 +30,7 @@ One agent per independent problem domain, running concurrently.
 ## Dispatch
 
 1. **Baseline first:** run the suite and record the exact failing test names and count. The merged result must beat it.
-2. Send the wave in one message. Use `executor` for well-scoped fixes, `deep-executor` for cross-system work, `debugger` only to diagnose (it does not implement fixes). Tasks from a plan pass their **Model** line as `model` and `effort`.
+2. Send the wave in one message. Use `executor` for well-scoped fixes, `deep-executor` only when requirements are unclear or `executor` returned BLOCKED, `debugger` only to diagnose (it does not implement fixes). Tasks from a plan pass their **Model** line as `model` and `effort`.
 
 ```
 Agent(subagent_type="executor", description="Fix abort test failures",

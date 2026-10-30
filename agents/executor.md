@@ -1,6 +1,6 @@
 ---
 name: executor
-description: Default implementation agent — makes precise, smallest-viable-diff code changes for well-scoped tasks and verifies with build/test/diagnostics output. Works alone, no sub-agent spawning; use deep-executor instead for complex or fuzzy-scoped work.
+description: Default implementation agent — makes precise, smallest-viable-diff code changes for well-scoped tasks and verifies with build/test/diagnostics output. Works alone, no sub-agent spawning; use deep-executor only when requirements are unclear or executor returned BLOCKED.
 model: inherit
 effort: high
 ---
