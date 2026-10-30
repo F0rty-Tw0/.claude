@@ -1,0 +1,15 @@
+{
+  "generated": "2026-10-29",
+  "source": "parity.txt and other-machine.html (hand-copied); extractor_totals from scripts/retro-extract.py --since 2026-09-29",
+  "linux": {"cost_usd_list": 10646, "active_hours": 226,
+            "main_calls_by_ctx": {"lt100k": 22867, "100_200k": 46248, "200_400k": 39472, "gt400k": 16},
+            "worktree_isolation_errs": 32, "edit_before_read": 1081, "subagents_over_120min": 101,
+            "teammate_msgs": 3057, "merged_prs": 514, "code_reviewer_no_verdict": [239, 317], "critic_reject_share_last_week": 0.33},
+  "windows": {"sessions": 415, "subagents_spawned": 2274, "tool_errors": 2629, "cost_usd_list": 7334, "active_hours": 264,
+              "worktree_path_errors": 650, "edit_before_read": 68, "teammate_msgs": 805, "teammate_idle": 503,
+              "teammate_part2": 127, "merged_prs": 153, "code_reviewer_no_verdict": [294, 444], "critic_reject_share": 0.41,
+              "webfetch": 977, "context7": 17, "sleep_poll_blocks": 31, "monitor_schema_errors": 20, "exit137": 24,
+              "classifier_denials_min": 30, "opus_1m_spend_share": 0.43},
+  "extractor_totals": {"main_sessions": 431, "subagent_runs": 2949, "edit_file_not_read": 941},
+  "extractor_window": "--since 2026-09-29 --until 2026-10-30, run 2026-10-30; live sessions kept growing after the 426/2865/914 parity run, the port matches the unmodified extract.py on identical input"
+}
