@@ -61,6 +61,23 @@ cat >"$gitconfig" <<EOF
 [commit]
 	gpgsign = false
 EOF
+# In a fresh session Claude reads settings.json before this script writes it, and the Bash tool's shell snapshot
+# keeps only PATH, so GIT_CONFIG_GLOBAL above reaches Bash only after a worker restart. This git shim in
+# ~/.local/bin (ahead of /usr/bin on the cloud PATH) applies it to every git call from the start. It runs plain git
+# when cloud.gitconfig is missing, and leaves a GIT_CONFIG_GLOBAL someone else set alone.
+# ponytail: workaround for harness startup order; drop it once settings env applies to a fresh session.
+shim_dir="$HOME/.local/bin"
+real_git=$(PATH=$(printf %s "$PATH" | tr : '\n' | grep -vxF "$shim_dir" | paste -sd: -) command -v git || true)
+if [ -n "$real_git" ]; then
+  mkdir -p "$shim_dir"
+  cat >"$shim_dir/git" <<EOF
+#!/bin/sh
+# Written by f42 scripts/cloud-setup.sh: commit as the user. See that script.
+[ -z "\${GIT_CONFIG_GLOBAL:-}" ] && [ -f "$gitconfig" ] && export GIT_CONFIG_GLOBAL="$gitconfig"
+exec "$real_git" "\$@"
+EOF
+  chmod +x "$shim_dir/git"
+fi
 mv "$dst/settings.json.tmp" "$dst/settings.json"
 
 echo "cloud-setup: mirrored $src → $dst (rtk: $has_rtk)"

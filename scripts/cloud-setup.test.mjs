@@ -89,6 +89,32 @@ describe('cloud-setup', () => {
     assert.equal(get('credential.interactive'), 'false', 'harness env slots untouched');
   });
 
+  it('WHEN git runs through the shim with no settings env THEN it commits as the user, unsigned', () => {
+    const shim = join(home, '.local', 'bin', 'git');
+    const repo = mkdtempSync(join(tmpdir(), 'cloud-setup-repo-'));
+    homes.push(repo);
+    const env = { ...process.env, HOME: home, PATH: `${join(home, '.local', 'bin')}:/usr/bin:/bin` };
+    delete env.GIT_CONFIG_GLOBAL;
+    delete env.GIT_CONFIG_COUNT; // the host harness slots would shadow the fixture ~/.gitconfig
+    const git = (...args) => spawnSync('git', args, { env, cwd: repo, encoding: 'utf8' });
+    assert.equal(git('init', '-q').status, 0);
+    const commit = git('commit', '-q', '--allow-empty', '-m', 'probe');
+    assert.equal(commit.status, 0, commit.stderr);
+    assert.equal(git('log', '-1', '--format=%an|%cn').stdout.trim(), 'Artiom Tofan|Artiom Tofan');
+    assert.ok(!git('cat-file', 'commit', 'HEAD').stdout.includes('gpgsig'), 'unsigned');
+    assert.equal(git('config', '--get', 'url.https://github.com/.insteadOf').stdout.trim(), 'git@github.com:');
+    assert.ok(!readFileSync(shim, 'utf8').includes('.local/bin/git"'), 'shim never execs itself');
+  });
+
+  it('WHEN cloud.gitconfig is gone THEN the shim runs plain git', () => {
+    rmSync(join(dst, 'cloud.gitconfig'));
+    const env = { ...process.env, HOME: home, PATH: `${join(home, '.local', 'bin')}:/usr/bin:/bin` };
+    delete env.GIT_CONFIG_GLOBAL;
+    delete env.GIT_CONFIG_COUNT; // the host harness slots would shadow the fixture ~/.gitconfig
+    const name = spawnSync('git', ['config', '--get', 'user.name'], { env, cwd: home, encoding: 'utf8' });
+    assert.equal(name.stdout.trim(), 'Claude', 'harness ~/.gitconfig read as usual');
+  });
+
   it('WHEN merged THEN both f42 plugin copies and the locally disabled plugins are off, and the harness ones stay', () => {
     assert.equal(settings.enabledPlugins['f42@f42'], false);
     assert.equal(settings.enabledPlugins['f42@synced'], false, 'the claude.ai-synced copy');
