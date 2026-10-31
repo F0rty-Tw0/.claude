@@ -9,7 +9,7 @@ const SCRIPT = join(import.meta.dirname, 'cloud-setup.sh');
 const homes = [];
 
 // Fresh cloud home (what the harness and `claude plugin marketplace add` leave), then the script.
-function setUp({ withRtk }) {
+function setUp({ withRtk, failingJq = false }) {
   const home = mkdtempSync(join(tmpdir(), 'cloud-setup-'));
   homes.push(home);
   const dst = join(home, '.claude');
@@ -28,10 +28,14 @@ function setUp({ withRtk }) {
     writeFileSync(join(bin, 'rtk'), '#!/bin/sh\n');
     chmodSync(join(bin, 'rtk'), 0o755);
   }
+  if (failingJq) {
+    writeFileSync(join(bin, 'jq'), '#!/bin/sh\nexit 5\n');
+    chmodSync(join(bin, 'jq'), 0o755);
+  }
   const env = { ...process.env, HOME: home, PATH: `${bin}:/usr/bin:/bin` };
   const result = spawnSync('bash', [SCRIPT], { env, encoding: 'utf8' });
   const settings = JSON.parse(readFileSync(join(dst, 'settings.json'), 'utf8'));
-  const commands = settings.hooks.PreToolUse.flatMap((entry) => entry.hooks.map((hook) => hook.command));
+  const commands = settings.hooks?.PreToolUse.flatMap((entry) => entry.hooks.map((hook) => hook.command)) ?? [];
   return { dst, result, settings, commands };
 }
 
@@ -74,5 +78,13 @@ describe('cloud-setup', () => {
     assert.equal(withRtk.result.status, 0, withRtk.result.stderr);
     assert.ok(withRtk.commands.includes('rtk hook claude'));
     assert.ok(withRtk.commands.some((command) => command.includes('cpu-guard.js')));
+  });
+
+  it('WHEN the settings merge fails THEN it exits non-zero and ~/.claude is left as it was', () => {
+    const failed = setUp({ withRtk: false, failingJq: true });
+    assert.notEqual(failed.result.status, 0);
+    assert.ok(!existsSync(join(failed.dst, 'CLAUDE.md')), 'nothing copied, so the plugin fallback loads alone');
+    assert.ok(!existsSync(join(failed.dst, 'settings.json.tmp')));
+    assert.deepEqual(failed.settings.enabledPlugins, { 'f42@f42': true });
   });
 });

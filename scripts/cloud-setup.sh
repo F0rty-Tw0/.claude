@@ -13,9 +13,6 @@ dst="$HOME/.claude"
 [ "$src" -ef "$dst" ] && { echo "cloud-setup: $dst is the repo itself, nothing to do"; exit 0; }
 mkdir -p "$dst"
 
-# Files: the whole checkout except git metadata and settings (merged below). Harness files in ~/.claude stay.
-tar -C "$src" --exclude=./.git --exclude=./settings.json --exclude=./settings.local.json -cf - . | tar -C "$dst" -xf -
-
 # Settings: merge ours over what the harness and marketplace add wrote. Dropped keys belong to the cloud
 # session (model, permission mode) or need a local machine (status line, LSP and HUD plugins, remote control).
 [ -f "$dst/settings.json" ] || echo '{}' >"$dst/settings.json"
@@ -32,6 +29,11 @@ jq -s --arg has_rtk "$has_rtk" '
   | .[0] * $ours
   | .enabledPlugins["f42@f42"] = false
 ' "$dst/settings.json" "$src/settings.json" >"$dst/settings.json.tmp"
+
+# Files: the whole checkout except git metadata and settings. Copied only after the merge succeeded, so a
+# failure leaves ~/.claude untouched and the plugin fallback doesn't load on top of a half mirror.
+# Harness files in ~/.claude stay.
+tar -C "$src" --exclude=./.git --exclude=./settings.json --exclude=./settings.local.json -cf - . | tar -C "$dst" -xf -
 mv "$dst/settings.json.tmp" "$dst/settings.json"
 
 echo "cloud-setup: mirrored $src → $dst (rtk: $has_rtk)"
