@@ -24,4 +24,4 @@ Local agents live in `~/.claude/agents/` — invoke by bare name (`executor`, `a
 
 # Terminal output
 
-A PreToolUse hook rewrites Bash commands through `rtk`, so their output arrives compressed. Use `rtk proxy <cmd>` when you need raw, unfiltered output.
+Local sessions: a PreToolUse hook rewrites Bash commands through `rtk`, so their output arrives compressed. Use `rtk proxy <cmd>` when you need raw, unfiltered output. Cloud sessions have no rtk (`scripts/cloud-setup.sh` drops its hook and cpu-guard): run commands plainly.
