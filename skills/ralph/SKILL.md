@@ -35,7 +35,8 @@ Put status notes and recommendations in the same message as the next tool call, 
 - the blocker is deliberately protected from you (commit/push guard, permission prompt);
 - a phase Handoff would patch a protected plan section (task-format.md `## Handoff`);
 - the user says stop, cancel, or abort;
-- the same issue recurs across 3 iterations — report it as a likely fundamental problem.
+- the same issue recurs across 3 iterations — report it as a likely fundamental problem;
+- open-ended work hits its stall limit (AGENTS.md Evidence: 3 rounds in a row with no improvement, or the stated spend).
 
 This loop does not override confirmation for risky or destructive actions.
 

@@ -78,6 +78,7 @@ Grug governs implementation choices. Also:
 - Don't claim done, fixed, or passing without fresh output from this turn: tests, build, a real run, or the artifact itself. For visual or stateful work a green suite is necessary but not sufficient — observe the real thing.
 - "No regressions" needs a baseline: capture pass/fail counts and base commit first, report the delta after. Read the real exit code, not a grep narrowed to your own files. For behavior changes, diff against the base branch first.
 - Open-ended work (optimize, bug-hunt, "fix all X", repeated fix rounds) records a baseline number before any fix round: the command and its count. Every report leads with the change from it (`48 → 12 failing`). No baseline yet → record it before dispatching a fix.
+- **(main session)** Stall limits: outside an SDD fix loop (which stops at the first round that leaves the number unchanged or worse), state them with the baseline: 3 rounds in a row with no improvement, plus any hours or dollars the user gave. A round is one fix attempt (dispatched or inline) plus a re-measure. Either limit stops the work: report baseline, now, and what each round tried, then ask whether to continue, change method, or drop it.
 - Subagent and reviewer claims are hypotheses. Open the cited code before acting; say what you discarded and why.
 - Name broken data, fixtures, or code as broken. Name what you couldn't access instead of filling the gap. Look up unfamiliar libraries rather than recalling them.
 
