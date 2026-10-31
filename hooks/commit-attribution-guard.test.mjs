@@ -60,6 +60,10 @@ const cases = [
   ['printf piped into -F -', "printf 'a\\n\\nClaude-Session: x' | git commit -F -", BLOCK],
   ['-F after cd with no spaces', 'cd sub&&git commit -F s.md', BLOCK],
   ['--trailer as a separate word', 'git commit -m fix --trailer Claude-Session:x', BLOCK],
+  ['--trailer with key=value', 'git commit -m fix --trailer Claude-Session=x', BLOCK],
+  ['echo -e piped into -F -', 'echo -e "a\\n\\nClaude-Session: x" | git commit -F -', BLOCK],
+  ['printf -- inside $(…)', 'git commit -m "$(printf -- "a\\n\\nClaude-Session: x")"', BLOCK],
+  ['-F after cd with a redirect', 'cd sub>/dev/null&&git commit -F s.md', BLOCK],
   // messages that only mention a trailer
   ['message naming the --trailer= form', 'git commit -m "fix: match --trailer=Claude-Session: lines"', ALLOW],
   ['literal \\n in a double-quoted message', 'git commit -m "docs: \\nClaude-Session: is blocked"', ALLOW],
