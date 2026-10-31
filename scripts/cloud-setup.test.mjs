@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
@@ -87,6 +87,69 @@ describe('cloud-setup', () => {
     assert.equal(get('commit.gpgsign'), 'false');
     assert.equal(get('url.https://github.com/.insteadOf'), 'git@github.com:', 'harness ~/.gitconfig still included');
     assert.equal(get('credential.interactive'), 'false', 'harness env slots untouched');
+  });
+
+  // A fresh session: no settings env, only PATH, with the shim folder first (as on the cloud PATH).
+  const shimEnv = (home, pathPrefix = join(home, '.local', 'bin')) => {
+    const env = { ...process.env, HOME: home, PATH: `${pathPrefix}:${join(home, 'bin')}:/usr/bin:/bin` };
+    // Host values would mask a broken shim or shadow the fixture ~/.gitconfig.
+    for (const key of ['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_COUNT', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL',
+      'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL']) delete env[key];
+    return env;
+  };
+  const execTarget = (home) => readFileSync(join(home, '.local', 'bin', 'git'), 'utf8').match(/^exec "([^"]+)"/m)[1];
+
+  it('WHEN git runs through the shim with no settings env THEN it commits as the user, unsigned', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'cloud-setup-repo-'));
+    homes.push(repo);
+    const git = (...args) => spawnSync('git', args, { env: shimEnv(home), cwd: repo, encoding: 'utf8' });
+    assert.equal(git('init', '-q').status, 0);
+    const commit = git('commit', '-q', '--allow-empty', '-m', 'probe');
+    assert.equal(commit.status, 0, commit.stderr);
+    assert.equal(git('log', '-1', '--format=%an|%cn').stdout.trim(), 'Artiom Tofan|Artiom Tofan');
+    assert.ok(!git('cat-file', 'commit', 'HEAD').stdout.includes('gpgsig'), 'unsigned');
+    assert.equal(git('config', 'user.name').stdout.trim(), 'Artiom Tofan');
+    assert.equal(git('config', '--get', 'url.https://github.com/.insteadOf').stdout.trim(), 'git@github.com:');
+  });
+
+  it('WHEN the harness runs git config --global through the shim THEN it writes ~/.gitconfig and the user still wins', () => {
+    const fresh = setUp({ withRtk: false });
+    const git = (...args) => spawnSync('git', args, { env: shimEnv(fresh.home), cwd: fresh.home, encoding: 'utf8' });
+    assert.equal(git('config', '--global', 'user.name', 'Claude Again').status, 0);
+    assert.match(readFileSync(join(fresh.home, '.gitconfig'), 'utf8'), /name = Claude Again/);
+    assert.doesNotMatch(readFileSync(join(fresh.dst, 'cloud.gitconfig'), 'utf8'), /Claude Again/);
+    assert.equal(git('config', 'user.name').stdout.trim(), 'Artiom Tofan');
+  });
+
+  it('WHEN setup re-runs with the shim folder on PATH in another spelling THEN the shim never execs itself', () => {
+    const fresh = setUp({ withRtk: false });
+    const rerun = spawnSync('bash', [SCRIPT], { env: shimEnv(fresh.home, `${join(fresh.home, '.local', 'bin')}/`), encoding: 'utf8' });
+    assert.equal(rerun.status, 0, rerun.stderr);
+    assert.ok(!execTarget(fresh.home).includes('.local/bin'), execTarget(fresh.home));
+    const version = spawnSync('git', ['--version'], { env: shimEnv(fresh.home), encoding: 'utf8', timeout: 5000 });
+    assert.equal(version.status, 0, 'git answers instead of looping');
+  });
+
+  it('WHEN the shim path is a symlink THEN setup replaces the link and leaves its target alone', () => {
+    const fresh = setUp({ withRtk: false });
+    const shim = join(fresh.home, '.local', 'bin', 'git');
+    const target = join(fresh.home, 'target');
+    writeFileSync(target, 'untouched');
+    rmSync(shim);
+    symlinkSync(target, shim);
+    const rerun = spawnSync('bash', [SCRIPT], { env: { ...process.env, HOME: fresh.home, PATH: '/usr/bin:/bin' }, encoding: 'utf8' });
+    assert.equal(rerun.status, 0, rerun.stderr);
+    assert.equal(readFileSync(target, 'utf8'), 'untouched');
+    assert.ok(!lstatSync(shim).isSymbolicLink());
+  });
+
+  it('WHEN ~/.local/bin/git is a file setup did not write THEN it stays', () => {
+    const fresh = setUp({ withRtk: false });
+    const shim = join(fresh.home, '.local', 'bin', 'git');
+    writeFileSync(shim, '#!/bin/sh\necho mine\n');
+    const rerun = spawnSync('bash', [SCRIPT], { env: { ...process.env, HOME: fresh.home, PATH: '/usr/bin:/bin' }, encoding: 'utf8' });
+    assert.equal(rerun.status, 0, rerun.stderr);
+    assert.equal(readFileSync(shim, 'utf8'), '#!/bin/sh\necho mine\n');
   });
 
   it('WHEN merged THEN both f42 plugin copies and the locally disabled plugins are off, and the harness ones stay', () => {

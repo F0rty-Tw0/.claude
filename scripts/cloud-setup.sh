@@ -26,6 +26,8 @@ mkdir -p "$dst"
 trap 'rm -f "$dst/settings.json.tmp"' EXIT
 has_rtk=$(command -v rtk >/dev/null && echo 1 || echo 0)
 gitconfig="$dst/cloud.gitconfig"
+git_name="Artiom Tofan"
+git_email="60610474+F0rty-Tw0@users.noreply.github.com"
 jq -s --arg has_rtk "$has_rtk" --arg gitconfig "$gitconfig" '
   (.[1].enabledPlugins // {} | with_entries(select(.value == false))) as $off
   | (.[1]
@@ -56,11 +58,40 @@ cat >"$gitconfig" <<EOF
 [include]
 	path = $HOME/.gitconfig
 [user]
-	name = Artiom Tofan
-	email = 60610474+F0rty-Tw0@users.noreply.github.com
+	name = $git_name
+	email = $git_email
 [commit]
 	gpgsign = false
 EOF
+# In a fresh session Claude reads settings.json before this script writes it, and the Bash tool's shell snapshot
+# keeps only PATH, so GIT_CONFIG_GLOBAL above reaches Bash only after a worker restart. This git shim in
+# ~/.local/bin (ahead of /usr/bin on the cloud PATH, the harness's too) sets the same values as `-c` options on every
+# git call from the start. `-c` wins over the config files for unscoped reads, while `git config --global` reads and
+# writes (the harness's included) still use ~/.gitconfig.
+# ponytail: workaround for harness startup order; drop it, and rm ~/.local/bin/git, once settings env applies to a
+# fresh session.
+shim_dir="$HOME/.local/bin"
+shim="$shim_dir/git"
+# The real git: first on PATH that is not the shim. -ef also catches `…/bin/`, `//root/…` and symlinked aliases.
+real_git=
+set -f # split PATH on `:` only, no globbing
+IFS=:
+for d in $PATH; do
+  [ -n "$d" ] && [ -x "$d/git" ] && ! [ "$d" -ef "$shim_dir" ] && ! [ "$d/git" -ef "$shim" ] && { real_git="$d/git"; break; }
+done
+unset IFS
+set +f
+# Only replace our own shim (or a link): a real git someone installed in ~/.local/bin stays.
+if [ -n "$real_git" ] && { [ -L "$shim" ] || ! [ -e "$shim" ] || grep -qF 'Written by f42' "$shim"; }; then
+  mkdir -p "$shim_dir"
+  rm -f "$shim" # never write through a symlink (it could point at the real git)
+  cat >"$shim" <<EOF
+#!/bin/sh
+# Written by f42 scripts/cloud-setup.sh: commit as the user, unsigned. See that script.
+exec "$real_git" -c "user.name=$git_name" -c "user.email=$git_email" -c commit.gpgsign=false "\$@"
+EOF
+  chmod +x "$shim"
+fi
 mv "$dst/settings.json.tmp" "$dst/settings.json"
 
 echo "cloud-setup: mirrored $src → $dst (rtk: $has_rtk)"
