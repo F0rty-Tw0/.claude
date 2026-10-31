@@ -21,7 +21,8 @@ mkdir -p "$dst"
 [ -f "$dst/settings.json" ] || echo '{}' >"$dst/settings.json"
 trap 'rm -f "$dst/settings.json.tmp"' EXIT
 has_rtk=$(command -v rtk >/dev/null && echo 1 || echo 0)
-jq -s --arg has_rtk "$has_rtk" '
+gitconfig="$dst/cloud.gitconfig"
+jq -s --arg has_rtk "$has_rtk" --arg gitconfig "$gitconfig" '
   (.[1].enabledPlugins // {} | with_entries(select(.value == false))) as $off
   | (.[1]
     | del(.model, .permissions, .defaultMode, .statusLine, .enabledPlugins, .extraKnownMarketplaces, .remoteControlAtStartup)
@@ -29,14 +30,8 @@ jq -s --arg has_rtk "$has_rtk" '
     | if $has_rtk == "1" then . else
         .hooks.PreToolUse |= map(select(all(.hooks[]; .command | test("^rtk |cpu-guard") | not)))
       end
-    # The harness commits as Claude <noreply@anthropic.com> and rewrites ~/.gitconfig at worker start, so GitHub
-    # squash-merges add `Co-authored-by: Claude`. Env vars beat .gitconfig: commit as the user, unsigned, because
-    # the harness signing key is not on the GitHub account of the user (a signed commit would show Unverified).
-    | .env += {
-        GIT_AUTHOR_NAME: "Artiom Tofan", GIT_AUTHOR_EMAIL: "60610474+F0rty-Tw0@users.noreply.github.com",
-        GIT_COMMITTER_NAME: "Artiom Tofan", GIT_COMMITTER_EMAIL: "60610474+F0rty-Tw0@users.noreply.github.com",
-        GIT_CONFIG_COUNT: "1", GIT_CONFIG_KEY_0: "commit.gpgsign", GIT_CONFIG_VALUE_0: "false"
-      }
+    # Git identity: see cloud.gitconfig below.
+    | .env.GIT_CONFIG_GLOBAL = $gitconfig
   ) as $ours
   | .[0] * $ours
   # Keep the plugins switched off locally (f42@synced: the stale copy claude.ai syncs in), and the f42 plugin,
@@ -48,6 +43,20 @@ jq -s --arg has_rtk "$has_rtk" '
 # failure leaves ~/.claude untouched and the plugin fallback doesn't load on top of a half mirror.
 # Harness files in ~/.claude stay.
 tar -C "$src" --exclude=./.git --exclude=./settings.json --exclude=./settings.local.json -cf - . | tar -C "$dst" -xf -
+# The harness commits as Claude <noreply@anthropic.com> and rewrites ~/.gitconfig at worker start, so GitHub
+# squash-merges add `Co-authored-by: Claude`. GIT_CONFIG_GLOBAL (set in the merged env) points git here instead:
+# the harness file is included first, so its later rewrites still apply, then the user identity wins. Unsigned,
+# because the harness signing key is not on the GitHub account of the user (a signed commit shows Unverified).
+# Not GIT_CONFIG_COUNT/KEY_n: the harness already uses those slots for credential and insteadOf settings.
+cat >"$gitconfig" <<EOF
+[include]
+	path = $HOME/.gitconfig
+[user]
+	name = Artiom Tofan
+	email = 60610474+F0rty-Tw0@users.noreply.github.com
+[commit]
+	gpgsign = false
+EOF
 mv "$dst/settings.json.tmp" "$dst/settings.json"
 
 echo "cloud-setup: mirrored $src → $dst (rtk: $has_rtk)"
