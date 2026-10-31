@@ -26,6 +26,8 @@ const cases = [
   ['heredoc session trailer', "git commit -F - <<'EOF'\nfix\n\nClaude-Session: https://claude.ai/code/session_01X\nEOF", BLOCK],
   ['-F file with a trailer', 'git commit -F trailer.md', BLOCK],
   ['--file= with a trailer', 'git commit --file=trailer.md', BLOCK],
+  ['quoted -F path', 'git commit -F "trailer.md"', BLOCK],
+  ['co-author by email only', 'git commit -m "a\n\nCo-Authored-By: Bot <noreply@anthropic.com>"', BLOCK],
   ['chained after cd', 'cd x && git commit -m "a\n\nCo-Authored-By: Claude <noreply@anthropic.com>"', BLOCK],
   ['git -C and --amend', 'git -C d commit --amend -m "a\n\nClaude-Session: x"', BLOCK],
   ['env prefix', 'GIT_EDITOR=true git commit -m "a\n\nco-authored-by: claude <noreply@anthropic.com>"', BLOCK],
@@ -51,6 +53,14 @@ test('block message names the line and how to fix it', () => {
   assert.match(stderr, /^commit-attribution-guard:/);
   assert.match(stderr, /Claude-Session: x/);
   assert.match(stderr, /attribution/);
+});
+
+test('a large heredoc full of `<<` stays fast', () => {
+  const body = 'std::cout << x << "\\n";\n'.repeat(12000); // ~300 KB
+  const started = Date.now();
+  const { status } = run(`cat > a.cpp <<'EOF'\n${body}EOF\ngit commit -m "a\n\nClaude-Session: x"`);
+  assert.strictEqual(status, BLOCK);
+  assert.ok(Date.now() - started < 1500, `took ${Date.now() - started} ms`);
 });
 
 test('allows unparseable input', () => {

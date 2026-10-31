@@ -15,12 +15,17 @@ const cwd = typeof input.cwd === 'string' ? input.cwd : process.cwd();
 // Masked copy of cmd, same length: heredoc bodies and quoted text become `_`, so only real shell syntax is left
 // and `echo "git commit"` is not read as a commit.
 const chars = cmd.split('');
-for (const m of cmd.matchAll(/(?<!<)<<(?!<)-?[ \t]*(['"]?)([A-Za-z_][\w-]*)\1/g)) {
+// The scan resumes after each masked body, so a `<<` inside one (C++ `cout << x`) is never searched again: linear.
+const heredocRe = /(?<!<)<<(?!<)-?[ \t]*(['"]?)([A-Za-z_][\w-]*)\1/g;
+for (let m; (m = heredocRe.exec(cmd));) {
   const start = cmd.indexOf('\n', m.index) + 1;
   if (start === 0) break;
-  const end = new RegExp(`\\n[ \\t]*${m[2]}[ \\t]*(?=\\n|$)`).exec(cmd.slice(start - 1));
-  const stop = end ? start - 1 + end.index : cmd.length;
+  const endRe = new RegExp(`\\n[ \\t]*${m[2]}[ \\t]*(?=\\n|$)`, 'g');
+  endRe.lastIndex = start - 1;
+  const end = endRe.exec(cmd);
+  const stop = end ? end.index : cmd.length;
   for (let i = start; i < stop; i++) chars[i] = '_';
+  heredocRe.lastIndex = Math.max(heredocRe.lastIndex, stop);
 }
 for (let i = 0, quote = ''; i < chars.length; i++) {
   const c = chars[i];
