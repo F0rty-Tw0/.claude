@@ -19,7 +19,8 @@ mkdir -p "$dst"
 trap 'rm -f "$dst/settings.json.tmp"' EXIT
 has_rtk=$(command -v rtk >/dev/null && echo 1 || echo 0)
 jq -s --arg has_rtk "$has_rtk" '
-  (.[1]
+  (.[1].enabledPlugins // {} | with_entries(select(.value == false))) as $off
+  | (.[1]
     | del(.model, .permissions, .defaultMode, .statusLine, .enabledPlugins, .extraKnownMarketplaces, .remoteControlAtStartup)
     # No rtk in the image: its hook fails, and cpu-guard rewrites heavy commands to `rtk <cmd>`.
     | if $has_rtk == "1" then . else
@@ -27,7 +28,9 @@ jq -s --arg has_rtk "$has_rtk" '
       end
   ) as $ours
   | .[0] * $ours
-  | .enabledPlugins["f42@f42"] = false
+  # Keep the plugins switched off locally (f42@synced: the stale copy claude.ai syncs in), and the f42 plugin,
+  # which the mirror replaces.
+  | .enabledPlugins += $off + {"f42@f42": false}
 ' "$dst/settings.json" "$src/settings.json" >"$dst/settings.json.tmp"
 
 # Files: the whole checkout except git metadata and settings. Copied only after the merge succeeded, so a
