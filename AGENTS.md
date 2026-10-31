@@ -62,6 +62,7 @@ Grug governs implementation choices. Also:
 - Root-cause fixes by default; a workaround needs a tracked ticket and expiry.
 - New production behavior needs tests; throwaway scripts don't.
 - **(main session)** A new feature or a change to existing behavior goes through skill:brainstorming before any code, at the short pass when it is small and scoped. Typos, config tweaks, version bumps, formatter-only diffs, and bug fixes skip it.
+- Waiting: a foreground `sleep` is blocked by the harness. One wake-up (server ready, build done) → Bash `run_in_background` with `until <check>; do sleep 2; done`. One notice per event → Monitor. Monitor is a deferred tool: load it with ToolSearch (`select:Monitor`) first, then pass `command`, `description` and `timeout_ms` (not `timeout`).
 
 ## Git and PRs
 
@@ -80,7 +81,7 @@ Grug governs implementation choices. Also:
 - Open-ended work (optimize, bug-hunt, "fix all X", repeated fix rounds) records a baseline number before any fix round: the command and its count. Every report leads with the change from it (`48 → 12 failing`). No baseline yet → record it before dispatching a fix.
 - **(main session)** Stall limits: outside an SDD fix loop (which stops at the first round that leaves the number unchanged or worse), state them with the baseline: 3 rounds in a row with no improvement, plus any hours or dollars the user gave. A round is one fix attempt (dispatched or inline) plus a re-measure. Either limit stops the work: report baseline, now, and what each round tried, then ask whether to continue, change method, or drop it.
 - Subagent and reviewer claims are hypotheses. Open the cited code before acting; say what you discarded and why.
-- Name broken data, fixtures, or code as broken. Name what you couldn't access instead of filling the gap. Look up unfamiliar libraries rather than recalling them.
+- Name broken data, fixtures, or code as broken. Name what you couldn't access instead of filling the gap. Look up unfamiliar libraries rather than recalling them: context7 first (`resolve-library-id`, then `query-docs`); WebFetch a docs page only when context7 has no match or is unavailable (`hooks/docs-hint.js` nudges).
 
 ## Safety and scope
 
