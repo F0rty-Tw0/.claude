@@ -15,17 +15,24 @@ const cwd = typeof input.cwd === 'string' ? input.cwd : process.cwd();
 // Masked copy of cmd, same length: heredoc bodies and quoted text become `_`, so only real shell syntax is left
 // and `echo "git commit"` is not read as a commit.
 const chars = cmd.split('');
-// The scan resumes after each masked body, so a `<<` inside one (C++ `cout << x`) is never searched again: linear.
+// Every heredoc operator on a line opens a body, read in order after that line (`cat <<A && cat <<B`).
+// The scan resumes after the last masked body, so a `<<` inside one (C++ `cout << x`) is never searched again: linear.
 const heredocRe = /(?<!<)<<(?!<)-?[ \t]*(['"]?)([A-Za-z_][\w-]*)\1/g;
 for (let m; (m = heredocRe.exec(cmd));) {
-  const start = cmd.indexOf('\n', m.index) + 1;
-  if (start === 0) break;
-  const endRe = new RegExp(`\\n[ \\t]*${m[2]}[ \\t]*(?=\\n|$)`, 'g');
-  endRe.lastIndex = start - 1;
-  const end = endRe.exec(cmd);
-  const stop = end ? end.index : cmd.length;
-  for (let i = start; i < stop; i++) chars[i] = '_';
-  heredocRe.lastIndex = Math.max(heredocRe.lastIndex, stop);
+  const lineEnd = cmd.indexOf('\n', m.index);
+  if (lineEnd < 0) break;
+  const words = [m[2]];
+  for (let n; (n = heredocRe.exec(cmd)) && n.index < lineEnd;) words.push(n[2]);
+  let start = lineEnd + 1;
+  for (const word of words) {
+    const endRe = new RegExp(`\\n[ \\t]*${word}[ \\t]*(?=\\n|$)`, 'g');
+    endRe.lastIndex = start - 1;
+    const end = endRe.exec(cmd);
+    const stop = end ? end.index : cmd.length;
+    for (let i = start; i < stop; i++) chars[i] = '_';
+    start = end ? endRe.lastIndex + 1 : cmd.length;
+  }
+  heredocRe.lastIndex = start - 1;
 }
 for (let i = 0, quote = ''; i < chars.length; i++) {
   const c = chars[i];
@@ -37,14 +44,24 @@ for (let i = 0, quote = ''; i < chars.length; i++) {
 }
 const masked = chars.join('');
 
-// `git [-C dir | -c k=v | --flag]… commit` at command position, after optional `VAR=x ` prefixes and a path on git.
-const INVOKE = /(?:^|[\n;&|(`])[ \t]*(?:\w+=\S*[ \t]+)*(?:[\w.~/-]*\/)?git(?:[ \t]+-[Cc][ \t]+\S+|[ \t]+--?[\w-]+(?:=\S+)?)*[ \t]+commit(?![\w-])/g;
+// `git [-C dir | -c k=v | --flag]… commit` at command position, after optional `VAR=x ` / env / sudo / then / `{` …
+// prefixes and a path on git.
+const INVOKE = new RegExp(String.raw`(?:^|[\n;&|(\`])[ \t]*(?:(?:\w+=\S*|then|do|else|!|\{|time|command|nohup|env|sudo|timeout[ \t]+\S+)[ \t]+)*` +
+  String.raw`(?:[\w.~/-]*\/)?git(?:[ \t]+-[Cc][ \t]+\S+|[ \t]+--?[\w-]+(?:=\S+)?)*[ \t]+commit(?![\w-])`, 'g');
 const invocations = [...masked.matchAll(INVOKE)];
 if (!invocations.length) process.exit(0);
 
 const unquote = (s) => s.replace(/^(['"])(.*)\1$/, '$2');
-const texts = [cmd];
+const word = (start, end) => unquote(cmd.slice(start, end));
+// `$'…\n…'` and printf messages carry `\n` escapes: also scan a copy with them decoded.
+const texts = [cmd, cmd.replace(/\\n/g, '\n')];
+// ponytail: only `cd` at command position earlier in this command is followed; a cd from an earlier Bash call is
+// already in the hook's cwd.
+const cds = [...masked.matchAll(/(?:^|[\n;&|(])[ \t]*cd[ \t]+(\S+)/dg)];
 for (const inv of invocations) {
+  let dir = cwd;
+  for (const cd of cds.filter((c) => c.index < inv.index)) dir = path.resolve(dir, word(...cd.indices[1]));
+  for (const c of inv[0].matchAll(/[ \t]-C[ \t]+(\S+)/dg)) dir = path.resolve(dir, word(inv.index + c.indices[1][0], inv.index + c.indices[1][1]));
   const argsStart = inv.index + inv[0].length;
   const stop = masked.slice(argsStart).search(/[\n;&|)`]/);
   const args = [...masked.slice(argsStart, stop < 0 ? masked.length : argsStart + stop).matchAll(/\S+/g)];
@@ -55,13 +72,13 @@ for (const inv of invocations) {
     const next = args[i + 1];
     const range = inline ? [argsStart + t.index + flag[0].length, argsStart + t.index + t[0].length]
       : next && [argsStart + next.index, argsStart + next.index + next[0].length];
-    const file = range && unquote(cmd.slice(...range));
+    const file = range && word(...range);
     if (!file || file === '-') return;
-    try { texts.push(fs.readFileSync(path.resolve(cwd, file), 'utf8')); } catch { /* unreadable: fail open */ }
+    try { texts.push(fs.readFileSync(path.resolve(dir, file), 'utf8')); } catch { /* unreadable: fail open */ }
   });
 }
 
-const TRAILER = /(?:^|['"])[ \t]*((?:Co-Authored-By:[^\n]*(?:Claude|noreply@anthropic\.com)|Claude-Session:)[^\n'"]*)|(claude\.ai\/code\/session_[^\s'"]*)/im;
+const TRAILER = /(?:^|['"=])[ \t]*((?:Co-Authored-By:[^\n]*(?:Claude|noreply@anthropic\.com)|Claude-Session:)[^\n'"]*)|(claude\.ai\/code\/session_[^\s'"]*)/im;
 for (const text of texts) {
   const hit = TRAILER.exec(text);
   if (!hit) continue;
