@@ -19,6 +19,7 @@ function setUp({ withRtk, failingJq = false }) {
     enabledPlugins: { 'f42@f42': true, 'other@mkt': true },
     effortLevel: 'low',
     harnessOnly: 1,
+    env: { HARNESS_ENV: '1', GIT_AUTHOR_NAME: 'Claude' },
   };
   writeFileSync(join(dst, 'settings.json'), JSON.stringify(harness));
   writeFileSync(join(dst, 'stop-hook-git-check.sh'), 'harness');
@@ -67,6 +68,19 @@ describe('cloud-setup', () => {
   it('WHEN rtk is missing THEN the rtk and cpu-guard hooks are dropped and the rest kept', () => {
     assert.ok(!commands.some((command) => /^rtk |cpu-guard/.test(command)), commands.join('\n'));
     assert.ok(commands.some((command) => command.includes('read-hint.js')));
+    assert.ok(commands.some((command) => command.includes('commit-attribution-guard.js')));
+  });
+
+  it('WHEN merged THEN git commits as the user, unsigned, and harness env keys stay', () => {
+    const user = { name: 'Artiom Tofan', email: '60610474+F0rty-Tw0@users.noreply.github.com' };
+    assert.equal(settings.env.HARNESS_ENV, '1');
+    assert.equal(settings.env.GIT_AUTHOR_NAME, user.name, 'ours wins over the harness Claude identity');
+    assert.equal(settings.env.GIT_COMMITTER_NAME, user.name);
+    assert.equal(settings.env.GIT_AUTHOR_EMAIL, user.email);
+    assert.equal(settings.env.GIT_COMMITTER_EMAIL, user.email);
+    assert.equal(settings.env.GIT_CONFIG_COUNT, '1');
+    assert.equal(settings.env.GIT_CONFIG_KEY_0, 'commit.gpgsign');
+    assert.equal(settings.env.GIT_CONFIG_VALUE_0, 'false');
   });
 
   it('WHEN merged THEN both f42 plugin copies and the locally disabled plugins are off, and the harness ones stay', () => {

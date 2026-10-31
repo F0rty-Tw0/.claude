@@ -29,6 +29,14 @@ jq -s --arg has_rtk "$has_rtk" '
     | if $has_rtk == "1" then . else
         .hooks.PreToolUse |= map(select(all(.hooks[]; .command | test("^rtk |cpu-guard") | not)))
       end
+    # The harness commits as Claude <noreply@anthropic.com> and rewrites ~/.gitconfig at worker start, so GitHub
+    # squash-merges add `Co-authored-by: Claude`. Env vars beat .gitconfig: commit as the user, unsigned, because
+    # the harness signing key is not on the GitHub account of the user (a signed commit would show Unverified).
+    | .env += {
+        GIT_AUTHOR_NAME: "Artiom Tofan", GIT_AUTHOR_EMAIL: "60610474+F0rty-Tw0@users.noreply.github.com",
+        GIT_COMMITTER_NAME: "Artiom Tofan", GIT_COMMITTER_EMAIL: "60610474+F0rty-Tw0@users.noreply.github.com",
+        GIT_CONFIG_COUNT: "1", GIT_CONFIG_KEY_0: "commit.gpgsign", GIT_CONFIG_VALUE_0: "false"
+      }
   ) as $ours
   | .[0] * $ours
   # Keep the plugins switched off locally (f42@synced: the stale copy claude.ai syncs in), and the f42 plugin,
