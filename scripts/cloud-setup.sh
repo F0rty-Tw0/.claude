@@ -3,7 +3,10 @@
 # (CLAUDE.md, AGENTS.md, agents, skills, commands, hooks, scripts, settings).
 #
 # Environment setup script (claude.ai → environment → setup script):
-#   /opt/node22/bin/claude plugin marketplace add F0rty-Tw0/.claude && { bash ~/.claude/plugins/marketplaces/f42/scripts/cloud-setup.sh || /opt/node22/bin/claude plugin install f42@f42; } || true
+#   /opt/node22/bin/claude plugin marketplace add F0rty-Tw0/.claude && { /opt/node22/bin/claude plugin marketplace update f42; bash ~/.claude/plugins/marketplaces/f42/scripts/cloud-setup.sh || /opt/node22/bin/claude plugin install f42@f42; } || true
+# `update` matters: the environment keeps its old clone between sessions, and `add` on an existing clone
+# pulls nothing, so without it this script and the mirror stay at the first setup's commit. A failed
+# update still runs the clone on disk.
 # The plugin is only the fallback: with both, every agent and skill loads twice (executor + f42:executor),
 # so the merge below disables it.
 set -euo pipefail
