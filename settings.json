@@ -62,6 +62,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node $HOME/.claude/hooks/commit-attribution-guard.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "node $HOME/.claude/hooks/cpu-guard.js"
           }
         ]

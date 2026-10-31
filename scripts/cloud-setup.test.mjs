@@ -19,8 +19,12 @@ function setUp({ withRtk, failingJq = false }) {
     enabledPlugins: { 'f42@f42': true, 'other@mkt': true },
     effortLevel: 'low',
     harnessOnly: 1,
+    env: { HARNESS_ENV: '1' },
   };
   writeFileSync(join(dst, 'settings.json'), JSON.stringify(harness));
+  // What the cloud harness writes to ~/.gitconfig.
+  writeFileSync(join(home, '.gitconfig'), '[user]\n\tname = Claude\n\temail = noreply@anthropic.com\n[commit]\n\tgpgsign = true\n' +
+    '[url "https://github.com/"]\n\tinsteadOf = git@github.com:\n');
   writeFileSync(join(dst, 'stop-hook-git-check.sh'), 'harness');
   const bin = join(home, 'bin');
   mkdirSync(bin);
@@ -36,10 +40,10 @@ function setUp({ withRtk, failingJq = false }) {
   const result = spawnSync('bash', [SCRIPT], { env, encoding: 'utf8' });
   const settings = JSON.parse(readFileSync(join(dst, 'settings.json'), 'utf8'));
   const commands = settings.hooks?.PreToolUse.flatMap((entry) => entry.hooks.map((hook) => hook.command)) ?? [];
-  return { dst, result, settings, commands };
+  return { home, dst, result, settings, commands };
 }
 
-const { dst, result, settings, commands } = setUp({ withRtk: false });
+const { home, dst, result, settings, commands } = setUp({ withRtk: false });
 
 describe('cloud-setup', () => {
   after(() => homes.forEach((home) => rmSync(home, { recursive: true, force: true })));
@@ -67,6 +71,22 @@ describe('cloud-setup', () => {
   it('WHEN rtk is missing THEN the rtk and cpu-guard hooks are dropped and the rest kept', () => {
     assert.ok(!commands.some((command) => /^rtk |cpu-guard/.test(command)), commands.join('\n'));
     assert.ok(commands.some((command) => command.includes('read-hint.js')));
+    assert.ok(commands.some((command) => command.includes('commit-attribution-guard.js')));
+  });
+
+  it('WHEN merged THEN git commits as the user, unsigned, and harness git settings stay', () => {
+    assert.equal(settings.env.HARNESS_ENV, '1');
+    assert.equal(settings.env.GIT_CONFIG_GLOBAL, join(dst, 'cloud.gitconfig'));
+    assert.ok(!('GIT_CONFIG_COUNT' in settings.env), 'the harness owns the GIT_CONFIG_COUNT slots');
+    // The harness also sets config through GIT_CONFIG_COUNT/KEY_n env slots; those must keep working.
+    const env = { ...process.env, HOME: home, GIT_CONFIG_GLOBAL: settings.env.GIT_CONFIG_GLOBAL,
+      GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'credential.interactive', GIT_CONFIG_VALUE_0: 'false' };
+    const get = (key) => spawnSync('git', ['config', '--get', key], { env, cwd: home, encoding: 'utf8' }).stdout.trim();
+    assert.equal(get('user.name'), 'Artiom Tofan', 'ours wins over the harness Claude identity');
+    assert.equal(get('user.email'), '60610474+F0rty-Tw0@users.noreply.github.com');
+    assert.equal(get('commit.gpgsign'), 'false');
+    assert.equal(get('url.https://github.com/.insteadOf'), 'git@github.com:', 'harness ~/.gitconfig still included');
+    assert.equal(get('credential.interactive'), 'false', 'harness env slots untouched');
   });
 
   it('WHEN merged THEN both f42 plugin copies and the locally disabled plugins are off, and the harness ones stay', () => {
