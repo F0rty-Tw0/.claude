@@ -16,7 +16,7 @@ function setUp({ withRtk, failingJq = false }) {
   mkdirSync(dst);
   const harness = {
     extraKnownMarketplaces: { f42: { source: { source: 'github', repo: 'F0rty-Tw0/.claude' } } },
-    enabledPlugins: { 'f42@f42': true },
+    enabledPlugins: { 'f42@f42': true, 'other@mkt': true },
     effortLevel: 'low',
     harnessOnly: 1,
   };
@@ -69,11 +69,12 @@ describe('cloud-setup', () => {
     assert.ok(commands.some((command) => command.includes('read-hint.js')));
   });
 
-  it('WHEN merged THEN both f42 plugin copies and the locally disabled plugins are off, and nothing new is on', () => {
+  it('WHEN merged THEN both f42 plugin copies and the locally disabled plugins are off, and the harness ones stay', () => {
     assert.equal(settings.enabledPlugins['f42@f42'], false);
     assert.equal(settings.enabledPlugins['f42@synced'], false, 'the claude.ai-synced copy');
     assert.equal(settings.enabledPlugins['cc-plugin-telemetry@builtin'], false);
-    assert.deepEqual(Object.values(settings.enabledPlugins).filter(Boolean), []);
+    const on = Object.entries(settings.enabledPlugins).filter(([, enabled]) => enabled).map(([id]) => id);
+    assert.deepEqual(on, ['other@mkt'], 'a harness plugin stays on and nothing of ours turns on');
   });
 
   it('WHEN rtk is installed THEN the rtk and cpu-guard hooks stay', () => {
@@ -88,6 +89,6 @@ describe('cloud-setup', () => {
     assert.notEqual(failed.result.status, 0);
     assert.ok(!existsSync(join(failed.dst, 'CLAUDE.md')), 'nothing copied, so the plugin fallback loads alone');
     assert.ok(!existsSync(join(failed.dst, 'settings.json.tmp')));
-    assert.deepEqual(failed.settings.enabledPlugins, { 'f42@f42': true });
+    assert.deepEqual(failed.settings.enabledPlugins, { 'f42@f42': true, 'other@mkt': true });
   });
 });
