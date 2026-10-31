@@ -69,8 +69,11 @@ describe('cloud-setup', () => {
     assert.ok(commands.some((command) => command.includes('read-hint.js')));
   });
 
-  it('WHEN merged THEN the f42 plugin is disabled, so agents and skills load once', () => {
-    assert.deepEqual(settings.enabledPlugins, { 'f42@f42': false });
+  it('WHEN merged THEN both f42 plugin copies and the locally disabled plugins are off, and nothing new is on', () => {
+    assert.equal(settings.enabledPlugins['f42@f42'], false);
+    assert.equal(settings.enabledPlugins['f42@synced'], false, 'the claude.ai-synced copy');
+    assert.equal(settings.enabledPlugins['cc-plugin-telemetry@builtin'], false);
+    assert.deepEqual(Object.values(settings.enabledPlugins).filter(Boolean), []);
   });
 
   it('WHEN rtk is installed THEN the rtk and cpu-guard hooks stay', () => {
