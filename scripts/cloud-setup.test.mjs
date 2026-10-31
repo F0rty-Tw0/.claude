@@ -143,6 +143,15 @@ describe('cloud-setup', () => {
     assert.ok(!lstatSync(shim).isSymbolicLink());
   });
 
+  it('WHEN ~/.local/bin/git is a file setup did not write THEN it stays', () => {
+    const fresh = setUp({ withRtk: false });
+    const shim = join(fresh.home, '.local', 'bin', 'git');
+    writeFileSync(shim, '#!/bin/sh\necho mine\n');
+    const rerun = spawnSync('bash', [SCRIPT], { env: { ...process.env, HOME: fresh.home, PATH: '/usr/bin:/bin' }, encoding: 'utf8' });
+    assert.equal(rerun.status, 0, rerun.stderr);
+    assert.equal(readFileSync(shim, 'utf8'), '#!/bin/sh\necho mine\n');
+  });
+
   it('WHEN merged THEN both f42 plugin copies and the locally disabled plugins are off, and the harness ones stay', () => {
     assert.equal(settings.enabledPlugins['f42@f42'], false);
     assert.equal(settings.enabledPlugins['f42@synced'], false, 'the claude.ai-synced copy');

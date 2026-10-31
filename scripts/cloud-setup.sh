@@ -66,20 +66,23 @@ EOF
 # In a fresh session Claude reads settings.json before this script writes it, and the Bash tool's shell snapshot
 # keeps only PATH, so GIT_CONFIG_GLOBAL above reaches Bash only after a worker restart. This git shim in
 # ~/.local/bin (ahead of /usr/bin on the cloud PATH, the harness's too) sets the same values as `-c` options on every
-# git call from the start. `-c` wins over every config file for reads, while `git config --global` writes (the
-# harness's included) still land in ~/.gitconfig.
+# git call from the start. `-c` wins over the config files for unscoped reads, while `git config --global` reads and
+# writes (the harness's included) still use ~/.gitconfig.
 # ponytail: workaround for harness startup order; drop it, and rm ~/.local/bin/git, once settings env applies to a
 # fresh session.
 shim_dir="$HOME/.local/bin"
 shim="$shim_dir/git"
 # The real git: first on PATH that is not the shim. -ef also catches `…/bin/`, `//root/…` and symlinked aliases.
 real_git=
+set -f # split PATH on `:` only, no globbing
 IFS=:
 for d in $PATH; do
   [ -n "$d" ] && [ -x "$d/git" ] && ! [ "$d" -ef "$shim_dir" ] && ! [ "$d/git" -ef "$shim" ] && { real_git="$d/git"; break; }
-done || true
+done
 unset IFS
-if [ -n "$real_git" ]; then
+set +f
+# Only replace our own shim (or a link): a real git someone installed in ~/.local/bin stays.
+if [ -n "$real_git" ] && { [ -L "$shim" ] || ! [ -e "$shim" ] || grep -qF 'Written by f42' "$shim"; }; then
   mkdir -p "$shim_dir"
   rm -f "$shim" # never write through a symlink (it could point at the real git)
   cat >"$shim" <<EOF
