@@ -57,6 +57,12 @@ const cases = [
   // two heredocs on one line: both bodies are masked
   ['commit text inside the second heredoc', "cat <<A && cat <<B\nx\nA\ngit commit -m 'Claude-Session: x'\nB", ALLOW],
   ['real commit after two heredocs', "cat <<A && cat <<B\nx\nA\ny\nB\ngit commit -m 'a\n\nClaude-Session: x'", BLOCK],
+  ['printf piped into -F -', "printf 'a\\n\\nClaude-Session: x' | git commit -F -", BLOCK],
+  ['-F after cd with no spaces', 'cd sub&&git commit -F s.md', BLOCK],
+  ['--trailer as a separate word', 'git commit -m fix --trailer Claude-Session:x', BLOCK],
+  // messages that only mention a trailer
+  ['message naming the --trailer= form', 'git commit -m "fix: match --trailer=Claude-Session: lines"', ALLOW],
+  ['literal \\n in a double-quoted message', 'git commit -m "docs: \\nClaude-Session: is blocked"', ALLOW],
 ];
 
 for (const [name, command, expected] of cases) {

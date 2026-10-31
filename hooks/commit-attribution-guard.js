@@ -53,11 +53,13 @@ if (!invocations.length) process.exit(0);
 
 const unquote = (s) => s.replace(/^(['"])(.*)\1$/, '$2');
 const word = (start, end) => unquote(cmd.slice(start, end));
-// `$'…\n…'` and printf messages carry `\n` escapes: also scan a copy with them decoded.
-const texts = [cmd, cmd.replace(/\\n/g, '\n')];
+// `$'…\n…'` and printf strings carry `\n` escapes: also scan a copy with those decoded. Only those spans, because a
+// `\n` in a plain "…" message is a literal backslash-n, not a line break.
+const ESCAPED = /\$'(?:\\.|[^'\\])*'|\bprintf[ \t]+(?:'[^']*'|"(?:\\.|[^"\\])*")/g;
+const texts = [cmd, cmd.replace(ESCAPED, (s) => s.replace(/\\n/g, '\n'))];
 // ponytail: only `cd` at command position earlier in this command is followed; a cd from an earlier Bash call is
 // already in the hook's cwd.
-const cds = [...masked.matchAll(/(?:^|[\n;&|(])[ \t]*cd[ \t]+(\S+)/dg)];
+const cds = [...masked.matchAll(/(?:^|[\n;&|(])[ \t]*cd[ \t]+([^\s;&|)]+)/dg)];
 for (const inv of invocations) {
   let dir = cwd;
   for (const cd of cds.filter((c) => c.index < inv.index)) dir = path.resolve(dir, word(...cd.indices[1]));
@@ -65,20 +67,23 @@ for (const inv of invocations) {
   const argsStart = inv.index + inv[0].length;
   const stop = masked.slice(argsStart).search(/[\n;&|)`]/);
   const args = [...masked.slice(argsStart, stop < 0 ? masked.length : argsStart + stop).matchAll(/\S+/g)];
+  // `args` come from the masked copy, so a `--trailer=` or `-F` written inside a quoted message is not an argument.
   args.forEach((t, i) => {
-    const flag = t[0].match(/^(?:--file(?:=|$)|-F)/);
+    const flag = t[0].match(/^(?:--file(?:=|$)|-F|--trailer(?:=|$))/);
     if (!flag) return;
     const inline = t[0].length > flag[0].length;
     const next = args[i + 1];
     const range = inline ? [argsStart + t.index + flag[0].length, argsStart + t.index + t[0].length]
       : next && [argsStart + next.index, argsStart + next.index + next[0].length];
-    const file = range && word(...range);
-    if (!file || file === '-') return;
-    try { texts.push(fs.readFileSync(path.resolve(dir, file), 'utf8')); } catch { /* unreadable: fail open */ }
+    const value = range && word(...range);
+    if (!value) return;
+    if (flag[0].startsWith('--trailer')) { texts.push(value); return; }
+    if (value === '-') return;
+    try { texts.push(fs.readFileSync(path.resolve(dir, value), 'utf8')); } catch { /* unreadable: fail open */ }
   });
 }
 
-const TRAILER = /(?:^|['"=])[ \t]*((?:Co-Authored-By:[^\n]*(?:Claude|noreply@anthropic\.com)|Claude-Session:)[^\n'"]*)|(claude\.ai\/code\/session_[^\s'"]*)/im;
+const TRAILER = /(?:^|['"])[ \t]*((?:Co-Authored-By:[^\n]*(?:Claude|noreply@anthropic\.com)|Claude-Session:)[^\n'"]*)|(claude\.ai\/code\/session_[^\s'"]*)/im;
 for (const text of texts) {
   const hit = TRAILER.exec(text);
   if (!hit) continue;
