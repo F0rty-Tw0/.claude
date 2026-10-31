@@ -3,10 +3,13 @@
 # (CLAUDE.md, AGENTS.md, agents, skills, commands, hooks, scripts, settings).
 #
 # Environment setup script (claude.ai → environment → setup script):
-#   /opt/node22/bin/claude plugin marketplace add F0rty-Tw0/.claude && { /opt/node22/bin/claude plugin marketplace update f42; bash ~/.claude/plugins/marketplaces/f42/scripts/cloud-setup.sh || /opt/node22/bin/claude plugin install f42@f42; } || true
-# `update` matters: the environment keeps its old clone between sessions, and `add` on an existing clone
-# pulls nothing, so without it this script and the mirror stay at the first setup's commit. A failed
-# update still runs the clone on disk.
+#   /opt/node22/bin/claude plugin marketplace add F0rty-Tw0/.claude && { git -C ~/.claude/plugins/marketplaces/f42 pull -q --ff-only; bash ~/.claude/plugins/marketplaces/f42/scripts/cloud-setup.sh || /opt/node22/bin/claude plugin install f42@f42; } || true
+# The pull matters: the environment keeps its old clone between sessions, and `add` on an existing clone
+# pulls nothing, so without it this script and the mirror stay at the first setup's commit. It is a plain
+# git pull because `claude plugin marketplace update f42` left a session at dfcdd73 after #51 merged. A
+# failed pull still runs the clone on disk.
+# Commit identity: also set GIT_AUTHOR_NAME/EMAIL and GIT_COMMITTER_NAME/EMAIL in the environment's variables,
+# so commits are the user's even when this script runs stale.
 # The plugin is only the fallback: with both, every agent and skill loads twice (executor + f42:executor),
 # so the merge below disables it.
 set -euo pipefail
