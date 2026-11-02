@@ -503,6 +503,29 @@ describe('FEATURE: review-stamp', () => {
       assert.ok(!existsSync(stampPath(dir, parent)));
     });
 
+    it('WHEN reviewed-sha is a short form of HEAD THEN the stamp is written under the full sha', () => {
+      const dir = repo();
+      const { pr, report } = files();
+
+      const result = run(dir, 'write', 'main', head(dir).slice(0, 7), 'full', report, pr);
+
+      assert.strictEqual(result.status, 0);
+      assert.ok(existsSync(stampPath(dir, head(dir))));
+      assert.strictEqual(lookup(dir, 'main', pr).case, 1);
+    });
+
+    it('WHEN reviewed-sha is a ref name or a prefix under 7 chars THEN exit 1 and no file', () => {
+      const dir = repo();
+      const { pr, report } = files();
+
+      for (const ref of ['HEAD', 'feat', head(dir).slice(0, 6), '']) {
+        const result = run(dir, 'write', 'main', ref, 'full', report, pr);
+
+        assert.strictEqual(result.status, 1, ref);
+      }
+      assert.ok(!existsSync(stampPath(dir, head(dir))));
+    });
+
     it('WHEN the mode is unknown THEN exit 2 with usage', () => {
       const dir = repo();
       const { report } = files();
