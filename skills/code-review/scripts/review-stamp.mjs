@@ -133,7 +133,11 @@ const lookup = (base, materials) => {
 const write = (base, reviewed, mode, reportFile, materials) => {
   const info = inspect(base);
   if (info.error) return { status: 1, message: `no stamp written: ${info.error}` };
-  if (info.head !== reviewed) return { status: 1, message: `no stamp written: HEAD ${info.head} is not ${reviewed}` };
+  // A short SHA is resolved, so `aa64083` stamps the same commit as its full form.
+  const resolved = git(info.top, 'rev-parse', '--verify', '--quiet', `${reviewed}^{commit}`);
+  const full = resolved.ok ? resolved.stdout : reviewed;
+  if (info.head !== full) return { status: 1, message: `no stamp written: HEAD ${info.head} is not ${reviewed}` };
+  reviewed = full;
 
   const report = readFileSync(reportFile, 'utf8');
   const header = [`mb: ${info.mb}`, `digest: ${digestOf(materials)}`, `date: ${new Date().toISOString()}`, `mode: ${mode}`];

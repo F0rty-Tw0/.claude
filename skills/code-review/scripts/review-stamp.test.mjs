@@ -503,6 +503,17 @@ describe('FEATURE: review-stamp', () => {
       assert.ok(!existsSync(stampPath(dir, parent)));
     });
 
+    it('WHEN reviewed-sha is a short form of HEAD THEN the stamp is written under the full sha', () => {
+      const dir = repo();
+      const { pr, report } = files();
+
+      const result = run(dir, 'write', 'main', head(dir).slice(0, 7), 'full', report, pr);
+
+      assert.strictEqual(result.status, 0);
+      assert.ok(existsSync(stampPath(dir, head(dir))));
+      assert.strictEqual(lookup(dir, 'main', pr).case, 1);
+    });
+
     it('WHEN the mode is unknown THEN exit 2 with usage', () => {
       const dir = repo();
       const { report } = files();
