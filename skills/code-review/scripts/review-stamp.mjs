@@ -133,9 +133,9 @@ const lookup = (base, materials) => {
 const write = (base, reviewed, mode, reportFile, materials) => {
   const info = inspect(base);
   if (info.error) return { status: 1, message: `no stamp written: ${info.error}` };
-  // A short SHA is resolved, so `aa64083` stamps the same commit as its full form.
-  const resolved = git(info.top, 'rev-parse', '--verify', '--quiet', `${reviewed}^{commit}`);
-  const full = resolved.ok ? resolved.stdout : reviewed;
+  // A short SHA of HEAD stamps the same commit as its full form. Only a hex prefix counts:
+  // a ref like `HEAD` or a branch name would follow new commits and stamp work nobody reviewed.
+  const full = /^[0-9a-f]{7,64}$/.test(reviewed) && info.head.startsWith(reviewed) ? info.head : reviewed;
   if (info.head !== full) return { status: 1, message: `no stamp written: HEAD ${info.head} is not ${reviewed}` };
   reviewed = full;
 
