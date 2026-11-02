@@ -514,11 +514,11 @@ describe('FEATURE: review-stamp', () => {
       assert.strictEqual(lookup(dir, 'main', pr).case, 1);
     });
 
-    it('WHEN reviewed-sha is a ref name for HEAD THEN exit 1 and no file', () => {
+    it('WHEN reviewed-sha is a ref name or a prefix under 7 chars THEN exit 1 and no file', () => {
       const dir = repo();
       const { pr, report } = files();
 
-      for (const ref of ['HEAD', 'feat']) {
+      for (const ref of ['HEAD', 'feat', head(dir).slice(0, 6), '']) {
         const result = run(dir, 'write', 'main', ref, 'full', report, pr);
 
         assert.strictEqual(result.status, 1, ref);
