@@ -14,11 +14,6 @@
 # Strict mode breaks VS Code shell integration and other third-party scripts
 # that don't expect it. Use it inside individual scripts/modules instead.
 
-# Default working directory (skip in VS Code and Claude Code — they set their own workspace).
-if ($env:TERM_PROGRAM -ne 'vscode' -and -not $env:CLAUDECODE) {
-    Set-Location D:\
-}
-
 # Disable module auto-loading for controlled, predictable startup performance.
 #$PSModuleAutoLoadingPreference = 'None'
 

@@ -603,19 +603,10 @@ Copy-Item "$HOME\.claude\profiles\Microsoft.PowerShell_profile.ps1" $PROFILE -Fo
 
 Features:
 
-- Default working directory `D:\` (skipped in VS Code and Claude Code via `$env:TERM_PROGRAM` / `$env:CLAUDECODE` guards)
 - Lazy-loaded Terminal-Icons (deferred import on first `ls`/`dir` for fast startup)
 - Claude Code alias: `cc` -> `claude`
 - Git aliases: `gcm` (checkout master), `gcb` (checkout -b), `gc` (checkout), `gp` (pull), `gpm` (pull master), `gfm` (fetch --prune), `gs` (status -sb)
 - `rmnm` - recursively remove `node_modules`, `.nx`, `.angular`, `dist`, `tmp`, `coverage`, and lockfiles
-
-### Terminal Defaults (`profiles/terminal-defaults.md`)
-
-All terminals open in `D:\` by default:
-
-- **Command Prompt**: shortcut WorkingDirectory set via `profiles/set-shortcut.ps1`
-- **cmd.exe (Win+R)**: Registry `HKCU\Software\Microsoft\Command Processor\Autorun` = `cd /d D:\`
-- **PowerShell**: `Set-Location D:\` guarded for non-VS-Code/Claude Code
 
 ---
 
