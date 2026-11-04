@@ -446,6 +446,18 @@ Servers: `http://127.0.0.1:8808/servers/<name>/sse`
 
 ## Hooks
 
+### Delete Guard (`hooks/delete-guard.js`)
+
+A `PreToolUse` hook on `Bash` and `PowerShell` that blocks recursive deletes which can wipe a drive or a home folder. Added after an autonomous session ran `D=$(ls -d C?*/ ...); rm -rf -- "$D"` in Git Bash: a stray folder named `C` + U+F03A listed as `C:/`, and `rm` deleted drive C:.
+
+It blocks `rm -r`, `find -delete`, `find -exec rm`, `xargs rm -r`, `Remove-Item -Recurse` and `rd /s` when a target is:
+
+- a drive or filesystem root, or a folder directly in one (`/`, `/usr`, `C:`, `C:\Users`, `/mnt/c`, `/Volumes/Disk`)
+- a home folder, a folder directly in it, or a parent of one (`~`, `~/.claude`, `/home/bob`)
+- not a literal path: a shell variable, `$(...)`, backticks, pipeline or xargs input
+
+Environment variables the command does not reassign (`$HOME`, `$TMPDIR`, `$env:TEMP`) resolve, so `rm -rf "$HOME/.cache/x"` passes. There is no override: delete by a checked literal path. Works on Windows (Git Bash, PowerShell, cmd), macOS and Linux. Not a security boundary: deletes inside `python -c`, `node -e` or script files pass.
+
 ### NUL Guard (`hooks/nul-guard.js`)
 
 A `PreToolUse:Bash` hook that prevents creation of literal `nul` files on Windows. The model sometimes emits `2>nul` (Windows CMD syntax) in bash, which creates a file named "nul" instead of discarding output.

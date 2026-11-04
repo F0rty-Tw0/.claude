@@ -22,6 +22,15 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/delete-guard.js"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
