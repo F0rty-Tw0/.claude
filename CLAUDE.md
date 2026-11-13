@@ -25,3 +25,5 @@ Local agents live in `~/.claude/agents/` — invoke by bare name (`executor`, `a
 # Terminal output
 
 Local sessions: a PreToolUse hook rewrites Bash commands through `rtk`, so their output arrives compressed. Use `rtk proxy <cmd>` when you need raw, unfiltered output. Without rtk on PATH (the usual cloud case) `scripts/cloud-setup.sh` drops that hook and cpu-guard: run commands plainly.
+
+Line endings: check with `git ls-files --eol <file>` (or `tr -cd '\r' < f | wc -c`), never `grep -c $'\r$'`, which counted every line as CRLF in Git Bash here.
