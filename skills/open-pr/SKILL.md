@@ -23,7 +23,7 @@ Write PR titles and descriptions that are concise, honest about impact, and soun
 3. Write body        → compact template, same for every PR
 4. Write title       → short, specific, lowercase
 5. Write summary     → 1–3 sentences, whatever the size
-6. Polish            → check Red Flags, then skill:anthropic-skills:avoid-ai-writing on title + prose (Proof verbatim)
+6. Polish            → check Red Flags, then skill:humanizer on title + prose (Proof verbatim)
 7. Present           → show to user, ready for gh pr create
 ```
 

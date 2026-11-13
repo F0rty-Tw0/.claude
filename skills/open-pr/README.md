@@ -15,7 +15,7 @@ Every PR gets the same compact body:
 
 Blast radius, test counts, ticket numbers, and branch details orient the agent while it builds proof; they stay out of the body.
 
-Process: Proof gate (code-review) > Gather changes > Scan repo context > Write body > Write title (<60 chars, lowercase) > Write summary > Polish (Red Flags, then avoid-ai-writing on title and prose) > Present.
+Process: Proof gate (code-review) > Gather changes > Scan repo context > Write body > Write title (<60 chars, lowercase) > Write summary > Polish (Red Flags, then humanizer on title and prose) > Present.
 
 ---
 
