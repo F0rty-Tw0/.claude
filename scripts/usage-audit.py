@@ -5,8 +5,8 @@ Usage:
   python scripts/usage-audit.py            # collect -> reports/data/usage-audit-<hostname>.json, then print merged tables
   python scripts/usage-audit.py --tables   # only merge every reports/data/usage-audit-*.json and print markdown tables
 
-~/.claude syncs across machines but the usage data does not, so each machine writes its own JSON
-into the repo and --tables merges them into the holistic view used by reports/usage-audit-*.md.
+Each machine writes its own JSON under reports/ (gitignored, local only), so copy the other
+machine's JSON over by hand before --tables merges them into the view used by reports/usage-audit-*.md.
 
 Sources:
   Claude  ~/.claude.json skillUsage (lifetime), ~/.claude/projects/*/*.jsonl (Agent/Skill tool calls)

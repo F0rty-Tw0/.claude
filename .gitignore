@@ -20,8 +20,6 @@
 !hooks/**
 !scripts/
 !scripts/**
-!reports/
-!reports/**
 !backup/
 !backup/**
 !copilot/
