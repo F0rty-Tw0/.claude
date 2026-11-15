@@ -32,7 +32,8 @@ jq -s --arg has_rtk "$has_rtk" --arg gitconfig "$gitconfig" '
   (.[1].enabledPlugins // {} | with_entries(select(.value == false))) as $off
   | (.[1]
     | del(.model, .permissions, .defaultMode, .statusLine, .enabledPlugins, .extraKnownMarketplaces, .remoteControlAtStartup)
-    # No rtk in the image: its hook fails, and cpu-guard rewrites heavy commands to `rtk <cmd>`.
+    # No rtk in the image: an rtk hook, if one is wired, would fail. cpu-guard is dropped with it; until
+    # 2026-11-15 it put rtk in front of heavy commands. It now checks PATH first, so this could be relaxed.
     | if $has_rtk == "1" then . else
         .hooks.PreToolUse |= map(select(all(.hooks[]; .command | test("^rtk |cpu-guard") | not)))
       end
