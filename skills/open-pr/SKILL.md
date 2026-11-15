@@ -208,7 +208,7 @@ EOF
 )"
 ```
 
-`--attach` only for UI PRs, one flag per image path in the body. A `--body-file` path may use `~` or an inherited env var, but not one the same command sets or the shell owns: `pr-proof-guard.js` refuses `P=/tmp; gh pr create --body-file "$P/body.md"` and `$PWD/body.md`. Write such paths literally, in drive form on Windows (`C:/…`, not Git Bash's `/c/…`).
+`--attach` only for UI PRs, one flag per image path in the body. A `--body-file` path may use `~` or an inherited env var, but not one the same command sets or the shell owns: `pr-proof-guard.js` refuses `P=/tmp; gh pr create --body-file "$P/body.md"` and `$PWD/body.md`. Write such paths literally, in drive form on Windows (`C:/…`, not Git Bash's `/c/…`). The guard reads the body file before the command runs, so write it in an earlier tool call: `sed … > body.md && gh pr create --body-file body.md` in one call is refused.
 
 Inside an approved split, skip the wait: create each PR after its Step 0 APPROVE (`references/mechanics.md`, Push + open).
 
