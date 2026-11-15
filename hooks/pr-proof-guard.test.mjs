@@ -1,5 +1,5 @@
 // Run: node --test hooks/pr-proof-guard.test.mjs
-import { after, test } from 'node:test';
+import { after, describe, it, test } from 'node:test';
 import assert from 'node:assert';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -421,3 +421,44 @@ for (const flag of ['--base=base', '-B base', '-Bbase']) {
     assert.strictEqual(status, BLOCK);
   });
 }
+
+// The child sees process.platform as win32 while its path and os modules stay the host's, and its temp dir is `dir`:
+// only the Git Bash mapping (toNativePath, tested in commit-attribution-guard.test.mjs) differs from a plain run, so
+// each path.resolve call site is checked on every OS.
+describe('FEATURE: pr-proof-guard under Git Bash', () => {
+  const preload = join(dir, 'as-win32.cjs');
+  writeFileSync(preload, "Object.defineProperty(process, 'platform', { value: 'win32' });\n");
+  const runAsWin32 = (command) => spawnSync(process.execPath, ['--require', preload, hook], {
+    input: JSON.stringify({ tool_input: { command }, cwd: dirname(dir) }),
+    env: { ...process.env, HOME: dir, TMPDIR: dir, TEMP: dir, TMP: dir },
+    encoding: 'utf8',
+  });
+
+  describe('GIVEN a body file with proof in the temp dir', () => {
+    it('WHEN --body-file names it as /tmp/ok.md THEN the PR is allowed', () => {
+      const { status, stderr } = runAsWin32('gh pr create --body-file /tmp/ok.md');
+
+      assert.strictEqual(status, ALLOW, stderr);
+    });
+
+    it('WHEN --body-file is relative after cd /tmp/sub THEN the PR is allowed', () => {
+      const { status, stderr } = runAsWin32('cd /tmp/sub && gh pr create --body-file only-in-sub.md');
+
+      assert.strictEqual(status, ALLOW, stderr);
+    });
+
+    it('WHEN the same command writes /tmp/ok.md first THEN the block names the mapped file as touched', () => {
+      const { status, stderr } = runAsWin32('echo x > /tmp/ok.md && gh pr create -F /tmp/ok.md');
+
+      assert.deepStrictEqual([status, stderr.includes(`touches ${join(dir, 'ok.md')} before gh reads it`)], [BLOCK, true], stderr);
+    });
+  });
+
+  describe('GIVEN a body file without proof in the temp dir', () => {
+    it('WHEN --body-file names it as /tmp/bad.md THEN the PR is blocked for the missing Proof section', () => {
+      const { status, stderr } = runAsWin32('gh pr create --body-file /tmp/bad.md');
+
+      assert.deepStrictEqual([status, /no `## Proof` section/.test(stderr)], [BLOCK, true], stderr);
+    });
+  });
+});
