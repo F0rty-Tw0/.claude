@@ -27,6 +27,7 @@ let hits = 0;
 for (const rel of files) {
   const abs = path.isAbsolute(rel) ? rel : path.join(REPO, rel);
   if (!SCAN_DIRS.some((d) => rel.replaceAll('\\', '/').startsWith(d))) continue;
+  if (/\.test\.\w+$/.test(rel)) continue; // fixtures name other machines' home folders on purpose
   if (!fs.existsSync(abs) || fs.statSync(abs).isDirectory()) continue;
   const lines = fs.readFileSync(abs, 'utf8').split('\n');
   lines.forEach((line, i) => {

@@ -1,12 +1,28 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
-const SCRIPT = join(import.meta.dirname, 'cloud-setup.sh');
+const REPO = join(import.meta.dirname, '..');
 const homes = [];
+
+// The script mirrors its whole checkout. In the cloud that is a clean clone; the live ~/.claude also holds
+// transcripts and handoffs (15 GB on 2026-11-15), and mirroring that once per setUp never finished. So run the
+// script from a copy that holds only what git would clone, plus new files not yet committed.
+function cleanCheckout() {
+  const src = mkdtempSync(join(tmpdir(), 'cloud-setup-src-'));
+  homes.push(src);
+  const listed = spawnSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: REPO, encoding: 'utf8' });
+  assert.equal(listed.status, 0, listed.stderr);
+  for (const file of listed.stdout.split('\0').filter((file) => file && existsSync(join(REPO, file)))) {
+    mkdirSync(dirname(join(src, file)), { recursive: true });
+    cpSync(join(REPO, file), join(src, file));
+  }
+  return src;
+}
+const SCRIPT = join(cleanCheckout(), 'scripts', 'cloud-setup.sh');
 
 // Fresh cloud home (what the harness and `claude plugin marketplace add` leave), then the script.
 function setUp({ withRtk, failingJq = false }) {
@@ -72,6 +88,13 @@ describe('cloud-setup', () => {
     assert.ok(!commands.some((command) => /^rtk |cpu-guard/.test(command)), commands.join('\n'));
     assert.ok(commands.some((command) => command.includes('read-hint.js')));
     assert.ok(commands.some((command) => command.includes('commit-attribution-guard.js')));
+  });
+
+  it('WHEN merged THEN the leftover-process hook runs after an Agent call and on each prompt', () => {
+    const commandsOf = (entries) => entries.flatMap((entry) => entry.hooks.map((hook) => hook.command));
+    assert.equal(settings.hooks.PostToolUse.find((entry) => entry.matcher === 'Agent')?.hooks[0].command, 'node "$HOME/.claude/hooks/leftover-procs.js"');
+    assert.ok(commandsOf(settings.hooks.UserPromptSubmit).includes('node "$HOME/.claude/hooks/leftover-procs.js"'));
+    assert.ok(existsSync(join(dst, 'hooks', 'leftover-procs.js')));
   });
 
   it('WHEN merged THEN git commits as the user, unsigned, and harness git settings stay', () => {
@@ -160,10 +183,11 @@ describe('cloud-setup', () => {
     assert.deepEqual(on, ['other@mkt'], 'a harness plugin stays on and nothing of ours turns on');
   });
 
-  it('WHEN rtk is installed THEN the rtk and cpu-guard hooks stay', () => {
+  it('WHEN rtk is installed THEN the cpu-guard hook stays and no hook rewrites every command through rtk', () => {
     const withRtk = setUp({ withRtk: true });
     assert.equal(withRtk.result.status, 0, withRtk.result.stderr);
-    assert.ok(withRtk.commands.includes('rtk hook claude'));
+    // The rtk rewrite hook was removed on 2026-11-15: in auto mode a rewrite voids the permission review.
+    assert.ok(!withRtk.commands.includes('rtk hook claude'));
     assert.ok(withRtk.commands.some((command) => command.includes('cpu-guard.js')));
   });
 

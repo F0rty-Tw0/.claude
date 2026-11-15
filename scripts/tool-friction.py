@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Count tool friction in Claude Code transcripts: harness sleep blocks, Monitor schema
 errors, exit 137 by shape, and auto-mode classifier denials. One JSON object on stdout.
-Usage: python3 scripts/tool-friction.py [--root DIR]   (default ~/.claude/projects)"""
+Usage:   python3 scripts/tool-friction.py [--root DIR]   (default ~/.claude/projects)
+Windows: py -3 scripts\\tool-friction.py [--root DIR]"""
 import argparse, json, re
 from collections import Counter
 from pathlib import Path

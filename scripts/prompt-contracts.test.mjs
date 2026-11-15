@@ -57,7 +57,7 @@ describe('2.2 long reports go to the scratchpad', () => {
   const agents = read('AGENTS.md');
   it('AGENTS.md carries the path contract and its fallback', () => {
     assert.ok(agents.includes('$CLAUDE_SCRATCHPAD/reports/<agent>-<slug>.md'));
-    assert.ok(agents.includes('none → your OS temp dir + `/claude-reports/`'));
+    assert.match(agents, /none → your OS temp dir.{0,80}\+ `\/claude-reports\/`/);
     assert.ok(!agents.includes('/tmp/claude-reports/'));
   });
   it('AGENTS.md drops the old overflow rules', () => {

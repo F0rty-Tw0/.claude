@@ -10,6 +10,7 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { toNativePath } = require('./commit-attribution-guard.js');
 
 let input = {};
 try { input = JSON.parse(fs.readFileSync(0, 'utf8')) || {}; } catch { process.exit(0); }
@@ -88,7 +89,7 @@ const expandEnv = (p, end) => p.replace(/\$(?:\{(\w+)\}|(\w+))/g, (m, a, b) => (
 const resolvePath = (p, end) => expandEnv(shellOwned('HOME', end) ? p.replace(/^~(?=\/|$)/, '$HOME') : expandHome(p), end);
 
 const cd = masked.match(/^[ \t]*cd[ \t]+([^\s;&]+)[ \t]*(?:&&|;)/d);
-const baseDir = path.resolve(cwd, cd ? resolvePath(unquote(cmd.slice(...cd.indices[1])), cd.index) : '.');
+const baseDir = path.resolve(cwd, cd ? toNativePath(resolvePath(unquote(cmd.slice(...cd.indices[1])), cd.index)) : '.');
 
 // The Proof section runs from its heading to the next `## ` heading outside a code fence (output may print markdown).
 // A pair is a `| … Before | After |` table row, or a line starting (after bullets/bold/quote marks) with `Before:` and
@@ -259,12 +260,12 @@ const check = (inv) => {
   const statementStart = inv.index + inv[0].search(/[^\n;&|(`]*$/);
   const resolved = resolvePath(value, statementStart);
   if (resolved.includes('$')) return `pr-proof-guard: cannot resolve body file path \`${value}\` (it expands a variable). Pass a literal path. ${HOW}`;
-  const file = path.resolve(baseDir, resolved);
+  const file = path.resolve(baseDir, toNativePath(resolved));
   // The hook runs before the command, so a body file created or changed earlier in this same command (>, tee, cp, mv,
   // sed -i, ...) is read stale or missing. ponytail: any earlier mention of the path counts, so a harmless
   // `ls pr.md && gh pr create -F pr.md` also blocks; the message says how to fix it, which beats a silent wrong allow.
   const mentions = [...masked.slice(0, scanEnd).matchAll(/[^\s;&|()<>`]+/dg)];
-  if (mentions.some((w) => path.resolve(baseDir, resolvePath(unquote(cmd.slice(...w.indices[0])), w.index)) === file)) {
+  if (mentions.some((w) => path.resolve(baseDir, toNativePath(resolvePath(unquote(cmd.slice(...w.indices[0])), w.index))) === file)) {
     return `pr-proof-guard: this command touches ${file} before gh reads it. Write the body file in a separate Bash call — ` +
       'the hook reads it before your command runs.';
   }

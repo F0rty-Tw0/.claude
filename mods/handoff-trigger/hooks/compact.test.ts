@@ -23,7 +23,7 @@ const MARKER = '[handoff-trigger:compact]'
 const ALIVE = 'Alive agents (they survive /clear; their notices arrive in the new session; reach one with SendMessage <id>):'
 const ENDED = 'Ended agents:'
 const HANDOFF = `${HOME}\\.claude\\handoffs\\2026-10-10-1200-task.md`
-const CONTINUE = `Continue from the handoff in ${HANDOFF}: read it, run its Verify command, then do its Next step.`
+const CONTINUE = `Continue from the handoff in ${HANDOFF}: read it, run its Verify command, then do its Next step. The handoff fires by itself while you work; never park work for it.`
 const DONE_CHECK = 'Handoff check from the handoff-trigger mod: is the task you were given finished? Reply with exactly DONE if it is, or NOT DONE: <one line on what is left>. Do nothing else.'
 
 type Submit = {
@@ -46,6 +46,9 @@ type Submit = {
 // runs a callback inside the next call of that name (`clear`, `agent.list`,
 // `session.send`, `tool.call`, `session.id`) before it answers. `lateMs` makes
 // every FLOW_MS timer fire that much late, as after the machine slept.
+// A /handoff that does not reject is queued, as the engine queues a command
+// until the session is idle: the next startTurn() or handoffTurn() enters its
+// prompt (with `command`) before its turn starts.
 function world($: Engine, on: On) {
   const seen = {
     tokens: 100_000,
@@ -68,13 +71,31 @@ function world($: Engine, on: On) {
     rejects: [] as string[],
     submitDrop: undefined as string | undefined,
     lagMs: { clear: 0, id: 0 },
+    reads: [] as string[],
+    texts: new Map<string, string>(),
+    setting: undefined as unknown,
   }
   let isInTurn = false
   let sessions = 0
+  let queuedHandoff: string | undefined
   // Before mock.clock: the hook registered first answers first.
   on('clock.after', { ms: FLOW_MS }, (_$, e, next) => next({ ...e, ms: e.ms + seen.lateMs }))
   const clock = mock.clock(on, { now: 1_000_000_000 })
   mock.env(on, { USERPROFILE: HOME })
+  on('settings.read', () => {
+    seen.reads.push('settings')
+
+    return { value: seen.setting === undefined ? {} : { autoCompactWindow: seen.setting } } as never
+  })
+  on('fs.read', (_$, e) => {
+    // As fs.stat below: on Linux the engine resolves C:\… against the cwd.
+    const path = slashed(e.path).replace(/^.*?(?=[A-Za-z]:\/)/, '')
+    seen.reads.push(path)
+    const text = seen.texts.get(path)
+    if (text === undefined) return { deny: `ENOENT: ${e.path}` }
+
+    return { value: text }
+  })
   on('session.usage', () => {
     if (seen.isUsageRejecting) throw new Error('usage rejected')
 
@@ -114,6 +135,7 @@ function world($: Engine, on: On) {
     seen.commands.push(e.command)
     seen.args.push(e.args)
     if (seen.rejects.includes(e.command)) throw new Error(`${e.command} rejected`)
+    if (e.command === 'handoff') queuedHandoff = e.args
     if (e.command === 'clear' && seen.clear === 'rejected') throw new Error('clear rejected')
     if (e.command === 'clear') await lag('clear')
     if (e.command === 'clear') await runOnce('clear')
@@ -125,11 +147,15 @@ function world($: Engine, on: On) {
     return { text: '' } as never
   })
   on('prompt.submit', (_$, e) => {
+    // A queued /handoff's own prompt: not a submit the tests count.
+    const unchanged = { text: e.text }
+    if (e.command) return unchanged
+
     const asUser = e.origin.kind === 'plugin' ? e.origin.asUser : undefined
     seen.submits.push({ text: e.text, origin: e.origin.kind, asUser })
     if (seen.submitDrop) return { drop: seen.submitDrop }
 
-    return { text: e.text }
+    return unchanged
   })
   on('session.compact', () => COMPACTED)
   on('agent.list', async () => {
@@ -178,7 +204,19 @@ function world($: Engine, on: On) {
     seen.files.set(slashed(path), clock.now() - ageMs)
   }
 
+  // The queued /handoff's prompt entering, as the engine runs it once idle.
+  async function enterQueuedHandoff(): Promise<void> {
+    const args = queuedHandoff
+    queuedHandoff = undefined
+    if (args === undefined) return
+
+    const command = { name: 'handoff', args }
+    const origin = { kind: 'plugin', name: 'handoff-trigger' } as const
+    await $.prompt.submit({ text: `/handoff ${args}`, wait: false, origin, command })
+  }
+
   async function startTurn() {
+    await enterQueuedHandoff()
     await $.turn.start({ text: '', turnId: 't' })
   }
 
@@ -245,6 +283,7 @@ function world($: Engine, on: On) {
 
   // The turn /handoff runs, with the marker in its text, writing `path` fresh.
   async function handoffTurn(extra: Partial<TurnCompleteInput> = {}, path = HANDOFF) {
+    await enterQueuedHandoff()
     await $.turn.start({ text: `${MARKER}\nAlive agents: …`, turnId: 'h' })
     write(path)
     await completeTurn({ turnId: 'h', answer: `Handoff written to ${path}`, ...extra })
@@ -541,6 +580,19 @@ test('a check that settles while a main turn runs hands off only after that turn
   expect(handoffs()).toHaveLength(1)
 })
 
+test("an agent's turn the done check woke is no main turn: its NOT DONE settles the check and /handoff runs with no main turn in between", async ($, on) => {
+  const { seen, completeTurn, endTurn, compactNow, handoffs } = world($, on)
+
+  seen.agents = [agent('a1')]
+  await compactNow()
+  await endTurn()
+  await $.turn.start({ text: DONE_CHECK, turnId: 'a', agentId: 'a1' })
+  expect(handoffs()).toEqual([])
+
+  await completeTurn({ agentId: 'a1', turnId: 'a', answer: 'NOT DONE: x' })
+  expect(handoffs()).toHaveLength(1)
+})
+
 test('after a hands-free idle continue, an idle auto compaction passes to the core: one unattended chain per person prompt', async ($, on) => {
   const { seen, write, endTurn, idle, compactNow, handoffTurn } = world($, on)
 
@@ -582,6 +634,54 @@ test('after a flow continue, an auto inside the continued run still hands off: t
 
   await startTurn()
   expect(await compactNow()).toEqual(SKIPPED)
+})
+
+test('(i) a compaction flow active at a granted turn end past 60%: no boundary /handoff, only the flow\'s', async ($, on) => {
+  const { seen, startTurn, completeTurn, compactNow, handoffs, person } = world($, on)
+
+  seen.texts.set(slashed(HANDOFF), '# Handoff\n\n## Standing grants\nCommit freely on this branch\n')
+  await person(`Continue from the handoff in ${HANDOFF}: read it, then go on.`)
+  // 0.67 of the compaction window: past 60%, under the nudge's 80%.
+  seen.setting = 300_000
+  seen.tokens = 200_000
+  await startTurn()
+  expect(await compactNow()).toEqual(SKIPPED)
+  await completeTurn()
+  expect(handoffs()).toEqual([args('No agents.')])
+  expect(seen.toasts).toEqual([VETO_TOAST])
+})
+
+test('a compaction vetoed between a granted turn end past 60% and the tick: no boundary /handoff', async ($, on) => {
+  const { clock, seen, startTurn, compactNow, person } = world($, on)
+
+  seen.texts.set(slashed(HANDOFF), '# Handoff\n\n## Standing grants\nCommit freely on this branch\n')
+  await person(`Continue from the handoff in ${HANDOFF}: read it, then go on.`)
+  seen.setting = 300_000
+  seen.tokens = 200_000
+  await startTurn()
+  // Not completeTurn: it settles the clock, and the tick must wait.
+  await $.turn.complete({ answer: 'ok', durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  expect(await compactNow()).toEqual(SKIPPED)
+  await clock.settle()
+  expect(seen.commands).toEqual([])
+  expect(seen.toasts).toEqual([VETO_TOAST])
+})
+
+test('after the compaction flow\'s own continue, a granted turn end past 60% runs a boundary /handoff', async ($, on) => {
+  const { seen, endTurn, compactNow, handoffTurn } = world($, on)
+
+  seen.texts.set(slashed(HANDOFF), '# Handoff\n\n## Standing grants\nCommit freely on this branch\n')
+  expect(await compactNow()).toEqual(SKIPPED)
+  await endTurn()
+  await handoffTurn()
+  expect(seen.submits).toEqual([{ text: CONTINUE, origin: 'plugin', asUser: true }])
+
+  // 0.67 of the compaction window: past 60%, under the nudge's 80%.
+  seen.setting = 300_000
+  seen.tokens = 200_000
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff', 'clear', 'handoff'])
+  expect(seen.toasts.at(-1)).toBe('Turn ended at 67% context: handing off')
 })
 
 test('a mid-turn flow continue takes no cap: the idle /handoff after it still clears and continues hands-free', async ($, on) => {

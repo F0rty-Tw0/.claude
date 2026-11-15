@@ -8,19 +8,36 @@
 // Blocks a recursive delete (rm -r, find -delete / -exec rm, Remove-Item -Recurse, rd /s) when a target is
 //   - a filesystem or drive root, or a folder directly in one (`/`, `/usr`, `C:`, `C:\Users`, `/mnt/c`),
 //   - a home folder, a folder directly in it, or a parent of one (`~`, `~/.claude`, `/home/bob`),
+//   - a device or mount point (`/dev/sda`, `/mnt/data`, `/media/bob/usb`), a network share root or a folder
+//     directly in one (`\\nas\share\dir`), or a Windows device path (`\\.\`, `\\?\`),
 //   - not a literal path: a shell variable, `$(...)`, backticks, xargs or pipeline input,
 //     or a relative path after a `cd` to a non-literal place.
 // Environment variables the command does not reassign resolve (HOME, USERPROFILE, TMPDIR, ...).
-// No override on purpose: the fix is to print the resolved path, check it, and delete it literally.
+// A refused path has no override on purpose: the fix is to print the resolved path, check it, and delete it literally
+// (a device or a mount is refused literally too: that delete is the user's to run).
 // A footgun net, not a security boundary. Gaps, left open: deletes inside interpreters
 // (`python -c "shutil.rmtree(x)"`, `node -e`), script files, .NET calls, `eval`.
+//
+// Allow (owned-delete.js), only after nothing is refused: `rm -rf <literal absolute path>...` (PowerShell:
+// `Remove-Item -Recurse -Force <path>`) whose every target is a folder the session owns gets a PreToolUse
+// `allow`, so no permission prompt. Owned: a line of `<state>/owned-<session id>.txt` (state is
+// DELETE_GUARD_STATE_DIR, else ~/.claude/state) or the stdin scratchpad_dir, strictly inside a temp or
+// cache zone. No scratchpad_dir on stdin: no allow. Never the scratchpad, a folder that holds it, or
+// another session's or project's folder in the scratchpad's tree (`<tmp>/claude-<uid>`).
+// The list is the session's own claim, not proof; the zones bound a wrong line to temp space.
+// Anything else gets no decision (the normal permission flow), including `git worktree remove`, every
+// other spelling, the Bash tool on Windows, and a path that reaches /proc, /sys or /dev, also through a link.
 const fs = require('fs');
 const os = require('os');
+const { join } = require('path');
 const { stripProse } = require('./cpu-guard.js');
+const { allowOwned, ALLOW_JSON } = require('./owned-delete.js');
 
 const DYNAMIC = 'is not a literal path (a variable, $(...), backticks, xargs or pipe input)';
 const ROOT = 'is a drive or filesystem root, or a folder directly in one';
 const HOME = 'is a home folder, a folder directly in one, or a parent of one';
+const DEVICE = 'is a device, a mount point or a network share root';
+const STREAMS = new Set(['null', 'stdout', 'stderr', 'tty']);
 
 // Splits a command into its simple commands at unquoted ; & | newlines, parens and brace groups.
 // Each part knows whether it reads a pipe. Unquoted # starts a comment.
@@ -107,7 +124,8 @@ function words(text, ctx) {
 
 // A path as { drive, parts } (lowercased), resolved against cwd; null when cwd is unknown.
 function normalize(p, cwd, ctx) {
-  const s = p.replace(/\\/g, '/');
+  let s = p.replace(/\\/g, '/');
+  if (ctx.mac) s = s.replace(/^\/(?:private|System\/Volumes\/Data)(?=\/|$)/i, '') || '/';
   const fold = (drive, rest) => {
     const parts = [];
     for (const part of rest.toLowerCase().split('/')) {
@@ -118,6 +136,7 @@ function normalize(p, cwd, ctx) {
   };
   let m;
   if ((m = s.match(/^([a-z]):(.*)$/i))) return fold(m[1], m[2]);
+  if ((!ctx.posix || ctx.win) && (m = s.match(/^\/\/([^/]+)\/([^/]+)(\/.*|)$/))) return fold(`//${m[1]}/${m[2]}`, m[3]);
   if ((m = s.match(/^\/(?:mnt|cygdrive)\/([a-z])(\/.*|)$/i))) return fold(m[1], m[2]);
   if (ctx.win && (m = s.match(/^\/([a-z])(\/.*|)$/i))) return fold(m[1], m[2]);
   if (s.startsWith('/')) return fold('', s);
@@ -127,13 +146,28 @@ function normalize(p, cwd, ctx) {
 
 const within = (outer, inner) => outer.drive === inner.drive && outer.parts.every((part, i) => inner.parts[i] === part);
 
+// A device under /dev, a mount point under /mnt, /media or /run/media, or a UNC share root or a folder in one.
+function isDevice({ drive, parts }) {
+  if (drive.startsWith('//')) return parts.length <= 1;
+  if (drive) return false;
+  const [top, next] = parts;
+  const n = parts.length;
+  if (top === 'dev') return !((next === 'shm' && n >= 3) || (n === 2 && STREAMS.has(next)));
+  if (top === 'mnt') return n === 2;
+  if (top === 'media') return n === 2 || n === 3;
+
+  return top === 'run' && next === 'media' && n <= 4;
+}
+
 // Why deleting this target is refused, or null when it is fine.
 function danger(word, cwd, ctx) {
   if (word.dyn) return DYNAMIC;
+  if ((!ctx.posix || ctx.win) && /^[\\/]{2}[.?][\\/]/.test(word.val)) return DEVICE;
   const path = normalize(word.val, cwd, ctx);
   if (!path) return DYNAMIC;
   const glob = path.parts.findIndex((part) => /[*?[]/.test(part));
   if (glob >= 0) path.parts = path.parts.slice(0, glob);
+  if (isDevice(path)) return DEVICE;
   if (path.parts.length <= 1 || (path.parts[0] === 'volumes' && path.parts.length === 2)) return ROOT;
   const home = normalize(ctx.home, null, ctx);
   if (home && (within(path, home) || (within(home, path) && path.parts.length === home.parts.length + 1))) return HOME;
@@ -231,28 +265,40 @@ function check(cmd, ctx, cwd) {
   return null;
 }
 
-// The hook's answer for one command: a block reason or nothing.
-function decide(cmd, { tool = 'Bash', cwd = process.cwd(), home = os.homedir(), env = process.env, platform = process.platform } = {}) {
+// The hook's answer for one command: a block reason, an allow for a strict delete of owned folders, or nothing.
+function decide(cmd, {
+  tool = 'Bash', cwd = process.cwd(), home = os.homedir(), env = process.env, platform = process.platform,
+  owned = [], scratchpad, tmpdir = os.tmpdir(), realpath = fs.realpathSync, readlink = fs.readlinkSync,
+} = {}) {
   const posix = tool !== 'PowerShell';
-  const ctx = { posix, mode: posix ? 'posix' : 'ps', home, env, win: platform === 'win32', assigned: assignedNames(cmd, posix) };
+  const ctx = { posix, mode: posix ? 'posix' : 'ps', home, env, win: platform === 'win32', mac: platform === 'darwin', assigned: assignedNames(cmd, posix) };
   const found = check(cmd, ctx, normalize(cwd, null, ctx));
-  if (!found) return {};
-  return {
-    block: `delete-guard: blocked a recursive delete: \`${found.target}\` ${found.why}. `
-      + 'Print the resolved path first, check it is the folder you mean, then delete it by its literal absolute path. '
-      + 'Never delete a drive root, a home folder, or a folder directly in either.',
-  };
+  if (!found) return allowOwned(cmd, { tool, platform, home, env, owned, scratchpad, tmpdir, realpath, readlink }) ? { allow: true } : {};
+  // A device or a mount is refused by its literal path too: the advice to delete it literally leads nowhere.
+  const advice = found.why === DEVICE
+    ? 'The guard has no override for a device, a mount point or a network share root: if it has to go, ask the user to run the delete themselves.'
+    : 'Print the resolved path first, check it is the folder you mean, then delete it by its literal absolute path. '
+      + 'Never delete a drive root, a home folder, or a folder directly in either.';
+
+  return { block: `delete-guard: blocked a recursive delete: \`${found.target}\` ${found.why}. ${advice}` };
 }
 
 if (require.main === module) {
   let input = {};
   try { input = JSON.parse(fs.readFileSync(0, 'utf8')) || {}; } catch { process.exit(0); }
   const cmd = (input.tool_input || {}).command || '';
-  const result = decide(cmd, { tool: input.tool_name, cwd: input.cwd || process.cwd() });
+  const state = process.env.DELETE_GUARD_STATE_DIR || join(os.homedir(), '.claude', 'state');
+  const ids = [...new Set([input.session_id, process.env.CLAUDE_CODE_SESSION_ID])]
+    .filter((id) => typeof id === 'string' && /^[A-Za-z0-9_-]+$/.test(id));
+  const readLines = (file) => { try { return fs.readFileSync(file, 'utf8').split('\n'); } catch { return []; } };
+  const owned = ids.flatMap((id) => readLines(join(state, `owned-${id}.txt`)));
+  const scratchpad = typeof input.scratchpad_dir === 'string' ? input.scratchpad_dir : undefined;
+  const result = decide(cmd, { tool: input.tool_name, cwd: input.cwd || process.cwd(), owned, scratchpad });
   if (result.block) {
     process.stderr.write(result.block);
     process.exit(2);
   }
+  if (result.allow) process.stdout.write(ALLOW_JSON);
 }
 
 module.exports = { decide };

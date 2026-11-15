@@ -1,0 +1,4 @@
+# One line ending everywhere: with Git for Windows' default (core.autocrlf=true) bash scripts such as
+# scripts/cpu-lock are checked out with CRLF and their shebang reads `bash\r`.
+# After pulling this on a Windows machine, run once: git add --renormalize .
+* text=auto eol=lf

@@ -112,6 +112,7 @@ Each plan is a plan folder under `.claude/local/plans/` (spec.md, index.md, one 
 2. 1–2 phases: write the phase files yourself.
 3. 3+ phases: record `sha256sum index.md`, then dispatch one writer per phase with `references/phase-writer-prompt.md` (`general-purpose`, sonnet · high, at most 3 in parallel). Handle `NEEDS_*` replies as its "Writer returns" line says. When all return `DONE`, confirm the hash is unchanged (apart from your own NEEDS_* edits) and the folder holds only spec.md, index.md, and the expected `NN-*.md` files.
 4. Run the format's self-review across index.md and every phase file and fix inline.
+5. Run `node ~/.claude/scripts/plan-lint <plan folder> --repo <repo root>` and fix every error; answer each size warning by naming the split in the task. It checks what a critic otherwise spends a round on: `file:line` cites, `Modify:` paths, files named on `Run:` lines, and files near their size cap (a stale cite appeared in 52% of critic rejects, 1–15 Nov 2026).
 
 **Depth check** — every mode, before the Architect or Critic sees the plan (Review mode: before step 2). The goal is a deeper plan, not a bigger one. Answer in a `## Depth check` section, 1–3 lines each:
 

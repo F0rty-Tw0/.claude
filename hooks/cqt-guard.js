@@ -43,7 +43,9 @@ function wipesWork(segment) {
 const RULES = [
   {
     test: (segment) => /^(\S*\/)?(pkill|pgrep)\b.*\s(-\w*f\w*|--full)\b/.test(segment),
-    why: 'pkill/pgrep -f matches its own calling shell and can kill it. Use explicit pids from `ps -eo pid,args | grep "[p]attern"`.',
+    // MSYS `ps` has no `-o` and hides native Windows processes, so Git Bash gets its own form.
+    why: 'pkill/pgrep -f matches its own calling shell and can kill it. Use explicit pids from `ps -eo pid,args | grep "[p]attern"`; '
+      + 'on Windows from `tasklist //FI "IMAGENAME eq <name>.exe"` (Git Bash) or `Get-Process <name>` (PowerShell).',
   },
   {
     test: wipesWork,

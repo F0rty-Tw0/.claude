@@ -11,6 +11,22 @@ describe('cqt-guard', () => {
     for (const cmd of ['kill 1234', 'pgrep -x firefox']) assert.deepEqual(decide(cmd), {}, cmd);
   });
 
+  describe('GIVEN pkill -f is blocked', () => {
+    const { block } = decide('pkill -f perf.sh');
+
+    it('WHEN the message is read on Linux or macOS THEN it names the ps form for finding pids', () => {
+      assert.ok(block.includes('`ps -eo pid,args | grep "[p]attern"`'), block);
+    });
+
+    it('WHEN the message is read in Git Bash on Windows THEN it names the tasklist form', () => {
+      assert.ok(block.includes('`tasklist //FI "IMAGENAME eq <name>.exe"` (Git Bash)'), block);
+    });
+
+    it('WHEN the message is read in PowerShell THEN it names Get-Process', () => {
+      assert.ok(block.includes('`Get-Process <name>` (PowerShell)'), block);
+    });
+  });
+
   it('WHEN a git command would drop uncommitted work THEN it is blocked; read-only and staged-only forms pass', () => {
     const wipes = [
       'git stash', 'git -C ../wt stash', 'git reset --hard', 'git -C ../wt reset --hard', 'git reset --merge',

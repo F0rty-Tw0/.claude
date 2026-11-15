@@ -1,0 +1,169 @@
+#!/usr/bin/env node
+// plan-lint <plan> [--repo <dir>] [--cap <n>] — pre-flight for a plan folder (every *.md in it) or one plan .md.
+// Catches the mechanical gaps a plan critic rejects for, so the critic is left with design questions:
+//   1. `path:N` / `path:N-M` cites to a missing file or past its last line
+//   2. Modify: paths that do not exist (error), Create: paths that already exist (warn)
+//   3. Run: commands naming a repo file that neither exists nor sits on a Create: / Test: line
+//   4. Modify: files at or over 85% of the size cap (default 150, doubled for spec and test files)
+// A path on any Create: line of the plan does not exist yet, so checks 1-3 accept it.
+// Fenced code blocks are skipped, except Run: lines. Exit 1 on any error, 2 on bad usage.
+'use strict';
+
+const { readFileSync, readdirSync, statSync } = require('node:fs');
+const { basename, join, normalize, resolve } = require('node:path');
+const { parseArgs } = require('node:util');
+
+const DEFAULT_CAP = 150;
+const WARN_PERCENT = 85;
+const FILES_LINE = /^\s*- (Create|Modify|Test):/;
+const RUN_LINE = /^\s*Run:\s*`([^`]+)`/;
+const CITE = /^(.+?):(\d+)(?:-(\d+))?$/;
+const FENCE = /^\s*(`{3,}|~{3,})/;
+const TEST_NAME = /\.spec\.|\.test\.|_test\./;
+
+function isPath(text) {
+  const isPlain = !/[\s()*<>]/.test(text) && !text.includes('://');
+  const hasExtension = /\.[A-Za-z]\w*$/.test(text);
+
+  return isPlain && (text.includes('/') || hasExtension);
+}
+
+function isRunFile(token) {
+  const isPlain = !/^[-~$]/.test(token) && !/[*?[\]{}]/.test(token) && !token.includes('://');
+  const hasExtension = /\.[A-Za-z]{1,5}$/.test(token);
+
+  return isPlain && token.includes('/') && hasExtension;
+}
+
+const backticked = (text) => Array.from(text.matchAll(/`([^`]+)`/g), (match) => match[1]);
+
+// end is the highest cited line, 0 when the text carries no cite.
+function parseRef(raw) {
+  const cite = CITE.exec(raw);
+  if (!cite) return { path: raw, end: 0 };
+  const end = Math.max(Number(cite[2]), Number(cite[3] ?? 0));
+
+  return { path: cite[1], end };
+}
+
+// null when the path is missing, no lines for a directory.
+function fileLines(repo, path) {
+  const absolute = resolve(repo, path);
+  const stat = statSync(absolute, { throwIfNoEntry: false });
+  if (!stat) return null;
+  if (!stat.isFile()) return [];
+  const lines = readFileSync(absolute, 'utf8').split('\n');
+  if (lines.at(-1) === '') lines.pop();
+
+  return lines;
+}
+
+function readPlan(file) {
+  let fence = null;
+  const texts = readFileSync(file, 'utf8').split('\n');
+
+  return texts.map((text, index) => {
+    const marker = FENCE.exec(text)?.[1];
+    const fenced = fence !== null || marker !== undefined;
+    const closes = fence !== null && marker?.[0] === fence[0] && marker.length >= fence.length;
+    if (marker && fence === null) fence = marker;
+    else if (closes) fence = null;
+
+    return { file, text, number: index + 1, fenced };
+  });
+}
+
+function listedPaths(lines, kinds) {
+  const paths = new Set();
+  for (const line of lines) {
+    const kind = FILES_LINE.exec(line.text)?.[1];
+    if (line.fenced || !kinds.includes(kind)) continue;
+    for (const raw of backticked(line.text)) paths.add(normalize(parseRef(raw).path));
+  }
+
+  return paths;
+}
+
+// grug: non-blank lines, not the repo's own counter; call the repo's counter if warnings prove noisy
+// An approximation of each repo's counted-line rule (eslint `max-lines`, cqt-monitor `arch.rs`).
+function sizeWarning(path, lines, cap) {
+  const count = lines.filter((text) => text.trim() !== '').length;
+  const limit = TEST_NAME.test(basename(path)) ? cap * 2 : cap;
+  if (count * 100 < limit * WARN_PERCENT) return null;
+
+  return `${path} has ${count} non-blank lines (cap ${limit}): name the split`;
+}
+
+function lintRun(command, context, report) {
+  for (const word of command.split(/\s+/)) {
+    const token = word.replace(/^['"]|['"]$/g, '');
+    if (!isRunFile(token)) continue;
+    const isKnown = context.runnable.has(normalize(token)) || fileLines(context.repo, token) !== null;
+    if (!isKnown) report('error', `Run names a file that does not exist: ${token}`);
+  }
+}
+
+function lintLine(line, context) {
+  const report = (level, message) => context.findings.push(`${line.file}:${line.number}: ${level}: ${message}`);
+  const command = RUN_LINE.exec(line.text)?.[1];
+  if (command) lintRun(command, context, report);
+  if (line.fenced) return;
+
+  const kind = FILES_LINE.exec(line.text)?.[1];
+  for (const raw of backticked(line.text)) {
+    const { path, end } = parseRef(raw);
+    if (!isPath(path)) continue;
+    const lines = fileLines(context.repo, path);
+    const isCreated = context.created.has(normalize(path));
+    if (kind === 'Create') {
+      if (lines) report('warn', `Create: ${path} already exists`);
+      continue;
+    }
+    if (isCreated && !lines) continue;
+    if (kind === 'Modify' && !lines) report('error', `Modify: ${path} does not exist`);
+    // A bare file name can be shorthand for a file deeper in the repo, or a file of another repo: not provably stale.
+    else if (end > 0 && !lines && !path.includes('/')) report('warn', `cite ${raw}: no folder in the path, cannot check`);
+    else if (end > 0 && !lines) report('error', `cite ${raw}: file does not exist`);
+    if (!lines) continue;
+
+    const warning = kind === 'Modify' ? sizeWarning(path, lines, context.cap) : null;
+    if (warning) report('warn', warning);
+    if (!isCreated && end > lines.length) report('error', `cite ${raw}: past the last line (${path} has ${lines.length} lines)`);
+  }
+}
+
+function usage(message) {
+  console.error(`plan-lint: ${message}\nusage: plan-lint <plan folder or .md> [--repo <dir>] [--cap <n>]`);
+  process.exitCode = 2;
+}
+
+function main() {
+  const options = { repo: { type: 'string' }, cap: { type: 'string' } };
+  let parsed;
+  try {
+    parsed = parseArgs({ allowPositionals: true, options });
+  } catch (error) {
+    return usage(error.message);
+  }
+  const [plan] = parsed.positionals;
+  const cap = Number(parsed.values.cap ?? DEFAULT_CAP);
+  if (!plan) return usage('no plan path');
+  if (!(cap > 0)) return usage(`--cap needs a positive number, got ${parsed.values.cap}`);
+  const stat = statSync(plan, { throwIfNoEntry: false });
+  if (!stat) return usage(`plan not found: ${plan}`);
+
+  const names = stat.isDirectory() ? readdirSync(plan).filter((name) => name.endsWith('.md')).sort() : [];
+  const files = stat.isDirectory() ? names.map((name) => join(plan, name)) : [plan];
+  const lines = files.flatMap(readPlan);
+  const created = listedPaths(lines, ['Create']);
+  const runnable = listedPaths(lines, ['Create', 'Test']);
+  const context = { repo: parsed.values.repo ?? process.cwd(), cap, created, runnable, findings: [] };
+  for (const line of lines) lintLine(line, context);
+
+  const errors = context.findings.filter((finding) => finding.includes(': error: ')).length;
+  for (const finding of context.findings) console.log(finding);
+  console.log(`plan-lint: ${errors} errors, ${context.findings.length - errors} warnings`);
+  process.exitCode = errors > 0 ? 1 : 0;
+}
+
+main();
