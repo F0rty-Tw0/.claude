@@ -37,6 +37,7 @@
 !RTK.md
 # Keep gitignore and readme
 !.gitignore
+!.gitattributes
 !README.md
 
 # Ignore Specifics
