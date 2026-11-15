@@ -13,7 +13,8 @@
 //   - not a literal path: a shell variable, `$(...)`, backticks, xargs or pipeline input,
 //     or a relative path after a `cd` to a non-literal place.
 // Environment variables the command does not reassign resolve (HOME, USERPROFILE, TMPDIR, ...).
-// A refused path has no override on purpose: the fix is to print the resolved path, check it, and delete it literally.
+// A refused path has no override on purpose: the fix is to print the resolved path, check it, and delete it literally
+// (a device or a mount is refused literally too: that delete is the user's to run).
 // A footgun net, not a security boundary. Gaps, left open: deletes inside interpreters
 // (`python -c "shutil.rmtree(x)"`, `node -e`), script files, .NET calls, `eval`.
 //
@@ -21,7 +22,9 @@
 // `Remove-Item -Recurse -Force <path>`) whose every target is a folder the session owns gets a PreToolUse
 // `allow`, so no permission prompt. Owned: a line of `<state>/owned-<session id>.txt` (state is
 // DELETE_GUARD_STATE_DIR, else ~/.claude/state) or the stdin scratchpad_dir, strictly inside a temp or
-// cache zone. The list is the session's own claim, not proof; the zones bound a wrong line to temp space.
+// cache zone. No scratchpad_dir on stdin: no allow. Never the scratchpad, a folder that holds it, or
+// another session's or project's folder in the scratchpad's tree (`<tmp>/claude-<uid>`).
+// The list is the session's own claim, not proof; the zones bound a wrong line to temp space.
 // Anything else gets no decision (the normal permission flow), including `git worktree remove`, every
 // other spelling, the Bash tool on Windows, and a path that reaches /proc, /sys or /dev, also through a link.
 const fs = require('fs');
@@ -271,11 +274,13 @@ function decide(cmd, {
   const ctx = { posix, mode: posix ? 'posix' : 'ps', home, env, win: platform === 'win32', mac: platform === 'darwin', assigned: assignedNames(cmd, posix) };
   const found = check(cmd, ctx, normalize(cwd, null, ctx));
   if (!found) return allowOwned(cmd, { tool, platform, home, env, owned, scratchpad, tmpdir, realpath, readlink }) ? { allow: true } : {};
-  return {
-    block: `delete-guard: blocked a recursive delete: \`${found.target}\` ${found.why}. `
-      + 'Print the resolved path first, check it is the folder you mean, then delete it by its literal absolute path. '
-      + 'Never delete a drive root, a home folder, or a folder directly in either.',
-  };
+  // A device or a mount is refused by its literal path too: the advice to delete it literally leads nowhere.
+  const advice = found.why === DEVICE
+    ? 'The guard has no override for a device, a mount point or a network share root: if it has to go, ask the user to run the delete themselves.'
+    : 'Print the resolved path first, check it is the folder you mean, then delete it by its literal absolute path. '
+      + 'Never delete a drive root, a home folder, or a folder directly in either.';
+
+  return { block: `delete-guard: blocked a recursive delete: \`${found.target}\` ${found.why}. ${advice}` };
 }
 
 if (require.main === module) {

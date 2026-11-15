@@ -26,10 +26,13 @@ const same = (p) => p;
 const links = (map) => (p) => { for (const [from, to] of Object.entries(map)) { if (p === from || p.startsWith(`${from}/`)) return to + p.slice(from.length); } return p; };
 // readlink stand-in: the link text of each path in the map; any other path is not a link.
 const linkText = (map) => (p) => { if (p in map) return map[p]; throw new Error('EINVAL'); };
-const OWN = { ...LINUX, tmpdir: '/tmp', realpath: same, owned: ['/tmp/x'] };
+// Every allow needs a scratchpad on stdin, so the fixtures carry one.
 const SP = '/tmp/claude-1000/proj/sess/scratchpad';
+const OWN = { ...LINUX, tmpdir: '/tmp', realpath: same, owned: ['/tmp/x'], scratchpad: SP };
+const MAC_SP = '/var/folders/ab/T/claude-501/proj/sess/scratchpad';
 const T = 'C:\\Users\\artio\\AppData\\Local\\Temp';
-const PS_OWN = { ...PS, tmpdir: T, realpath: same, owned: [`${T}\\x`] };
+const WIN_SESSION = `${T}\\claude\\E--wow-testkit\\sess`;
+const PS_OWN = { ...PS, tmpdir: T, realpath: same, owned: [`${T}\\x`], scratchpad: `${WIN_SESSION}\\scratchpad` };
 
 describe('delete-guard', () => {
   it('WHEN the 2026-11-04 command runs again THEN it is blocked before rm sees "C:/"', () => {
@@ -83,8 +86,8 @@ describe('delete-guard', () => {
   it('WHEN a strictly spelled delete targets only folders the session owns THEN it is allowed', () => {
     for (const cmd of ['rm -rf /tmp/x', 'rm -rf /tmp/x/build/out', 'rm -rf /tmp/x/a && rm -rf /tmp/x/b', "rm -rf -- '/tmp/x/my dir'"]) allowed(cmd, OWN);
     allowed(`rm -rf ${SP}/work`, { ...OWN, owned: [], scratchpad: SP });
-    allowed('rm -rf /var/folders/ab/T/job', { ...MAC, tmpdir: '/var/folders/ab/T', owned: ['/var/folders/ab/T/job'], realpath: links({ '/var': '/private/var' }) });
-    allowed('rm -rf /Users/bob/Library/Caches/x', { ...MAC, tmpdir: '/var/folders/ab/T', realpath: same, owned: ['/Users/bob/Library/Caches/x'] });
+    allowed('rm -rf /var/folders/ab/T/job', { ...MAC, tmpdir: '/var/folders/ab/T', owned: ['/var/folders/ab/T/job'], scratchpad: MAC_SP, realpath: links({ '/var': '/private/var' }) });
+    allowed('rm -rf /Users/bob/Library/Caches/x', { ...MAC, tmpdir: '/var/folders/ab/T', realpath: same, owned: ['/Users/bob/Library/Caches/x'], scratchpad: MAC_SP });
     allowed(`Remove-Item -Recurse -Force ${T}\\x`, PS_OWN);
     allowed('rm -rf /tmp/x/link', { ...OWN, realpath: links({ '/tmp/x/link': '/home/bob/src' }) });
     allowed('rm -rf /tmp/x', { ...OWN, owned: ['/tmp/x\r'] });
@@ -168,6 +171,46 @@ describe('delete-guard', () => {
     passes('rm -rf /tmp/c/p/s', { ...MAC, tmpdir: '/tmp', owned: ['/tmp/c/p'], scratchpad: '/System/Volumes/Data/private/tmp/c/p/s/scratchpad', realpath: links({ '/tmp': '/private/tmp' }) });
   });
 
+  it('WHEN stdin carries no scratchpad THEN the hook makes no decision, whatever the owned list says', () => {
+    for (const scratchpad of [undefined, null, '']) {
+      passes('rm -rf /tmp/claude-1000', { ...OWN, owned: ['/tmp/claude-1000'], scratchpad });
+      passes('rm -rf /tmp/x', { ...OWN, scratchpad });
+    }
+    passes(`Remove-Item -Recurse -Force ${T}\\x`, { ...PS_OWN, scratchpad: undefined });
+  });
+
+  it("WHEN a target is another session's or project's folder in the scratchpad's tree THEN the hook makes no decision", () => {
+    const C = '/tmp/claude-1000';
+    const mine = `${C}/-proj-a/sess-1`;
+    const wide = { ...OWN, owned: [C], scratchpad: `${mine}/scratchpad` };
+    for (const p of [`${C}/-proj-b/sess-2`, `${C}/-proj-b`, `${C}/-proj-b/sess-2/scratchpad/work`, `${C}/-proj-a/sess-3`, `${C}/-proj-a/sess-3/tasks`, `${C}/-proj-a/SESS-1/tasks`]) passes(`rm -rf ${p}`, wide);
+    passes(`rm -rf ${C}/-proj-b/sess-2`, { ...wide, owned: [`${C}/-proj-b`] });
+    // The session's own project folder counts whatever its name: `proj` has no leading `-`.
+    passes(`rm -rf ${C}/proj/other`, { ...OWN, owned: [C] });
+    for (const p of [`${mine}/tasks`, `${mine}/scratchpad/work`, `${C}/build-disk`, `${C}/build-disk/target`]) allowed(`rm -rf ${p}`, wide);
+    allowed(`rm -rf ${C}/build-disk`, { ...wide, owned: [`${C}/build-disk`] });
+    allowed(`rm -rf ${mine}/tasks && rm -rf ${C}/build-disk`, wide);
+    passes(`rm -rf ${mine}/tasks && rm -rf ${C}/-proj-b`, wide);
+  });
+
+  it('WHEN the tree is on Windows THEN every folder directly in it counts as a project folder', () => {
+    const tree = `${T}\\claude`;
+    const wide = { ...PS_OWN, owned: [tree] };
+    for (const p of [`${tree}\\C--Users-artio\\sess-2`, `${tree}\\C--Users-artio`, `${tree}\\E--wow-testkit\\sess-3`, `${tree}\\e--WOW-testkit\\SESS-3`, `${tree}\\build-disk`]) passes(`Remove-Item -Recurse -Force ${p}`, wide);
+    for (const p of [`${WIN_SESSION}\\tasks`, `${WIN_SESSION}\\scratchpad\\work`, `${T}\\claude\\E--WOW-testkit\\SESS\\tasks`]) allowed(`Remove-Item -Recurse -Force ${p}`, wide);
+  });
+
+  it('WHEN the refused target is a device or a mount THEN the message does not send the reader to a literal delete', () => {
+    const literal = /literal absolute path/;
+    for (const cmd of ['rm -rf /mnt/data', 'rm -rf /dev/sda']) assert.doesNotMatch(decide(cmd, LINUX).block, literal);
+    assert.doesNotMatch(decide('Remove-Item -Recurse -Force \\\\nas\\share', PS).block, literal);
+    assert.match(decide('rm -rf /mnt/data', LINUX).block, /^delete-guard: .* is a device, a mount point or a network share root\. The guard has no override for .* ask the user to run the delete themselves\.$/);
+    for (const cmd of ['rm -rf ~', 'rm -rf "$D"']) assert.match(decide(cmd, LINUX).block, literal);
+    assert.equal(decide('rm -rf /usr', LINUX).block, 'delete-guard: blocked a recursive delete: `/usr` is a drive or filesystem root, or a folder directly in one. '
+      + 'Print the resolved path first, check it is the folder you mean, then delete it by its literal absolute path. '
+      + 'Never delete a drive root, a home folder, or a folder directly in either.');
+  });
+
   it('WHEN a command or an owned line holds a very long run of spaces THEN the answer still comes at once', () => {
     const gap = ' '.repeat(100000);
     const start = Date.now();
@@ -181,6 +224,8 @@ describe('delete-guard', () => {
     blocked('rm -rf /tmp', { ...OWN, owned: ['/tmp'] });
     blocked('rm -rf /home/bob/.cache', { ...OWN, owned: ['/home/bob/.cache'] });
     blocked('rm -rf /dev/shm', { ...OWN, owned: ['/dev/shm'] });
+    // Alone, the allow half would say yes here: the temp dir is a zone and the line sits inside it.
+    blocked('rm -rf /media/bob/x', { ...OWN, tmpdir: '/media/bob', owned: ['/media/bob/x'] });
     blocked('cd "$D" && rm -rf foo', OWN);
     blocked('rm -rf /tmp/x && rm -rf /home/bob', OWN);
   });
@@ -206,8 +251,9 @@ const allowIt = process.platform !== 'win32' && !tmpNearHome ? it
 describe('delete-guard hook process', () => {
   const state = mkdtempSync(join(tmpdir(), 'dg-'));
   const folder = mkdtempSync(join(tmpdir(), 'dg-own-'));
-  after(() => { for (const dir of [state, folder]) rmSync(dir, { recursive: true, force: true }); });
-  const bash = (command, fields) => ({ tool_name: 'Bash', tool_input: { command }, cwd: folder, ...fields });
+  const pad = mkdtempSync(join(tmpdir(), 'dg-pad-'));
+  after(() => { for (const dir of [state, folder, pad]) rmSync(dir, { recursive: true, force: true }); });
+  const bash = (command, fields) => ({ tool_name: 'Bash', tool_input: { command }, cwd: folder, scratchpad_dir: pad, ...fields });
   const run = (input, extraEnv = {}, cwd = undefined) => {
     const env = { ...process.env, DELETE_GUARD_STATE_DIR: state };
     delete env.CLAUDE_CODE_SESSION_ID;
@@ -234,6 +280,13 @@ describe('delete-guard hook process', () => {
     const result = run(bash(`rm -rf ${folder}/sub`, { session_id: 'nofile', scratchpad_dir: folder }));
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stdout, ALLOW_OUT);
+  });
+
+  it('WHEN stdin names no scratchpad_dir THEN a listed target gets no decision', () => {
+    writeFileSync(join(state, 'owned-s4.txt'), `${folder}\n`);
+    const result = run(bash(`rm -rf ${folder}`, { session_id: 's4', scratchpad_dir: undefined }));
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, '');
   });
 
   allowIt('WHEN the session id holds a path THEN no owned file is read', () => {

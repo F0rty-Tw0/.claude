@@ -127,7 +127,8 @@ function zones({ win, mac, lib, home, env, tmpdir, real, key }) {
 
 const lower = (segments) => segments.map((s) => s.toLowerCase());
 
-// Whether every target of `cmd` is an owned root or inside one, and none is the scratchpad or holds it.
+// Whether every target of `cmd` is an owned root or inside one, and none is the scratchpad, holds it, or is
+// another session's or project's folder in the scratchpad's tree. No scratchpad: never.
 // A target, owned line or scratchpad that reaches a per-process tree, also through a link, never counts.
 function allowOwned(cmd, { tool = 'Bash', platform = process.platform, home = os.homedir(), env = process.env, owned = [], scratchpad, tmpdir = os.tmpdir(), realpath = fs.realpathSync, readlink = fs.readlinkSync } = {}) {
   const win = platform === 'win32';
@@ -147,8 +148,9 @@ function allowOwned(cmd, { tool = 'Bash', platform = process.platform, home = os
     if (!targets.every(stable)) return false;
     const zoneKeys = zones({ win, mac, lib, home, env, tmpdir, real, key });
     const inZone = (k) => zoneKeys.some((z) => inside(z, k)) && !zoneKeys.some((z) => equal(z, k));
-    // A home or a scratchpad in a shape this file does not read: no allow at all, not "no scratchpad".
-    // (Home spelled another way would slip past the "zone holds home" tests in zones().)
+    // A home or a scratchpad that is missing or in a shape this file does not read: no allow at all.
+    // (Home spelled another way would slip past the "zone holds home" tests in zones(); without a
+    // scratchpad nothing tells this session's folders from another's.)
     // That is: not a string, a `.`/`..` segment, relative, space or a control character at an end or
     // inside, and on Windows a form the system reads as another spelling of the same folder
     // (no drive letter, a segment ending in a space or dot, an 8.3 short name, a stream suffix), and on
@@ -156,17 +158,32 @@ function allowOwned(cmd, { tool = 'Bash', platform = process.platform, home = os
     const windowsForm = (p) => /^[A-Za-z]:[\\/]/.test(p) && !p.slice(2).split(sep).some((s) => /[ .]$|[~:]/.test(s));
     const clean = (p) => typeof p === 'string' && valid(p) && p === p.trim() && !/[\0-\x1f\x7f]/.test(p) && (!win || windowsForm(p)) && !(mac && /^\/+System\/+Volumes(\/|$)/i.test(p));
     if (!clean(home)) return false;
-    if (scratchpad != null && scratchpad !== '' && !(clean(scratchpad) && stable(scratchpad))) return false;
-    const pad = typeof scratchpad === 'string' && scratchpad ? at(scratchpad) : null;
+    if (!(clean(scratchpad) && stable(scratchpad))) return false;
+    const pad = at(scratchpad);
     // The scratchpad by both readings (last segment followed or not), compared without letter case:
     // it may be a link, and the disk may not tell `Scratchpad` from `scratchpad`.
-    const pads = pad ? [pad, real(scratchpad)].map(lower) : [];
+    const pads = [pad, real(scratchpad)].map(lower);
     const holdsPad = (k) => pads.some((p) => inside(lower(k), p));
+    // The scratchpad is `<tmp>/claude-<uid>/<project>/<session>/scratchpad`, so its tree holds every other
+    // session's folders. There a project folder, or anything in one, counts only inside this session's own
+    // folder. A project folder is this session's own, or a name that starts with `-` (the cwd with `/`
+    // turned into `-`); any other name (`build-disk`) is a plain folder. A scratchpad with another last
+    // segment has no tree this file can read, and only the rule above applies to it.
+    // grug: Windows project names start with the drive letter, a shape nothing here pins, so every
+    // folder directly in the tree counts as one there; a name rule if that costs prompts.
+    const session = pad.slice(0, -1);
+    const othersFolder = (k) => !inside(session, k) && pads.some((p) => {
+      const tree = p.slice(0, -3);
+      const name = lower(k)[tree.length] || '';
+      const isProject = win || name === p[tree.length] || name.startsWith('-');
+
+      return p.at(-1) === 'scratchpad' && inside(tree, lower(k)) && isProject;
+    });
     const lines = owned.map((line) => strip(line, ' \r')).filter((line) => valid(line) && stable(line));
     // A line that cannot be resolved (a drive that is gone) is skipped: it must not switch off the other lines.
     const rootOf = (line) => { try { return [at(line)]; } catch { return []; } };
-    const roots = [...lines.flatMap(rootOf), ...(pad ? [pad] : [])].filter(inZone);
-    const ok = (k) => roots.some((r) => inside(r, k)) && !holdsPad(k);
+    const roots = [...lines.flatMap(rootOf), pad].filter(inZone);
+    const ok = (k) => roots.some((r) => inside(r, k)) && !holdsPad(k) && !othersFolder(k);
 
     return targets.map(at).every(ok);
   } catch {

@@ -461,7 +461,7 @@ Environment variables the command does not reassign (`$HOME`, `$TMPDIR`, `$env:T
 The guard can also allow a delete, so no permission prompt is shown (`hooks/owned-delete.js`). This happens only when nothing is refused and all of these hold:
 
 - The spelling is strict: `rm -rf <literal absolute path>...`, optionally chained with `&&` (PowerShell: `Remove-Item -Recurse -Force <path>`). Single spaces only; no variable, glob, `..`, pipe, redirect or `sudo`.
-- Every target is a folder the session owns, or sits inside one: a line of `~/.claude/state/owned-<session id>.txt` (one absolute path per line), or the session's scratchpad. A target that is the scratchpad itself, or a folder that holds it, is not allowed.
+- Every target is a folder the session owns, or sits inside one: a line of `~/.claude/state/owned-<session id>.txt` (one absolute path per line), or the session's scratchpad. A target that is the scratchpad itself, or a folder that holds it, is not allowed. Neither is another session's or project's folder in the scratchpad's tree (`<tmp>/claude-<uid>`), and without a scratchpad on the hook's stdin nothing is allowed.
 - Every owned folder sits strictly inside a zone: `/tmp`, `/var/tmp`, `/dev/shm`, `~/.cache`, `~/Library/Caches`, on Windows `%LOCALAPPDATA%\Temp`, or the OS temp dir. A zone under home that is reached through a symlink does not count, and neither does a temp dir set to a folder directly in a root (`/etc`).
 
 The owned list is the session's own claim, not proof; the zones keep a wrong line inside temp space. Everything else gets no decision and goes through the normal permission flow: any other spelling, `git worktree remove`, the Bash tool on Windows (only the PowerShell form is allowed there).
