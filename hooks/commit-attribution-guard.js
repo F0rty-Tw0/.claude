@@ -5,7 +5,25 @@
 // Message sources: the whole command text (-m, --message, heredoc) plus a literal -F / --file path.
 // ponytail: messages built via variables or eval, and git merge/rebase messages, are not seen.
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+
+// Git Bash hands a hook MSYS paths, and node on Windows reads those as drive-relative: `path.resolve` turns
+// `/tmp/msg` into `C:\tmp\msg` and `/c/Users/me` into `C:\c\Users\me`. On win32 this maps a drive path (`/c/…`,
+// `/mnt/c/…`) to `C:/…` and `/tmp/…` to a path under os.tmpdir(); node takes either slash there and `path.resolve`
+// turns them into backslashes. Any other path, and every path on another platform, comes back as given.
+// ponytail: the other MSYS mounts (`/home`, `/usr`, `/etc`) sit under the Git install dir and are not mapped.
+function toNativePath(shellPath, platform = process.platform, tmp = os.tmpdir()) {
+  if (platform !== 'win32') return shellPath;
+  const drive = shellPath.match(/^(?:\/mnt)?\/([a-zA-Z])(?=\/|$)/);
+  if (drive) return `${drive[1].toUpperCase()}:${shellPath.slice(drive[0].length) || '/'}`;
+
+  return shellPath.replace(/^\/tmp(?=\/|$)/, () => tmp);
+}
+
+module.exports = { toNativePath };
+// pr-proof-guard.js requires this file for toNativePath alone: the guard below runs only as the hook itself.
+if (require.main !== module) return;
 
 let input;
 try { input = JSON.parse(fs.readFileSync(0, 'utf8')) || {}; } catch { process.exit(0); }
@@ -64,8 +82,8 @@ const texts = [cmd, cmd.replace(ESCAPED, (s) => s.replace(/\\n/g, '\n'))];
 const cds = [...masked.matchAll(/(?:^|[\n;&|(])[ \t]*cd[ \t]+([^\s;&|)<>]+)/dg)];
 for (const inv of invocations) {
   let dir = cwd;
-  for (const cd of cds.filter((c) => c.index < inv.index)) dir = path.resolve(dir, word(...cd.indices[1]));
-  for (const c of inv[0].matchAll(/[ \t]-C[ \t]+(\S+)/dg)) dir = path.resolve(dir, word(inv.index + c.indices[1][0], inv.index + c.indices[1][1]));
+  for (const cd of cds.filter((c) => c.index < inv.index)) dir = path.resolve(dir, toNativePath(word(...cd.indices[1])));
+  for (const c of inv[0].matchAll(/[ \t]-C[ \t]+(\S+)/dg)) dir = path.resolve(dir, toNativePath(word(inv.index + c.indices[1][0], inv.index + c.indices[1][1])));
   const argsStart = inv.index + inv[0].length;
   const stop = masked.slice(argsStart).search(/[\n;&|)`]/);
   const args = [...masked.slice(argsStart, stop < 0 ? masked.length : argsStart + stop).matchAll(/\S+/g)];
@@ -82,7 +100,7 @@ for (const inv of invocations) {
     // git takes `key=value` as well as `key: value`.
     if (flag[0].startsWith('--trailer')) { texts.push(value.replace(/^([\w-]+)[ \t]*=/, '$1:')); return; }
     if (value === '-') return;
-    try { texts.push(fs.readFileSync(path.resolve(dir, value), 'utf8')); } catch { /* unreadable: fail open */ }
+    try { texts.push(fs.readFileSync(path.resolve(dir, toNativePath(value)), 'utf8')); } catch { /* unreadable: fail open */ }
   });
 }
 
