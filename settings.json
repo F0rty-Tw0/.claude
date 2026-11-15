@@ -17,7 +17,7 @@
     "deny": [],
     "defaultMode": "auto"
   },
-  "model": "opus",
+  "model": "fable",
   "enableAllProjectMcpServers": true,
   "hooks": {
     "PreToolUse": [
@@ -143,6 +143,7 @@
   "askUserQuestionTimeout": "5m",
   "dialogExpiry": "never",
   "autoUpdatesChannel": "latest",
+  "tui": "fullscreen",
   "autoDreamEnabled": false,
   "skipWorkflowUsageWarning": false,
   "theme": "dark",
@@ -153,6 +154,5 @@
   "autoContinueAtUsageLimit": true,
   "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true,
-  "defaultMode": "auto",
-  "tui": "fullscreen"
+  "defaultMode": "auto"
 }

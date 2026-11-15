@@ -27,3 +27,13 @@ Local agents live in `~/.claude/agents/` — invoke by bare name (`executor`, `a
 Local sessions: a PreToolUse hook rewrites Bash commands through `rtk`, so their output arrives compressed. Use `rtk proxy <cmd>` when you need raw, unfiltered output. Without rtk on PATH (the usual cloud case) `scripts/cloud-setup.sh` drops that hook and cpu-guard: run commands plainly.
 
 Line endings: check with `git ls-files --eol <file>` (or `tr -cd '\r' < f | wc -c`), never `grep -c $'\r$'`, which counted every line as CRLF in Git Bash here.
+
+# Disk hygiene
+
+On 2026-11-15 build output and scratch dirs had grown to ~310 GB: one worktree's `target` at 152 GB, `~/.cache/cqt-ci` at 83 GB, and 525 `~/.cache/tc-*` / `rv-*` dirs.
+
+- Scratch dirs you create outside the session scratchpad (`~/.cache/<prefix>-*` and the like): delete them by literal path before your final report. Keep one only when a later step needs it, and say so in the report.
+- After a local CI, e2e or perf run has passed and its result is recorded, delete that run's target dir or cache (`~/.cache/cqt-ci/*` for cqt-monitor). Copy a binary aside first only if a later step needs it.
+- Retiring a worktree: delete its `target` dirs, including those of nested workspaces, before `git worktree remove`.
+- Long-lived checkout: once a `target` passes ~20 GB, delete `target/debug/incremental` and stale profile dirs, or the whole `target`.
+- Before deleting build output or a shared cache, check that no `cargo` or `rustc` is running and ask the session that owns it (`ListAgents`).
