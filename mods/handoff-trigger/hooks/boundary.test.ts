@@ -18,6 +18,21 @@ test('the grant rule reads the first line under Standing grants', () => {
   expect(isGranted(file('nothing').replace(/\n/g, '\r\n'))).toBe(false)
 })
 
+test('every spelling of "no grant" reads as no grant', () => {
+  const none = ['No standing grants.', 'No grants.', 'N/A', '(none)', '**None**', '* none', '—', 'No.', 'Not granted.']
+  for (const line of none) expect(isGranted(file(line))).toBe(false)
+  for (const line of ['- n/a', '_none_', '+ Nothing', '- —', '...']) expect(isGranted(file(line))).toBe(false)
+})
+
+test('a grant line still reads as a grant, unless it opens with "No"', () => {
+  expect(isGranted(file('* Commits are granted on this branch; no push without asking'))).toBe(true)
+  expect(isGranted(file('**Autonomy** (owner, 2026-11-15): "decide, log, continue"'))).toBe(true)
+  expect(isGranted(file('Note: push and PR granted for the retro slices'))).toBe(true)
+  expect(isGranted(file('Nonstop run granted until the ledger is empty'))).toBe(true)
+  // Fail closed: the rule cannot tell this from "No grants", so it asks.
+  expect(isGranted(file('No push without asking; commits are granted'))).toBe(false)
+})
+
 test('fill is tokens over the compaction window, else over the model window', () => {
   expect(fillShare(190_000, 1_000_000, 300_000)).toBeGreaterThan(0.633)
   expect(fillShare(190_000, 1_000_000, 300_000)).toBeLessThan(0.634)
