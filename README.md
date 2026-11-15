@@ -14,6 +14,8 @@ Complete setup guide to reproduce this Claude Code environment on Windows 11.
 | [GitHub CLI](https://cli.github.com/)                         | latest  | `winget install GitHub.cli`                                  |
 | [Git](https://git-scm.com/)                                   | latest  | `winget install Git.Git`                                     |
 
+> **`node` must be on the PATH Claude Code starts with.** Every hook in `settings.json` calls bare `node`. If node is added to PATH only by an interactive shell (a lazy-loaded nvm, a desktop launcher with a short PATH), each hook exits 127 and all the guards are off. On macOS and Linux put the nvm init, or a node symlink, where a login shell sees it.
+
 ---
 
 ## Step 1: Install Claude Code
@@ -64,6 +66,8 @@ rtk init --global
 ```
 
 This installs the hook and creates `RTK.md` with instructions for `settings.json`.
+
+> **Since 2026-11-15 this repo's `settings.json` does not wire `rtk hook claude`.** In auto permission mode a hook that rewrites a command voids the permission review, and the call has to be sent again (about 1,000 times in two weeks). If `rtk init` adds the hook back, remove that block. Keep the binary: `hooks/cpu-guard.js` still runs heavy commands through `rtk`, and you can write `rtk <cmd>` yourself for noisy output.
 
 Verify: `rtk --version` (should show `rtk 0.15.0+`) and `rtk gain` (must show token savings stats)
 
@@ -184,7 +188,7 @@ The main Claude Code settings file. Key sections:
     "claude-hud@claude-hud": true,
   },
 
-  // Hooks — nul-guard + RTK auto-rewrite and suggest
+  // Hooks — one example; the full list is in this repo's settings.json
   "hooks": {
     "PreToolUse": [
       {
@@ -192,15 +196,7 @@ The main Claude Code settings file. Key sections:
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/<YOUR_USERNAME>/.claude/hooks/nul-guard.js",
-          },
-          {
-            "type": "command",
-            "command": "node C:/Users/<YOUR_USERNAME>/.claude/hooks/rtk/rtk-rewrite.js",
-          },
-          {
-            "type": "command",
-            "command": "node C:/Users/<YOUR_USERNAME>/.claude/hooks/rtk/rtk-suggest.js",
+            "command": "node \"$HOME/.claude/hooks/nul-guard.js\"",
           },
         ],
       },
@@ -454,9 +450,21 @@ It blocks `rm -r`, `find -delete`, `find -exec rm`, `xargs rm -r`, `Remove-Item 
 
 - a drive or filesystem root, or a folder directly in one (`/`, `/usr`, `C:`, `C:\Users`, `/mnt/c`, `/Volumes/Disk`)
 - a home folder, a folder directly in it, or a parent of one (`~`, `~/.claude`, `/home/bob`)
+- a device under `/dev` (`/dev/sda`; `/dev/null`, `/dev/stdout`, `/dev/stderr` and `/dev/tty` are exempt, so `> /dev/null` still passes)
+- a mount point (`/mnt/data`, `/media/bob/usb`, `/run/media/bob/usb`)
+- a network share root or a folder directly in one (`\\nas\share\dir`)
+- a Windows device path (`\\.\PhysicalDrive0`, `\\?\C:\`)
 - not a literal path: a shell variable, `$(...)`, backticks, pipeline or xargs input
 
-Environment variables the command does not reassign (`$HOME`, `$TMPDIR`, `$env:TEMP`) resolve, so `rm -rf "$HOME/.cache/x"` passes. There is no override: delete by a checked literal path. Works on Windows (Git Bash, PowerShell, cmd), macOS and Linux. Not a security boundary: deletes inside `python -c`, `node -e` or script files pass.
+Environment variables the command does not reassign (`$HOME`, `$TMPDIR`, `$env:TEMP`) resolve, so `rm -rf "$HOME/.cache/x"` passes. A refused path has no override: delete by a checked literal path. Works on Windows (Git Bash, PowerShell, cmd), macOS and Linux. Not a security boundary: deletes inside `python -c`, `node -e` or script files pass.
+
+The guard can also allow a delete, so no permission prompt is shown (`hooks/owned-delete.js`). This happens only when nothing is refused and all of these hold:
+
+- The spelling is strict: `rm -rf <literal absolute path>...`, optionally chained with `&&` (PowerShell: `Remove-Item -Recurse -Force <path>`). Single spaces only; no variable, glob, `..`, pipe, redirect or `sudo`.
+- Every target is a folder the session owns, or sits inside one: a line of `~/.claude/state/owned-<session id>.txt` (one absolute path per line), or the session's scratchpad. A target that is the scratchpad itself, or a folder that holds it, is not allowed.
+- Every owned folder sits strictly inside a zone: `/tmp`, `/var/tmp`, `/dev/shm`, `~/.cache`, `~/Library/Caches`, on Windows `%LOCALAPPDATA%\Temp`, or the OS temp dir. A zone under home that is reached through a symlink does not count, and neither does a temp dir set to a folder directly in a root (`/etc`).
+
+The owned list is the session's own claim, not proof; the zones keep a wrong line inside temp space. Everything else gets no decision and goes through the normal permission flow: any other spelling, `git worktree remove`, the Bash tool on Windows (only the PowerShell form is allowed there).
 
 ### NUL Guard (`hooks/nul-guard.js`)
 
@@ -471,22 +479,9 @@ Rewrites:
 
 Uses word-boundary matching (`\bnul\b`) so it won't affect `null`, `nulcheck.log`, etc.
 
-### RTK Auto-Rewrite (`hooks/rtk/rtk-rewrite.js`)
+### RTK
 
-A `PreToolUse:Bash` hook that transparently rewrites commands to RTK equivalents before execution. Covers:
-
-- **Git**: `git status/diff/log/add/commit/push/pull/branch/fetch/stash/show`
-- **GitHub CLI**: `gh pr/issue/run`
-- **JS/TS**: `vitest`, `tsc`, `eslint`, `prettier`, `playwright`, `prisma`
-- **Cargo**: `cargo test/build/clippy`
-- **File ops**: `cat` -> `rtk read`, `rg/grep` -> `rtk grep`, `ls` -> `rtk ls`
-- **Containers**: `docker ps/images/logs`, `kubectl get/logs`
-- **Python**: `pytest`, `ruff`, `pip`
-- **Go**: `go test/build/vet`, `golangci-lint`
-
-### RTK Suggest (`hooks/rtk/rtk-suggest.js`)
-
-Same pattern matching as rewrite, but emits a `systemMessage` suggestion instead of modifying the command. Acts as a fallback awareness layer.
+No hook rewrites commands through `rtk` any more (removed 2026-11-15, see Step 2). Write `rtk <cmd>` yourself for noisy output; `hooks/cpu-guard.js` puts rtk's form inside its lock for heavy builds and tests when `rtk` is on PATH.
 
 ---
 
