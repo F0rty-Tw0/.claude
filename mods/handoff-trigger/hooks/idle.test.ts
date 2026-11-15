@@ -590,6 +590,41 @@ test('an idle /handoff that rejects: a later turn naming a fresh handoff runs no
   expect(seen.commands).toEqual(['handoff'])
 })
 
+test('a person prompt after the idle /handoff ran, before its turn starts: that turn naming a fresh handoff runs no /clear', async ($, on) => {
+  const { seen, write, endTurn, type, idleUntilHandoff, resubmits } = world($, on)
+
+  await idleUntilHandoff()
+  await type('wait')
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff'])
+  expect(resubmits()).toEqual([])
+})
+
+test('a person prompt after the boundary /handoff ran, before its turn starts: that turn naming a fresh handoff runs no /clear', async ($, on) => {
+  const { seen, write, endTurn, type, resubmits, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await endTurn()
+  await type('wait')
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff'])
+  expect(resubmits()).toEqual([])
+})
+
+test('a /clear (session.end) after the idle /handoff ran, before its turn starts: that turn naming a fresh handoff runs no /clear', async ($, on) => {
+  const { seen, write, endTurn, idleUntilHandoff, resubmits } = world($, on)
+
+  await idleUntilHandoff()
+  await $.session.end({ reason: 'clear', sessionId: 'session-0', resume: { id: 'session-0' } })
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff'])
+  expect(resubmits()).toEqual([])
+})
+
 test('a handoff whose path is missed does not re-arm; a person prompt clears that', async ($, on) => {
   const { seen, endTurn, type, idle, idleUntilHandoff, pings } = world($, on)
 
