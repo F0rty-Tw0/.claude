@@ -1,6 +1,6 @@
 // Run: node --test hooks/rtk-heredoc.test.mjs
 //
-// Cause of the "heredoc command hangs for 2 minutes" reports (see RTK.md "Heredocs"):
+// Cause of the "heredoc command hangs for 2 minutes" reports (see RTK.md "Bare `ls` hangs"):
 //   1. `rtk hook claude` leaves any command containing a heredoc alone (no `rtk ` rewrite).
 //   2. So a bare `ls` in that command is not turned into `rtk ls`; it resolves to the interactive alias
 //      `ls='eza --icons --group-directories-first'` that the shell snapshot copies from ~/.zshrc.
@@ -25,10 +25,10 @@ const hookDir = fileURLToPath(new URL('.', import.meta.url));
 
 // What ~/.zshrc defines when eza is installed (the snapshot copies it into agent shells).
 const EZA_ALIASES = "alias ls='eza --icons --group-directories-first'\nalias ll='eza -alF --icons --group-directories-first'\nalias la='eza -A --icons'\nalias l='eza -CF --icons'\n";
-// The recommended replacement, read from the ```zsh block under RTK.md "## Heredocs" so the doc and the test cannot drift:
+// The recommended replacement, read from the ```zsh block under RTK.md "## Bare `ls` hangs" so the doc and the test cannot drift:
 // icons on a terminal, plain coreutils everywhere else.
 const rtkDoc = readFileSync(new URL('../RTK.md', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
-const SAFE_ALIASES = rtkDoc.slice(rtkDoc.indexOf('\n## Heredocs\n')).match(/\n```zsh\n([\s\S]*?)```/)[1];
+const SAFE_ALIASES = rtkDoc.slice(rtkDoc.indexOf('\n## Bare `ls` hangs\n')).match(/\n```zsh\n([\s\S]*?)```/)[1];
 
 const work = mkdtempSync(join(tmpdir(), 'rtk-heredoc-'));
 const bin = join(work, 'bin');

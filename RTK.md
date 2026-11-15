@@ -21,14 +21,13 @@ which rtk             # Verify correct binary
 
 ⚠️ **Name collision**: If `rtk gain` fails, you may have reachingforthejack/rtk (Rust Type Kit) installed instead.
 
-## Hook-Based Usage
+## Usage
 
-All other commands are automatically rewritten by the Claude Code hook.
-Example: `git status` → `rtk git status` (transparent, 0 tokens overhead)
+Since 2026-11-15 no hook rewrites commands: `rtk hook claude` is not wired in `settings.json`. In auto permission mode a hook rewrite voids the permission review and the call is sent again. Write `rtk <cmd>` yourself for noisy runs (`rtk git status`, `rtk vitest`). `hooks/cpu-guard.js` puts rtk's form inside its lock for heavy builds and tests when `rtk` is on PATH.
 
-Refer to CLAUDE.md for full command reference.
+## Bare `ls` hangs
 
-## Heredocs
+**Since the hook was removed, every bare `ls` (or `ll`, `la`, `l`) in the Bash tool hangs**, not only one after a heredoc: nothing turns `ls` into `rtk ls` any more, so it always reaches the eza alias (step 2 below). Checked 2026-11-15: `timeout 5 eza --icons --group-directories-first` exits 124 with the tool's open stdin and 0 with `</dev/null`. The `~/.zshrc` fix below was applied on this machine on 2026-11-15 (backup `~/.zshrc.bak-2026-11-15`); a session started before that keeps the alias until Claude Code restarts, so the workaround still applies there. The rest of this section is the original finding, from when the hook was wired.
 
 **Symptom**: a Bash call with a heredoc followed by `ls` (or `ll`, `la`, `l`) hangs until the 120 s tool timeout. Of the 41 heredoc calls over 60 s in `~/.claude/projects/*/*.jsonl`, 5 end with a bare `ls` (4 of them at exactly the 120 s timeout); most others are long-running work, and one is a stray `cat >> file` with no file operand (that waits on stdin by itself).
 
