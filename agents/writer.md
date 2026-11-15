@@ -1,7 +1,7 @@
 ---
 name: writer
 description: Technical documentation — READMEs, API docs, guides, comments. Every example tested and verified to run; matches existing style; scannable and active-voice. Writes and verifies docs.
-model: sonnet
+model: opus
 effort: high
 ---
 

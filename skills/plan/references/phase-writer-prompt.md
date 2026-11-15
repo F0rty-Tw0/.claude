@@ -7,7 +7,7 @@ Use this template when a plan has 3+ phases and skill:plan fans out one writer p
 **Dispatch after:** index.md is complete, including Cross-phase interfaces, the Phases table, and the Outline with reserved ruling ids. At most 3 writers run in parallel.
 
 ```
-Agent tool (subagent_type: "general-purpose", model: "sonnet", effort: "high"):
+Agent tool (subagent_type: "general-purpose", model: "opus", effort: "high"):
   description: "Write plan phase [PHASE_N]"
   prompt: |
     You write one phase file of an implementation plan. Other writers handle the
