@@ -12,8 +12,10 @@ const HANDOFF = `${HOME}\\.claude\\handoffs\\2026-10-08-1200-task.md`
 const COLD_DROP = 'Cache cold: clearing and continuing from the handoff with your prompt.'
 const PENDING_DROP = 'Added to your prompt that is being continued from the handoff.'
 const RESENT_DROP = 'Already sent after clearing.'
-const CONTINUE = `Continue from the handoff in ${HANDOFF}: read it, run its Verify command, then do its Next step.`
+const CONTINUE = `Continue from the handoff in ${HANDOFF}: read it, run its Verify command, then do its Next step. The handoff fires by itself while you work; never park work for it.`
 const CONTINUE_FAILED = `Couldn't continue from the handoff. To continue, paste: ${CONTINUE}`
+const GRANTED = 'Commit freely on this branch (2026-11-15)'
+const BOUNDARY_TOAST = 'Turn ended at 67% context: handing off'
 
 type Submit = {
   readonly text: string
@@ -29,8 +31,13 @@ type Submit = {
 // `drop` when it is set, rejects when `isRejecting` is, and an `asUser` one
 // stays in flight for `holdMs`, as does a /clear after its session.end, and a
 // ping for `pingHoldMs`.
-// /handoff rejects when `isHandoffRejecting` is; holdUsage() parks every
-// session.usage call until the function it returns is called.
+// /handoff rejects when `isHandoffRejecting` is, after `holdMs` when that is
+// set; otherwise it is queued, as the engine queues a command until the
+// session is idle, and the next startTurn() enters its prompt (with
+// `command`) before its turn starts; a notice turn gets in ahead of it.
+// `isSettingsRejecting` and `isEnvRejecting` make settings.read and
+// env.get throw. holdUsage() parks every session.usage call until the
+// function it returns is called.
 function world($: Engine, on: On) {
   const clock = mock.clock(on, { now: 1_000_000_000 })
   const seen = {
@@ -46,11 +53,41 @@ function world($: Engine, on: On) {
     clear: 'new' as 'new' | 'stuck' | 'rejected',
     holdMs: 0,
     pingHoldMs: 0,
+    reads: [] as string[],
+    texts: new Map<string, string>(),
+    setting: undefined as unknown,
+    isSettingsRejecting: false,
+    isEnvRejecting: false,
   }
   let isInTurn = false
   let sessions = 0
+  let queuedHandoff: string | undefined
   let usageGate: Promise<void> | undefined
+  let readGate: Promise<void> | undefined
+  // Before mock.env: the hook registered first answers first. USERPROFILE is
+  // the mod's first lookup.
+  on('env.get', { name: 'USERPROFILE' }, (_$, e, next) => {
+    if (seen.isEnvRejecting) throw new Error('env rejected')
+
+    return next(e)
+  })
   mock.env(on, { USERPROFILE: HOME })
+  on('settings.read', () => {
+    seen.reads.push('settings')
+    if (seen.isSettingsRejecting) throw new Error('settings rejected')
+
+    return { value: seen.setting === undefined ? {} : { autoCompactWindow: seen.setting } } as never
+  })
+  on('fs.read', async (_$, e) => {
+    await readGate
+    // As fs.stat below: on Linux the engine resolves C:\… against the cwd.
+    const path = slashed(e.path).replace(/^.*?(?=[A-Za-z]:\/)/, '')
+    seen.reads.push(path)
+    const text = seen.texts.get(path)
+    if (text === undefined) return { deny: `ENOENT: ${e.path}` }
+
+    return { value: text }
+  })
   on('session.usage', async () => {
     await usageGate
 
@@ -85,7 +122,11 @@ function world($: Engine, on: On) {
     seen.commands.push(e.command)
     seen.args.push(e.args)
     if (e.command === 'clear' && seen.clear === 'rejected') throw new Error('clear rejected')
-    if (e.command === 'handoff' && seen.isHandoffRejecting) throw new Error('handoff rejected')
+    if (e.command === 'handoff' && seen.isHandoffRejecting) {
+      if (seen.holdMs > 0) await clock.sleep(seen.holdMs)
+      throw new Error('handoff rejected')
+    }
+    if (e.command === 'handoff') queuedHandoff = e.args
     if (e.command === 'clear' && seen.clear === 'new') {
       const sessionId = `session-${sessions}`
       sessions += 1
@@ -95,6 +136,10 @@ function world($: Engine, on: On) {
     return { text: '' } as never
   })
   on('prompt.submit', async (_$, e) => {
+    // A queued /handoff's own prompt: not a submit the tests count.
+    const unchanged = { text: e.text }
+    if (e.command) return unchanged
+
     const isPlugin = e.origin.kind === 'plugin'
     const asUser = e.origin.kind === 'plugin' ? e.origin.asUser : undefined
     seen.submits.push({ text: e.text, origin: e.origin.kind, asUser })
@@ -103,7 +148,7 @@ function world($: Engine, on: On) {
     if (isPlugin && seen.isRejecting) throw new Error('submit rejected')
     if (isPlugin && seen.drop !== undefined) return { drop: seen.drop }
 
-    return { text: e.text }
+    return unchanged
   })
   on('turn.start', (_$, e) => ({ turnId: e.turnId }))
   on('turn.complete', (_$, e) => ({ text: e.answer }))
@@ -114,8 +159,28 @@ function world($: Engine, on: On) {
     seen.files.set(slashed(path), clock.now() - ageMs)
   }
 
+  // The queued /handoff's prompt entering, as the engine runs it once idle.
+  async function enterQueuedHandoff(): Promise<void> {
+    const args = queuedHandoff
+    queuedHandoff = undefined
+    if (args === undefined) return
+
+    const command = { name: 'handoff', args }
+    const origin = { kind: 'plugin', name: 'handoff-trigger' } as const
+    await $.prompt.submit({ text: `/handoff ${args}`, wait: false, origin, command })
+  }
+
   async function startTurn() {
+    await enterQueuedHandoff()
     await $.turn.start({ text: '', turnId: 't' })
+  }
+
+  // An agent's notice that starts a turn of its own ahead of a queued /handoff.
+  async function noticeTurn(answer = 'ok'): Promise<void> {
+    const origin = { kind: 'task-notification' } as const
+    await $.prompt.submit({ text: 'Agent finished.', wait: false, origin })
+    await $.turn.start({ text: 'Agent finished.', turnId: 'n' })
+    await completeTurn({ turnId: 'n', answer })
   }
 
   async function completeTurn(extra: Partial<TurnCompleteInput> = {}) {
@@ -180,7 +245,34 @@ function world($: Engine, on: On) {
     return release
   }
 
-  return { clock, seen, write, startTurn, completeTurn, endTurn, type, idle, idleUntilHandoff, pings, goCold, passed, resubmits, holdUsage }
+  function holdReads(): () => void {
+    let release = () => {}
+    readGate = new Promise<void>(resolve => {
+      release = resolve
+    })
+
+    return release
+  }
+
+  // A handoff at `path` whose Standing grants start with `grants`, and the
+  // person's continue prompt naming it: the session is continued from it.
+  async function grant(path = HANDOFF, grants = GRANTED): Promise<void> {
+    seen.texts.set(slashed(path), handoffText(grants))
+    await type(`Continue from the handoff in ${path}: read it, then go on.`)
+  }
+
+  // 0.67 of a 300,000 compaction window: past BOUNDARY_SHARE (0.6), under
+  // register.ts's 80% nudge, whose toast would join the mod's.
+  function full(): void {
+    seen.setting = 300_000
+    seen.tokens = 200_000
+  }
+
+  return { clock, seen, write, startTurn, completeTurn, endTurn, noticeTurn, type, idle, idleUntilHandoff, pings, goCold, passed, resubmits, holdUsage, holdReads, grant, full }
+}
+
+function handoffText(grants: string): string {
+  return `# Handoff\n\n## Standing grants\n${grants}\n\n## Next step\nGo on.\n`
 }
 
 // What continueFresh submits for a prompt the cold path dropped.
@@ -930,4 +1022,558 @@ test('two completions parked together with no turn.start between arm one wake', 
   await Promise.all([first, second])
   await idle()
   expect(pings()).toBe(1)
+})
+
+// --- Handoff at the turn boundary ---
+
+test('(a) a granted turn end past 60% runs /handoff at once, no ping; its turn clears and continues, and the chain counts it', async ($, on) => {
+  const { seen, write, endTurn, idleUntilHandoff, pings, resubmits, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.args).toEqual([HANDOFF_ARGS])
+  expect(seen.toasts).toEqual([BOUNDARY_TOAST])
+  expect(pings()).toBe(0)
+
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+  expect(resubmits()).toEqual([CONTINUE])
+
+  // Chain count 1: the idle path's one continue per person prompt is spent.
+  seen.tokens = 100_000
+  await idleUntilHandoff()
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear', 'handoff'])
+})
+
+test('(b) no continuedFrom, grants that read nothing or none, or an unreadable handoff: the idle wake arms, no /handoff', async ($, on) => {
+  const { seen, endTurn, type, idle, pings, grant, full } = world($, on)
+
+  full()
+  await endTurn()
+  await idle()
+  expect(pings()).toBe(1)
+
+  const ungranted = ['nothing', '"nothing"', '- "Nothing."', 'none']
+  for (const [i, grants] of ungranted.entries()) {
+    await grant(HANDOFF, grants)
+    await endTurn()
+    await idle()
+    expect(pings()).toBe(i + 2)
+  }
+
+  seen.texts.clear()
+  await type(`Continue from the handoff in ${HANDOFF}: read it, then go on.`)
+  await endTurn()
+  await idle()
+  expect(pings()).toBe(6)
+  expect(seen.commands).toEqual([])
+})
+
+test('(c) a granted turn end under 60%: the idle wake arms, no /handoff', async ($, on) => {
+  const { seen, endTurn, idle, pings, grant } = world($, on)
+
+  await grant()
+  // 0.57 of the compaction window.
+  seen.setting = 300_000
+  seen.tokens = 170_000
+  await endTurn()
+  expect(seen.commands).toEqual([])
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test('(d) six boundary continues in a row, then the seventh turn end arms the idle wake; a person prompt opens the chain again', async ($, on) => {
+  const { seen, write, endTurn, type, idle, pings, resubmits, grant, full } = world($, on)
+
+  await grant()
+  full()
+  for (let link = 0; link < 6; link += 1) {
+    await endTurn()
+    write(HANDOFF)
+    await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  }
+  expect(seen.commands).toEqual(Array(6).fill(['handoff', 'clear']).flat())
+  expect(resubmits()).toEqual(Array(6).fill(CONTINUE))
+
+  await endTurn()
+  expect(seen.commands.length).toBe(12)
+  await idle()
+  expect(pings()).toBe(1)
+
+  await type('back')
+  await endTurn()
+  expect(seen.commands.length).toBe(13)
+  expect(seen.commands.at(-1)).toBe('handoff')
+})
+
+test('(e) fill is over autoCompactWindow when set: 190,000 tokens hand off at 300,000, not at the 1,000,000 model window', async ($, on) => {
+  const { seen, endTurn, type, idle, pings, grant } = world($, on)
+
+  await grant()
+  seen.tokens = 190_000
+  await endTurn()
+  expect(seen.commands).toEqual([])
+  await idle()
+  expect(pings()).toBe(1)
+
+  seen.setting = 300_000
+  await type('go on')
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.toasts.at(-1)).toBe('Turn ended at 63% context: handing off')
+})
+
+test('a settings read that rejects: fill is over the model window, and the turn end still hands off', async ($, on) => {
+  const { seen, endTurn, grant } = world($, on)
+
+  seen.isSettingsRejecting = true
+  await grant()
+  // 0.67 of the 1,000,000 model window.
+  seen.tokens = 670_000
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.toasts).toContain(BOUNDARY_TOAST)
+})
+
+test('(f) a person prompt after the boundary /handoff turn, before the tick: no /clear', async ($, on) => {
+  const { clock, seen, write, startTurn, endTurn, type, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await endTurn()
+  await startTurn()
+  write(HANDOFF)
+  // Not completeTurn: it settles the clock, and the tick must wait.
+  await $.turn.complete({ answer: `Handoff written to ${HANDOFF}`, durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  await type('wait')
+  await clock.settle()
+  expect(seen.commands).toEqual(['handoff'])
+})
+
+test('(g) a boundary /handoff that rejects: a toast, and the idle wake arms', async ($, on) => {
+  const { seen, endTurn, idle, pings, grant, full } = world($, on)
+
+  seen.isHandoffRejecting = true
+  await grant()
+  full()
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.toasts).toEqual([BOUNDARY_TOAST, 'Turn end: /handoff could not run'])
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test('a boundary /handoff that rejects leaves hasFired false: the ping turn re-arms, the second ping follows', async ($, on) => {
+  const { seen, endTurn, idle, pings, grant, full } = world($, on)
+
+  seen.isHandoffRejecting = true
+  await grant()
+  full()
+  await endTurn()
+  await idle()
+  expect(pings()).toBe(1)
+  seen.tokens = 100_000
+  await endTurn()
+  await idle()
+  expect(pings()).toBe(2)
+})
+
+test('a boundary /handoff that rejects: a later turn naming a fresh handoff runs no /clear', async ($, on) => {
+  const { seen, write, endTurn, resubmits, grant, full } = world($, on)
+
+  seen.isHandoffRejecting = true
+  await grant()
+  full()
+  await endTurn()
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff'])
+  expect(resubmits()).toEqual([])
+})
+
+test('a boundary /handoff that rejects after a turn started: no wake arms inside the running turn', async ($, on) => {
+  const { clock, seen, startTurn, endTurn, idle, pings, grant, full } = world($, on)
+
+  seen.isHandoffRejecting = true
+  seen.holdMs = 1_000
+  await grant()
+  full()
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+  await startTurn()
+  await clock.advance(1_000)
+  expect(seen.toasts).toEqual([BOUNDARY_TOAST, 'Turn end: /handoff could not run'])
+  await idle()
+  expect(pings()).toBe(0)
+})
+
+test('(h) a person prompt naming ~/.claude/handoffs/x.md sets continuedFrom; session.end clears it', async ($, on) => {
+  const { seen, endTurn, type, idle, pings, full } = world($, on)
+
+  const path = slashed(`${HOME}/.claude/handoffs/x.md`)
+  seen.texts.set(path, handoffText(GRANTED))
+  await type('Continue from the handoff in ~/.claude/handoffs/x.md: read it, then go on.')
+  full()
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.reads).toEqual(['settings', path])
+
+  await $.session.end({ reason: 'clear', sessionId: 'session-x', resume: { id: 'session-x' } })
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.reads.length).toBe(2)
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test('a ~/ continue prompt whose home lookup rejects still passes; the granted turn end past 60% runs no /handoff', async ($, on) => {
+  const { seen, endTurn, type, idle, pings, passed, full } = world($, on)
+
+  const prompt = 'Continue from the handoff in ~/.claude/handoffs/x.md: read it, then go on.'
+  seen.texts.set(slashed(`${HOME}/.claude/handoffs/x.md`), handoffText(GRANTED))
+  seen.isEnvRejecting = true
+  await type(prompt)
+  expect(passed()).toEqual([prompt])
+  full()
+  await endTurn()
+  expect(seen.commands).toEqual([])
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test('a ~/ continue prompt is taken with no home lookup: env.get rejecting only during it, the granted turn end past 60% hands off', async ($, on) => {
+  const { seen, endTurn, type, passed, full } = world($, on)
+
+  const prompt = 'Continue from the handoff in ~/.claude/handoffs/x.md: read it, then go on.'
+  seen.texts.set(slashed(`${HOME}/.claude/handoffs/x.md`), handoffText(GRANTED))
+  seen.isEnvRejecting = true
+  await type(prompt)
+  expect(passed()).toEqual([prompt])
+  seen.isEnvRejecting = false
+  full()
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+})
+
+test('(j) a keepalive ping\'s own turn ending past 60% in a granted session: no /handoff, the second ping follows', async ($, on) => {
+  const { seen, endTurn, idle, pings, grant, full } = world($, on)
+
+  await grant()
+  await endTurn()
+  await idle()
+  expect(pings()).toBe(1)
+
+  full()
+  await endTurn() // the ping's own turn
+  expect(seen.commands).toEqual([])
+  await idle()
+  expect(pings()).toBe(2)
+})
+
+test('(l) a turn starting between the decision and the tick: no /handoff, hasFired still false, no handoff kind', async ($, on) => {
+  const { clock, seen, write, startTurn, completeTurn, endTurn, idle, pings, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await startTurn()
+  await $.turn.complete({ answer: 'ok', durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  await startTurn()
+  await clock.settle()
+  expect(seen.commands).toEqual([])
+
+  // No handoff kind: this turn names a fresh handoff and continues nothing.
+  write(HANDOFF)
+  seen.tokens = 100_000
+  await completeTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual([])
+
+  // hasFired false: the next answer turn arms the idle wake.
+  await endTurn()
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test('a / command between the boundary decision and the tick: no /handoff, the idle wake arms', async ($, on) => {
+  const { clock, seen, startTurn, type, idle, pings, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await startTurn()
+  await $.turn.complete({ answer: 'ok', durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  await type('/cost')
+  await clock.settle()
+  expect(seen.commands).toEqual([])
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test('two granted turn ends past 60% settling together before the tick: one /handoff', async ($, on) => {
+  const { clock, seen, startTurn, holdUsage, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await startTurn()
+  const release = holdUsage()
+  const done = { answer: 'ok', durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' } as const
+  const first = $.turn.complete(done)
+  await clock.settle()
+  const second = $.turn.complete(done)
+  await clock.settle()
+  release()
+  await Promise.all([first, second])
+  await clock.settle()
+  expect(seen.commands).toEqual(['handoff'])
+  expect(seen.toasts).toEqual([BOUNDARY_TOAST])
+})
+
+test('(m) a session with no continuedFrom reads neither the setting nor a file', async ($, on) => {
+  const { seen, endTurn, idle, pings, full } = world($, on)
+
+  full()
+  await endTurn()
+  expect(seen.reads).toEqual([])
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test('(k) after the mod\'s own hands-free continue, the new session\'s first turn end past 60% runs a boundary /handoff', async ($, on) => {
+  const { seen, write, endTurn, idleUntilHandoff, resubmits, full } = world($, on)
+
+  seen.texts.set(slashed(HANDOFF), handoffText(GRANTED))
+  await idleUntilHandoff()
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(resubmits()).toEqual([CONTINUE])
+
+  full()
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff', 'clear', 'handoff'])
+  expect(seen.toasts.at(-1)).toBe(BOUNDARY_TOAST)
+})
+
+test('a cold continue prompt that is dropped sets no continuedFrom; the mod\'s own resubmit sets the path it names', async ($, on) => {
+  const { clock, seen, endTurn, type, goCold, full } = world($, on)
+
+  const other = `${HOME}\\.claude\\handoffs\\2026-10-08-0900-other.md`
+  seen.texts.set(slashed(other), handoffText(GRANTED))
+  seen.texts.set(slashed(HANDOFF), handoffText(GRANTED))
+  full()
+
+  // A /clear that keeps the session: no resubmit, so only the dropped prompt could set it.
+  seen.clear = 'stuck'
+  await goCold()
+  await type(`Continue from the handoff in ${other}: read it, then go on.`)
+  await clock.settle()
+  await endTurn()
+  expect(seen.commands).toEqual(['clear'])
+  expect(seen.reads).toEqual([])
+
+  seen.clear = 'new'
+  await goCold()
+  await type(`Continue from the handoff in ${other}: read it, then go on.`)
+  await clock.settle()
+  await endTurn()
+  expect(seen.reads).toEqual(['settings', slashed(HANDOFF)])
+  expect(seen.commands).toEqual(['clear', 'clear', 'handoff'])
+})
+
+test('a granted turn ending aborted, in error or in refusal past 60%: no /handoff', async ($, on) => {
+  const { seen, endTurn, grant, full } = world($, on)
+
+  await grant()
+  full()
+  for (const reason of ['aborted', 'error', 'refusal'] as const) await endTurn({ reason })
+  expect(seen.commands).toEqual([])
+})
+
+test('a person prompt typed into a granted turn past 60%: no /handoff, the idle wake arms', async ($, on) => {
+  const { seen, startTurn, completeTurn, type, idle, pings, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await startTurn()
+  await type('also this', 't')
+  await completeTurn()
+  expect(seen.commands).toEqual([])
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test('a boundary /handoff turn naming no fresh handoff: no /clear, and the next turn end runs no second /handoff', async ($, on) => {
+  const { seen, endTurn, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await endTurn()
+  await endTurn({ answer: 'I could not write it.' })
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+})
+
+test('a notice turn ending ahead of the boundary /handoff turn leaves the mark: the /handoff turn clears and continues', async ($, on) => {
+  const { seen, write, endTurn, noticeTurn, resubmits, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await endTurn()
+  await noticeTurn()
+  expect(seen.commands).toEqual(['handoff'])
+
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+  expect(resubmits()).toEqual([CONTINUE])
+})
+
+test('a notice turn ending ahead of the idle /handoff turn leaves the mark: the /handoff turn clears and continues', async ($, on) => {
+  const { seen, write, endTurn, noticeTurn, idleUntilHandoff, resubmits } = world($, on)
+
+  await idleUntilHandoff()
+  await noticeTurn()
+  expect(seen.commands).toEqual(['handoff'])
+
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+  expect(resubmits()).toEqual([CONTINUE])
+})
+
+test('a notice turn naming a fresh handoff ahead of the /handoff turn continues nothing; the /handoff turn does', async ($, on) => {
+  const { seen, write, endTurn, noticeTurn, resubmits, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await endTurn()
+  write(HANDOFF)
+  await noticeTurn(`Handoff written to ${HANDOFF}`)
+  expect(seen.commands).toEqual(['handoff'])
+  expect(resubmits()).toEqual([])
+
+  write(HANDOFF)
+  await endTurn({ answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+})
+
+test('a / command between the boundary decision and the tick under MIN_TOKENS: no /handoff, no wake', async ($, on) => {
+  const { clock, seen, startTurn, type, idle, pings, grant } = world($, on)
+
+  await grant()
+  // 0.75 of a 40,000 compaction window, under MIN_TOKENS (50,000).
+  seen.setting = 40_000
+  seen.tokens = 30_000
+  await startTurn()
+  await $.turn.complete({ answer: 'ok', durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  await type('/cost')
+  await clock.settle()
+  expect(seen.commands).toEqual([])
+  await idle()
+  expect(pings()).toBe(0)
+})
+
+test('a boundary /handoff that rejects under MIN_TOKENS: a toast, and no wake', async ($, on) => {
+  const { seen, endTurn, idle, pings, grant } = world($, on)
+
+  seen.isHandoffRejecting = true
+  await grant()
+  seen.setting = 40_000
+  seen.tokens = 30_000
+  await endTurn()
+  expect(seen.toasts).toEqual(['Turn ended at 75% context: handing off', 'Turn end: /handoff could not run'])
+  await idle()
+  expect(pings()).toBe(0)
+})
+
+test('a boundary /handoff that rejects after a notice turn started and ended: the idle wake arms', async ($, on) => {
+  const { clock, seen, endTurn, noticeTurn, idle, pings, grant, full } = world($, on)
+
+  seen.isHandoffRejecting = true
+  seen.holdMs = 1_000
+  await grant()
+  full()
+  await endTurn()
+  await noticeTurn()
+  await clock.advance(1_000)
+  expect(seen.toasts).toEqual([BOUNDARY_TOAST, 'Turn end: /handoff could not run'])
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test('a / command landing while a granted turn past 60% settles: no /handoff, and under MIN_TOKENS no wake either', async ($, on) => {
+  const { clock, seen, startTurn, type, idle, pings, holdReads, grant } = world($, on)
+
+  await grant()
+  seen.setting = 40_000
+  seen.tokens = 30_000
+  await startTurn()
+  const release = holdReads()
+  const done = $.turn.complete({ answer: 'ok', durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' })
+  await clock.settle()
+  const typed = type('/cost')
+  await clock.settle()
+  release()
+  await Promise.all([done, typed])
+  await clock.settle()
+  expect(seen.commands).toEqual([])
+  await idle()
+  expect(pings()).toBe(0)
+})
+
+test("a subagent's turn.start between the /handoff prompt and its main turn takes nothing: the /handoff turn clears and continues", async ($, on) => {
+  const { seen, write, completeTurn, endTurn, resubmits, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await endTurn()
+  expect(seen.commands).toEqual(['handoff'])
+  const origin = { kind: 'plugin', name: 'handoff-trigger' } as const
+  const command = { name: 'handoff', args: 'x' }
+  await $.prompt.submit({ text: '/handoff x', wait: false, origin, command })
+  await $.turn.start({ text: 'sub', turnId: 'a', agentId: 'agent-1' })
+  await $.turn.start({ text: '', turnId: 'h' })
+  write(HANDOFF)
+  await completeTurn({ turnId: 'h', answer: `Handoff written to ${HANDOFF}` })
+  expect(seen.commands).toEqual(['handoff', 'clear'])
+  expect(resubmits()).toEqual([CONTINUE])
+})
+
+test("a subagent's turn.start while the session is idle leaves the armed wake: the ping follows", async ($, on) => {
+  const { endTurn, idle, pings } = world($, on)
+
+  await endTurn()
+  await $.turn.start({ text: 'sub', turnId: 'a', agentId: 'agent-1' })
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test("a boundary /handoff that rejects after a subagent's turn.start with no main turn running: the idle wake arms", async ($, on) => {
+  const { clock, seen, endTurn, idle, pings, grant, full } = world($, on)
+
+  seen.isHandoffRejecting = true
+  seen.holdMs = 1_000
+  await grant()
+  full()
+  await endTurn()
+  await $.turn.start({ text: 'sub', turnId: 'a', agentId: 'agent-1' })
+  await clock.advance(1_000)
+  expect(seen.toasts).toEqual([BOUNDARY_TOAST, 'Turn end: /handoff could not run'])
+  await idle()
+  expect(pings()).toBe(1)
+})
+
+test("a subagent's turn.start inside a main turn leaves that turn's start time: a handoff written before it is fresh, and the turn does not arm", async ($, on) => {
+  const { clock, write, startTurn, completeTurn, idle, pings } = world($, on)
+  const untilAgentStartMs = 1_000
+
+  await startTurn()
+  write(HANDOFF)
+  await clock.advance(untilAgentStartMs)
+  await $.turn.start({ text: 'sub', turnId: 'a', agentId: 'agent-1' })
+  await completeTurn({ answer: `Handoff written to ${HANDOFF}` })
+  await idle()
+  expect(pings()).toBe(0)
 })

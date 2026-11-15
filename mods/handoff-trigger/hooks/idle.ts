@@ -1,4 +1,6 @@
-import type { AgentInfo, AgentStatus, EngineInterface, On, SessionCompactInput, SessionCompactSkipped, SessionEndInput, TurnCompleteInput, TurnCompleteReason, TurnStartInput } from 'claude-code'
+import type { AgentInfo, AgentStatus, EngineInterface, On, SessionCompactInput, SessionCompactSkipped, SessionEndInput, TurnCompleteInput, TurnStartInput } from 'claude-code'
+
+import { BOUNDARY_SHARE, CHAIN_MAX, fillShare, isGranted } from './boundary'
 
 // ponytail: the prompt-cache TTL is assumed 1h, not detected. A mod can't read
 // it ($.fs.read stops at 4 MiB, $.session.usage has no TTL breakdown); on a 5m
@@ -11,9 +13,15 @@ const PINGS = 2
 
 // A reply is needed: the harness rejects a turn with no visible output.
 export const PING_TEXT = 'Prompt-cache keepalive ping from the handoff-trigger mod. Reply with one line of at most five words saying the cache is kept warm, and do nothing else: no tools, no work.'
+// A continued session under a standing grant parked work "until the handoff"
+// it expected; the mod's continue prompts say it runs by itself.
+const PARK_NOTE = 'The handoff fires by itself while you work; never park work for it.'
 // Without it the handoff skill copies the last user prompts, pings included,
 // and lets the latest one win.
 export const HANDOFF_ARGS = "The handoff-trigger mod's keepalive pings are not user prompts: leave them out of the last user prompts, and they do not change the task."
+
+// How a person's pasted continue prompt starts, as the mod's own ones do.
+const CONTINUE_PREFIX = 'Continue from the handoff in '
 
 // A handoff path as the handoff skill replies with it (`~/…` or `C:\…`); the
 // lookbehind keeps leading markdown (`**`, `(`, `[`) out of the match.
@@ -24,6 +32,16 @@ type Pending = {
   text: string
   readonly handoffPath: string
   readonly sessionId: string
+}
+
+type HandoffKind = 'idle' | 'boundary'
+
+// What the settle hands to the tick that runs the boundary /handoff.
+type BoundaryTick = {
+  readonly turnSpell: number
+  readonly seenAtSettle: number
+  readonly fill: number
+  readonly tokens: number
 }
 
 // The last resubmitted text, so a re-send within DUP_MS doesn't run twice.
@@ -44,12 +62,21 @@ let pings = 0
 let spell = 0
 let pending: Pending | undefined
 let resent: Resent | undefined
-// Set right before the idle /handoff runs; the next main turn's settle reads
-// and clears it.
-let isIdleHandoff = false
-// The hands-free chain cap: 1 after one continue, until a person prompt.
-// session.end keeps it, so the mod's own /clear does too.
-let unattended: 0 | 1 = 0
+// Set right before a mod /handoff runs (idle or turn boundary); only the
+// settle of that /handoff's own turn reads and clears it: the command waits
+// for an idle session, so a notice's turn may start and end first.
+let handoffKind: HandoffKind | undefined
+// A plugin's /handoff prompt entered (prompt.submit's `command`): the next
+// main turn.start is its turn, whose id handoffKindTurn takes.
+let isHandoffPrompted = false
+let handoffKindTurn: string | undefined
+// Hands-free continues since the last person prompt. session.end keeps it, so
+// the mod's own /clear does too.
+let unattended = 0
+// The handoff this session was continued from, a pasted one as spelled (`~`
+// unexpanded until grantedFill reads it); its Standing grants decide the
+// turn-boundary handoff. session.end clears it.
+let continuedFrom: string | undefined
 // Bumped on every person prompt, commands too: a warm /cost moves neither
 // spell nor handoffPath.
 let personSeen = 0
@@ -121,8 +148,11 @@ export function idle(on: On): void {
   spell = 0
   pending = undefined
   resent = undefined
-  isIdleHandoff = false
+  handoffKind = undefined
+  isHandoffPrompted = false
+  handoffKindTurn = undefined
   unattended = 0
+  continuedFrom = undefined
   personSeen = 0
   flowState = 'off'
   deadline = 0
@@ -144,17 +174,28 @@ export function idle(on: On): void {
     hasFired = false
     pings = 0
     spell += 1
-    isIdleHandoff = false
+    markHandoff(undefined)
+    continuedFrom = undefined
     await onSessionEnd($, e)
 
     return next(e)
   })
 
   on('turn.start', async ($, e, next) => {
+    // A subagent's or teammate's run starts here too (agentId): the wake, the
+    // spell and the /handoff turn are the main loop's, so theirs changes nothing.
+    if (e.agentId !== undefined) return next(e)
+
     stopTimer()
     spell += 1
-    turnStartedAt = await $.clock.now()
+    if (isHandoffPrompted) {
+      handoffKindTurn = e.turnId
+      isHandoffPrompted = false
+    }
+    // Before the clock read: it sets isMainTurnRunning with no await, so a
+    // /handoff rejection landing in the read sees the turn running.
     await onTurnStart($, e)
+    turnStartedAt = await $.clock.now()
 
     return next(e)
   })
@@ -183,20 +224,23 @@ export function idle(on: On): void {
       return result
     }
 
-    await settleTurn($, e.answer, e.reason, turnSpell)
+    await settleTurn($, e, turnSpell)
 
     return result
   })
 
   on('prompt.submit', async ($, e, next) => {
     const isPerson = e.origin.kind === 'composer' || e.origin.kind === 'bridge'
+    // The mod's own /handoff, run once the session is idle: its turn starts next.
+    const isQueuedHandoff = !isPerson && e.command?.name === 'handoff'
+    if (isQueuedHandoff) isHandoffPrompted = true
     if (!isPerson) return next(e)
 
     // The person is back, even for a command: the cap resets, and a hands-free
     // continue still waiting for its tick goes stale.
     unattended = 0
     personSeen += 1
-    isIdleHandoff = false
+    markHandoff(undefined)
 
     // Both reads before check 2; no await from there to setting pending, so
     // two overlapping person prompts can't both reach check 5.
@@ -226,6 +270,9 @@ export function idle(on: On): void {
       pings = 0
       if (!isCommand) spell += 1
       if (e.turnId) isPromptInTurn = true
+      // Synchronous: readHandoff expands `~` inside its own catch.
+      const named = continuedPath(e.text)
+      if (named !== undefined) continuedFrom = named
 
       return next(e)
     }
@@ -280,6 +327,8 @@ async function continueFresh($: EngineInterface): Promise<void> {
       + `act on my new request below. It overrides the handoff's Next step.\n\n${sent.text}`
     const { drop } = await $.prompt.submit({ asUser: true, text: request })
     if (drop) throw new Error(drop)
+
+    continuedFrom = sent.handoffPath
   } catch {
     $.ui.toast(`Couldn't continue from the handoff. Your prompt: ${sent.text}`)
     resent = undefined
@@ -292,7 +341,7 @@ async function continueFresh($: EngineInterface): Promise<void> {
 // Leaves handoffPath alone: a kept session still has it for the cold path, and
 // a good clear's session.end has wiped it.
 async function continueIdle($: EngineInterface, path: string, seenAtSettle: number): Promise<void> {
-  const request = `Continue from the handoff in ${path}: read it, run its Verify command, then do its Next step.`
+  const request = `Continue from the handoff in ${path}: read it, run its Verify command, then do its Next step. ${PARK_NOTE}`
   try {
     const sessionId = await $.session.id()
     await $.command.run({ command: 'clear' })
@@ -305,31 +354,41 @@ async function continueIdle($: EngineInterface, path: string, seenAtSettle: numb
     const { drop } = await $.prompt.submit({ asUser: true, text: request })
     if (drop) throw new Error(drop)
 
-    unattended = 1
+    continuedFrom = path
+    unattended += 1
   } catch {
     $.ui.toast(`Couldn't continue from the handoff. To continue, paste: ${request}`)
   }
 }
 
 // turn.complete steps 1-4: record a handoff written this turn, continue from
-// the idle one hands-free, or arm the wake.
-async function settleTurn($: EngineInterface, answer: string, reason: TurnCompleteReason, turnSpell: number): Promise<void> {
-  // Before any await: a person prompt landing in one clears the flag itself.
-  const wasIdleHandoff = isIdleHandoff
-  isIdleHandoff = false
+// the mod's own one hands-free, or hand off at the boundary or arm the wake.
+async function settleTurn($: EngineInterface, e: TurnCompleteInput, turnSpell: number): Promise<void> {
+  // Before any await: a person prompt landing in one clears the mark itself.
+  const isKindTurn = e.turnId === handoffKindTurn
+  const kind = isKindTurn ? handoffKind : undefined
+  if (isKindTurn) markHandoff(undefined)
   const seenAtSettle = personSeen
-  const path = await freshHandoff($, answer)
+  const path = await freshHandoff($, e.answer)
   handoffPath = path
   lastResponseAt = await $.clock.now()
+  const wasPromptInTurn = isPromptInTurn
   isPromptInTurn = false
   stopTimer()
 
-  const isHandsFree = wasIdleHandoff && reason === 'answer' && path !== undefined && isUnattendedAllowed() && !isFlowActive()
+  // The idle path keeps one continue per person prompt; the boundary chain
+  // runs up to CHAIN_MAX.
+  const isBoundaryChainOpen = unattended < CHAIN_MAX
+  const isIdleChainOpen = isUnattendedAllowed()
+  const isChainOpen = kind === 'boundary' ? isBoundaryChainOpen : isIdleChainOpen
+  const isFlowRunning = isFlowActive()
+  const isHandsFree = kind !== undefined && e.reason === 'answer' && path !== undefined && isChainOpen && !isFlowRunning
   if (isHandsFree) {
     // Checked before the /clear, which moves spell itself: a person prompt or
     // command, a queued turn, or the compaction flow that came first wins.
     const continueIfCurrent = async (): Promise<void> => {
-      const isStale = spell !== turnSpell || handoffPath !== path || personSeen !== seenAtSettle || isFlowActive()
+      const isFlowStarted = isFlowActive()
+      const isStale = spell !== turnSpell || handoffPath !== path || personSeen !== seenAtSettle || isFlowStarted
       if (isStale) return
 
       await continueIdle($, path, seenAtSettle)
@@ -338,15 +397,133 @@ async function settleTurn($: EngineInterface, answer: string, reason: TurnComple
     $.clock.after(0, continueIfCurrent)
   }
 
-  const isArmable = reason === 'answer' && !hasFired && path === undefined
+  const isArmable = e.reason === 'answer' && !hasFired && path === undefined
   if (!isArmable) return
 
+  await boundaryHandoff($, turnSpell, seenAtSettle, wasPromptInTurn)
+}
+
+// Sets the mod's /handoff mark, or clears it with undefined; either way the
+// next /handoff prompt and turn are found afresh.
+function markHandoff(kind: HandoffKind | undefined): void {
+  handoffKind = kind
+  isHandoffPrompted = false
+  handoffKindTurn = undefined
+}
+
+// A granted turn end at BOUNDARY_SHARE or past it hands off on the next tick
+// instead of waiting for the idle wake; any other arms the wake as before.
+async function boundaryHandoff($: EngineInterface, turnSpell: number, seenAtSettle: number, wasPromptInTurn: boolean): Promise<void> {
   const { context } = await $.session.usage()
+  const fill = await grantedFill($, context.tokens, context.window)
   const tokens = context.tokens ?? 0
-  const hasMovedOn = spell !== turnSpell
-  if (tokens < MIN_TOKENS || hasMovedOn) return
+  // No await from here to the decision: a turn.start landing in one must win;
+  // the tick re-checks a person prompt or flow that landed.
+  if (spell !== turnSpell) return
+
+  const isBoundary = isBoundaryTurn(fill, wasPromptInTurn)
+  if (isBoundary) {
+    // A command can't run inside a hook the turn is waiting on.
+    const tick: BoundaryTick = { turnSpell, seenAtSettle, fill, tokens }
+    $.clock.after(0, () => runBoundaryHandoff($, tick))
+
+    return
+  }
+
+  armWarmable($, tokens)
+}
+
+// The idle wake, only for a context worth keeping warm.
+function armWarmable($: EngineInterface, tokens: number): void {
+  if (tokens < MIN_TOKENS) return
 
   arm($, TTL_MS - LEAD_MS)
+}
+
+// The fill share in a session continued from a handoff with a standing grant,
+// else 0. Without continuedFrom it reads nothing: most sessions have none.
+async function grantedFill($: EngineInterface, tokens: number | undefined, modelWindow: number): Promise<number> {
+  const from = continuedFrom
+  if (from === undefined) return 0
+
+  // Unreadable setting → the model window; unreadable file → not granted.
+  const compactWindow = await $.settings.read({ key: 'autoCompactWindow' }).catch(() => undefined)
+  const text = await readHandoff($, from)
+  if (text === undefined) return 0
+
+  const isGrantedText = isGranted(text)
+  if (!isGrantedText) return 0
+
+  return fillShare(tokens, modelWindow, compactWindow)
+}
+
+// The handoff's text, `~` expanded; undefined when the home lookup or the read
+// fails, so either one means "not granted".
+async function readHandoff($: EngineInterface, path: string): Promise<string | undefined> {
+  try {
+    const expanded = await expandHome($, path)
+
+    return await $.fs.read(expanded)
+  } catch {
+    return undefined
+  }
+}
+
+// A keepalive ping's own turn (pings > 0), a running compaction flow, a person
+// prompt typed into the turn, or a full chain: no handoff. A person prompt
+// since the turn ended is runBoundaryHandoff's re-check.
+function isBoundaryTurn(fill: number, wasPromptInTurn: boolean): boolean {
+  const isFull = fill >= BOUNDARY_SHARE
+  const isChainOpen = unattended < CHAIN_MAX
+  const isFlowRunning = isFlowActive()
+  const isWorkTurn = pings === 0 && !isFlowRunning
+  const isOpenFull = isFull && isChainOpen
+
+  return isOpenFull && !wasPromptInTurn && isWorkTurn
+}
+
+// Nothing is set before this tick, so a stale one leaves no state behind.
+async function runBoundaryHandoff($: EngineInterface, tick: BoundaryTick): Promise<void> {
+  const { turnSpell, seenAtSettle, fill, tokens } = tick
+  // A newer turn owns the session; hasFired: an earlier tick of this spell ran it.
+  if (spell !== turnSpell || hasFired) return
+
+  const isFlowRunning = isFlowActive()
+  const isCurrent = personSeen === seenAtSettle && !isFlowRunning
+  if (!isCurrent) {
+    armWarmable($, tokens)
+
+    return
+  }
+
+  // No handoff turn follows: a later unrelated one must not continue.
+  const failHandoff = (): void => {
+    markHandoff(undefined)
+    hasFired = false
+    $.ui.toast('Turn end: /handoff could not run')
+    // An arm inside a running turn would ping in it; a turn that started and
+    // ended meanwhile armed nothing, since hasFired was set.
+    if (!isMainTurnRunning) armWarmable($, tokens)
+  }
+  hasFired = true
+  markHandoff('boundary')
+  $.ui.toast(`Turn ended at ${Math.round(100 * fill)}% context: handing off`)
+  await $.command.run({ command: 'handoff', args: HANDOFF_ARGS }).catch(failHandoff)
+}
+
+// The handoff path a person's pasted continue prompt names, as spelled (`~`
+// unexpanded); undefined for any other prompt or when no path follows the prefix.
+function continuedPath(text: string): string | undefined {
+  const isContinue = text.startsWith(CONTINUE_PREFIX)
+  if (!isContinue) return undefined
+
+  // matchAll, not test/exec: HANDOFF_PATH carries g, which keeps lastIndex.
+  const rest = text.slice(CONTINUE_PREFIX.length)
+  const [first] = rest.matchAll(HANDOFF_PATH)
+  const isRightAfterPrefix = first?.index === 0
+  if (!isRightAfterPrefix) return undefined
+
+  return first[0]
 }
 
 // The first handoff path in the reply whose file was written during this turn;
@@ -419,20 +596,22 @@ async function fire($: EngineInterface, armedSpell: number): Promise<void> {
     }
   }
 
+  // No handoff turn follows: a later unrelated one must not continue.
+  const failHandoff = (): void => {
+    markHandoff(undefined)
+    $.ui.toast('Idle: /handoff could not run')
+  }
   hasFired = true
   $.ui.toast('Idle: writing a handoff while the cache is warm')
-  isIdleHandoff = true
-  await $.command.run({ command: 'handoff', args: HANDOFF_ARGS }).catch(() => {
-    // No handoff turn follows: a later unrelated one must not continue.
-    isIdleHandoff = false
-    $.ui.toast('Idle: /handoff could not run')
-  })
+  markHandoff('idle')
+  await $.command.run({ command: 'handoff', args: HANDOFF_ARGS }).catch(failHandoff)
 }
 
 // --- Handoff in place of auto-compaction: flow ---
 
-// Called from idle's turn.start hook (one registration per event per plugin).
-// A subagent's run raises no turn.start: every one here is a main turn.
+// Called from idle's turn.start hook (one registration per event per plugin),
+// for main turns only: the hook returns first for a subagent's or teammate's
+// run (agentId set).
 async function onTurnStart($: EngineInterface, e: TurnStartInput): Promise<void> {
   isMainTurnRunning = true
   // S5's fast fail, best effort: the engine may not show the args in e.text.
@@ -783,7 +962,7 @@ async function findHandoffTurn($: EngineInterface, e: TurnCompleteInput, flow: n
 // cleared → the full session stays, so the flow fails and the next auto runs.
 async function clearAndContinue($: EngineInterface, path: string, sessionId: string): Promise<void> {
   const flow = flowId
-  const request = `Continue from the handoff in ${path}: read it, run its Verify command, then do its Next step.`
+  const request = `Continue from the handoff in ${path}: read it, run its Verify command, then do its Next step. ${PARK_NOTE}`
   let isCleared = false
   isOwnClear = true
   try {
@@ -801,7 +980,8 @@ async function clearAndContinue($: EngineInterface, path: string, sessionId: str
     if (flow !== flowId) return
     if (drop) throw new Error(drop)
 
-    if (idleVetoSeen === personSeen) unattended = 1
+    continuedFrom = path
+    if (idleVetoSeen === personSeen) unattended += 1
     reset('off')
   } catch {
     if (flow !== flowId) return
