@@ -482,8 +482,10 @@ function isBoundaryTurn(fill: number, wasPromptInTurn: boolean): boolean {
   return isOpenFull && !wasPromptInTurn && isWorkTurn
 }
 
-// Nothing is set before this tick, so a stale one leaves no state behind.
+// Nothing is set before this tick, so a stale one leaves no state behind. The
+// list is read first and still sets nothing: every check runs after the read.
 async function runBoundaryHandoff($: EngineInterface, tick: BoundaryTick): Promise<void> {
+  const args = await listedArgs($)
   const { turnSpell, seenAtSettle, fill, tokens } = tick
   // A newer turn owns the session; hasFired: an earlier tick of this spell ran it.
   if (spell !== turnSpell || hasFired) return
@@ -508,7 +510,7 @@ async function runBoundaryHandoff($: EngineInterface, tick: BoundaryTick): Promi
   hasFired = true
   markHandoff('boundary')
   $.ui.toast(`Turn ended at ${Math.round(100 * fill)}% context: handing off`)
-  await $.command.run({ command: 'handoff', args: HANDOFF_ARGS }).catch(failHandoff)
+  await $.command.run({ command: 'handoff', args }).catch(failHandoff)
 }
 
 // The handoff path a person's pasted continue prompt names, as spelled (`~`
@@ -566,7 +568,9 @@ function stopTimer(): void {
 
 // The idle wake: a refresh ping for the first PINGS wakes, then /handoff while
 // the cache is still warm. A spell that moved on since arming sends nothing.
+// The list is read on every wake, first, so that every check runs after it.
 async function fire($: EngineInterface, armedSpell: number): Promise<void> {
+  const args = await listedArgs($)
   const now = await $.clock.now()
   if (spell !== armedSpell) return
 
@@ -604,7 +608,7 @@ async function fire($: EngineInterface, armedSpell: number): Promise<void> {
   hasFired = true
   $.ui.toast('Idle: writing a handoff while the cache is warm')
   markHandoff('idle')
-  await $.command.run({ command: 'handoff', args: HANDOFF_ARGS }).catch(failHandoff)
+  await $.command.run({ command: 'handoff', args }).catch(failHandoff)
 }
 
 // --- Handoff in place of auto-compaction: flow ---
@@ -892,26 +896,46 @@ async function runHandoff($: EngineInterface, flow: number): Promise<void> {
   }
 }
 
-// The marker, the alive and ended agents from the re-read list plus every
-// stopped one (by id, once), then HANDOFF_ARGS.
+// The flow's /handoff args: the marker, its agent lines, then HANDOFF_ARGS.
 function handoffArgs(agents: AgentInfo[]): string {
-  const isStopped = (agent: AgentInfo): boolean => stopped.some((entry) => entry.id === agent.id)
-  const isListed = (agent: AgentInfo): boolean => agents.some((entry) => entry.id === agent.id)
-  const isAlive = (agent: AgentInfo): boolean => ALIVE_STATUSES.includes(agent.status) && !isStopped(agent)
-  const alive = agents.filter(isAlive)
-  const unlisted = stopped.filter((agent) => !isListed(agent))
-  const ended = agents.filter((agent) => !isAlive(agent)).concat(unlisted)
-  const aliveLines = alive.map(aliveLine)
-  const endedLines = ended.map((agent) => endedLine(agent, isStopped(agent)))
-  const listed = [ALIVE_HEADER, ...orNone(aliveLines), 'Ended agents:', ...orNone(endedLines)]
-  const lines = ended.length + alive.length > 0 ? listed : ['No agents.']
+  const lines = agentLines(agents, stopped, asked)
 
   return [MARKER, ...lines, HANDOFF_ARGS].join('\n')
 }
 
-function aliveLine(agent: AgentInfo): string {
+// The idle and boundary /handoff args: the flow's lines with no notes and
+// nothing stopped, so flow state never leaks in. A rejected read falls back to
+// HANDOFF_ARGS alone: a handoff with no agent section beats no handoff.
+async function listedArgs($: EngineInterface): Promise<string> {
+  try {
+    const agents = await $.agent.list()
+    const lines = agentLines(agents, [], new Map())
+
+    return [...lines, HANDOFF_ARGS].join('\n')
+  } catch {
+    return HANDOFF_ARGS
+  }
+}
+
+// The alive and ended agents from the list plus every stopped one (by id, once).
+function agentLines(agents: AgentInfo[], stoppedAgents: AgentInfo[], notes: ReadonlyMap<string, Asked>): string[] {
+  const isStopped = (agent: AgentInfo): boolean => stoppedAgents.some((entry) => entry.id === agent.id)
+  const isListed = (agent: AgentInfo): boolean => agents.some((entry) => entry.id === agent.id)
+  const isAlive = (agent: AgentInfo): boolean => ALIVE_STATUSES.includes(agent.status) && !isStopped(agent)
+  const alive = agents.filter(isAlive)
+  const unlisted = stoppedAgents.filter((agent) => !isListed(agent))
+  const ended = agents.filter((agent) => !isAlive(agent)).concat(unlisted)
+  const aliveLines = alive.map((agent) => aliveLine(agent, notes))
+  const endedLines = ended.map((agent) => endedLine(agent, isStopped(agent)))
+  const listed = [ALIVE_HEADER, ...orNone(aliveLines), 'Ended agents:', ...orNone(endedLines)]
+  const lines = ended.length + alive.length > 0 ? listed : ['No agents.']
+
+  return lines
+}
+
+function aliveLine(agent: AgentInfo, notes: ReadonlyMap<string, Asked>): string {
   // || not ??: a bare NOT DONE leaves the note ''.
-  const note = asked.get(agent.id)?.note || '-'
+  const note = notes.get(agent.id)?.note || '-'
 
   return `${agent.id} · ${oneLine(agent.name ?? '') || '-'} · ${agent.type} · ${agent.status} · "${oneLine(agent.description)}" · ${note}`
 }

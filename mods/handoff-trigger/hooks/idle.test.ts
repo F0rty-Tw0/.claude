@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
-import type { FsStat, On, PromptSubmitResult, TurnCompleteInput } from 'claude-code'
+import type { AgentInfo, FsStat, On, PromptSubmitResult, TurnCompleteInput } from 'claude-code'
 
 import { HANDOFF_ARGS, PING_TEXT } from './idle'
 
@@ -16,6 +16,7 @@ const CONTINUE = `Continue from the handoff in ${HANDOFF}: read it, run its Veri
 const CONTINUE_FAILED = `Couldn't continue from the handoff. To continue, paste: ${CONTINUE}`
 const GRANTED = 'Commit freely on this branch (2026-11-15)'
 const BOUNDARY_TOAST = 'Turn ended at 67% context: handing off'
+const ALIVE = 'Alive agents (they survive /clear; their notices arrive in the new session; reach one with SendMessage <id>):'
 
 type Submit = {
   readonly text: string
@@ -37,7 +38,8 @@ type Submit = {
 // `command`) before its turn starts; a notice turn gets in ahead of it.
 // `isSettingsRejecting` and `isEnvRejecting` make settings.read and
 // env.get throw. holdUsage() parks every session.usage call until the
-// function it returns is called.
+// function it returns is called. agent.list returns `agents`, rejects when
+// `isListRejecting` is, and holdList() parks it as holdUsage() does.
 function world($: Engine, on: On) {
   const clock = mock.clock(on, { now: 1_000_000_000 })
   const seen = {
@@ -58,11 +60,14 @@ function world($: Engine, on: On) {
     setting: undefined as unknown,
     isSettingsRejecting: false,
     isEnvRejecting: false,
+    agents: [] as AgentInfo[],
+    isListRejecting: false,
   }
   let isInTurn = false
   let sessions = 0
   let queuedHandoff: string | undefined
   let usageGate: Promise<void> | undefined
+  let listGate: Promise<void> | undefined
   let readGate: Promise<void> | undefined
   // Before mock.env: the hook registered first answers first. USERPROFILE is
   // the mod's first lookup.
@@ -100,6 +105,12 @@ function world($: Engine, on: On) {
         breakdown: { autoCompactThreshold: 300_000 },
       },
     } } as never
+  })
+  on('agent.list', async () => {
+    if (seen.isListRejecting) throw new Error('agent.list rejected')
+    await listGate
+
+    return { value: seen.agents } as never
   })
   on('session.id', () => ({ value: `session-${sessions}` }))
   on('fs.stat', (_$, e) => {
@@ -245,6 +256,15 @@ function world($: Engine, on: On) {
     return release
   }
 
+  function holdList(): () => void {
+    let release = () => {}
+    listGate = new Promise<void>(resolve => {
+      release = resolve
+    })
+
+    return release
+  }
+
   function holdReads(): () => void {
     let release = () => {}
     readGate = new Promise<void>(resolve => {
@@ -268,7 +288,16 @@ function world($: Engine, on: On) {
     seen.tokens = 200_000
   }
 
-  return { clock, seen, write, startTurn, completeTurn, endTurn, noticeTurn, type, idle, idleUntilHandoff, pings, goCold, passed, resubmits, holdUsage, holdReads, grant, full }
+  return { clock, seen, write, startTurn, completeTurn, endTurn, noticeTurn, type, idle, idleUntilHandoff, pings, goCold, passed, resubmits, holdUsage, holdList, holdReads, grant, full }
+}
+
+function agent(id: string, status: AgentInfo['status']): AgentInfo {
+  return { id, status, type: 'general-purpose', description: `task ${id}` }
+}
+
+// The idle and boundary /handoff args: the agent lines, HANDOFF_ARGS last, no marker.
+function args(...lines: string[]): string {
+  return [...lines, HANDOFF_ARGS].join('\n')
 }
 
 function handoffText(grants: string): string {
@@ -601,7 +630,7 @@ test('a ping dropped for another reason runs /handoff on the same wake', async (
   expect(seen.commands).toEqual(['handoff'])
 })
 
-test('a rejected ping runs /handoff with HANDOFF_ARGS on the same wake', async ($, on) => {
+test('a rejected ping runs /handoff with the agent lines and HANDOFF_ARGS on the same wake', async ($, on) => {
   const { seen, endTurn, idle } = world($, on)
 
   seen.isRejecting = true
@@ -609,7 +638,7 @@ test('a rejected ping runs /handoff with HANDOFF_ARGS on the same wake', async (
   await idle()
   expect(seen.submits.length).toBe(1)
   expect(seen.commands).toEqual(['handoff'])
-  expect(seen.args).toEqual([HANDOFF_ARGS])
+  expect(seen.args).toEqual([args('No agents.')])
 })
 
 test('pings are framed PING_TEXT submits and pass the mod without resetting the count', async ($, on) => {
@@ -646,11 +675,11 @@ test('a person prompt with no turn.start while armed: the wake sends nothing', a
   expect(seen.commands).toEqual([])
 })
 
-test('the idle /handoff runs with HANDOFF_ARGS', async ($, on) => {
+test('the idle /handoff runs with the agent lines and HANDOFF_ARGS', async ($, on) => {
   const { seen, idleUntilHandoff } = world($, on)
 
   await idleUntilHandoff()
-  expect(seen.args).toEqual([HANDOFF_ARGS])
+  expect(seen.args).toEqual([args('No agents.')])
 })
 
 test('a ping turn ending in error runs /handoff on the next tick; ending aborted, nothing', async ($, on) => {
@@ -661,7 +690,7 @@ test('a ping turn ending in error runs /handoff on the next tick; ending aborted
   await endTurn({ reason: 'error' }) // the ping's own turn
   expect(pings()).toBe(1)
   expect(seen.commands).toEqual(['handoff'])
-  expect(seen.args).toEqual([HANDOFF_ARGS])
+  expect(seen.args).toEqual([args('No agents.')])
 
   await type('back again')
   await endTurn()
@@ -1033,7 +1062,7 @@ test('(a) a granted turn end past 60% runs /handoff at once, no ping; its turn c
   full()
   await endTurn()
   expect(seen.commands).toEqual(['handoff'])
-  expect(seen.args).toEqual([HANDOFF_ARGS])
+  expect(seen.args).toEqual([args('No agents.')])
   expect(seen.toasts).toEqual([BOUNDARY_TOAST])
   expect(pings()).toBe(0)
 
@@ -1576,4 +1605,152 @@ test("a subagent's turn.start inside a main turn leaves that turn's start time: 
   await completeTurn({ answer: `Handoff written to ${HANDOFF}` })
   await idle()
   expect(pings()).toBe(0)
+})
+
+// --- Agent lines on the idle and boundary /handoff ---
+
+const DONE = { answer: 'ok', durationMs: 1, isAborted: false, turnId: 't', reason: 'answer' } as const
+
+test('agents (a): the idle /handoff lists a running agent under its header, with no marker', async ($, on) => {
+  const { seen, idleUntilHandoff } = world($, on)
+
+  seen.agents = [agent('r1', 'running')]
+  await idleUntilHandoff()
+  expect(seen.args).toEqual([args(ALIVE, 'r1 · - · general-purpose · running · "task r1" · -', 'Ended agents:', 'none')])
+})
+
+test('agents (b): the boundary /handoff lists a running and a completed agent, with no marker', async ($, on) => {
+  const { seen, endTurn, grant, full } = world($, on)
+
+  seen.agents = [agent('r1', 'running'), agent('c1', 'completed')]
+  await grant()
+  full()
+  await endTurn()
+  expect(seen.args).toEqual([args(ALIVE, 'r1 · - · general-purpose · running · "task r1" · -', 'Ended agents:', 'c1 · general-purpose · completed · "task c1"')])
+})
+
+test('agents (c) idle: a rejected list read still runs the idle /handoff, with HANDOFF_ARGS alone', async ($, on) => {
+  const { seen, idleUntilHandoff } = world($, on)
+
+  seen.isListRejecting = true
+  await idleUntilHandoff()
+  expect(seen.args).toEqual([HANDOFF_ARGS])
+})
+
+test('agents (c) boundary: a rejected list read still runs the boundary /handoff, with HANDOFF_ARGS alone', async ($, on) => {
+  const { seen, endTurn, grant, full } = world($, on)
+
+  seen.isListRejecting = true
+  await grant()
+  full()
+  await endTurn()
+  expect(seen.args).toEqual([HANDOFF_ARGS])
+})
+
+test('agents (c1): a rejected list read on a wake with pings left still sends the ping', async ($, on) => {
+  const { seen, endTurn, idle, pings } = world($, on)
+
+  seen.isListRejecting = true
+  await endTurn()
+  await idle()
+  expect(pings()).toBe(1)
+  expect(seen.commands).toEqual([])
+})
+
+test('agents (d): a main turn starting during the boundary tick\'s list read: that tick runs nothing, the new turn\'s own tick runs /handoff', async ($, on) => {
+  const { clock, seen, startTurn, completeTurn, holdList, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await startTurn()
+  await $.turn.complete(DONE)
+  const release = holdList()
+  await clock.settle()
+  // A turn no person started, as a queued notice's.
+  await startTurn()
+  release()
+  await clock.settle()
+  expect(seen.commands).toEqual([])
+
+  await completeTurn()
+  expect(seen.commands).toEqual(['handoff'])
+})
+
+test('agents (d1): a / command during the boundary tick\'s list read: no /handoff, the idle wake arms', async ($, on) => {
+  const { clock, seen, startTurn, type, idle, pings, holdList, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await startTurn()
+  await $.turn.complete(DONE)
+  const release = holdList()
+  await clock.settle()
+  await type('/cost')
+  release()
+  await clock.settle()
+  await idle()
+  expect(seen.commands).toEqual([])
+  expect(pings()).toBe(1)
+})
+
+test('agents (d2): two boundary ticks of one spell both in their list reads: one /handoff', async ($, on) => {
+  const { clock, seen, startTurn, holdList, grant, full } = world($, on)
+
+  await grant()
+  full()
+  await startTurn()
+  const release = holdList()
+  await $.turn.complete(DONE)
+  await $.turn.complete(DONE)
+  await clock.settle()
+  release()
+  await clock.settle()
+  expect(seen.commands).toEqual(['handoff'])
+})
+
+test('agents (e): a main turn starting during the idle wake\'s list read, pings used up: no /handoff and no ping', async ($, on) => {
+  const { clock, seen, startTurn, endTurn, idle, pings, holdList } = world($, on)
+
+  for (let wake = 0; wake < 2; wake += 1) {
+    await endTurn()
+    await idle()
+  }
+  await endTurn()
+  const release = holdList()
+  await idle()
+  await startTurn()
+  release()
+  await clock.settle()
+  expect(seen.commands).toEqual([])
+  expect(pings()).toBe(2)
+})
+
+test('agents (e1): a / command during the idle wake\'s list read, pings used up: that wake pings, no /handoff', async ($, on) => {
+  const { clock, seen, endTurn, type, idle, pings, holdList } = world($, on)
+
+  for (let wake = 0; wake < 2; wake += 1) {
+    await endTurn()
+    await idle()
+  }
+  await endTurn()
+  const release = holdList()
+  await idle()
+  await type('/cost')
+  release()
+  await clock.settle()
+  expect(seen.commands).toEqual([])
+  expect(pings()).toBe(3)
+})
+
+test('agents (f): the machine sleeping through the idle wake\'s list read: the clock is read after the list, so the late wake sends nothing', async ($, on) => {
+  const { clock, seen, endTurn, idle, pings, holdList } = world($, on)
+
+  await endTurn()
+  const release = holdList()
+  await idle()
+  await clock.advance(TTL_MS)
+  release()
+  await clock.settle()
+  expect(pings()).toBe(0)
+  expect(seen.commands).toEqual([])
 })
