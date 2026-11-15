@@ -145,6 +145,7 @@
   "autoUpdatesChannel": "latest",
   "autoDreamEnabled": false,
   "skipWorkflowUsageWarning": false,
+  "theme": "dark",
   "editorMode": "normal",
   "autoCompactEnabled": true,
   "precomputeCompactionEnabled": false,
@@ -153,6 +154,5 @@
   "remoteControlAtStartup": true,
   "skipAutoPermissionPrompt": true,
   "defaultMode": "auto",
-  "theme": "dark",
   "tui": "fullscreen"
 }
