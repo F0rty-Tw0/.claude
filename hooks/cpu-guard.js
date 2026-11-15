@@ -1,22 +1,23 @@
 #!/usr/bin/env node
 // Global PreToolUse hook: wraps CPU-heavy builds and tests in the shared gate
 // lock (`cpu-lock gate`) in every repo, so peers' benches stay clean. Never blocks.
-// Skipped: Windows (cpu-lock needs flock, which Git Bash lacks), commands that
+// Skipped: Windows (cpu-lock needs flock, which Git Bash lacks), a machine with no
+// `flock` on PATH (stock macOS: the wrap would lock nothing), commands that
 // already hold a lock, the one-off prefixes `CPU_GUARD_OFF=1 ` and
 // `CQT_GUARD_OK=1 `, and repos with a `.claude/cpu-guard.off` file in the cwd or
 // an ancestor.
 // The wrap runs in a child shell, so its cd, export, and functions don't carry over.
-// When two hooks rewrite one command, rtk's rewrite wins and the lock is lost.
-// So rtk's hook must skip every heavy command, and this hook puts rtk's own form
-// back inside the wrap.
-// Known gap: rtk 1.0.1 checks each part of a compound on its own, so in
+// No hook sends commands through rtk any more (`rtk hook claude` left settings.json
+// on 2026-11-15), so this hook puts rtk's own form of each heavy command inside the
+// wrap, when `rtk` is on PATH: the output of a locked build stays compressed.
+// Only where `rtk hook claude` is still registered as a PreToolUse hook: two hooks
+// then rewrite one command, rtk's rewrite wins and the lock is lost, so rtk's hook
+// must skip every heavy command. In the `[hooks]` table of rtk's config.toml (the
+// `Config:` path that `rtk config` prints), replace `exclude_commands` with the
+// lines below. cpu-guard.test.mjs test 8 checks the `exclude_commands` line.
+// Known gap there: rtk 1.0.1 checks each part of a compound on its own, so in
 // `git status && pnpm turbo run test` it rewrites `git status`, its rewrite wins,
-// and the heavy part runs unlocked (cargo had the same gap under cqt-guard). Bare
-// commands and `cd x && <heavy>` are wrapped. Root fix: one hook does all rewriting.
-// User step, once per machine, after this hook is live in ~/.claude (earlier, rtk
-// stops compressing these commands and nothing wraps them): in the `[hooks]`
-// table of ~/.config/rtk/config.toml, replace `exclude_commands` with these lines.
-// Revert by restoring the old line. cpu-guard.test.mjs test 8 checks this line.
+// and the heavy part runs unlocked. Bare commands and `cd x && <heavy>` are wrapped.
 // # Heavy cargo and the heavy JS commands are left to ~/.claude/hooks/cpu-guard.js,
 // # which wraps them in cpu-lock and adds `rtk` back inside the wrap. Two hooks
 // # rewriting one command: rtk's won.
@@ -56,14 +57,13 @@ const HEAVY = [
   String.raw`(?:pnpm|npm|yarn)\s+(?:-r\s+|--filter\s+\S+\s+)*test\b`,
   String.raw`(?:pnpm|npx)\s+(?:turbo|nx)\s`,
   String.raw`node\s+--test\b`,
-  // Excluded in rtk config.toml, rtk form re-inserted below.
+  // rtk's form of these is inserted below (RTK_FORMS).
   String.raw`(?:(?:pnpm|npx|yarn)\s+(?:exec\s+)?)?(?:vitest|playwright\s+test|tsc)\b`,
   String.raw`pnpm\s+(?:run\s+build|exec\s+turbo)\b`,
 ].map((pattern) => new RegExp(String.raw`${AT_COMMAND}(?:rtk\s+)?(?:${pattern})`));
 const WATCH = /\s--watch\b|\s-w\b|\swatch\b|:watch\b|\bpnpm\s+dev\b/;
 
-// rtk's own form of each command it no longer rewrites, measured with `rtk rewrite`
-// on rtk 1.0.1 before the exclusion.
+// rtk's own form of each heavy command, as `rtk rewrite` printed it on rtk 1.0.1.
 const RTK_FORMS = [
   [String.raw`cargo\s+(build|test|clippy)\b`, 'rtk cargo $1'],
   [String.raw`${RUNNER}vitest(?:\s+run)?\b`, 'rtk vitest'],
@@ -86,7 +86,9 @@ const maskHeredocs = (cmd, mask) => cmd.replace(HEREDOC, (match) => mask(match, 
 // Commit messages and heredoc bodies are prose, and a `cpu-lock bench` call's
 // quoted script already holds the bench lock: none of them is checked.
 const stripProse = (cmd) => maskHeredocs(cmd.replace(/(\s(?:-m|--message)(?:=|\s+))("[^"]*"|'[^']*')/g, "$1''"), (match, head) => head)
-  .replace(/(\S*cpu-lock\s+bench\b[^;&|\n]*?)('[^']*'|"[^"]*")/g, "$1''");
+  // `(?<!\S)`: the match starts at the start of a word. Without it every position of one long word is
+  // tried again, which is quadratic (19 s on a 200,000-character word).
+  .replace(/((?<!\S)\S*cpu-lock\s+bench\b[^;&|\n]*?)('[^']*'|"[^"]*")/g, "$1''");
 const maskQuotes = (cmd) => cmd.replace(QUOTED, (quoted) => quoted[0].repeat(2));
 // Same masks with the length kept, so a match offset is an offset in the raw command.
 // The filler is not a word character, so `\b` after a command word still holds.
@@ -115,12 +117,27 @@ function optedOut(cwd) {
   }
 }
 
-function decide(cmd, { cwd = process.cwd(), platform = process.platform } = {}) {
+// Whether a PATH directory holds an executable named `program`. Scanned in node, no
+// spawn. PATH is the hook's own, which can lack a directory the Bash shell's profile
+// adds: a program found only there counts as missing (no lock, or no rtk form).
+function isOnPath(program) {
+  const dirs = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
+
+  return dirs.some((dir) => {
+    try { fs.accessSync(path.join(dir, program), fs.constants.X_OK); } catch { return false; }
+
+    return true;
+  });
+}
+
+// `onPath` runs last, and only for a heavy command: every other Bash call skips the scan.
+function decide(cmd, { cwd = process.cwd(), platform = process.platform, onPath = isOnPath } = {}) {
   const prose = maskQuotes(stripProse(cmd));
   const heavy = HEAVY.some((pattern) => pattern.test(prose)) && !WATCH.test(prose);
   const skipped = platform === 'win32' || /cpu-lock\s/.test(prose) || /^\s*(CQT_GUARD_OK|CPU_GUARD_OFF)=1\s/.test(cmd);
-  if (skipped || !heavy || optedOut(cwd)) return {};
-  const quoted = withRtk(cmd).replaceAll("'", `'\\''`);
+  if (skipped || !heavy || optedOut(cwd) || !onPath('flock')) return {};
+  const inner = onPath('rtk') ? withRtk(cmd) : cmd;
+  const quoted = inner.replaceAll("'", `'\\''`);
 
   return { command: `${LOCK} gate nice -n 19 "\${SHELL:-bash}" -c '${quoted}'` };
 }

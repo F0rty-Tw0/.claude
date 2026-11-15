@@ -9,7 +9,24 @@ import { after, describe, it } from 'node:test';
 const { decide } = createRequire(import.meta.url)('./cpu-guard.js');
 const WRAP = '~/.claude/scripts/cpu-lock gate nice -n 19 "${SHELL:-bash}" -c ';
 const root = mkdtempSync(join(tmpdir(), 'cpu-guard-'));
-const ctx = { cwd: root, platform: 'linux' };
+// The PATH lookup is injected: these cases hold on a machine without rtk or flock.
+const ctx = { cwd: root, platform: 'linux', onPath: () => true };
+const UNIX = ['linux', 'darwin'];
+const RTK_EXAMPLES = [['cd x && cargo test -p a', 'cd x && rtk cargo test -p a'], ['pnpm vitest run', 'rtk vitest'], ['pnpm tsc --noEmit', 'rtk tsc --noEmit']];
+// A PATH directory holding an empty executable per name: the CLI cases scan it for real.
+const binWith = (...programs) => {
+  const bin = mkdtempSync(join(root, 'bin-'));
+  for (const program of programs) writeFileSync(join(bin, program), '#!/bin/sh\n', { mode: 0o755 });
+
+  return bin;
+};
+const runCli = (input, bin) => spawnSync(process.execPath, [join(import.meta.dirname, 'cpu-guard.js')], { input, encoding: 'utf8', env: { PATH: bin } });
+// The command the CLI hands back for a hook payload, or null when it prints nothing.
+const cliCommand = (command, bin) => {
+  const { stdout } = runCli(JSON.stringify({ cwd: root, tool_input: { command } }), bin);
+
+  return stdout ? JSON.parse(stdout).hookSpecificOutput.updatedInput.command : null;
+};
 const HEAVY_EXAMPLES = ['cargo test -p a', 'pnpm turbo run test', 'pnpm -r test', 'pnpm --filter x test', 'npm test', 'pnpm nx test x', 'node --test hooks/*.test.mjs'];
 const JS_EXAMPLES = ['pnpm vitest run', 'pnpm tsc --noEmit', 'npx playwright test', 'pnpm exec turbo run test', 'pnpm run build'];
 
@@ -85,11 +102,11 @@ describe('cpu-guard', () => {
   });
 
   it('9. WHEN the CLI gets a hook payload THEN it prints updatedInput and exits 0; garbage stdin prints nothing', { skip: process.platform === 'win32' }, () => {
-    const run = (input) => spawnSync('node', [join(import.meta.dirname, 'cpu-guard.js')], { input, encoding: 'utf8' });
-    const ok = run(JSON.stringify({ cwd: root, tool_input: { command: 'pnpm test' } }));
+    const bin = binWith('flock');
+    const ok = runCli(JSON.stringify({ cwd: root, tool_input: { command: 'pnpm test' } }), bin);
     assert.equal(ok.status, 0);
     assert.match(JSON.parse(ok.stdout).hookSpecificOutput.updatedInput.command, /cpu-lock gate/);
-    const bad = run('not json');
+    const bad = runCli('not json', bin);
     assert.deepEqual([bad.status, bad.stdout], [0, '']);
   });
 
@@ -146,5 +163,70 @@ describe('cpu-guard', () => {
     assert.equal(decide('out=$(cargo test 2>&1); echo "$out"', ctx).command, `${WRAP}'out=$(cargo test 2>&1); echo "$out"'`);
     assert.equal(decide('cat <<< "x"\ncargo test', ctx).command, `${WRAP}'cat <<< "x"\nrtk cargo test'`);
     assert.equal(decide('cat <<EOF; cargo build\nx\nEOF', ctx).command, `${WRAP}'cat <<EOF; rtk cargo build\nx\nEOF'`);
+  });
+
+  describe('GIVEN flock is on PATH and rtk is not', () => {
+    const onPath = (program) => program === 'flock';
+
+    for (const platform of UNIX) {
+      it(`14. WHEN a command with an rtk form runs on ${platform} THEN it is wrapped in the gate lock as typed, with no rtk in front`, () => {
+        for (const [cmd] of RTK_EXAMPLES) assert.equal(decide(cmd, { ...ctx, platform, onPath }).command, `${WRAP}'${cmd}'`, cmd);
+      });
+    }
+
+    it('15. WHEN the same command runs on win32 THEN nothing is wrapped', () => {
+      for (const [cmd] of RTK_EXAMPLES) assert.deepEqual(decide(cmd, { ...ctx, platform: 'win32', onPath }), {}, cmd);
+    });
+  });
+
+  describe('GIVEN flock and rtk are both on PATH', () => {
+    for (const platform of UNIX) {
+      it(`16. WHEN a command with an rtk form runs on ${platform} THEN it is wrapped with rtk's form`, () => {
+        for (const [cmd, inner] of RTK_EXAMPLES) assert.equal(decide(cmd, { ...ctx, platform }).command, `${WRAP}'${inner}'`, cmd);
+      });
+    }
+  });
+
+  describe('GIVEN flock is not on PATH', () => {
+    const onPath = (program) => program === 'rtk';
+
+    for (const platform of [...UNIX, 'win32']) {
+      it(`17. WHEN a heavy command runs on ${platform} THEN nothing is wrapped`, () => {
+        for (const cmd of [...HEAVY_EXAMPLES, ...JS_EXAMPLES]) assert.deepEqual(decide(cmd, { ...ctx, platform, onPath }), {}, cmd);
+      });
+    }
+  });
+
+  describe('GIVEN a PATH lookup that throws when called', () => {
+    const onPath = (program) => { throw new Error(`looked up ${program}`); };
+
+    it('18. WHEN a light command runs THEN PATH is not scanned', () => {
+      assert.deepEqual(decide('git status', { ...ctx, onPath }), {});
+    });
+
+    it('19. WHEN a heavy command runs on win32 THEN PATH is not scanned', () => {
+      assert.deepEqual(decide('cargo test', { ...ctx, platform: 'win32', onPath }), {});
+    });
+  });
+
+  describe('GIVEN the CLI scans a real PATH directory', { skip: process.platform === 'win32' && 'the hook never wraps on win32' }, () => {
+    it('20. WHEN it holds flock and rtk THEN the heavy command is wrapped with rtk\'s form', () => {
+      assert.equal(cliCommand('cargo test -p a', binWith('flock', 'rtk')), `${WRAP}'rtk cargo test -p a'`);
+    });
+
+    it('21. WHEN it holds flock only THEN the heavy command is wrapped as typed', () => {
+      assert.equal(cliCommand('cargo test -p a', binWith('flock')), `${WRAP}'cargo test -p a'`);
+    });
+
+    it('22. WHEN it holds rtk only THEN nothing is printed', () => {
+      assert.equal(cliCommand('cargo test -p a', binWith('rtk')), null);
+    });
+
+    it('23. WHEN its flock file is not executable THEN nothing is printed', () => {
+      const bin = binWith('rtk');
+      writeFileSync(join(bin, 'flock'), '', { mode: 0o644 });
+
+      assert.equal(cliCommand('cargo test -p a', bin), null);
+    });
   });
 });
