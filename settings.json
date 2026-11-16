@@ -1,7 +1,6 @@
 {
   "respectGitignore": false,
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_CODE_MODE": "1",
     "BASH_MAX_TIMEOUT_MS": "1800000",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "COLD_CACHE_GUARD": "on",
