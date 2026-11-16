@@ -1,6 +1,7 @@
 {
   "respectGitignore": false,
   "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_CODE_MODE": "1",
     "BASH_MAX_TIMEOUT_MS": "1800000",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "COLD_CACHE_GUARD": "on",
@@ -18,7 +19,7 @@
     "deny": [],
     "defaultMode": "auto"
   },
-  "model": "fable",
+  "model": "opus",
   "enableAllProjectMcpServers": true,
   "hooks": {
     "PreToolUse": [
@@ -170,3 +171,4 @@
   "skipAutoPermissionPrompt": true,
   "defaultMode": "auto"
 }
+

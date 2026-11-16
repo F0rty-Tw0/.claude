@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+# build-prune [--dry-run] — cut cargo build output back to a size cap.
+#   unit: a directory 1-3 levels below a root that holds a CACHEDIR.TAG with cargo's signature line.
+#   1. take the machine lock (exclusive, no wait); skip if a gate or bench holds it.
+#   2. skip if cargo or rustc runs.
+#   3. over the unit limit: delete the unit's */incremental dirs, then the unit if still over.
+#   4. over the cap: delete the unit compiled longest ago until the sum fits.
+# Before each deletion the cargo/rustc check repeats; when busy the run stops deleting and prints the summary.
+# Only units are ever deleted, never a root. A unit that cannot be removed in full keeps its tag and stays
+# in the sum: the run prints a "could not remove all of" line and the next run tries again.
+# --dry-run takes no lock, skips the busy checks, prints "would remove" lines and deletes nothing.
+# Env: BUILD_PRUNE_ROOTS (colon list of absolute paths, none inside another), BUILD_PRUNE_CAP_MB,
+#   BUILD_PRUNE_UNIT_MB, BUILD_PRUNE_BUSY (bash -c command line, exit 1 = idle, any other exit = busy),
+#   CPU_LOCK_FILE.
+# Exit: 0 after a run or a skip, 1 when the lock file cannot be opened or the busy check itself fails
+#   before anything is removed, 2 on bad usage.
+# No set -e: du on a unit that vanished must not end the run; such a unit counts as gone.
+set -u
+
+SIGNATURE='Signature: 8a477f597d28d172789f06886806bc55'
+CAP_MB="${BUILD_PRUNE_CAP_MB:-120000}"
+UNIT_MB="${BUILD_PRUNE_UNIT_MB:-40000}"
+ROOTS="${BUILD_PRUNE_ROOTS:-$HOME/.cache/cargo-build:$HOME/.cache/cqt-ci}"
+LOCK="${CPU_LOCK_FILE:-$HOME/.cache/cpu-heavy.lock}"
+# One pgrep call for both names: with two calls joined by ||, an error of the first would be lost.
+# shellcheck disable=SC2016  # expanded later, by bash -c
+DEFAULT_BUSY='pgrep -x -u "$(id -u)" "cargo|rustc" >/dev/null'
+BUSY_CMD="${BUILD_PRUNE_BUSY:-$DEFAULT_BUSY}"
+
+usage() { echo "usage: build-prune [--dry-run]" >&2; exit 2; }
+
+dry=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry=1 ;;
+    *) usage ;;
+  esac
+done
+verb='removed'
+[ "$dry" = 1 ] && verb='would remove'
+
+IFS=: read -ra root_list <<< "$ROOTS"
+real_roots=()
+for r in "${root_list[@]}"; do
+  case "$r" in
+    '') ;;
+    /*) real_roots+=("$(realpath -m -- "$r")") ;;
+    *) echo "build-prune: root is not an absolute path: $r" >&2; usage ;;
+  esac
+done
+# A root inside another root would list a unit twice: once on its own and once as part of an outer unit.
+for a in "${real_roots[@]}"; do
+  for b in "${real_roots[@]}"; do
+    case "$a/" in "$b/"?*) echo "build-prune: root $a lies inside root $b" >&2; usage ;; esac
+  done
+done
+
+# Exit 1 of the busy command means idle. Every other exit counts as busy: 0 is a match, and a check that
+# cannot run (127 when pgrep is missing) must not read as an idle machine. The command gets no input:
+# inside the loops below it would otherwise read the list of directories the loop is walking.
+busy_rc=1
+busy_now() {
+  [ "$dry" = 1 ] && return 1
+  bash -c "$BUSY_CMD" </dev/null >/dev/null 2>&1
+  busy_rc=$?
+  [ "$busy_rc" != 1 ]
+}
+
+# Steps 1 and 2. The lock sits on fd 9 until the run ends.
+if [ "$dry" = 0 ]; then
+  mkdir -p -- "$(dirname -- "$LOCK")"
+  # A fault, not a skip: without the lock file no run would ever prune. The braces keep the shell's stderr.
+  { exec 9>>"$LOCK"; } 2>/dev/null ||
+    { echo "build-prune: cannot open the lock file $LOCK, nothing removed" >&2; exit 1; }
+  flock -n -x 9 || { echo "build-prune: skipped, a gate or bench holds the cpu lock"; exit 0; }
+  if busy_now; then
+    [ "$busy_rc" = 0 ] && { echo "build-prune: skipped, cargo or rustc is running"; exit 0; }
+    # Not a skip but a fault: with a broken check no run would ever prune, so systemd must show it failed.
+    echo "build-prune: the busy check failed with exit $busy_rc, nothing removed" >&2
+    exit 1
+  fi
+fi
+
+mb_of() { du -s --block-size=1M -- "$1" 2>/dev/null | cut -f1; }
+
+# Parallel arrays, one slot per unit: path, root, MB, last-compiled epoch, still there.
+paths=(); roots=(); sizes=(); times=(); alive=()
+
+add_unit() {
+  local unit="$1" root="$2" t mb
+  t="$(find "$unit" -type f -printf '%T@\n' 2>/dev/null | sort -n | tail -1)"
+  mb="$(mb_of "$unit")"
+  [ -n "$t" ] && [ -n "$mb" ] || return 0
+  paths+=("$unit"); roots+=("$root"); sizes+=("$mb"); times+=("${t%.*}"); alive+=(1)
+}
+
+is_unit() {
+  local unit="$1" root="$2" first='' known real
+  case "$unit" in "$root/tmp"|"$root/tmp/"*) return 1 ;; esac
+  for known in "${paths[@]}"; do
+    case "$unit" in "$known"|"$known/"*) return 1 ;; esac
+  done
+  real="$(realpath -e -- "$unit" 2>/dev/null)" || return 1
+  case "$real" in "$root/"*) ;; *) return 1 ;; esac
+  # The braces carry the redirect: on the read alone it would not cover a tag that cannot be opened.
+  { IFS= read -r first < "$unit/CACHEDIR.TAG"; } 2>/dev/null
+  [ "$first" = "$SIGNATURE" ]
+}
+
+# Step 3: list the units. Tags are searched level by level so an outer unit is seen before anything inside it.
+for root in "${real_roots[@]}"; do
+  [ -d "$root" ] || continue
+  for depth in 2 3 4; do
+    while IFS= read -r -d '' tag; do
+      unit="$(dirname -- "$tag")"
+      is_unit "$unit" "$root" && add_unit "$unit" "$root"
+    done < <(find "$root" -mindepth "$depth" -maxdepth "$depth" -type f -name CACHEDIR.TAG -print0 2>/dev/null)
+  done
+done
+
+# Oldest first; ties by listing order.
+order=()
+while read -r _ i; do order+=("$i"); done < <(for i in "${!paths[@]}"; do echo "${times[i]} $i"; done | sort -n -k1,1 -k2,2n)
+
+stamp() { date -u -d "@${times[$1]}" '+%Y-%m-%d %H:%M:%S UTC'; }
+
+sum_mb() {
+  local i total=0
+  for i in "${!paths[@]}"; do [ "${alive[i]}" = 1 ] && total=$((total + sizes[i])); done
+  echo "$total"
+}
+
+# Step 6 summary.
+summary() {
+  local i n=0
+  for i in "${!paths[@]}"; do [ "${alive[i]}" = 1 ] && n=$((n + 1)); done
+  echo "build-prune: $n units, $(sum_mb) MB of $CAP_MB MB"
+}
+
+# Cargo or rustc started since the last check: stop deleting, report what is left.
+stop_if_busy() { busy_now && { summary; exit 0; }; }
+
+drop_unit() {
+  local i="$1" unit="${paths[$1]}" p left
+  stop_if_busy
+  if [ "$dry" = 0 ]; then
+    # The tag goes last, and only once nothing else is left. A unit that is only partly deleted is then
+    # still a unit: the next run counts it and tries again. Without its tag the rest would never be counted
+    # or deleted, and cargo writes no new tag into a directory that already exists. This script never
+    # writes a tag itself: only what cargo tagged may ever be deleted.
+    find "$unit" -mindepth 1 -maxdepth 1 ! -name CACHEDIR.TAG -exec rm -rf -- {} + 2>/dev/null
+    # A listing that fails says nothing about what is left: only a clean, empty answer lets the tag go.
+    # Under a read-only parent the tag stays too: the directory could not follow it and would be left untagged.
+    left="$(find "$unit" -mindepth 1 -maxdepth 1 ! -name CACHEDIR.TAG -print -quit 2>/dev/null)" &&
+      [ -z "$left" ] && [ -w "$(dirname -- "$unit")" ] && rm -rf -- "$unit" 2>/dev/null
+    if [ -e "$unit" ]; then
+      sizes[i]="$(mb_of "$unit")"
+      sizes[i]="${sizes[i]:-0}"
+      echo "build-prune: could not remove all of $unit, ${sizes[i]} MB left"
+      return 0
+    fi
+  fi
+  echo "$verb $unit ${sizes[i]} MB, last compiled $(stamp "$i")"
+  alive[i]=0
+  [ "$dry" = 1 ] && return 0
+  p="$(dirname -- "$unit")"
+  while [ "$p" != "${roots[i]}" ]; do
+    rmdir -- "$p" 2>/dev/null || break
+    p="$(dirname -- "$p")"
+  done
+}
+
+# Step 4: unit limit.
+for i in "${order[@]}"; do
+  [ "${sizes[i]}" -gt "$UNIT_MB" ] || continue
+  cut_mb=0; found=0; stopped=0
+  while IFS= read -r -d '' inc; do
+    busy_now && { stopped=1; break; }
+    found=1
+    inc_mb="$(mb_of "$inc")"
+    cut_mb=$((cut_mb + ${inc_mb:-0}))
+    [ "$dry" = 1 ] || rm -rf -- "$inc" 2>/dev/null
+  done < <(find "${paths[i]}" -mindepth 2 -maxdepth 2 -type d -name incremental -print0 2>/dev/null)
+  if [ "$found" = 1 ]; then
+    if [ "$dry" = 1 ]; then
+      sizes[i]=$((sizes[i] - cut_mb))
+    else
+      # Report what really went: the unit is measured again, the sizes summed above were only a forecast.
+      before="${sizes[i]}"
+      sizes[i]="$(mb_of "${paths[i]}")"
+      [ -n "${sizes[i]}" ] || { alive[i]=0; continue; }
+      cut_mb=$((before - sizes[i]))
+      # A run that stopped early left the rest on purpose: that is no failed removal.
+      [ "$stopped" = 1 ] ||
+        [ -z "$(find "${paths[i]}" -mindepth 2 -maxdepth 2 -type d -name incremental -print -quit 2>/dev/null)" ] ||
+        echo "build-prune: could not remove all of ${paths[i]}/*/incremental"
+    fi
+    # A real run that freed nothing prints no "removed" line.
+    [ "$dry" = 0 ] && [ "$cut_mb" -le 0 ] || echo "$verb ${paths[i]}/*/incremental $cut_mb MB"
+  fi
+  [ "$stopped" = 1 ] && { summary; exit 0; }
+  [ "${sizes[i]}" -gt "$UNIT_MB" ] && drop_unit "$i"
+done
+
+# Step 5: cap.
+for i in "${order[@]}"; do
+  [ "$(sum_mb)" -gt "$CAP_MB" ] || break
+  [ "${alive[i]}" = 1 ] && drop_unit "$i"
+done
+
+summary
