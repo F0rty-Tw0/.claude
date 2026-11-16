@@ -21,8 +21,6 @@ Execute a plan by dispatching a fresh implementer subagent per task. You check e
 2. Confirm you are not on main/master, or that the user consented to working there. Isolation: skill:using-git-worktrees.
 3. Record the plan's base commit (`git rev-parse HEAD`) for the final review.
 4. Track progress with index.md's Phases Status and the current phase file's `- [ ]` checkboxes. After compaction, trust them and `git log` over memory; never re-dispatch a ticked task. Resume opens the first phase not `done`; a phase with every task ticked but not `done` gets its Handoff first (Phase close).
-5. Most of the plan's task weight is sonnet but this session runs opus? Say so once and suggest restarting with `claude --model sonnet`, then "execute <plan folder> with subagent-driven-development". Orchestrating only needs sonnet, its context grows the most, and the plan folder carries the state across sessions. The opus tasks still get opus subagents. Continue if the user doesn't switch.
-
 **Inline mode:** small plans or tightly coupled tasks — execute them yourself in order, same checks, no implementer subagents. A task whose Model is above the session's model still goes to a subagent.
 
 **Ruling rows** (`Ruling R1`): ask the user with AskUserQuestion when you reach one (a row in the phase file, or a task whose `**After:**` names an unanswered ruling in index.md), record the answer under it, tick it. Never guess past it.
@@ -54,7 +52,7 @@ Implementer dispatches don't change: the Handoff reaches them only through patch
 - **DONE:** proceed to the spec check.
 - **DONE_WITH_CONCERNS:** read the concerns. Correctness or scope concerns → address before the spec check. Observations ("file getting large") → note and proceed.
 - **NEEDS_CONTEXT:** provide it and re-dispatch.
-- **BLOCKED:** context problem → add context; needs more reasoning → `deep-executor` one step up the plan's ladder (sonnet · medium → sonnet · high → opus · high); too large → split the task; plan is wrong → escalate to the user.
+- **BLOCKED:** context problem → add context; needs more reasoning → `deep-executor` one step up the plan's ladder (opus · medium → opus · high); too large → split the task; plan is wrong → escalate to the user.
 
 Never re-dispatch the same prompt to the same agent without changing something.
 

@@ -1,7 +1,7 @@
 ---
 name: cold-reader
 description: Reads one spec with no chat history or code, paraphrases what it builds, and flags gaps a planner would hit. Read-only; give it the spec path only.
-model: sonnet
+model: opus
 effort: high
 disallowedTools: Write, Edit, NotebookEdit, Bash, Agent
 ---

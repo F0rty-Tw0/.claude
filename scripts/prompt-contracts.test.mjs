@@ -140,9 +140,9 @@ describe('2.4 subagent time budget', () => {
 
 describe('2.5 cold-reader agent', () => {
   const frontmatter = () => read('agents/cold-reader.md').split('---')[1];
-  it('exists on sonnet with a description of 40 words or fewer', () => {
+  it('exists on opus with a description of 40 words or fewer', () => {
     const fm = frontmatter();
-    assert.match(fm, /^model: sonnet$/m);
+    assert.match(fm, /^model: opus$/m);
     const desc = fm.match(/^description: (.+)$/m)[1];
     assert.ok(desc.split(/\s+/).length <= 40, desc);
   });
@@ -200,10 +200,10 @@ describe('Task 3.1 review-round budget', () => {
     const independence = t.split('\n').find((l) => l.startsWith('2. **Independence.**'));
     assert.match(independence, /Always dispatch[^.]*unless Step 1 reuses a stamp[^.]*or its Convention-only gate exits 0/);
   });
-  it('code-review: delta budget on sonnet, 2 rounds, BLOCK stops', () => {
+  it('code-review: delta budget on opus, 2 rounds, BLOCK stops', () => {
     const t = read('skills/code-review/SKILL.md');
     assert.match(t, /\*\*Delta budget\.\*\*/);
-    assert.match(t, /model: sonnet/);
+    assert.match(t, /model: opus/);
     assert.match(t, /at most 2 delta rounds/);
     assert.match(t, /Anything above P3 left after delta round 2 \(a BLOCK, or CHANGES with a P0-P2 finding\) stops for the user/);
     assert.match(read('skills/code-review/references/babysit.md'), /Delta budget/);

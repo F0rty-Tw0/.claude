@@ -38,18 +38,18 @@ Save each plan as a folder unless the user names another location:
 
 ## Model and effort
 
-Every task carries a **Model** line, passed to its implementer as the Agent call's `model` and `effort`. Start at sonnet; opus needs a reason from the table (design or UI, an area the repo flags as delicate, or sonnet already failed). A task sounding hard is not a reason. Opus costs more and spends the scarcer limit. No `low` effort on either model: it benchmarks badly. Sonnet · medium is weak at open-ended agentic coding (Terminal-Bench 4.0, Artificial Analysis, Oct 2026: 30% vs 44% at high), so it gets only tasks where the plan already did the thinking.
+Every task carries a **Model** line, passed to its implementer as the Agent call's `model` and `effort`. Every task runs on opus; the table picks the effort. High is the default. Medium gets only tasks where the plan already did the thinking. No `low` effort: it benchmarks badly.
 
 | Work | Model · effort |
 |---|---|
-| Mechanical edits, renames, prose from an exact list | sonnet · medium |
-| Task whose text carries the code shape: signatures, the failing test, and the rule to implement | sonnet · medium |
-| Clear spec without that detail, pinned algorithm, bug with a known cause | sonnet · high (default) |
-| Unknown-cause diagnosis, judgment against a contract | sonnet · high |
+| Mechanical edits, renames, prose from an exact list | opus · medium |
+| Task whose text carries the code shape: signatures, the failing test, and the rule to implement | opus · medium |
+| Clear spec without that detail, pinned algorithm, bug with a known cause | opus · high (default) |
+| Unknown-cause diagnosis, judgment against a contract | opus · high |
 | UI, layout, visual choices; code the repo flags as delicate (landmines, warnings) | opus · high |
 | Hard bugs that resisted debugging, cross-cutting architecture | opus · high |
 
-A failed attempt climbs one step: sonnet · medium → sonnet · high → opus · high.
+A failed attempt at medium climbs one step: opus · medium → opus · high.
 
 ## Ruling rows
 
@@ -171,7 +171,7 @@ Each step is one action of a few minutes.
 ````markdown
 ### Task N.M: [Component Name]
 
-**Model:** sonnet · medium [from the Model and effort table]
+**Model:** opus · medium [from the Model and effort table]
 **PR slice:** [N — only when the plan has a PR Slices table]
 
 **Files:**

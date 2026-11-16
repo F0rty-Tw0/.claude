@@ -12,7 +12,7 @@ A multi-agent orchestration system for **VS Code GitHub Copilot** (custom `.agen
 - **Expanded roster:** 7 → 18 agents, adding the roles the original lacked (analyst, architect, critic, debugger, refactorer, test-engineer, security-reviewer, git-master, tracer, technical-writer, scientist).
 - **OMC prompt structure** in every agent: a memorable **Core Principle**, **Task Classification**, **Success Criteria**, **Failure Prevention** anti-patterns, explicit **Handoffs**, and evidence-based output.
 - **Operating Laws** (this repo's standards) baked into every agent: Critical Honesty + 🟢🟡🔴 Narrate-Intent + right-sized/DRY-after-2 + evidence-over-assertion.
-- **Pinned models:** one model per agent, tiered like `~/.claude/agents` — `Claude Opus 5.5` by default, `Claude Sonnet 5.5` for git-master and technical-writer, `GPT-6 Luna` for explorer.
+- **Pinned models:** one model per agent, tiered like `~/.claude/agents` — `Claude Opus 5.5` by default, `GPT-6 Luna` for explorer.
 - **Correct VS Code frontmatter:** `name`, `tools` (namespaced groups), `model` (single string), `agents` (delegation whitelist), `handoffs` with `send`.
 
 ---
@@ -36,11 +36,11 @@ A multi-agent orchestration system for **VS Code GitHub Copilot** (custom `.agen
 | **test-engineer** | Comprehensive behavior-focused test suites (+ QA) | Opus 5.5 | ✅ |
 | **code-reviewer** | Correctness/quality/coverage verdict (APPROVED/NEEDS_REVISION/FAILED) | Opus 5.5 | read-only |
 | **security-reviewer** | Vulnerability & auth/secret/crypto audit | Opus 5.5 | read-only |
-| **git-master** | Atomic commits, branches, PRs; history as documentation | Sonnet 5.5 | git only |
-| **technical-writer** | Docs/READMEs/API refs grounded in real code | Sonnet 5.5 | docs only |
+| **git-master** | Atomic commits, branches, PRs; history as documentation | Opus 5.5 | git only |
+| **technical-writer** | Docs/READMEs/API refs grounded in real code | Opus 5.5 | docs only |
 | **scientist** | Data/ML, hypothesis-driven reproducible experiments | Opus 5.5 | ✅ |
 
-Each agent pins **one model** (no fallback list): `Claude Opus 5.5 (copilot)` by default, `Claude Sonnet 5.5 (copilot)` for git-master and technical-writer, `GPT-6 Luna (copilot)` for explorer. If your Copilot plan doesn't expose that name, behavior is undocumented (it may fail or fall back to the picker model) — check the model picker.
+Each agent pins **one model** (no fallback list): `Claude Opus 5.5 (copilot)` by default, `GPT-6 Luna (copilot)` for explorer. If your Copilot plan doesn't expose that name, behavior is undocumented (it may fail or fall back to the picker model) — check the model picker.
 
 ---
 
